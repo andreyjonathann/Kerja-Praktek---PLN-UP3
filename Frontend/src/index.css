@@ -5,10 +5,10 @@
   --font-primary: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   
   /* PLN Color Palette (Premium Blue & Yellow Accent) */
-  --pln-blue: #007cc2;
-  --pln-blue-hover: #006097;
-  --pln-yellow: #fcd116;
-  --pln-yellow-accent: #f8be15;
+  --pln-blue: #1f4f8f;
+  --pln-blue-hover: #173f71;
+  --pln-yellow: #f6c31c;
+  --pln-yellow-accent: #f2b515;
   
   /* UI Status Colors */
   --color-green: #10b981;
@@ -24,14 +24,14 @@
   --color-red-border: rgba(239, 68, 68, 0.25);
 
   /* Light Theme Defaults */
-  --bg-app: #f4f6f9;
-  --bg-sidebar: #0f172a;
+  --bg-app: #e9edf3;
+  --bg-sidebar: #143f75;
   --bg-card: #ffffff;
-  --bg-card-hover: #fafbfc;
-  --text-main: #334155;
-  --text-muted: #64748b;
-  --text-heading: #0f172a;
-  --border-color: #e2e8f0;
+  --bg-card-hover: #f4f7fb;
+  --text-main: #324a69;
+  --text-muted: #6b7e98;
+  --text-heading: #1f3350;
+  --border-color: #d3dbe8;
   
   --glass-bg: rgba(255, 255, 255, 0.7);
   --glass-border: rgba(226, 232, 240, 0.8);
