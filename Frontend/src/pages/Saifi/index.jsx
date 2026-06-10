@@ -105,7 +105,7 @@ export default function SaifiPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
         <KpiCard title="SAIFI YTD" value={totalReal.toFixed(4)} unit="kali/plg" achievement={achievement} icon={Zap} color="yellow" isInverse loading={loading} />
         <KpiCard title="Target YTD" value={totalTgt.toFixed(4)} unit="kali/plg" icon={Target} color="green" loading={loading} />
         <KpiCard title="Bulan Terakhir" value={lastMonth?.realisasi?.toFixed(4) ?? '—'} unit="kali/plg" icon={Activity} color="blue" loading={loading} />
