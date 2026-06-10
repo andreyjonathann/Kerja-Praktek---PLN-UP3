@@ -42,22 +42,31 @@ export default function SaidiPage() {
   const [loading,setLoading]= useState(true)
   const [error,  setError]  = useState(null)
 
-  const fetchData = useCallback(async () => {
-    setLoading(true)
+  const fetchData = useCallback(async (isBackground = false) => {
+    if (!isBackground) setLoading(true)
     setError(null)
     try {
       const dbData = await getDashboardData(filters.year)
       setData(dbData.saidi || [])
     } catch (err) {
       console.error(err)
-      setError("Gagal mengambil data dari Google Sheets.")
-      setData([])
+      if (!isBackground) {
+        setError("Gagal mengambil data dari Google Sheets.")
+        setData([])
+      }
     } finally {
-      setLoading(false)
+      if (!isBackground) setLoading(false)
     }
   }, [filters.year])
 
-  useEffect(() => { fetchData() }, [fetchData])
+  useEffect(() => { 
+    fetchData() 
+    const interval = setInterval(() => {
+      fetchData(true)
+    }, 5000)
+    return () => clearInterval(interval)
+  }, [fetchData])
+
   useEffect(() => {
     const handler = () => fetchData()
     window.addEventListener('sigap:refresh', handler)
