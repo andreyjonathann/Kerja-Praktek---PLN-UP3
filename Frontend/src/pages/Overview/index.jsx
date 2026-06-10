@@ -106,7 +106,7 @@ export default function OverviewPage() {
           <div className="skeleton" style={{ height: 28, width: 340, borderRadius: 8 }} />
           <div className="skeleton" style={{ height: 16, width: 420, borderRadius: 6 }} />
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="skeleton" style={{ height: 168, borderRadius: 14 }} />
           ))}
@@ -197,7 +197,7 @@ export default function OverviewPage() {
       </div>
 
       {/* ── KPI Cards Grid ─────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
         <KpiCard
           title="Nilai Kinerja Organisasi"
           value={kpis.nko?.val?.toFixed(1) ?? '—'}
