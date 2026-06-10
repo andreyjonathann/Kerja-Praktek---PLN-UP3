@@ -13,42 +13,57 @@ export default function SpreadsheetDemo() {
   };
 
   return (
-    <div className="p-6 w-full space-y-6 animate-fade-in pt-4">
-      <div className="mb-10">
-        <h1 className="text-3xl font-extrabold text-slate-800 dark:text-white mb-4 flex items-center gap-3">
-          <FileSpreadsheet className="text-emerald-500" size={32} />
-          Integrasi Google Spreadsheet
-        </h1>
-        <p className="text-base font-medium text-slate-600 dark:text-slate-300">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{
+            width: 34, height: 34, borderRadius: 10,
+            background: 'linear-gradient(135deg, rgba(16,185,129,0.2), rgba(16,185,129,0.08))',
+            border: '1px solid rgba(16,185,129,0.25)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <FileSpreadsheet size={16} style={{ color: '#10B981' }} />
+          </div>
+          <h1 style={{ fontSize: '1.375rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+            Integrasi Google Spreadsheet
+          </h1>
+        </div>
+        <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
           Demo ini menunjukkan bagaimana data diambil langsung (live) dari Google Sheets tanpa memerlukan backend database terpisah.
         </p>
       </div>
 
-      <div className="card p-6">
-        <form onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-4 items-end">
-          <div className="flex-1 space-y-2 w-full">
-            <label className="text-base font-bold text-slate-700 dark:text-slate-200">
+      <div className="card" style={{ padding: 24 }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
+            <label style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
               URL CSV Spreadsheet (Publish to Web)
             </label>
-            <input 
-              type="text" 
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="Masukkan link CSV Google Sheets di sini..."
-              className="w-full px-4 h-12 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-base text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-shadow"
-            />
+            <div style={{ display: 'flex', gap: 12, width: '100%', alignItems: 'center', flexWrap: 'wrap' }}>
+              <input 
+                type="text" 
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder="Masukkan link CSV Google Sheets di sini..."
+                className="input"
+                style={{ flex: 1, minWidth: 280, height: 40, fontSize: '0.875rem' }}
+              />
+              <button type="submit" className="btn-primary" style={{ height: 40, borderRadius: 10, fontSize: '0.85rem', padding: '0 20px', whiteSpace: 'nowrap' }}>
+                <RefreshCw size={15} /> Tarik Data
+              </button>
+            </div>
           </div>
-          <button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg px-8 h-12 text-base font-bold whitespace-nowrap transition-colors flex items-center gap-2">
-            <RefreshCw size={18} />
-            Tarik Data
-          </button>
         </form>
         
-        <div className="mt-5 p-5 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/50">
-          <h4 className="text-base font-bold text-blue-800 dark:text-blue-300 mb-2 flex items-center gap-2">
-            <Database size={16} /> Cara Mendapatkan Link CSV
+        <div style={{
+          marginTop: 20, padding: 16, borderRadius: 10,
+          background: 'rgba(59, 130, 246, 0.05)',
+          border: '1px solid rgba(59, 130, 246, 0.15)',
+        }}>
+          <h4 style={{ fontSize: '0.875rem', fontWeight: 700, color: '#2563EB', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Database size={15} /> Cara Mendapatkan Link CSV
           </h4>
-          <ol className="list-decimal list-inside text-sm text-blue-700 dark:text-blue-400 space-y-2 ml-1">
+          <ol style={{ listStyle: 'decimal', paddingLeft: 16, fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: 4 }}>
             <li>Buka Google Spreadsheet Anda.</li>
             <li>Klik menu <strong>File</strong> &gt; <strong>Bagikan</strong> &gt; <strong>Publikasikan di web</strong>.</li>
             <li>Di tab Tautkan, pilih sheet yang diinginkan, dan ubah format "Halaman Web" menjadi <strong>Nilai yang dipisahkan koma (.csv)</strong>.</li>
@@ -60,9 +75,9 @@ export default function SpreadsheetDemo() {
       {activeUrl ? (
         <SpreadsheetWidget csvUrl={activeUrl} title="Data Live dari Spreadsheet" />
       ) : (
-        <div className="card p-12 text-center flex flex-col items-center justify-center border-dashed">
-          <FileSpreadsheet size={48} className="text-slate-300 dark:text-slate-700 mb-4" />
-          <p className="text-slate-500 font-medium">Klik "Tarik Data" untuk menampilkan sampel, <br/>atau masukkan link CSV Anda sendiri.</p>
+        <div className="card" style={{ padding: 48, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderStyle: 'dashed' }}>
+          <FileSpreadsheet size={48} style={{ color: 'var(--border-strong)', marginBottom: 16 }} />
+          <p style={{ color: 'var(--text-muted)', fontWeight: 500, fontSize: '0.875rem' }}>Klik "Tarik Data" untuk menampilkan sampel, <br/>atau masukkan link CSV Anda sendiri.</p>
         </div>
       )}
     </div>

@@ -18,15 +18,16 @@ import { getDashboardData } from '@/services/dashboardDataService'
 const CUSTOM_TOOLTIP = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
   return (
-    <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg p-3 text-sm">
-      <p className="font-bold text-slate-800 dark:text-slate-100 mb-2">{label}</p>
-      {payload.map(p => (
-        <div key={p.name} className="flex items-center justify-between gap-4 text-sm">
-          <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-full" style={{ background: p.color }} />
-            <span className="text-slate-600 dark:text-slate-300">{p.name}</span>
-          </div>
-          <span className="font-bold text-slate-800 dark:text-slate-100">
+    <div style={{
+      background: 'var(--bg-elevated)', border: '1px solid var(--border-strong)',
+      borderRadius: 10, padding: '10px 14px', boxShadow: 'var(--shadow-lg)',
+    }}>
+      <p style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: 6 }}>{label}</p>
+      {payload.map((p, i) => (
+        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 2 }}>
+          <span style={{ width: 8, height: 8, borderRadius: 2, background: p.color, display: 'inline-block', flexShrink: 0 }} />
+          <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>{p.name}:</span>
+          <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>
             {p.value != null ? p.value.toFixed(3) : '—'}
           </span>
         </div>
@@ -91,14 +92,22 @@ export default function SaidiPage() {
   })
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '48px' }} className="animate-fade-in">
-      {/* Page title */}
-      <div>
-        <h1 className="text-2xl font-extrabold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
-          <Clock size={24} className="text-pln-blue-mid" />
-          SAIDI — System Average Interruption Duration Index
-        </h1>
-        <p className="text-sm mt-2" style={{ color: 'var(--text-muted)' }}>
+    <div className="space-y-5">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{
+            width: 34, height: 34, borderRadius: 10,
+            background: 'linear-gradient(135deg, rgba(37,99,235,0.2), rgba(37,99,235,0.08))',
+            border: '1px solid rgba(37,99,235,0.25)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Clock size={16} style={{ color: '#2563EB' }} />
+          </div>
+          <h1 style={{ fontSize: '1.375rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+            SAIDI — System Average Interruption Duration Index
+          </h1>
+        </div>
+        <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
           Indeks rata-rata durasi pemadaman per pelanggan · Tahun {filters.year}
         </p>
       </div>
@@ -140,21 +149,43 @@ export default function SaidiPage() {
         />
       </div>
 
-      {/* Tab selector */}
-      <div className="flex gap-4 py-2">
-        {['monthly', 'cumulative'].map(t => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-5 py-2 rounded-xl text-sm font-bold transition-all border ${
-              tab === t
-                ? 'bg-pln-blue text-white border-pln-blue shadow-md'
-                : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
-            }`}
-          >
-            {t === 'monthly' ? 'Bulanan' : 'Kumulatif'}
-          </button>
-        ))}
+      <div style={{
+        display: 'inline-flex',
+        background: 'rgba(15, 76, 215, 0.05)',
+        padding: 4,
+        borderRadius: 12,
+        border: '1px solid rgba(15, 76, 215, 0.08)',
+        alignSelf: 'flex-start',
+      }}>
+        {['monthly', 'cumulative'].map(t => {
+          const isActive = tab === t
+          return (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              style={{
+                padding: '6px 16px',
+                borderRadius: 9,
+                fontSize: '0.85rem',
+                fontWeight: 700,
+                transition: 'all 0.2s ease',
+                border: 'none',
+                cursor: 'pointer',
+                background: isActive ? 'var(--bg-card)' : 'transparent',
+                color: isActive ? 'var(--pln-blue)' : 'var(--text-muted)',
+                boxShadow: isActive ? '0 2px 8px rgba(15, 76, 215, 0.12)' : 'none',
+              }}
+              onMouseEnter={e => {
+                if (!isActive) e.currentTarget.style.color = 'var(--text-primary)'
+              }}
+              onMouseLeave={e => {
+                if (!isActive) e.currentTarget.style.color = 'var(--text-muted)'
+              }}
+            >
+              {t === 'monthly' ? 'Bulanan' : 'Kumulatif'}
+            </button>
+          )
+        })}
       </div>
 
       {/* Charts row */}
@@ -204,7 +235,7 @@ export default function SaidiPage() {
         >
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={data.filter(d => d.realisasi != null)}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" className="dark:stroke-slate-700" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
               <XAxis dataKey="label" tick={{ fontSize: 12.5, fontWeight: 650 }} />
               <YAxis tick={{ fontSize: 12.5, fontWeight: 650 }} />
               <Tooltip content={<CUSTOM_TOOLTIP />} />
