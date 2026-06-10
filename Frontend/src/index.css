@@ -180,7 +180,7 @@ body {
 
 .page-header {
   height: var(--header-height);
-  background: linear-gradient(135deg, #0F4CD7, #1E63F5, #2F7BFF);
+  background: #154785; /* Solid blue like image 2 in light mode */
   border-bottom: 1px solid rgba(255, 255, 255, 0.15);
   position: sticky;
   top: 0;
@@ -203,7 +203,7 @@ body {
 .page-content {
   flex: 1;
   padding: 2rem 2.25rem;
-  max-width: 1800px;
+  max-width: none; /* Make it full width with no empty spaces on sides */
   width: 100%;
   margin: 0 auto;
   position: relative;

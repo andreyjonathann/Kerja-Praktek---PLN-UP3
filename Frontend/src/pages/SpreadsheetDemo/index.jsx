@@ -13,9 +13,9 @@ export default function SpreadsheetDemo() {
   };
 
   return (
-    <div className="p-6 w-full space-y-6 animate-fade-in">
-      <div className="mb-8">
-        <h1 className="text-3xl font-extrabold text-slate-800 dark:text-white mb-2 flex items-center gap-3">
+    <div className="p-6 w-full space-y-6 animate-fade-in pt-4">
+      <div className="mb-10">
+        <h1 className="text-3xl font-extrabold text-slate-800 dark:text-white mb-4 flex items-center gap-3">
           <FileSpreadsheet className="text-emerald-500" size={32} />
           Integrasi Google Spreadsheet
         </h1>
