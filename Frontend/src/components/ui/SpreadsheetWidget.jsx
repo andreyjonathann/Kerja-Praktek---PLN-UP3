@@ -23,19 +23,59 @@ export default function SpreadsheetWidget({ csvUrl, title = 'Spreadsheet Data' }
   }, [csvUrl]);
 
   if (!csvUrl) {
-    return <div className="p-4 border border-dashed border-slate-300 dark:border-slate-700 rounded-xl text-center text-slate-500">Silakan masukkan link CSV Spreadsheet.</div>
+    return (
+      <div style={{
+        padding: 24,
+        border: '1.5px dashed var(--border-strong)',
+        borderRadius: 12,
+        textAlign: 'center',
+        color: 'var(--text-muted)',
+        fontSize: '0.875rem'
+      }}>
+        Silakan masukkan link CSV Spreadsheet.
+      </div>
+    );
   }
 
   if (loading) {
-    return <div className="p-8 text-center text-slate-500 animate-pulse">Memuat data dari Google Sheets...</div>
+    return (
+      <div style={{
+        padding: 32,
+        textAlign: 'center',
+        color: 'var(--text-muted)',
+        fontSize: '0.875rem'
+      }} className="animate-pulse">
+        Memuat data dari Google Sheets...
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl text-sm border border-red-200 dark:border-red-800/50">{error}</div>
+    return (
+      <div style={{
+        padding: 16,
+        background: 'rgba(239, 68, 68, 0.05)',
+        border: '1px solid rgba(239, 68, 68, 0.15)',
+        color: 'var(--danger)',
+        borderRadius: 10,
+        fontSize: '0.8125rem'
+      }}>
+        {error}
+      </div>
+    );
   }
 
   if (data.length === 0) {
-    return <div className="p-4 text-center text-slate-500">Data kosong.</div>
+    return (
+      <div style={{
+        padding: 24,
+        textAlign: 'center',
+        color: 'var(--text-muted)',
+        fontSize: '0.875rem'
+      }}>
+        Data kosong.
+      </div>
+    );
   }
 
   // Generate table headers from the keys of the first row
@@ -43,17 +83,25 @@ export default function SpreadsheetWidget({ csvUrl, title = 'Spreadsheet Data' }
 
   return (
     <div className="card w-full overflow-hidden">
-      <div className="p-6 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
-        <h3 className="text-base font-bold text-slate-800 dark:text-white uppercase tracking-wider">{title}</h3>
-        <p className="text-sm text-slate-500 mt-1">Data sinkronisasi langsung (real-time saat direfresh)</p>
+      <div style={{
+        padding: '16px 20px',
+        borderBottom: '1px solid var(--border)',
+        background: 'rgba(15,76,215,0.015)'
+      }}>
+        <h3 style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          {title}
+        </h3>
+        <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>
+          Data sinkronisasi langsung (real-time saat direfresh)
+        </p>
       </div>
       
-      <div className="overflow-x-auto max-h-[700px] custom-scrollbar">
-        <table className="w-full text-left border-collapse">
-          <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800 shadow-sm z-10">
+      <div className="table-wrapper" style={{ maxHeight: 600, overflowY: 'auto' }}>
+        <table className="table">
+          <thead>
             <tr>
               {headers.map((header, idx) => (
-                <th key={idx} className="p-4 text-sm font-bold text-slate-700 dark:text-slate-200 border-b border-slate-200 dark:border-slate-700 whitespace-nowrap">
+                <th key={idx} style={{ whiteSpace: 'nowrap' }}>
                   {header}
                 </th>
               ))}
@@ -61,9 +109,9 @@ export default function SpreadsheetWidget({ csvUrl, title = 'Spreadsheet Data' }
           </thead>
           <tbody>
             {data.map((row, rowIdx) => (
-              <tr key={rowIdx} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors border-b border-slate-100 dark:border-slate-800/50 last:border-0">
+              <tr key={rowIdx}>
                 {headers.map((header, colIdx) => (
-                  <td key={colIdx} className="p-4 text-[15px] font-medium text-slate-800 dark:text-slate-200 whitespace-nowrap">
+                  <td key={colIdx} style={{ whiteSpace: 'nowrap' }}>
                     {row[header]}
                   </td>
                 ))}

@@ -78,17 +78,7 @@ export default function Header({ onMenuToggle, onRefresh, refreshing }) {
                      className={refreshing ? 'animate-spin' : ''} />
         </button>
 
-        {/* Theme */}
-        <button
-          onClick={toggle}
-          className="btn-ghost"
-          style={{ width:34, height:34, padding:0, borderRadius:8 }}
-          title={dark ? 'Mode Terang' : 'Mode Gelap'}
-        >
-          {dark
-            ? <Sun  size={15} style={{ color:'#FFE000' }} />
-            : <Moon size={15} style={{ color:'#FFFFFF' }} />}
-        </button>
+
 
         {/* Bell */}
         <button

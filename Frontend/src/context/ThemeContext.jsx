@@ -1,26 +1,16 @@
-import React, { createContext, useContext, useState, useEffect } from 'react'
+import React, { createContext, useContext, useEffect } from 'react'
 
 const ThemeContext = createContext(null)
 
 export function ThemeProvider({ children }) {
-  const [dark, setDark] = useState(() => {
-    const stored = localStorage.getItem('sigap_theme')
-    if (stored) return stored === 'dark'
-    return window.matchMedia('(prefers-color-scheme: dark)').matches
-  })
-
   useEffect(() => {
     const root = document.documentElement
-    if (dark) {
-      root.classList.add('dark')
-      localStorage.setItem('sigap_theme', 'dark')
-    } else {
-      root.classList.remove('dark')
-      localStorage.setItem('sigap_theme', 'light')
-    }
-  }, [dark])
+    root.classList.remove('dark')
+    localStorage.removeItem('sigap_theme')
+  }, [])
 
-  const toggle = () => setDark(prev => !prev)
+  const dark = false
+  const toggle = () => {}
 
   return (
     <ThemeContext.Provider value={{ dark, toggle }}>

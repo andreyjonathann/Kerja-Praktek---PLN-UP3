@@ -56,13 +56,21 @@ export default function GangguanPage() {
 
   return (
     <div className="space-y-6">
-      {/* Title */}
-      <div>
-        <h1 className="text-2xl font-extrabold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
-          <AlertTriangle size={24} className="text-red-500" />
-          SIGAP Monitoring Gangguan Sistem
-        </h1>
-        <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{
+            width: 34, height: 34, borderRadius: 10,
+            background: 'linear-gradient(135deg, rgba(239,68,68,0.2), rgba(239,68,68,0.08))',
+            border: '1px solid rgba(239,68,68,0.25)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <AlertTriangle size={16} style={{ color: '#EF4444' }} />
+          </div>
+          <h1 style={{ fontSize: '1.375rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+            SIGAP Monitoring Gangguan Sistem
+          </h1>
+        </div>
+        <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
           Rekapitulasi peristiwa gangguan jaringan, lokasi gardu padam, beban padam (MW) dan pelanggan padam · Tahun {filters.year}
         </p>
       </div>
@@ -115,7 +123,7 @@ export default function GangguanPage() {
           >
             <ResponsiveContainer width="100%" height={280}>
               <BarChart data={data?.monthly_trend || []}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-slate-100 dark:stroke-slate-700" />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                 <YAxis yAxisId="left" label={{ value: 'Gangguan (kali)', angle: -90, position: 'insideLeft', style: { fontSize: 10, fill: '#0070C0' } }} tick={{ fontSize: 11 }} />
                 <YAxis yAxisId="right" orientation="right" label={{ value: 'Durasi (menit)', angle: 90, position: 'insideRight', style: { fontSize: 10, fill: '#D97706' } }} tick={{ fontSize: 11 }} />
@@ -165,12 +173,12 @@ export default function GangguanPage() {
         </h3>
         <DataTable
           columns={[
-            { key: 'penyulang', label: 'Penyulang', width: '120px', render: (v) => <span className="font-extrabold text-slate-800 dark:text-slate-100">{v}</span> },
+            { key: 'penyulang', label: 'Penyulang', width: '120px', render: (v) => <span style={{ fontWeight: 800, color: 'var(--text-primary)' }}>{v}</span> },
             { key: 'tanggal', label: 'Tanggal Padam', width: '100px' },
             { key: 'lokasi', label: 'Lokasi Gardu / Jaringan',
               render: (v) => (
-                <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
-                  <MapPin size={12} className="text-slate-400" />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                  <MapPin size={12} style={{ color: 'var(--text-muted)' }} />
                   <span>{v}</span>
                 </div>
               )
@@ -181,7 +189,7 @@ export default function GangguanPage() {
             { key: 'penyebab', label: 'Penyebab', align: 'center', render: v => <span className="badge badge-secondary text-2xs">{v}</span> },
             { key: 'status', label: 'Status', align: 'center',
               render: (v) => (
-                <span className="flex items-center justify-center gap-1 text-2xs font-bold text-emerald-600 dark:text-emerald-400">
+                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, fontSize: '0.75rem', fontWeight: 700, color: 'var(--success)' }}>
                   <CheckCircle2 size={12} />
                   <span>{v}</span>
                 </span>

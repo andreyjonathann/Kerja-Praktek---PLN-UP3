@@ -125,29 +125,19 @@ export default function OverviewPage() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }} className="animate-fade-in">
+    <div className="space-y-7 animate-fade-in">
 
       {/* ── Page Header ─────────────────────────────────────── */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+      <div className="space-y-5">
+        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-              <div style={{
-                width: 34, height: 34, borderRadius: 10,
-                background: 'linear-gradient(135deg, rgba(37,99,235,0.2), rgba(37,99,235,0.08))',
-                border: '1px solid rgba(37,99,235,0.25)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="rounded-xl" style={{ width: 34, height: 34, background: 'linear-gradient(135deg, rgba(37,99,235,0.2), rgba(37,99,235,0.08))', border: '1px solid rgba(37,99,235,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Sparkles size={16} style={{ color: '#60A5FA' }} />
               </div>
-              <h1 style={{
-                fontSize: '1.375rem', fontWeight: 800, color: 'var(--text-primary)',
-                letterSpacing: '-0.02em', lineHeight: 1.2,
-              }}>
-                Executive Overview
-              </h1>
+              <h1 className="page-heading">Executive Overview</h1>
             </div>
-            <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+            <p className="page-description">
               Dashboard Kinerja Operasional &amp; Keandalan Sistem PLN UP3 Kebon Jeruk · Tahun {filters.year}
             </p>
           </div>
