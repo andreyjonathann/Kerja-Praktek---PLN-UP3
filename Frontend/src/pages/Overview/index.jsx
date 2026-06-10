@@ -53,20 +53,27 @@ export default function OverviewPage() {
   const [loading,      setLoading]      = useState(true)
   const [uploadStatus, setUploadStatus] = useState({ state: 'idle', msg: '' })
 
-  const fetchData = useCallback(async () => {
-    setLoading(true)
+  const fetchData = useCallback(async (isBackground = false) => {
+    if (!isBackground) setLoading(true)
     try {
       const dbData = await getDashboardData(filters.year)
       setData(dbData.overview)
     } catch (err) {
       console.error(err)
-      setData(null)
+      if (!isBackground) setData(null)
     } finally {
-      setLoading(false)
+      if (!isBackground) setLoading(false)
     }
   }, [filters.year])
 
-  useEffect(() => { fetchData() }, [fetchData])
+  useEffect(() => { 
+    fetchData() 
+    const interval = setInterval(() => {
+      fetchData(true)
+    }, 5000) // refresh every 5 seconds
+    return () => clearInterval(interval)
+  }, [fetchData])
+
   useEffect(() => {
     const h = () => fetchData()
     window.addEventListener('sigap:refresh', h)

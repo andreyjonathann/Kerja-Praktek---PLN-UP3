@@ -7,7 +7,8 @@ import Papa from 'papaparse';
  */
 export const fetchSpreadsheetData = (csvUrl) => {
   return new Promise((resolve, reject) => {
-    Papa.parse(csvUrl, {
+    const urlWithCacheBuster = csvUrl + (csvUrl.includes('?') ? '&' : '?') + 't=' + new Date().getTime();
+    Papa.parse(urlWithCacheBuster, {
       download: true,
       header: true,
       skipEmptyLines: true,

@@ -22,21 +22,25 @@ export default function GangguanPage() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  const fetchData = useCallback(async () => {
-    setLoading(true)
+  const fetchData = useCallback(async (isBackground = false) => {
+    if (!isBackground) setLoading(true)
     try {
       const dbData = await getDashboardData(filters.year)
       setData(dbData.gangguan)
     } catch (err) {
       console.error(err)
-      setData(null)
+      if (!isBackground) setData(null)
     } finally {
-      setLoading(false)
+      if (!isBackground) setLoading(false)
     }
   }, [filters.year])
 
   useEffect(() => {
     fetchData()
+    const interval = setInterval(() => {
+      fetchData(true)
+    }, 5000)
+    return () => clearInterval(interval)
   }, [fetchData])
 
   useEffect(() => {
