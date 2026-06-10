@@ -48,8 +48,8 @@ export default function SpreadsheetDemo() {
                 className="input"
                 style={{ flex: 1, minWidth: 280, height: 40, fontSize: '0.875rem' }}
               />
-              <button type="submit" className="btn-primary" style={{ height: 40, borderRadius: 10, fontSize: '0.85rem', padding: '0 20px', whiteSpace: 'nowrap' }}>
-                <RefreshCw size={15} /> Tarik Data
+              <button type="submit" className="btn-primary" style={{ height: 40, borderRadius: 10, fontSize: '0.85rem', padding: '0 20px', whiteSpace: 'nowrap', color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <RefreshCw size={15} style={{ color: '#FFFFFF' }} /> Tarik Data
               </button>
             </div>
           </div>
