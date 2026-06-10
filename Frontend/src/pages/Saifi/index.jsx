@@ -105,13 +105,13 @@ export default function SaifiPage() {
         <ChartWrapper title={tab === 'monthly' ? 'SAIFI Bulanan' : 'SAIFI Kumulatif'} subtitle={`Target vs Realisasi ${filters.year}`} loading={loading} error={error} empty={data.length === 0} height={280} onRetry={fetchData}>
           <ResponsiveContainer width="100%" height={280}>
             <ComposedChart data={tab === 'monthly' ? data : cumulativeData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
               <XAxis dataKey="label" tick={{ fontSize: 12.5, fontWeight: 650 }} />
               <YAxis tick={{ fontSize: 12.5, fontWeight: 650 }} />
               <Tooltip content={<CUSTOM_TOOLTIP />} />
               <Legend wrapperStyle={{ fontSize: 13, fontWeight: 600 }} />
-              <Bar dataKey={tab === 'monthly' ? 'realisasi' : 'cumulativeReal'} name="Realisasi" fill="#D97706" radius={[4,4,0,0]} />
-              <Line dataKey={tab === 'monthly' ? 'target' : 'cumulativeTgt'} name="Target" stroke="#DC2626" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 4, fill: '#DC2626' }} />
+              <Bar dataKey={tab === 'monthly' ? 'realisasi' : 'cumulativeReal'} name="Realisasi" fill="#2F7BFF" radius={[4,4,0,0]} />
+              <Line dataKey={tab === 'monthly' ? 'target' : 'cumulativeTgt'} name="Target" stroke="#F59E0B" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 4, fill: '#F59E0B' }} />
             </ComposedChart>
           </ResponsiveContainer>
         </ChartWrapper>
@@ -119,7 +119,7 @@ export default function SaifiPage() {
         <ChartWrapper title="Breakdown Penyebab SAIFI" subtitle="Komposisi frekuensi per kategori" loading={loading} empty={filled.length === 0} height={280}>
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={filled}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
               <XAxis dataKey="label" tick={{ fontSize: 12.5, fontWeight: 650 }} />
               <YAxis tick={{ fontSize: 12.5, fontWeight: 650 }} />
               <Tooltip content={<CUSTOM_TOOLTIP />} />

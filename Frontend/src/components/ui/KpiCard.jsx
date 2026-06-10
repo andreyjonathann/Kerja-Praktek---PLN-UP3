@@ -1,21 +1,48 @@
 import React from 'react'
 import { TrendingUp, TrendingDown } from 'lucide-react'
 import { formatPercent } from '@/utils/formatters'
+import { useTheme } from '@/context/ThemeContext'
 
-const COLOR_CFG = {
-  blue:   { accent:'#2563EB', glow:'rgba(37,99,235,0.25)',   iconBg:'rgba(37,99,235,0.12)',   icon:'#60A5FA'  },
-  green:  { accent:'#10B981', glow:'rgba(16,185,129,0.25)',  iconBg:'rgba(16,185,129,0.12)',  icon:'#34D399'  },
-  yellow: { accent:'#F59E0B', glow:'rgba(245,158,11,0.25)',  iconBg:'rgba(245,158,11,0.12)',  icon:'#FCD34D'  },
-  red:    { accent:'#EF4444', glow:'rgba(239,68,68,0.25)',   iconBg:'rgba(239,68,68,0.12)',   icon:'#FCA5A5'  },
-  orange: { accent:'#F97316', glow:'rgba(249,115,22,0.25)',  iconBg:'rgba(249,115,22,0.12)',  icon:'#FDBA74'  },
-  purple: { accent:'#8B5CF6', glow:'rgba(139,92,246,0.25)',  iconBg:'rgba(139,92,246,0.12)',  icon:'#C4B5FD'  },
-  teal:   { accent:'#14B8A6', glow:'rgba(20,184,166,0.25)',  iconBg:'rgba(20,184,166,0.12)',  icon:'#5EEAD4'  },
+const getColors = (color, dark) => {
+  const cfg = {
+    blue:   dark 
+      ? { accent:'#2563EB', glow:'rgba(37,99,235,0.25)',  iconBg:'rgba(37,99,235,0.16)',  icon:'#60A5FA' }
+      : { accent:'#0F4CD7', glow:'rgba(15,76,215,0.1)',    iconBg:'rgba(15,76,215,0.08)',  icon:'#0F4CD7' },
+    green:  dark 
+      ? { accent:'#10B981', glow:'rgba(16,185,129,0.25)', iconBg:'rgba(16,185,129,0.16)', icon:'#34D399' }
+      : { accent:'#10B981', glow:'rgba(16,185,129,0.1)',   iconBg:'rgba(16,185,129,0.08)', icon:'#10B981' },
+    yellow: dark 
+      ? { accent:'#F59E0B', glow:'rgba(245,158,11,0.25)',  iconBg:'rgba(245,158,11,0.16)',  icon:'#FCD34D' }
+      : { accent:'#D97706', glow:'rgba(217,119,6,0.1)',     iconBg:'rgba(217,119,6,0.08)',  icon:'#D97706' },
+    red:    dark 
+      ? { accent:'#EF4444', glow:'rgba(239,68,68,0.25)',   iconBg:'rgba(239,68,68,0.16)',   icon:'#FCA5A5' }
+      : { accent:'#EF4444', glow:'rgba(239,68,68,0.1)',    iconBg:'rgba(239,68,68,0.08)',   icon:'#EF4444' },
+    orange: dark 
+      ? { accent:'#F97316', glow:'rgba(249,115,22,0.25)',  iconBg:'rgba(249,115,22,0.16)',  icon:'#FDBA74' }
+      : { accent:'#EA580C', glow:'rgba(234,88,12,0.1)',    iconBg:'rgba(234,88,12,0.08)',   icon:'#EA580C' },
+    purple: dark 
+      ? { accent:'#8B5CF6', glow:'rgba(139,92,246,0.25)',  iconBg:'rgba(139,92,246,0.16)',  icon:'#C4B5FD' }
+      : { accent:'#7C3AED', glow:'rgba(124,58,237,0.1)',   iconBg:'rgba(124,58,237,0.08)',  icon:'#7C3AED' },
+    teal:   dark 
+      ? { accent:'#14B8A6', glow:'rgba(20,184,166,0.25)',  iconBg:'rgba(20,184,166,0.16)',  icon:'#5EEAD4' }
+      : { accent:'#0D9488', glow:'rgba(13,148,136,0.1)',   iconBg:'rgba(13,148,136,0.08)',  icon:'#0D9488' },
+  }
+  return cfg[color] || cfg.blue
 }
 
-const ACH = {
-  good: { bg:'rgba(16,185,129,0.12)', color:'#34D399', border:'rgba(16,185,129,0.22)', bar:'#10B981' },
-  warn: { bg:'rgba(245,158,11,0.12)', color:'#FCD34D', border:'rgba(245,158,11,0.22)', bar:'#F59E0B' },
-  bad:  { bg:'rgba(239,68,68,0.12)',  color:'#FCA5A5', border:'rgba(239,68,68,0.22)',  bar:'#EF4444' },
+const getAchColors = (achKey, dark) => {
+  const cfg = {
+    good: dark 
+      ? { bg:'rgba(16,185,129,0.12)', color:'#34D399', border:'rgba(16,185,129,0.22)', bar:'#10B981' }
+      : { bg:'rgba(16,185,129,0.08)', color:'#10B981', border:'rgba(16,185,129,0.15)', bar:'#10B981' },
+    warn: dark 
+      ? { bg:'rgba(245,158,11,0.12)', color:'#FCD34D', border:'rgba(245,158,11,0.22)', bar:'#F59E0B' }
+      : { bg:'rgba(217,119,6,0.08)',  color:'#D97706', border:'rgba(217,119,6,0.15)',  bar:'#F59E0B' },
+    bad:  dark 
+      ? { bg:'rgba(239,68,68,0.12)',  color:'#FCA5A5', border:'rgba(239,68,68,0.22)',  bar:'#EF4444' }
+      : { bg:'rgba(239,68,68,0.08)',  color:'#EF4444', border:'rgba(239,68,68,0.15)',  bar:'#EF4444' },
+  }
+  return cfg[achKey] || cfg.good
 }
 
 /**
@@ -25,7 +52,8 @@ export default function KpiCard({
   title, value, unit = '', achievement, target, trend,
   icon: Icon, color = 'blue', isInverse = false, loading = false, onClick,
 }) {
-  const c = COLOR_CFG[color] || COLOR_CFG.blue
+  const { dark } = useTheme()
+  const c = getColors(color, dark)
 
   let achKey = 'good'
   if (achievement != null) {
@@ -33,11 +61,11 @@ export default function KpiCard({
     if (eff < 70) achKey = 'bad'
     else if (eff < 90) achKey = 'warn'
   }
-  const ach = ACH[achKey]
+  const ach = getAchColors(achKey, dark)
 
   const trendGood = trend == null ? null : (isInverse ? trend < 0 : trend > 0)
   const TrendIco  = trendGood === null ? null : trendGood ? TrendingUp : TrendingDown
-  const trendClr  = trendGood ? '#34D399' : '#FCA5A5'
+  const trendClr  = trendGood ? (dark ? '#34D399' : '#10B981') : (dark ? '#FCA5A5' : '#EF4444')
 
   if (loading) {
     return (

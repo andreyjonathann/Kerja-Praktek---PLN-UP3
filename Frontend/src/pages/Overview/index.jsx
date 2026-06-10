@@ -18,10 +18,10 @@ import { formatNumber, formatCurrency, formatPercent } from '@/utils/formatters'
 import { getDashboardData } from '@/services/dashboardDataService'
 
 const CHART_COLORS = {
-  saidi:       '#2563EB',
-  saidi_tgt:   '#EF444460',
-  saifi:       '#F59E0B',
-  saifi_tgt:   '#EF444460',
+  saidi:       '#0F4CD7',
+  saidi_tgt:   '#F59E0B',
+  saifi:       '#2F7BFF',
+  saifi_tgt:   '#F59E0B',
 }
 
 
@@ -262,7 +262,7 @@ export default function OverviewPage() {
         >
           <ResponsiveContainer width="100%" height={340}>
             <ComposedChart data={data?.monthlyPerf || []} margin={{ top: 8, right: 16, bottom: 4, left: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
               <XAxis dataKey="name" tick={{ fontSize: 12.5, fontWeight: 650, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
               <YAxis
                 yAxisId="left"
@@ -278,12 +278,12 @@ export default function OverviewPage() {
               />
               <Tooltip content={<CustomTooltip />} />
               <Legend wrapperStyle={{ fontSize: 13, fontWeight: 600, paddingTop: 16 }} />
-              <Bar yAxisId="left" dataKey="saidi" name="SAIDI Real" fill="#2563EB" radius={[4,4,0,0]} fillOpacity={0.85} />
+              <Bar yAxisId="left" dataKey="saidi" name="SAIDI Real" fill="#0F4CD7" radius={[4,4,0,0]} fillOpacity={0.85} />
               <Line yAxisId="left" type="monotone" dataKey="targetSaidi" name="SAIDI Target"
-                stroke="#EF4444" strokeWidth={1.5} strokeDasharray="4 4" dot={false} />
-              <Bar yAxisId="right" dataKey="saifi" name="SAIFI Real" fill="#F59E0B" radius={[4,4,0,0]} fillOpacity={0.85} />
+                stroke="#F59E0B" strokeWidth={2} strokeDasharray="4 4" dot={false} />
+              <Bar yAxisId="right" dataKey="saifi" name="SAIFI Real" fill="#2F7BFF" radius={[4,4,0,0]} fillOpacity={0.85} />
               <Line yAxisId="right" type="monotone" dataKey="targetSaifi" name="SAIFI Target"
-                stroke="#EF4444" strokeWidth={1.5} strokeDasharray="4 4" dot={false} />
+                stroke="#F59E0B" strokeWidth={2} strokeDasharray="4 4" dot={false} />
             </ComposedChart>
           </ResponsiveContainer>
         </ChartWrapper>

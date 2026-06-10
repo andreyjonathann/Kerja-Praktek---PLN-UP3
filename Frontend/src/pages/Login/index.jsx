@@ -1,15 +1,8 @@
 import React, { useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
-import { Eye, EyeOff, Lock, Mail, AlertCircle, CheckCircle2, Zap, Shield, BarChart3, Activity } from 'lucide-react'
+import { Eye, EyeOff, Lock, Mail, AlertCircle, LogIn, User, Shield } from 'lucide-react'
 import PlnLogo from '@/components/ui/PlnLogo'
-
-const FEATURES = [
-  { icon: BarChart3,   label: '16 Dashboard Analitik Real-Time' },
-  { icon: Activity,    label: 'SAIDI, SAIFI, ENS & Gangguan Monitor' },
-  { icon: Zap,         label: 'Integrasi Spreadsheet Excel Otomatis' },
-  { icon: Shield,      label: 'Role-Based Access (Admin / PIC / Viewer)' },
-]
 
 export default function LoginPage() {
   const { user, login } = useAuth()
@@ -35,161 +28,172 @@ export default function LoginPage() {
     <div style={{
       minHeight: '100vh',
       display: 'flex',
-      background: '#080E1C',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: '#F4F7FC',
       position: 'relative',
       overflow: 'hidden',
+      padding: '24px 16px',
     }}>
-      {/* Animated background blobs */}
-      <div style={{
-        position: 'absolute', width: 600, height: 600, borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(37,99,235,0.12) 0%, transparent 70%)',
-        top: -200, left: -100, pointerEvents: 'none',
-      }} />
-      <div style={{
-        position: 'absolute', width: 500, height: 500, borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(0,91,172,0.1) 0%, transparent 70%)',
-        bottom: -150, right: 100, pointerEvents: 'none',
-      }} />
-      {/* Grid overlay */}
-      <div style={{
-        position: 'absolute', inset: 0, pointerEvents: 'none',
-        backgroundImage: `linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-                          linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)`,
-        backgroundSize: '48px 48px',
-      }} />
+      {/* Background decorations matching screenshot */}
+      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden', zIndex: 0 }}>
+        {/* Top-left soft gradient */}
+        <div style={{
+          position: 'absolute', width: 550, height: 550, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(15,76,215,0.08) 0%, transparent 70%)',
+          top: -200, left: -150,
+        }} />
+        
+        {/* Bottom-right soft gradient */}
+        <div style={{
+          position: 'absolute', width: 700, height: 700, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(15,76,215,0.1) 0%, transparent 70%)',
+          bottom: -250, right: -150,
+        }} />
 
-      {/* ── Left Panel ────────────────────────────────────── */}
-      <div style={{
-        flex: 1.1, display: 'none', flexDirection: 'column',
-        justifyContent: 'center', padding: '60px 64px',
-        position: 'relative', zIndex: 1,
-      }} className="hidden lg:flex">
+        {/* Curved Wave line overlay top-left */}
+        <svg style={{ position: 'absolute', top: 0, left: 0, width: '40vw', height: 'auto', opacity: 0.15, fill: 'none' }} viewBox="0 0 500 500">
+          <path d="M-50,150 C150,100 250,300 450,200" stroke="#0F4CD7" strokeWidth="4" />
+          <path d="M-50,200 C150,150 250,350 450,250" stroke="#0F4CD7" strokeWidth="1.5" />
+        </svg>
 
-        {/* Logo */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 52 }}>
-          <div style={{
-            width: 68, height: 68, borderRadius: 18, overflow: 'hidden', flexShrink: 0,
-            boxShadow: '0 0 0 1px rgba(255,255,255,0.1), 0 0 32px rgba(255,209,0,0.2)',
-          }}>
-            <PlnLogo size={68} showText={false} />
-          </div>
-          <div>
-            <div style={{ fontSize: '1.375rem', fontWeight: 800, color: '#EEF4FF', lineHeight: 1.2, letterSpacing: '-0.02em' }}>
-              SIGAP PLN
-            </div>
-            <div style={{ fontSize: '0.75rem', color: '#4A6080', fontWeight: 500, marginTop: 3 }}>
-              Sistem Informasi &amp; Dashboard Kinerja
-            </div>
-          </div>
-        </div>
+        {/* Curved Wave line overlay bottom-right */}
+        <svg style={{ position: 'absolute', bottom: 0, right: 0, width: '45vw', height: 'auto', opacity: 0.18, fill: 'none' }} viewBox="0 0 500 500">
+          <path d="M50,350 C250,250 300,450 550,300" stroke="#0F4CD7" strokeWidth="4" />
+          <path d="M100,400 C300,300 350,500 600,350" stroke="#0F4CD7" strokeWidth="2" />
+        </svg>
 
-        {/* Headline */}
-        <h1 style={{
-          fontSize: '2.75rem', fontWeight: 900, lineHeight: 1.1,
-          letterSpacing: '-0.03em', color: '#EEF4FF', marginBottom: 8,
-        }}>
-          Dashboard Monitoring
-        </h1>
-        <h1 style={{
-          fontSize: '2.75rem', fontWeight: 900, lineHeight: 1.1,
-          letterSpacing: '-0.03em',
-          background: 'linear-gradient(135deg, #FFD100, #F59E0B)',
-          WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-          backgroundClip: 'text', marginBottom: 24,
-        }}>
-          UP3 Kebon Jeruk
-        </h1>
+        {/* Dot pattern grids (left and right) */}
+        <svg width="80" height="120" style={{ position: 'absolute', top: '25%', left: '8%', opacity: 0.25 }} viewBox="0 0 80 120">
+          <pattern id="dot-pattern-login-1" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+            <circle cx="3" cy="3" r="2.5" fill="#0F4CD7" />
+          </pattern>
+          <rect width="80" height="120" fill="url(#dot-pattern-login-1)" />
+        </svg>
 
-        <p style={{ fontSize: '0.9375rem', color: '#8BA3C4', lineHeight: 1.7, maxWidth: 420, marginBottom: 48 }}>
-          Platform enterprise untuk monitoring KPI, keandalan jaringan, gangguan, penjualan, dan kinerja operasional PLN UP3 Kebon Jeruk secara real-time.
-        </p>
+        <svg width="80" height="120" style={{ position: 'absolute', top: '15%', right: '8%', opacity: 0.25 }} viewBox="0 0 80 120">
+          <pattern id="dot-pattern-login-2" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+            <circle cx="3" cy="3" r="2.5" fill="#0F4CD7" />
+          </pattern>
+          <rect width="80" height="120" fill="url(#dot-pattern-login-2)" />
+        </svg>
 
-        {/* Feature list */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {FEATURES.map((f, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-              <div style={{
-                width: 34, height: 34, borderRadius: 10, flexShrink: 0,
-                background: 'rgba(37,99,235,0.12)', border: '1px solid rgba(37,99,235,0.2)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <f.icon size={16} style={{ color: '#60A5FA' }} />
-              </div>
-              <span style={{ fontSize: '0.875rem', color: '#8BA3C4', fontWeight: 500 }}>{f.label}</span>
-            </div>
-          ))}
-        </div>
+        {/* Transmission tower watermark bottom-right */}
+        <svg style={{ position: 'absolute', right: '4%', bottom: '5%', height: '50%', width: 'auto', opacity: 0.08 }} viewBox="0 0 400 800" fill="none" stroke="#0F4CD7" strokeWidth="4">
+          <path d="M120 750 L280 750 M140 750 L180 500 L220 500 L260 750 M180 500 L190 300 L210 300 L220 500 M190 300 L195 100 L205 100 L210 300 M195 100 L200 20 L205 100" />
+          <path d="M150 620 L250 620 M170 500 L230 500 M185 380 L215 380 M190 300 L210 300 M193 200 L207 200" />
+          <path d="M80 380 L320 380 M100 300 L300 300 M120 200 L280 200" />
+          <path d="M140 750 L220 500 M260 750 L180 500 M180 500 L210 300 M220 500 L190 300 M190 300 L205 100 M210 300 L195 100" />
+          <path d="M150 620 L180 500 M250 620 L220 500 M170 500 L190 380 M230 500 L210 380 M185 380 L195 300 M215 380 L205 300" />
+        </svg>
 
-        {/* Bottom badge */}
-        <div style={{ marginTop: 64, display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#10B981', boxShadow: '0 0 8px #10B98180' }} />
-          <span style={{ fontSize: '0.75rem', color: '#3D5470', fontWeight: 500 }}>
-            Sistem Online · PT PLN (Persero) · 2026
-          </span>
-        </div>
+        {/* City skyline transparent watermark at bottom-right */}
+        <svg style={{ position: 'absolute', right: 0, bottom: 0, width: '50vw', height: 'auto', opacity: 0.06 }} viewBox="0 0 800 200" fill="#0F4CD7">
+          <path d="M0,200 L800,200 L800,160 L780,160 L780,180 L760,180 L760,150 L750,150 L750,180 L730,180 L730,130 L710,130 L710,180 L680,180 L680,140 L650,140 L650,180 L630,180 L630,120 L610,120 L610,180 L580,180 L580,150 L560,150 L560,180 L540,180 L540,110 L520,110 L520,180 L490,180 L490,135 L470,135 L470,180 L440,180 L440,160 L420,160 L420,180 L390,180 L390,120 L370,120 L370,180 L340,180 L340,145 L320,145 L320,180 L300,180 L300,100 L280,100 L280,180 L250,180 L250,130 L230,130 L230,180 L200,180 L200,150 L180,150 L180,180 L160,180 L160,115 L140,115 L140,180 L110,180 L110,140 L90,140 L90,180 L60,180 L60,130 L40,130 L40,180 L0,180 Z" />
+        </svg>
       </div>
 
-      {/* ── Right Panel — Login Form ─────────────────────── */}
-      <div style={{
-        flex: 0.9, display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: '40px 40px', position: 'relative', zIndex: 1,
-      }}>
-        <div style={{ width: '100%', maxWidth: 420 }}>
+      <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: 450, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        {/* Branding header matching mock-up */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 28 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+            <PlnLogo size={52} showText={false} />
+            <span style={{ fontSize: '2.5rem', fontWeight: 950, color: '#0F4CD7', letterSpacing: '1px' }}>PLN</span>
+          </div>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0F172A', textAlign: 'center', letterSpacing: '-0.01em', lineHeight: 1.3 }}>
+            Dashboard Monitoring Pekerjaan Harian
+          </h2>
+          <p style={{ fontSize: '0.875rem', color: '#0F4CD7', fontWeight: 700, marginTop: 4 }}>
+            UP3 Kebon Jeruk
+          </p>
+        </div>
 
-          {/* Mobile logo */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 36 }} className="lg:hidden">
-            <div style={{ width: 44, height: 44, borderRadius: 12, overflow: 'hidden', flexShrink: 0 }}>
-              <PlnLogo size={44} showText={false} />
-            </div>
-            <div>
-              <div style={{ fontSize: '1rem', fontWeight: 800, color: '#EEF4FF' }}>SIGAP PLN</div>
-              <div style={{ fontSize: '0.7rem', color: '#FFD100', fontWeight: 600 }}>UP3 Kebon Jeruk</div>
-            </div>
+        {/* Main Card */}
+        <div style={{
+          background: '#FFFFFF',
+          borderRadius: 24,
+          boxShadow: '0 20px 50px rgba(15, 76, 215, 0.06), 0 0 0 1px rgba(15, 76, 215, 0.04)',
+          overflow: 'hidden',
+          width: '100%',
+        }}>
+          {/* Card Header with Blue PLN Gradient */}
+          <div style={{
+            background: 'linear-gradient(135deg, #0F4CD7, #1E63F5, #2F7BFF)',
+            padding: '26px 24px 28px',
+            color: '#FFFFFF',
+            position: 'relative',
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            {/* Yellow curve line overlay */}
+            <svg style={{ position: 'absolute', left: 0, bottom: 0, width: 140, height: 70, opacity: 0.8 }} viewBox="0 0 140 70">
+              <path d="M-10,80 Q 40,20 150,80" fill="none" stroke="#FFE000" strokeWidth="4" />
+            </svg>
+
+            {/* Transmission tower watermark on header card */}
+            <svg style={{ position: 'absolute', right: 16, bottom: -10, height: '90%', opacity: 0.12 }} viewBox="0 0 100 200" fill="none" stroke="#FFFFFF" strokeWidth="2">
+              <path d="M20 180 L80 180 M30 180 L45 120 L55 120 L70 180 M45 120 L48 60 L52 60 L55 120 M48 60 L50 10 L52 60" />
+              <path d="M35 150 L65 150 M40 120 L60 120 M44 90 L56 90" />
+              <path d="M10 90 L90 90 M15 60 L85 60 M20 30 L80 30" />
+            </svg>
+
+            <h3 style={{ fontSize: '1.45rem', fontWeight: 800, textAlign: 'center', marginBottom: 6, letterSpacing: '-0.01em' }}>
+              Masuk ke Dashboard
+            </h3>
+            <p style={{ fontSize: '0.8125rem', opacity: 0.9, textAlign: 'center', fontWeight: 500 }}>
+              Gunakan kredensial akun PLN Anda
+            </p>
           </div>
 
-          {/* Card */}
-          <div style={{
-            background: 'rgba(15,30,53,0.85)',
-            backdropFilter: 'blur(24px)',
-            WebkitBackdropFilter: 'blur(24px)',
-            border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: 20,
-            padding: '36px 36px 32px',
-            boxShadow: '0 24px 64px rgba(0,0,0,0.6), 0 0 0 1px rgba(37,99,235,0.08)',
-          }}>
-            <div style={{ marginBottom: 28 }}>
-              <h2 style={{ fontSize: '1.375rem', fontWeight: 800, color: '#EEF4FF', letterSpacing: '-0.02em', marginBottom: 6 }}>
-                Masuk ke Dashboard
-              </h2>
-              <p style={{ fontSize: '0.8125rem', color: '#4A6080' }}>
-                Gunakan kredensial akun PLN Anda
-              </p>
-            </div>
-
-            {/* Error */}
+          {/* Card Body */}
+          <div style={{ padding: '32px 32px 28px' }}>
+            {/* Error message */}
             {error && (
               <div style={{
                 display: 'flex', alignItems: 'flex-start', gap: 10,
-                background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)',
+                background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)',
                 borderRadius: 12, padding: '10px 14px', marginBottom: 20,
               }}>
-                <AlertCircle size={15} style={{ color: '#FCA5A5', flexShrink: 0, marginTop: 1 }} />
-                <p style={{ fontSize: '0.8125rem', color: '#FCA5A5' }}>{error}</p>
+                <AlertCircle size={15} style={{ color: '#EF4444', flexShrink: 0, marginTop: 1 }} />
+                <p style={{ fontSize: '0.8125rem', color: '#EF4444', fontWeight: 600 }}>{error}</p>
               </div>
             )}
 
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
               {/* Email */}
               <div>
-                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#8BA3C4', marginBottom: 8, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#334155', marginBottom: 8, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                   Email
                 </label>
                 <div style={{ position: 'relative' }}>
-                  <Mail size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#3D5470' }} />
+                  <Mail size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#0F4CD7' }} />
                   <input
                     type="email"
-                    className="input"
-                    style={{ paddingLeft: 36, height: 44 }}
+                    style={{
+                      width: '100%',
+                      height: 46,
+                      paddingLeft: 42,
+                      paddingRight: 14,
+                      borderRadius: 12,
+                      border: '1px solid #CBD5E1',
+                      background: '#FFFFFF',
+                      fontSize: '0.875rem',
+                      color: '#0F172A',
+                      outline: 'none',
+                      transition: 'all 0.15s',
+                    }}
+                    onFocus={e => {
+                      e.target.style.borderColor = '#0F4CD7';
+                      e.target.style.boxShadow = '0 0 0 3px rgba(15, 76, 215, 0.1)';
+                    }}
+                    onBlur={e => {
+                      e.target.style.borderColor = '#CBD5E1';
+                      e.target.style.boxShadow = 'none';
+                    }}
                     placeholder="nama@pln.co.id"
                     value={form.email}
                     onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
@@ -200,15 +204,34 @@ export default function LoginPage() {
 
               {/* Password */}
               <div>
-                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#8BA3C4', marginBottom: 8, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#334155', marginBottom: 8, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                   Kata Sandi
                 </label>
                 <div style={{ position: 'relative' }}>
-                  <Lock size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#3D5470' }} />
+                  <Lock size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#0F4CD7' }} />
                   <input
                     type={showPw ? 'text' : 'password'}
-                    className="input"
-                    style={{ paddingLeft: 36, paddingRight: 40, height: 44 }}
+                    style={{
+                      width: '100%',
+                      height: 46,
+                      paddingLeft: 42,
+                      paddingRight: 44,
+                      borderRadius: 12,
+                      border: '1px solid #CBD5E1',
+                      background: '#FFFFFF',
+                      fontSize: '0.875rem',
+                      color: '#0F172A',
+                      outline: 'none',
+                      transition: 'all 0.15s',
+                    }}
+                    onFocus={e => {
+                      e.target.style.borderColor = '#0F4CD7';
+                      e.target.style.boxShadow = '0 0 0 3px rgba(15, 76, 215, 0.1)';
+                    }}
+                    onBlur={e => {
+                      e.target.style.borderColor = '#CBD5E1';
+                      e.target.style.boxShadow = 'none';
+                    }}
                     placeholder="••••••••"
                     value={form.password}
                     onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
@@ -218,11 +241,12 @@ export default function LoginPage() {
                     type="button"
                     onClick={() => setShowPw(p => !p)}
                     style={{
-                      position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
-                      background: 'none', border: 'none', cursor: 'pointer', color: '#3D5470', padding: 4,
+                      position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)',
+                      background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', padding: 4,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}
                   >
-                    {showPw ? <EyeOff size={14} /> : <Eye size={14} />}
+                    {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
               </div>
@@ -231,59 +255,109 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="btn-primary"
-                style={{ height: 46, width: '100%', fontSize: '0.9rem', marginTop: 4, borderRadius: 12 }}
+                style={{
+                  height: 46,
+                  width: '100%',
+                  fontSize: '0.9rem',
+                  fontWeight: 700,
+                  marginTop: 6,
+                  borderRadius: 12,
+                  background: 'linear-gradient(135deg, #0F4CD7, #1E63F5)',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  boxShadow: '0 8px 20px rgba(15, 76, 215, 0.2)',
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.opacity = '0.95';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                  e.currentTarget.style.boxShadow = '0 10px 24px rgba(15, 76, 215, 0.25)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.opacity = '1';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 8px 20px rgba(15, 76, 215, 0.2)';
+                }}
               >
                 {loading ? (
                   <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <svg style={{ animation: 'spin 1s linear infinite', width: 16, height: 16 }} viewBox="0 0 24 24" fill="none">
+                    <svg style={{ animation: 'spin 1s linear infinite', width: 18, height: 18 }} viewBox="0 0 24 24" fill="none">
                       <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
                     </svg>
                     <style>{`@keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }`}</style>
-                    Masuk...
+                    Memproses...
                   </span>
-                ) : 'Masuk ke Dashboard'}
+                ) : (
+                  <>
+                    <LogIn size={16} style={{ transform: 'rotate(0deg)' }} />
+                    Masuk ke Dashboard
+                  </>
+                )}
               </button>
             </form>
 
-            {/* Demo accounts */}
-            <div style={{ marginTop: 24, paddingTop: 24, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-              <p style={{ fontSize: '0.65rem', fontWeight: 700, color: '#3D5470', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10 }}>
+            {/* Demo accounts - formatted side-by-side with two roles (Admin, PIC) */}
+            <div style={{ marginTop: 28, paddingTop: 24, borderTop: '1px solid #F1F5F9' }}>
+              <p style={{ fontSize: '0.7rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12, textAlign: 'center' }}>
                 Akun Demo
               </p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 {[
-                  { label: 'Admin',  email: 'admin@pln.co.id',  pw: 'admin123',  color: '#FCA5A5',  bg: 'rgba(239,68,68,0.1)',   border: 'rgba(239,68,68,0.2)'   },
-                  { label: 'PIC',    email: 'pic@pln.co.id',    pw: 'pic123',    color: '#FCD34D',  bg: 'rgba(245,158,11,0.1)',  border: 'rgba(245,158,11,0.2)'  },
-                  { label: 'Viewer', email: 'viewer@pln.co.id', pw: 'viewer123', color: '#34D399',  bg: 'rgba(16,185,129,0.1)', border: 'rgba(16,185,129,0.2)' },
-                ].map(acc => (
-                  <button
-                    key={acc.label}
-                    type="button"
-                    onClick={() => demoLogin(acc.email, acc.pw)}
-                    style={{
-                      padding: '8px 6px', borderRadius: 10, fontSize: '0.75rem', fontWeight: 700,
-                      background: acc.bg, color: acc.color, border: `1px solid ${acc.border}`,
-                      cursor: 'pointer', transition: 'all 0.15s',
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = `0 4px 12px ${acc.border}` }}
-                    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none' }}
-                  >
-                    {acc.label}
-                  </button>
-                ))}
+                  { label: 'Admin',  email: 'admin@pln.co.id',  pw: 'admin123',  icon: Shield },
+                  { label: 'PIC',    email: 'pic@pln.co.id',    pw: 'pic123',    icon: User },
+                ].map(acc => {
+                  const AccIcon = acc.icon
+                  return (
+                    <button
+                      key={acc.label}
+                      type="button"
+                      onClick={() => demoLogin(acc.email, acc.pw)}
+                      style={{
+                        padding: '10px 10px',
+                        borderRadius: 12,
+                        fontSize: '0.8rem',
+                        fontWeight: 700,
+                        background: '#FFFFFF',
+                        color: '#0F4CD7',
+                        border: '1px solid #0F4CD7',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 6,
+                      }}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.background = 'rgba(15, 76, 215, 0.04)';
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.background = '#FFFFFF';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                      }}
+                    >
+                      <AccIcon size={13} />
+                      {acc.label}
+                    </button>
+                  )
+                })}
               </div>
-              <p style={{ fontSize: '0.65rem', color: '#3D5470', marginTop: 8, textAlign: 'center' }}>
-                Klik role → otomatis isi form → klik Masuk
+              <p style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 12, textAlign: 'center', fontWeight: 500 }}>
+                Pilih demo role di atas lalu klik tombol Masuk
               </p>
             </div>
           </div>
-
-          <p style={{ textAlign: 'center', fontSize: '0.7rem', color: '#3D5470', marginTop: 20 }}>
-            PT PLN (Persero) · UP3 Kebon Jeruk · 2026
-          </p>
         </div>
+
+        <p style={{ textAlign: 'center', fontSize: '0.75rem', color: '#64748B', marginTop: 28, fontWeight: 500 }}>
+          PT PLN (Persero) • UP3 Kebon Jeruk • 2026
+        </p>
       </div>
     </div>
   )

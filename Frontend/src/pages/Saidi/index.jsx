@@ -162,7 +162,7 @@ export default function SaidiPage() {
         >
           <ResponsiveContainer width="100%" height={280}>
             <ComposedChart data={tab === 'monthly' ? data : cumulativeData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" className="dark:stroke-slate-700" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
               <XAxis dataKey="label" tick={{ fontSize: 12.5, fontWeight: 650 }} />
               <YAxis tick={{ fontSize: 12.5, fontWeight: 650 }} />
               <Tooltip content={<CUSTOM_TOOLTIP />} />
@@ -170,16 +170,16 @@ export default function SaidiPage() {
               <Bar
                 dataKey={tab === 'monthly' ? 'realisasi' : 'cumulativeReal'}
                 name="Realisasi"
-                fill="#0070C0"
+                fill="#0F4CD7"
                 radius={[4,4,0,0]}
               />
               <Line
                 dataKey={tab === 'monthly' ? 'target' : 'cumulativeTgt'}
                 name="Target"
-                stroke="#DC2626"
+                stroke="#F59E0B"
                 strokeWidth={2}
                 strokeDasharray="5 5"
-                dot={{ r: 4, fill: '#DC2626' }}
+                dot={{ r: 4, fill: '#F59E0B' }}
               />
             </ComposedChart>
           </ResponsiveContainer>

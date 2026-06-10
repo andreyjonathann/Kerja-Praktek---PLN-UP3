@@ -37,24 +37,24 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
         {/* Brand header */}
         <div style={{
           padding: '20px 16px 16px',
-          borderBottom: '1px solid var(--border)',
+          borderBottom: '1px solid rgba(255,255,255,0.15)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
         }}>
           <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-            <div style={{ width:36, height:36, borderRadius:10, overflow:'hidden', flexShrink:0, boxShadow:'0 0 0 1px rgba(255,255,255,0.1)' }}>
+            <div style={{ width:36, height:36, borderRadius:10, overflow:'hidden', flexShrink:0, boxShadow:'0 0 0 1px rgba(255,255,255,0.2)' }}>
               <PlnLogo size={36} showText={false} />
             </div>
             <div>
-              <div style={{ fontSize:'0.8125rem', fontWeight:800, color:'var(--text-primary)', lineHeight:1.2 }}>SIGAP PLN</div>
-              <div style={{ fontSize:'0.6rem', color:'var(--text-muted)', fontWeight:600, letterSpacing:'0.04em', marginTop:1 }}>UP3 Kebon Jeruk</div>
+              <div style={{ fontSize:'0.8125rem', fontWeight:800, color:'#FFFFFF', lineHeight:1.2 }}>SIGAP PLN</div>
+              <div style={{ fontSize:'0.6rem', color:'#FFE000', fontWeight:600, letterSpacing:'0.04em', marginTop:1 }}>UP3 Kebon Jeruk</div>
             </div>
           </div>
           <button
             onClick={onMobileClose}
             className="md:hidden btn-ghost"
-            style={{ width:28, height:28, padding:0, borderRadius:8 }}
+            style={{ width:28, height:28, padding:0, borderRadius:8, color:'#FFFFFF' }}
           >
             <X size={16} />
           </button>
@@ -74,7 +74,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
                   style={{
                     transition: 'transform 0.2s',
                     transform: collapsed[group.group] ? 'rotate(-90deg)' : 'rotate(0)',
-                    color: 'var(--text-muted)',
+                    color: 'rgba(255, 255, 255, 0.55)',
                     marginRight: 10,
                   }}
                 />
@@ -86,7 +86,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
                     const IconComp = ICON_MAP[item.icon] || LayoutDashboard
                     const isActive = location.pathname === item.path ||
                       (item.path !== '/' && location.pathname.startsWith(item.path))
-
+ 
                     return (
                       <li key={item.key}>
                         <NavLink
@@ -97,7 +97,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
                           <IconComp
                             size={15}
                             style={{
-                              color: isActive ? '#60A5FA' : 'var(--text-muted)',
+                              color: isActive ? '#FFFFFF' : 'rgba(255, 255, 255, 0.65)',
                               flexShrink: 0,
                               transition: 'color 0.15s',
                             }}
@@ -116,13 +116,13 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
         {/* Footer */}
         <div style={{
           padding: '12px 16px',
-          borderTop: '1px solid var(--border)',
+          borderTop: '1px solid rgba(255,255,255,0.15)',
         }}>
           <div style={{
             padding: '10px 12px',
             borderRadius: 10,
-            background: 'rgba(255,255,255,0.03)',
-            border: '1px solid var(--border)',
+            background: 'rgba(255,255,255,0.06)',
+            border: '1px solid rgba(255,255,255,0.12)',
           }}>
             <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6 }}>
               <div style={{
@@ -132,7 +132,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
               }} />
               <span style={{ fontSize:'0.65rem', color:'#34D399', fontWeight:600 }}>Sistem Online</span>
             </div>
-            <div style={{ fontSize:'0.6rem', color:'var(--text-muted)', lineHeight:1.5 }}>
+            <div style={{ fontSize:'0.6rem', color:'rgba(255,255,255,0.65)', lineHeight:1.5 }}>
               © 2026 PT PLN (Persero)<br/>
               UP3 Kebon Jeruk · v1.0.0
             </div>

@@ -36,12 +36,12 @@ export default function Header({ onMenuToggle, onRefresh, refreshing }) {
 
         {/* Breadcrumb */}
         <div style={{ display:'flex', alignItems:'center', gap:8, minWidth:0 }}>
-          <span style={{ fontSize:'0.85rem', color:'var(--text-muted)', fontWeight:700, letterSpacing:'0.04em', flexShrink:0 }}
+          <span style={{ fontSize:'0.85rem', color:'rgba(255, 255, 255, 0.7)', fontWeight:700, letterSpacing:'0.04em', flexShrink:0 }}
                 className="hidden sm:block">SIGAP</span>
-          <span style={{ color:'var(--border-strong)', fontSize:'0.9rem', flexShrink:0 }}
+          <span style={{ color:'rgba(255, 255, 255, 0.35)', fontSize:'0.9rem', flexShrink:0 }}
                 className="hidden sm:block">/</span>
           <span style={{
-            fontSize:'1rem', fontWeight:800, color:'var(--text-primary)',
+            fontSize:'1rem', fontWeight:800, color:'#FFFFFF',
             overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap',
           }}>
             {breadcrumb}
@@ -74,7 +74,7 @@ export default function Header({ onMenuToggle, onRefresh, refreshing }) {
           style={{ width:34, height:34, padding:0, borderRadius:8 }}
           title="Refresh Data"
         >
-          <RefreshCw size={15} style={{ color: refreshing ? '#60A5FA' : 'var(--text-muted)' }}
+          <RefreshCw size={15} style={{ color: refreshing ? '#FFE000' : '#FFFFFF' }}
                      className={refreshing ? 'animate-spin' : ''} />
         </button>
 
@@ -86,9 +86,9 @@ export default function Header({ onMenuToggle, onRefresh, refreshing }) {
           title={dark ? 'Mode Terang' : 'Mode Gelap'}
         >
           {dark
-            ? <Sun  size={15} style={{ color:'#FCD34D' }} />
-            : <Moon size={15} style={{ color:'var(--text-muted)' }} />}
-        </button> 344
+            ? <Sun  size={15} style={{ color:'#FFE000' }} />
+            : <Moon size={15} style={{ color:'#FFFFFF' }} />}
+        </button>
 
         {/* Bell */}
         <button
@@ -96,7 +96,7 @@ export default function Header({ onMenuToggle, onRefresh, refreshing }) {
           style={{ width:34, height:34, padding:0, borderRadius:8, position:'relative' }}
           title="Notifikasi"
         >
-          <Bell size={15} style={{ color:'var(--text-muted)' }} />
+          <Bell size={15} style={{ color:'#FFFFFF' }} />
           <span style={{
             position:'absolute', top:7, right:7, width:6, height:6,
             borderRadius:'50%', background:'#EF4444',
@@ -105,7 +105,7 @@ export default function Header({ onMenuToggle, onRefresh, refreshing }) {
         </button>
 
         {/* Divider */}
-        <div style={{ width:1, height:20, background:'var(--border-strong)', margin:'0 4px' }} />
+        <div style={{ width:1, height:20, background:'rgba(255, 255, 255, 0.2)', margin:'0 4px' }} />
 
         {/* User Menu */}
         <div style={{ position:'relative' }}>
@@ -114,34 +114,34 @@ export default function Header({ onMenuToggle, onRefresh, refreshing }) {
             style={{
               display:'flex', alignItems:'center', gap:8,
               padding:'5px 10px 5px 6px', borderRadius:10,
-              background: userMenu ? 'rgba(255,255,255,0.07)' : 'transparent',
-              border:`1px solid ${userMenu ? 'var(--border-strong)' : 'transparent'}`,
+              background: userMenu ? 'rgba(255,255,255,0.15)' : 'transparent',
+              border:`1px solid ${userMenu ? 'rgba(255,255,255,0.25)' : 'transparent'}`,
               cursor:'pointer', transition:'all 0.15s',
             }}
           >
             <div style={{
               width:28, height:28, borderRadius:8,
-              background:'linear-gradient(135deg, #2563EB, #1D4ED8)',
+              background:'linear-gradient(135deg, #FFE000, #F59E0B)',
               display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0,
-              boxShadow:'0 0 12px rgba(37,99,235,0.4)',
+              boxShadow:'0 0 12px rgba(255,224,0,0.4)',
             }}>
-              <User size={13} style={{ color:'white' }} />
+              <User size={13} style={{ color:'#0F172A' }} />
             </div>
             <div style={{ textAlign:'left' }} className="hidden sm:block">
-              <div style={{ fontSize:'0.9rem', fontWeight:700, color:'var(--text-primary)', lineHeight:1.2 }}>
+              <div style={{ fontSize:'0.9rem', fontWeight:700, color:'#FFFFFF', lineHeight:1.2 }}>
                 {user?.name || 'User'}
               </div>
               <div style={{
                 display:'inline-flex', alignItems:'center', gap:3,
-                fontSize:'0.75rem', fontWeight:600,
-                color: rc.color,
+                fontSize:'0.75rem', fontWeight:700,
+                color: rc.color === '#FCA5A5' ? '#FFC5C5' : rc.color === '#FCD34D' ? '#FFE895' : '#86EFAC',
                 marginTop:2,
               }}>
                 <Shield size={10} />
                 {user?.role}
               </div>
             </div>
-            <ChevronDown size={11} style={{ color:'var(--text-muted)', transition:'transform 0.2s', transform: userMenu ? 'rotate(180deg)' : 'rotate(0)' }} />
+            <ChevronDown size={11} style={{ color:'#FFFFFF', transition:'transform 0.2s', transform: userMenu ? 'rotate(180deg)' : 'rotate(0)' }} />
           </button>
 
           {userMenu && (
@@ -215,19 +215,20 @@ function FilterPill({ value, onChange, options, width }) {
         onChange={e => onChange(e.target.value)}
         className="select"
         style={{
-          height:38, width, fontSize:'0.9rem', padding:'0 28px 0 12px',
-          background:'rgba(255,255,255,0.05)',
-          border:'1px solid var(--border-strong)',
-          borderRadius:8, color:'var(--text-primary)',
+          height:38, width, fontSize:'0.85rem', padding:'0 28px 0 12px',
+          background:'rgba(255,255,255,0.15)',
+          border:'1px solid rgba(255,255,255,0.25)',
+          borderRadius:8, color:'#FFFFFF',
+          fontWeight: 600,
         }}
       >
-        {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        {options.map(o => <option key={o.value} value={o.value} style={{ color: '#0F172A' }}>{o.label}</option>)}
       </select>
       <ChevronDown
         size={13}
         style={{
           position:'absolute', right:10, top:'50%', transform:'translateY(-50%)',
-          color:'var(--text-muted)', pointerEvents:'none',
+          color:'rgba(255, 255, 255, 0.8)', pointerEvents:'none',
         }}
       />
     </div>
