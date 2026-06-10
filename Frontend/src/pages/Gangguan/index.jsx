@@ -15,8 +15,6 @@ import { formatNumber, formatPercent } from '@/utils/formatters'
 import { CHART_COLORS } from '@/utils/constants'
 import { getDashboardData } from '@/services/dashboardDataService'
 
-
-
 export default function GangguanPage() {
   const { filters } = useFilter()
   const [data, setData] = useState(null)
@@ -58,19 +56,23 @@ export default function GangguanPage() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '48px' }} className="animate-fade-in">
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{
-            width: 34, height: 34, borderRadius: 10,
-            background: 'linear-gradient(135deg, rgba(239,68,68,0.2), rgba(239,68,68,0.08))',
-            border: '1px solid rgba(239,68,68,0.25)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
+          <div
+            className="icon-wrapper-interactive"
+            style={{
+              width: 34, height: 34, borderRadius: 10,
+              background: 'linear-gradient(135deg, rgba(239,68,68,0.2), rgba(239,68,68,0.08))',
+              border: '1px solid rgba(239,68,68,0.25)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
             <AlertTriangle size={16} style={{ color: '#EF4444' }} />
           </div>
-          <h1 style={{ fontSize: '1.375rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+          <h1 className="page-heading">
             SIGAP Monitoring Gangguan Sistem
           </h1>
         </div>
-        <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+        <p className="page-description">
           Rekapitulasi peristiwa gangguan jaringan, lokasi gardu padam, beban padam (MW) dan pelanggan padam · Tahun {filters.year}
         </p>
       </div>
@@ -173,9 +175,9 @@ export default function GangguanPage() {
         </h3>
         <DataTable
           columns={[
-            { key: 'penyulang', label: 'Penyulang', width: '120px', align: 'center', render: (v) => <span style={{ fontWeight: 800, color: 'var(--text-primary)' }}>{v}</span> },
-            { key: 'tanggal', label: 'Tanggal Padam', width: '100px', align: 'center' },
-            { key: 'lokasi', label: 'Lokasi Gardu / Jaringan',
+            { key: 'penyulang', label: 'Penyulang', width: '120px', render: (v) => <span style={{ fontWeight: 800, color: 'var(--text-primary)' }}>{v}</span> },
+            { key: 'tanggal', label: 'Tanggal Padam', width: '110px' },
+            { key: 'lokasi', label: 'Lokasi Gardu / Jaringan', width: '260px',
               render: (v) => (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
                   <MapPin size={12} style={{ color: 'var(--text-muted)' }} />
@@ -183,11 +185,11 @@ export default function GangguanPage() {
                 </div>
               )
             },
-            { key: 'beban_padam', label: 'Beban Padam', align: 'center', render: v => `${v.toFixed(2)} MW` },
-            { key: 'pelanggan_padam', label: 'Pelanggan Terdampak', align: 'center', render: v => formatNumber(v) },
-            { key: 'durasi', label: 'Durasi Padam', align: 'center', render: v => `${v} menit` },
-            { key: 'penyebab', label: 'Penyebab', align: 'center', render: v => <span className="badge badge-secondary text-2xs">{v}</span> },
-            { key: 'status', label: 'Status', align: 'center',
+            { key: 'beban_padam', label: 'Beban Padam', align: 'right', width: '110px', render: v => `${v.toFixed(2)} MW` },
+            { key: 'pelanggan_padam', label: 'Pelanggan Terdampak', align: 'right', width: '160px', render: v => formatNumber(v) },
+            { key: 'durasi', label: 'Durasi Padam', align: 'right', width: '110px', render: v => `${v} menit` },
+            { key: 'penyebab', label: 'Penyebab', align: 'center', width: '110px', render: v => <span className="badge badge-secondary text-2xs">{v}</span> },
+            { key: 'status', label: 'Status', align: 'center', width: '100px',
               render: (v) => (
                 <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, fontSize: '0.75rem', fontWeight: 700, color: 'var(--success)' }}>
                   <CheckCircle2 size={12} />

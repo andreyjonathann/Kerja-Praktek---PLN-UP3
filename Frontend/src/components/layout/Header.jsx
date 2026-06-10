@@ -9,7 +9,7 @@ import { NAV_ITEMS } from '@/utils/constants'
 
 export default function Header({ onMenuToggle, onRefresh, refreshing }) {
   const { dark, toggle }              = useTheme()
-  const { user, logout, switchRole }  = useAuth()
+  const { user, logout }  = useAuth()
   const { filters, updateFilter }     = useFilter()
   const [userMenu, setUserMenu]       = useState(false)
   const location                      = useLocation()
@@ -152,27 +152,7 @@ export default function Header({ onMenuToggle, onRefresh, refreshing }) {
                   <div style={{ fontSize:'0.82rem', color:'var(--text-muted)' }}>{user?.email}</div>
                 </div>
 
-                {/* Role switcher */}
-                <div style={{ padding:'10px 14px', borderBottom:'1px solid var(--border)' }}>
-                  <div style={{ fontSize:'0.75rem', fontWeight:800, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:8 }}>Ganti Role (Demo)</div>
-                  <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
-                    {Object.values(ROLES).map(role => (
-                      <button
-                        key={role}
-                        onClick={() => { switchRole(role); setUserMenu(false) }}
-                        style={{
-                          padding:'8px 10px', borderRadius:8, fontSize:'0.85rem', fontWeight:600,
-                          textAlign:'left', cursor:'pointer', transition:'all 0.15s', border:'1px solid',
-                          background: user?.role===role ? 'var(--accent-soft)' : 'transparent',
-                          color: user?.role===role ? '#38BDF8' : 'var(--text-secondary)',
-                          borderColor: user?.role===role ? 'rgba(59,130,246,0.35)' : 'transparent',
-                        }}
-                      >
-                        {role}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+
 
                 {/* Logout */}
                 <button

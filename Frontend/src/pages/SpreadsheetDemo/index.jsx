@@ -14,23 +14,27 @@ export default function SpreadsheetDemo() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 16 }}>
+        <div
+          className="icon-wrapper-interactive"
+          style={{
             width: 34, height: 34, borderRadius: 10,
             background: 'linear-gradient(135deg, rgba(16,185,129,0.2), rgba(16,185,129,0.08))',
             border: '1px solid rgba(16,185,129,0.25)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <FileSpreadsheet size={16} style={{ color: '#10B981' }} />
-          </div>
-          <h1 style={{ fontSize: '1.375rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+            marginTop: 4, flexShrink: 0,
+          }}
+        >
+          <FileSpreadsheet size={16} style={{ color: '#10B981' }} />
+        </div>
+        <div>
+          <h1 className="page-heading" style={{ marginBottom: 4 }}>
             Integrasi Google Spreadsheet
           </h1>
+          <p className="page-description">
+            Demo ini menunjukkan bagaimana data diambil langsung (live) dari Google Sheets tanpa memerlukan backend database terpisah.
+          </p>
         </div>
-        <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
-          Demo ini menunjukkan bagaimana data diambil langsung (live) dari Google Sheets tanpa memerlukan backend database terpisah.
-        </p>
       </div>
 
       <div className="card" style={{ padding: 24 }}>

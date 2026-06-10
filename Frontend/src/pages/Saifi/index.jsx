@@ -88,19 +88,23 @@ export default function SaifiPage() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '48px' }} className="animate-fade-in">
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{
-            width: 34, height: 34, borderRadius: 10,
-            background: 'linear-gradient(135deg, rgba(37,99,235,0.2), rgba(37,99,235,0.08))',
-            border: '1px solid rgba(37,99,235,0.25)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
+          <div
+            className="icon-wrapper-interactive"
+            style={{
+              width: 34, height: 34, borderRadius: 10,
+              background: 'linear-gradient(135deg, rgba(37,99,235,0.2), rgba(37,99,235,0.08))',
+              border: '1px solid rgba(37,99,235,0.25)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
             <Zap size={16} style={{ color: '#F59E0B' }} />
           </div>
-          <h1 style={{ fontSize: '1.375rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+          <h1 className="page-heading">
             SAIFI — System Average Interruption Frequency Index
           </h1>
         </div>
-        <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+        <p className="page-description">
           Rata-rata frekuensi pemadaman per pelanggan · Tahun {filters.year}
         </p>
       </div>
@@ -119,6 +123,7 @@ export default function SaifiPage() {
         borderRadius: 12,
         border: '1px solid rgba(15, 76, 215, 0.08)',
         alignSelf: 'flex-start',
+        margin: '12px 0 16px',
       }}>
         {['monthly','cumulative'].map(t => {
           const isActive = tab === t

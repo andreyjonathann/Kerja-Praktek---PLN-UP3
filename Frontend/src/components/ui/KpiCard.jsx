@@ -113,12 +113,15 @@ export default function KpiCard({
             {title}
           </p>
           {Icon && (
-            <div style={{
-              width:38, height:38, borderRadius:10,
-              background:c.iconBg, display:'flex', alignItems:'center',
-              justifyContent:'center', flexShrink:0,
-              border:`1px solid ${c.accent}22`,
-            }}>
+            <div
+              className="icon-wrapper-interactive"
+              style={{
+                width:38, height:38, borderRadius:10,
+                background:c.iconBg, display:'flex', alignItems:'center',
+                justifyContent:'center', flexShrink:0,
+                border:`1px solid ${c.accent}22`,
+              }}
+            >
               <Icon size={18} style={{ color:c.icon }} />
             </div>
           )}

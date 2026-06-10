@@ -128,18 +128,18 @@ export default function OverviewPage() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '48px' }} className="animate-fade-in">
 
       {/* ── Page Header ─────────────────────────────────────── */}
-      <div className="space-y-5">
+      <div className="space-y-5" style={{ marginBottom: 16 }}>
         <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="rounded-xl" style={{ width: 34, height: 34, background: 'linear-gradient(135deg, rgba(37,99,235,0.2), rgba(37,99,235,0.08))', border: '1px solid rgba(37,99,235,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Sparkles size={16} style={{ color: '#60A5FA' }} />
-              </div>
-              <h1 className="page-heading">Executive Overview</h1>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+            <div className="rounded-xl icon-wrapper-interactive" style={{ width: 34, height: 34, background: 'linear-gradient(135deg, rgba(37,99,235,0.2), rgba(37,99,235,0.08))', border: '1px solid rgba(37,99,235,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 4, flexShrink: 0 }}>
+              <Sparkles size={16} style={{ color: '#2563EB' }} />
             </div>
-            <p className="page-description">
-              Dashboard Kinerja Operasional &amp; Keandalan Sistem PLN UP3 Kebon Jeruk · Tahun {filters.year}
-            </p>
+            <div>
+              <h1 className="page-heading" style={{ marginBottom: 4 }}>Executive Overview</h1>
+              <p className="page-description">
+                Dashboard Kinerja Operasional &amp; Keandalan Sistem PLN UP3 Kebon Jeruk · Tahun {filters.year}
+              </p>
+            </div>
           </div>
 
           {/* Upload button (Admin only) */}
@@ -187,7 +187,7 @@ export default function OverviewPage() {
       </div>
 
       {/* ── KPI Cards Grid ─────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 20, marginBottom: 10 }}>
         <KpiCard
           title="Nilai Kinerja Organisasi"
           value={kpis.nko?.val?.toFixed(1) ?? '—'}
@@ -248,7 +248,7 @@ export default function OverviewPage() {
       </div>
 
       {/* ── Charts Row ─────────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 20 }}>
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_380px]" style={{ gap: 20, marginBottom: 10 }}>
 
         {/* Main chart */}
         <ChartWrapper

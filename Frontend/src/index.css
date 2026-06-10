@@ -52,8 +52,8 @@
   --border-strong: #E2E8F0; /* Slate 200 */
   --border-accent: #2F7BFF; /* Brighter blue border */
 
-  --shadow-card:   0 10px 25px -5px rgba(15, 76, 215, 0.04), 0 8px 10px -6px rgba(15, 76, 215, 0.02);
-  --shadow-card-h: 0 20px 25px -5px rgba(15, 76, 215, 0.08), 0 10px 10px -5px rgba(15, 76, 215, 0.03);
+  --shadow-card:   0 8px 24px -4px rgba(15, 76, 215, 0.08), 0 4px 12px -6px rgba(15, 76, 215, 0.04);
+  --shadow-card-h: 0 20px 32px -4px rgba(15, 76, 215, 0.16), 0 8px 16px -6px rgba(15, 76, 215, 0.08);
   --shadow-lg:     0 20px 32px rgba(15, 76, 215, 0.08);
   --shadow-glow:   0 0 20px rgba(15, 76, 215, 0.15);
 
@@ -295,8 +295,9 @@ html, body, button, input, select, textarea, optgroup, option {
 
   .page-description {
     color: var(--text-muted);
-    line-height: 1.7;
-    max-width: 72ch;
+    font-size: 0.775rem;
+    line-height: 1.5;
+    max-width: 120ch;
   }
 
   .section-subtitle {
@@ -450,6 +451,53 @@ html, body, button, input, select, textarea, optgroup, option {
   .traffic-green  { background: var(--success-soft); color: var(--success-text); border: 1px solid rgba(16,185,129,0.2); }
   .traffic-yellow { background: var(--warning-soft); color: var(--warning-text); border: 1px solid rgba(245,158,11,0.2); }
   .traffic-red    { background: var(--danger-soft);  color: var(--danger-text); border: 1px solid rgba(239,68,68,0.2); }
+
+/* ============================================================
+   Interactive Icon & Element Transitions
+   ============================================================ */
+.icon-wrapper-interactive {
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+}
+.icon-wrapper-interactive:hover {
+  transform: scale(1.15) rotate(3deg);
+  box-shadow: 0 4px 12px rgba(15, 76, 215, 0.12);
+  filter: brightness(1.08);
+}
+.icon-wrapper-interactive:active {
+  transform: scale(0.92) rotate(-2deg);
+}
+
+/* Global hover/click transitions for Lucide React SVG icons inside interactive components */
+button svg,
+a svg,
+.sidebar-nav-item svg,
+.sidebar-group-label svg,
+.btn svg,
+[role="button"] svg,
+.icon-wrapper-interactive svg {
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.15s ease, opacity 0.15s ease;
+}
+
+button:hover svg,
+a:hover svg,
+.sidebar-nav-item:hover svg,
+.sidebar-group-label:hover svg,
+.btn:hover svg,
+[role="button"]:hover svg,
+.icon-wrapper-interactive:hover svg {
+  transform: scale(1.15);
+}
+
+button:active svg,
+a:active svg,
+.sidebar-nav-item:active svg,
+.sidebar-group-label:active svg,
+.btn:active svg,
+[role="button"]:active svg,
+.icon-wrapper-interactive:active svg {
+  transform: scale(0.9);
+}
 }
 
 /* ============================================================
