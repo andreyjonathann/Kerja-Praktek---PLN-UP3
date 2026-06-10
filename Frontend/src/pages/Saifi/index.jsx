@@ -82,7 +82,7 @@ export default function SaifiPage() {
   })
 
   return (
-    <div className="space-y-12 animate-fade-in">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '48px' }} className="animate-fade-in">
       <div>
         <h1 className="text-2xl font-extrabold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
           <Zap size={24} className="text-amber-500" />

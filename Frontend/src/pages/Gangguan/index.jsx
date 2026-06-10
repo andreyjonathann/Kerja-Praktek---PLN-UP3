@@ -55,7 +55,7 @@ export default function GangguanPage() {
   const totalBeban     = data?.list?.reduce((s, x) => s + x.beban_padam, 0) ?? 0
 
   return (
-    <div className="space-y-12 animate-fade-in">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '48px' }} className="animate-fade-in">
       {/* Title */}
       <div>
         <h1 className="text-2xl font-extrabold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
