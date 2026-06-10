@@ -155,7 +155,7 @@ body {
 .sidebar {
   width: var(--sidebar-width);
   height: 100vh;
-  background: linear-gradient(135deg, #0F4CD7, #1E63F5, #2F7BFF);
+  background: #154785; /* Solid blue like image 2 in light mode */
   border-right: 1px solid rgba(255, 255, 255, 0.12);
   position: fixed;
   top: 0; left: 0;
@@ -194,6 +194,10 @@ body {
 
 :root.dark .page-header {
   background: rgba(11,21,41,0.88);
+}
+
+:root.dark .sidebar, html.dark .sidebar {
+  background: linear-gradient(135deg, #0F4CD7, #1E63F5, #2F7BFF); /* Gradient like image 1 in dark mode */
 }
 
 .page-content {
@@ -263,24 +267,34 @@ body {
 }
 
 .sidebar-group-label {
-  padding: 0.8rem 1.125rem 0.4rem;
-  font-size: 0.78rem;
-  font-weight: 800;
-  letter-spacing: 0.14em;
+  padding: 0.6rem 0.9rem;
+  margin: 10px 0.6rem 2px;
+  font-size: 0.82rem;
+  font-weight: 800; /* Bold */
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--text-muted);
-  margin-top: 1rem;
+  color: rgba(255, 255, 255, 0.95); /* White text */
   display: flex;
   align-items: center;
   justify-content: space-between;
-  width: 100%;
+  width: auto;
   background: none;
   border: none;
   cursor: pointer;
-  transition: color 0.15s;
+  transition: all 0.15s ease;
+  border-radius: var(--radius-md);
+  box-sizing: border-box;
 }
 
-.sidebar-group-label:hover { color: var(--text-primary); }
+.sidebar-group-label:hover {
+  background: rgba(0, 0, 0, 0.15); /* Blackish-grayish hover */
+  color: #FFFFFF;
+}
+
+.sidebar-group-label:active {
+  background: rgba(0, 0, 0, 0.35); /* Darker blackish-grayish active/click */
+  color: #FFFFFF;
+}
 
 /* ============================================================
    Components
