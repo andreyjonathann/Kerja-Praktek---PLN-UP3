@@ -82,7 +82,7 @@ export default function SaifiPage() {
   })
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-8 animate-fade-in">
       <div>
         <h1 className="text-2xl font-extrabold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
           <Zap size={24} className="text-amber-500" />
@@ -93,20 +93,24 @@ export default function SaifiPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
         <KpiCard title="SAIFI YTD" value={totalReal.toFixed(4)} unit="kali/plg" achievement={achievement} icon={Zap} color="yellow" isInverse loading={loading} />
         <KpiCard title="Target YTD" value={totalTgt.toFixed(4)} unit="kali/plg" icon={Target} color="green" loading={loading} />
         <KpiCard title="Bulan Terakhir" value={lastMonth?.realisasi?.toFixed(4) ?? '—'} unit="kali/plg" icon={Activity} color="blue" loading={loading} />
         <KpiCard title="Pencapaian" value={achievement.toFixed(1) + '%'} icon={TrendingDown} color={achievement >= 90 ? 'green' : achievement >= 70 ? 'yellow' : 'red'} loading={loading} />
       </div>
 
-      <div className="flex gap-2">
-        {['monthly','cumulative'].map(t => (
-          <button key={t} onClick={() => setTab(t)}
-            className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-              tab === t ? 'bg-pln-blue text-white shadow-md'
-              : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
-            }`}>
+      <div className="flex gap-4 py-2">
+        {['monthly', 'cumulative'].map(t => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={`px-5 py-2 rounded-xl text-sm font-bold transition-all border ${
+              tab === t
+                ? 'bg-pln-blue text-white border-pln-blue shadow-md'
+                : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
+            }`}
+          >
             {t === 'monthly' ? 'Bulanan' : 'Kumulatif'}
           </button>
         ))}

@@ -91,7 +91,7 @@ export default function SaidiPage() {
   })
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-8 animate-fade-in">
       {/* Page title */}
       <div>
         <h1 className="text-2xl font-extrabold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
@@ -104,7 +104,7 @@ export default function SaidiPage() {
       </div>
 
       {/* KPI Summary Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
         <KpiCard
           title="SAIDI YTD"
           value={totalReal.toFixed(3)}
@@ -141,15 +141,15 @@ export default function SaidiPage() {
       </div>
 
       {/* Tab selector */}
-      <div className="flex gap-2">
+      <div className="flex gap-4 py-2">
         {['monthly', 'cumulative'].map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${
+            className={`px-5 py-2 rounded-xl text-sm font-bold transition-all border ${
               tab === t
-                ? 'bg-pln-blue text-white shadow-md'
-                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50'
+                ? 'bg-pln-blue text-white border-pln-blue shadow-md'
+                : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
             }`}
           >
             {t === 'monthly' ? 'Bulanan' : 'Kumulatif'}

@@ -55,7 +55,7 @@ export default function GangguanPage() {
   const totalBeban     = data?.list?.reduce((s, x) => s + x.beban_padam, 0) ?? 0
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 animate-fade-in">
       {/* Title */}
       <div>
         <h1 className="text-2xl font-extrabold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
@@ -68,7 +68,7 @@ export default function GangguanPage() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
         <KpiCard
           title="Total Gangguan Jaringan"
           value={totalGangguan}
@@ -104,7 +104,7 @@ export default function GangguanPage() {
       </div>
 
       {/* Chart Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Trend line chart */}
         <div className="lg:col-span-2">
           <ChartWrapper
