@@ -55,20 +55,20 @@ export default function GangguanPage() {
   const totalBeban     = data?.list?.reduce((s, x) => s + x.beban_padam, 0) ?? 0
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-12 animate-fade-in">
       {/* Title */}
       <div>
         <h1 className="text-2xl font-extrabold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
           <AlertTriangle size={24} className="text-red-500" />
           SIGAP Monitoring Gangguan Sistem
         </h1>
-        <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
+        <p className="text-sm mt-2" style={{ color: 'var(--text-muted)' }}>
           Rekapitulasi peristiwa gangguan jaringan, lokasi gardu padam, beban padam (MW) dan pelanggan padam · Tahun {filters.year}
         </p>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
         <KpiCard
           title="Total Gangguan Jaringan"
           value={totalGangguan}
@@ -104,7 +104,7 @@ export default function GangguanPage() {
       </div>
 
       {/* Chart Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
         {/* Trend line chart */}
         <div className="lg:col-span-2">
           <ChartWrapper

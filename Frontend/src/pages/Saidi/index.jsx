@@ -91,20 +91,20 @@ export default function SaidiPage() {
   })
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-12 animate-fade-in">
       {/* Page title */}
       <div>
         <h1 className="text-2xl font-extrabold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
           <Clock size={24} className="text-pln-blue-mid" />
           SAIDI — System Average Interruption Duration Index
         </h1>
-        <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
+        <p className="text-sm mt-2" style={{ color: 'var(--text-muted)' }}>
           Indeks rata-rata durasi pemadaman per pelanggan · Tahun {filters.year}
         </p>
       </div>
 
       {/* KPI Summary Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
         <KpiCard
           title="SAIDI YTD"
           value={totalReal.toFixed(3)}

@@ -82,18 +82,18 @@ export default function SaifiPage() {
   })
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-12 animate-fade-in">
       <div>
         <h1 className="text-2xl font-extrabold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
           <Zap size={24} className="text-amber-500" />
           SAIFI — System Average Interruption Frequency Index
         </h1>
-        <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
+        <p className="text-sm mt-2" style={{ color: 'var(--text-muted)' }}>
           Rata-rata frekuensi pemadaman per pelanggan · Tahun {filters.year}
         </p>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
         <KpiCard title="SAIFI YTD" value={totalReal.toFixed(4)} unit="kali/plg" achievement={achievement} icon={Zap} color="yellow" isInverse loading={loading} />
         <KpiCard title="Target YTD" value={totalTgt.toFixed(4)} unit="kali/plg" icon={Target} color="green" loading={loading} />
         <KpiCard title="Bulan Terakhir" value={lastMonth?.realisasi?.toFixed(4) ?? '—'} unit="kali/plg" icon={Activity} color="blue" loading={loading} />
