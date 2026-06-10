@@ -101,7 +101,7 @@ export default function OverviewPage() {
 
   if (loading && !data) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '48px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div className="skeleton" style={{ height: 28, width: 340, borderRadius: 8 }} />
           <div className="skeleton" style={{ height: 16, width: 420, borderRadius: 6 }} />
@@ -125,7 +125,7 @@ export default function OverviewPage() {
   }
 
   return (
-    <div className="space-y-7 animate-fade-in">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '48px' }} className="animate-fade-in">
 
       {/* ── Page Header ─────────────────────────────────────── */}
       <div className="space-y-5">
