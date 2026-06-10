@@ -14,19 +14,67 @@
 }
 
 /* ============================================================
-   CSS VARIABLES — Enterprise Dark Design System
+   CSS VARIABLES — Light Theme (default)
    ============================================================ */
 :root {
-  --bg-base:      #0A0F1D; /* Slightly lighter deep navy base */
-  --bg-surface:   #11192A; /* Lighter slate surface for sidebar/header */
-  --bg-card:      #19243C; /* Gray-slate card with rich navy tint for separation */
-  --bg-card-h:    #212E4A; /* Hover card style */
-  --bg-elevated:  #293858; /* Dropdown/menu background */
-  --bg-input:     #101726; /* Input background */
+  --bg-base:      #F8FAFC;
+  --bg-surface:   #FFFFFF;
+  --bg-card:      #FFFFFF;
+  --bg-card-h:    #F1F5F9;
+  --bg-elevated:  #F8FAFC;
+  --bg-input:     #EFF2F7;
 
   --pln-blue:     #005BAC;
   --pln-yellow:   #FFD100;
-  --accent:       #3B82F6; /* Brighter accent blue for WCAG AA compliance */
+  --accent:       #3B82F6;
+  --accent-soft:  rgba(59,130,246,0.16);
+  --accent-glow:  rgba(59,130,246,0.22);
+
+  --success:      #10B981;
+  --success-soft: rgba(16,185,129,0.16);
+  --warning:      #F59E0B;
+  --warning-soft: rgba(245,158,11,0.16);
+  --danger:       #EF4444;
+  --danger-soft:  rgba(239,68,68,0.16);
+  --info:         #3B82F6;
+
+  --text-primary:   #0F172A;
+  --text-secondary: #475569;
+  --text-muted:     #64748B;
+  --text-accent:    #2563EB;
+
+  --border:        rgba(15,23,42,0.08);
+  --border-strong: rgba(15,23,42,0.14);
+  --border-accent: rgba(59,130,246,0.35);
+
+  --shadow-card:   0 2px 8px rgba(15,23,42,0.08);
+  --shadow-card-h: 0 10px 28px rgba(15,23,42,0.12);
+  --shadow-lg:     0 16px 48px rgba(15,23,42,0.12);
+  --shadow-glow:   0 0 28px rgba(59,130,246,0.15);
+
+  --sidebar-width: 252px;
+  --header-height: 60px;
+  --radius-sm:     6px;
+  --radius-md:     10px;
+  --radius-lg:     14px;
+  --radius-xl:     20px;
+  --transition:    all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ============================================================
+   CSS VARIABLES — Dark Theme
+   ============================================================ */
+:root.dark {
+  --bg-base:      #0A0F1D;
+  --bg-surface:   #11192A;
+  --bg-card:      #19243C;
+  --bg-card-h:    #212E4A;
+  --bg-elevated:  #293858;
+  --bg-input:     #101726;
+
+  --pln-blue:     #005BAC;
+  --pln-yellow:   #FFD100;
+  --accent:       #3B82F6;
   --accent-soft:  rgba(59,130,246,0.16);
   --accent-glow:  rgba(59,130,246,0.35);
 
@@ -38,10 +86,10 @@
   --danger-soft:  rgba(239,68,68,0.16);
   --info:         #3B82F6;
 
-  --text-primary:   #FFFFFF; /* High-contrast white */
-  --text-secondary: #E2E8F0; /* Bright Slate 200 */
-  --text-muted:     #94A3B8; /* Medium Slate 400 (very readable against dark card backgrounds) */
-  --text-accent:    #38BDF8; /* Electric light-blue */
+  --text-primary:   #FFFFFF;
+  --text-secondary: #E2E8F0;
+  --text-muted:     #94A3B8;
+  --text-accent:    #38BDF8;
 
   --border:        rgba(255,255,255,0.09);
   --border-strong: rgba(255,255,255,0.18);
@@ -51,14 +99,6 @@
   --shadow-card-h: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(59,130,246,0.22);
   --shadow-lg:     0 16px 48px rgba(0,0,0,0.6);
   --shadow-glow:   0 0 28px rgba(59,130,246,0.3);
-
-  --sidebar-width: 252px;
-  --header-height: 60px;
-  --radius-sm:     6px;
-  --radius-md:     10px;
-  --radius-lg:     14px;
-  --radius-xl:     20px;
-  --transition:    all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* ============================================================
@@ -124,7 +164,7 @@ body {
 
 .page-header {
   height: var(--header-height);
-  background: rgba(11,21,41,0.88);
+  background: rgba(255,255,255,0.88);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border);
@@ -135,6 +175,10 @@ body {
   align-items: center;
   padding: 0 1.5rem;
   gap: 1rem;
+}
+
+:root.dark .page-header {
+  background: rgba(11,21,41,0.88);
 }
 
 .page-content {
