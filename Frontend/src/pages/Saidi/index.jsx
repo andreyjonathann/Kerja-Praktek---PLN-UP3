@@ -85,11 +85,11 @@ export default function SaidiPage() {
     <div className="space-y-5">
       {/* Page title */}
       <div>
-        <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+        <h1 className="text-2xl font-extrabold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
           <Clock size={24} className="text-pln-blue-mid" />
           SAIDI — System Average Interruption Duration Index
         </h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+        <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
           Indeks rata-rata durasi pemadaman per pelanggan · Tahun {filters.year}
         </p>
       </div>

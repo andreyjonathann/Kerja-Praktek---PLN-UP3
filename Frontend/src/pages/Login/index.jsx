@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
-import { Eye, EyeOff, Lock, Mail, AlertCircle, LogIn, User, Shield } from 'lucide-react'
+import { Eye, EyeOff, Lock, Mail, AlertCircle, LogIn } from 'lucide-react'
 import PlnLogo from '@/components/ui/PlnLogo'
 
 export default function LoginPage() {
@@ -21,8 +21,6 @@ export default function LoginPage() {
     if (!result.success) setError(result.message)
     setLoading(false)
   }
-
-  const demoLogin = (email, password) => setForm({ email, password })
 
   return (
     <div style={{
@@ -302,56 +300,6 @@ export default function LoginPage() {
               </button>
             </form>
 
-            {/* Demo accounts - formatted side-by-side with two roles (Admin, PIC) */}
-            <div style={{ marginTop: 28, paddingTop: 24, borderTop: '1px solid #F1F5F9' }}>
-              <p style={{ fontSize: '0.7rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12, textAlign: 'center' }}>
-                Akun Demo
-              </p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                {[
-                  { label: 'Admin',  email: 'admin@pln.co.id',  pw: 'admin123',  icon: Shield },
-                  { label: 'PIC',    email: 'pic@pln.co.id',    pw: 'pic123',    icon: User },
-                ].map(acc => {
-                  const AccIcon = acc.icon
-                  return (
-                    <button
-                      key={acc.label}
-                      type="button"
-                      onClick={() => demoLogin(acc.email, acc.pw)}
-                      style={{
-                        padding: '10px 10px',
-                        borderRadius: 12,
-                        fontSize: '0.8rem',
-                        fontWeight: 700,
-                        background: '#FFFFFF',
-                        color: '#0F4CD7',
-                        border: '1px solid #0F4CD7',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 6,
-                      }}
-                      onMouseEnter={e => {
-                        e.currentTarget.style.background = 'rgba(15, 76, 215, 0.04)';
-                        e.currentTarget.style.transform = 'translateY(-1px)';
-                      }}
-                      onMouseLeave={e => {
-                        e.currentTarget.style.background = '#FFFFFF';
-                        e.currentTarget.style.transform = 'translateY(0)';
-                      }}
-                    >
-                      <AccIcon size={13} />
-                      {acc.label}
-                    </button>
-                  )
-                })}
-              </div>
-              <p style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 12, textAlign: 'center', fontWeight: 500 }}>
-                Pilih demo role di atas lalu klik tombol Masuk
-              </p>
-            </div>
           </div>
         </div>
 
