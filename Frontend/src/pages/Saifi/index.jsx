@@ -186,15 +186,15 @@ export default function SaifiPage() {
         <h3 className="section-title mb-4">Detail Data SAIFI Bulanan</h3>
         <DataTable
           columns={[
-            { key: 'label', label: 'Bulan', width: '80px' },
-            { key: 'target', label: 'Target', align: 'right', render: v => v?.toFixed(4) ?? '—' },
-            { key: 'realisasi', label: 'Realisasi', align: 'right', render: v => v != null ? <span className="font-bold text-amber-600">{v.toFixed(4)}</span> : <span className="text-slate-400 text-xs">Belum ada</span> },
-            { key: 'penyulang', label: 'Penyulang', align: 'right', render: v => v?.toFixed(4) ?? '—' },
-            { key: 'gardu', label: 'Gardu', align: 'right', render: v => v?.toFixed(4) ?? '—' },
-            { key: 'jtr', label: 'JTR', align: 'right', render: v => v?.toFixed(4) ?? '—' },
-            { key: 'srapp', label: 'SRAPP', align: 'right', render: v => v?.toFixed(4) ?? '—' },
-            { key: 'pemeliharaan', label: 'Pemeliharaan', align: 'right', render: v => v?.toFixed(4) ?? '—' },
-            { key: 'bencana_alam', label: 'Bencana Alam', align: 'right', render: v => v?.toFixed(4) ?? '—' },
+            { key: 'label', label: 'Bulan', width: '80px', align: 'center' },
+            { key: 'target', label: 'Target', align: 'center', render: v => v?.toFixed(4) ?? '—' },
+            { key: 'realisasi', label: 'Realisasi', align: 'center', render: v => v != null ? <span className="font-bold text-amber-600">{v.toFixed(4)}</span> : <span className="text-slate-400 text-xs">Belum ada</span> },
+            { key: 'penyulang', label: 'Penyulang', align: 'center', render: v => v?.toFixed(4) ?? '—' },
+            { key: 'gardu', label: 'Gardu', align: 'center', render: v => v?.toFixed(4) ?? '—' },
+            { key: 'jtr', label: 'JTR', align: 'center', render: v => v?.toFixed(4) ?? '—' },
+            { key: 'srapp', label: 'SRAPP', align: 'center', render: v => v?.toFixed(4) ?? '—' },
+            { key: 'pemeliharaan', label: 'Pemeliharaan', align: 'center', render: v => v?.toFixed(4) ?? '—' },
+            { key: 'bencana_alam', label: 'Bencana Alam', align: 'center', render: v => v?.toFixed(4) ?? '—' },
           ]}
           data={data}
           paginated={false}

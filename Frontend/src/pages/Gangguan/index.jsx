@@ -173,8 +173,8 @@ export default function GangguanPage() {
         </h3>
         <DataTable
           columns={[
-            { key: 'penyulang', label: 'Penyulang', width: '120px', render: (v) => <span style={{ fontWeight: 800, color: 'var(--text-primary)' }}>{v}</span> },
-            { key: 'tanggal', label: 'Tanggal Padam', width: '100px' },
+            { key: 'penyulang', label: 'Penyulang', width: '120px', align: 'center', render: (v) => <span style={{ fontWeight: 800, color: 'var(--text-primary)' }}>{v}</span> },
+            { key: 'tanggal', label: 'Tanggal Padam', width: '100px', align: 'center' },
             { key: 'lokasi', label: 'Lokasi Gardu / Jaringan',
               render: (v) => (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
@@ -183,9 +183,9 @@ export default function GangguanPage() {
                 </div>
               )
             },
-            { key: 'beban_padam', label: 'Beban Padam', align: 'right', render: v => `${v.toFixed(2)} MW` },
-            { key: 'pelanggan_padam', label: 'Pelanggan Terdampak', align: 'right', render: v => formatNumber(v) },
-            { key: 'durasi', label: 'Durasi Padam', align: 'right', render: v => `${v} menit` },
+            { key: 'beban_padam', label: 'Beban Padam', align: 'center', render: v => `${v.toFixed(2)} MW` },
+            { key: 'pelanggan_padam', label: 'Pelanggan Terdampak', align: 'center', render: v => formatNumber(v) },
+            { key: 'durasi', label: 'Durasi Padam', align: 'center', render: v => `${v} menit` },
             { key: 'penyebab', label: 'Penyebab', align: 'center', render: v => <span className="badge badge-secondary text-2xs">{v}</span> },
             { key: 'status', label: 'Status', align: 'center',
               render: (v) => (

@@ -362,15 +362,15 @@ export default function OverviewPage() {
         </div>
         <DataTable
           columns={[
-            { key: 'name', label: 'Bulan', width: '80px',
+            { key: 'name', label: 'Bulan', width: '80px', align: 'center',
               render: v => <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{v}</span> },
-            { key: 'saidi', label: 'SAIDI YTD', align: 'right',
+            { key: 'saidi', label: 'SAIDI YTD', align: 'center',
               render: v => <span style={{ color: '#60A5FA', fontWeight: 600 }}>{v?.toFixed(2) ?? '—'}</span> },
-            { key: 'saifi', label: 'SAIFI YTD', align: 'right',
+            { key: 'saifi', label: 'SAIFI YTD', align: 'center',
               render: v => <span style={{ color: '#FCD34D', fontWeight: 600 }}>{v?.toFixed(3) ?? '—'}</span> },
-            { key: 'targetSaidi', label: 'Tgt SAIDI', align: 'right',
+            { key: 'targetSaidi', label: 'Tgt SAIDI', align: 'center',
               render: v => <span style={{ color: 'var(--text-muted)' }}>{v?.toFixed(2) ?? '—'}</span> },
-            { key: 'targetSaifi', label: 'Tgt SAIFI', align: 'right',
+            { key: 'targetSaifi', label: 'Tgt SAIFI', align: 'center',
               render: v => <span style={{ color: 'var(--text-muted)' }}>{v?.toFixed(3) ?? '—'}</span> },
             { key: 'saidi', label: 'Pencapaian', align: 'center',
               render: (v, r) => r.targetSaidi > 0
