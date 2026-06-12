@@ -13,31 +13,31 @@ export default function SpreadsheetDemo() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 16 }}>
-        <div
-          className="icon-wrapper-interactive"
-          style={{
-            width: 34, height: 34, borderRadius: 10,
-            background: 'linear-gradient(135deg, rgba(16,185,129,0.2), rgba(16,185,129,0.08))',
-            border: '1px solid rgba(16,185,129,0.25)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            marginTop: 4, flexShrink: 0,
-          }}
-        >
-          <FileSpreadsheet size={16} style={{ color: '#10B981' }} />
-        </div>
-        <div>
-          <h1 className="page-heading" style={{ marginBottom: 4 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--page-gap, 20px)' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div
+            className="icon-wrapper-interactive"
+            style={{
+              width: 34, height: 34, borderRadius: 10,
+              background: 'linear-gradient(135deg, rgba(16,185,129,0.2), rgba(16,185,129,0.08))',
+              border: '1px solid rgba(16,185,129,0.25)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <FileSpreadsheet size={16} style={{ color: '#10B981' }} />
+          </div>
+          <h1 className="page-heading">
             Integrasi Google Spreadsheet
           </h1>
-          <p className="page-description">
-            Demo ini menunjukkan bagaimana data diambil langsung (live) dari Google Sheets tanpa memerlukan backend database terpisah.
-          </p>
         </div>
+        <p className="page-description">
+          Demo ini menunjukkan bagaimana data diambil langsung (live) dari Google Sheets tanpa memerlukan backend database terpisah.
+        </p>
       </div>
 
-      <div className="card" style={{ padding: 24 }}>
+      <div className="card" style={{ padding: '20px 22px' }}>
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
             <label style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-secondary)' }}>

@@ -19,14 +19,14 @@ export default function ChartWrapper({
       }}>
         <div style={{ flex:1, minWidth:0 }}>
           <h3 style={{
-            fontSize:'1.05rem', fontWeight:800, color:'var(--text-primary)',
-            letterSpacing:'-0.01em', lineHeight:1.3,
-            marginBottom: subtitle ? 4 : 0,
+            fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)',
+            letterSpacing: '-0.01em', lineHeight: 1.3,
+            marginBottom: subtitle ? 3 : 0,
           }}>
             {title}
           </h3>
           {subtitle && (
-            <p style={{ fontSize:'0.85rem', color:'var(--text-muted)', lineHeight:1.4 }}>{subtitle}</p>
+            <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>{subtitle}</p>
           )}
         </div>
         {actions && (

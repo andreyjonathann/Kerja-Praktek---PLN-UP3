@@ -12,6 +12,48 @@ export default function Header({ onMenuToggle, onRefresh, refreshing }) {
   const { user, logout }  = useAuth()
   const { filters, updateFilter }     = useFilter()
   const [userMenu, setUserMenu]       = useState(false)
+  const [notifMenu, setNotifMenu]     = useState(false)
+  const [notifications, setNotifications] = useState([
+    {
+      id: 1,
+      type: 'critical',
+      title: 'Gangguan Penyulang Semeru',
+      message: 'Trip di Gardu CK09 (Cengkareng Timur). Beban padam 1.45 MW, pelanggan padam 2,450.',
+      time: '10 menit yang lalu',
+      read: false,
+    },
+    {
+      id: 2,
+      type: 'warning',
+      title: 'Target SAIDI Mendekati Batas',
+      message: 'Realisasi SAIDI YTD Mei 8.88 mnt/plg mendekati target tahunan 9.50 mnt/plg.',
+      time: '1 jam yang lalu',
+      read: false,
+    },
+    {
+      id: 3,
+      type: 'info',
+      title: 'Sinkronisasi Data Selesai',
+      message: 'Laporan bulanan Mei 2026 telah disinkronisasikan oleh Admin.',
+      time: '3 jam yang lalu',
+      read: true,
+    },
+  ])
+
+  const unreadCount = notifications.filter(n => !n.read).length
+
+  const markAllAsRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })))
+  }
+
+  const markAsRead = (id) => {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))
+  }
+
+  const clearNotifications = () => {
+    setNotifications([])
+  }
+
   const location                      = useLocation()
   const breadcrumb                    = getBreadcrumb(location.pathname)
 
@@ -81,18 +123,138 @@ export default function Header({ onMenuToggle, onRefresh, refreshing }) {
 
 
         {/* Bell */}
-        <button
-          className="btn-ghost"
-          style={{ width:34, height:34, padding:0, borderRadius:8, position:'relative' }}
-          title="Notifikasi"
-        >
-          <Bell size={15} style={{ color:'#FFFFFF' }} />
-          <span style={{
-            position:'absolute', top:7, right:7, width:6, height:6,
-            borderRadius:'50%', background:'#EF4444',
-            boxShadow:'0 0 6px rgba(239,68,68,0.7)',
-          }} />
-        </button>
+        <div style={{ position:'relative', display:'flex', alignItems:'center' }}>
+          <button
+            onClick={() => setNotifMenu(p => !p)}
+            className="btn-ghost"
+            style={{
+              width:34, height:34, padding:0, borderRadius:8, position:'relative',
+              background: notifMenu ? 'rgba(255,255,255,0.15)' : 'transparent',
+              border:`1px solid ${notifMenu ? 'rgba(255,255,255,0.25)' : 'transparent'}`,
+            }}
+            title="Notifikasi"
+          >
+            <Bell size={15} style={{ color:'#FFFFFF' }} />
+            {unreadCount > 0 && (
+              <span style={{
+                position:'absolute', top:7, right:7, width:6, height:6,
+                borderRadius:'50%', background:'#EF4444',
+                boxShadow:'0 0 6px rgba(239,68,68,0.7)',
+              }} />
+            )}
+          </button>
+
+          {notifMenu && (
+            <>
+              <div style={{ position:'fixed', inset:0, zIndex:30 }} onClick={() => setNotifMenu(false)} />
+              <div
+                className="animate-slide-up"
+                style={{
+                  position:'absolute', right:0, top:'calc(100% + 6px)',
+                  width:320, zIndex:40,
+                  background:'var(--bg-elevated)', border:'1px solid var(--border-strong)',
+                  borderRadius:12, boxShadow:'var(--shadow-lg)', overflow:'hidden',
+                }}
+              >
+                {/* Header */}
+                <div style={{ padding:'12px 14px', borderBottom:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                  <div style={{ fontSize:'0.95rem', fontWeight:700, color:'var(--text-primary)' }}>
+                    Notifikasi {unreadCount > 0 && <span style={{ fontSize:'0.8rem', fontWeight:500, color:'var(--text-muted)' }}>({unreadCount})</span>}
+                  </div>
+                  {notifications.length > 0 && (
+                    <button
+                      onClick={markAllAsRead}
+                      style={{
+                        background:'none', border:'none', padding:0,
+                        fontSize:'0.75rem', fontWeight:700, color:'var(--pln-blue)',
+                        cursor:'pointer',
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.textDecoration='underline'}
+                      onMouseLeave={e => e.currentTarget.style.textDecoration='none'}
+                    >
+                      Semua Dibaca
+                    </button>
+                  )}
+                </div>
+
+                {/* List Container */}
+                <div style={{ maxHeight: 280, overflowY: 'auto' }}>
+                  {notifications.length === 0 ? (
+                    <div style={{ padding: '24px 14px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                      Tidak ada notifikasi baru
+                    </div>
+                  ) : (
+                    notifications.map((n) => (
+                      <div
+                        key={n.id}
+                        style={{
+                          padding: '10px 14px',
+                          borderBottom: '1px solid var(--border)',
+                          background: n.read ? 'transparent' : 'var(--accent-soft)',
+                          borderLeft: `3px solid ${n.type === 'critical' ? '#EF4444' : n.type === 'warning' ? '#F59E0B' : '#2563EB'}`,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 3,
+                          position: 'relative',
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)', paddingRight: 10 }}>{n.title}</span>
+                          {!n.read && (
+                            <span style={{
+                              width: 6, height: 6, borderRadius: '50%', background: '#EF4444',
+                              boxShadow:'0 0 4px rgba(239,68,68,0.7)',
+                              display: 'inline-block', flexShrink: 0, marginTop: 4
+                            }} />
+                          )}
+                        </div>
+                        <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.35, whiteSpace:'normal', textAlign:'left' }}>{n.message}</span>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+                          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{n.time}</span>
+                          {!n.read && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                markAsRead(n.id)
+                              }}
+                              style={{
+                                background: 'none', border: 'none', padding: 0,
+                                fontSize: '0.7rem', color: 'var(--pln-blue)', fontWeight: 700,
+                                cursor: 'pointer',
+                              }}
+                              onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'}
+                              onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}
+                            >
+                              Tandai dibaca
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Footer */}
+                {notifications.length > 0 && (
+                  <div style={{ padding:'8px 14px', borderTop:'1px solid var(--border)', display:'flex', justifyContent:'center', background:'var(--bg-table-head)' }}>
+                    <button
+                      onClick={clearNotifications}
+                      style={{
+                        background:'none', border:'none', padding:0,
+                        fontSize:'0.75rem', fontWeight:700, color:'#EF4444',
+                        cursor:'pointer',
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.textDecoration='underline'}
+                      onMouseLeave={e => e.currentTarget.style.textDecoration='none'}
+                    >
+                      Hapus Semua
+                    </button>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
 
         {/* Divider */}
         <div style={{ width:1, height:20, background:'rgba(255, 255, 255, 0.2)', margin:'0 4px' }} />

@@ -92,7 +92,7 @@ export default function SaidiPage() {
   })
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '48px' }} className="animate-fade-in">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--page-gap, 20px)' }} className="animate-fade-in">
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div
@@ -117,7 +117,7 @@ export default function SaidiPage() {
       </div>
 
       {/* KPI Summary Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4" style={{ gap: 'var(--card-gap, 16px)' }}>
         <KpiCard
           title="SAIDI YTD"
           value={totalReal.toFixed(3)}
@@ -153,116 +153,125 @@ export default function SaidiPage() {
         />
       </div>
 
-      <div style={{
-        display: 'inline-flex',
-        background: 'rgba(15, 76, 215, 0.05)',
-        padding: 4,
-        borderRadius: 12,
-        border: '1px solid rgba(15, 76, 215, 0.08)',
-        alignSelf: 'flex-start',
-        margin: '12px 0 16px',
-      }}>
-        {['monthly', 'cumulative'].map(t => {
-          const isActive = tab === t
-          return (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              style={{
-                padding: '6px 16px',
-                borderRadius: 9,
-                fontSize: '0.85rem',
-                fontWeight: 700,
-                transition: 'all 0.2s ease',
-                border: 'none',
-                cursor: 'pointer',
-                background: isActive ? 'var(--bg-card)' : 'transparent',
-                color: isActive ? 'var(--pln-blue)' : 'var(--text-muted)',
-                boxShadow: isActive ? '0 2px 8px rgba(15, 76, 215, 0.12)' : 'none',
-              }}
-              onMouseEnter={e => {
-                if (!isActive) e.currentTarget.style.color = 'var(--text-primary)'
-              }}
-              onMouseLeave={e => {
-                if (!isActive) e.currentTarget.style.color = 'var(--text-muted)'
-              }}
-            >
-              {t === 'monthly' ? 'Bulanan' : 'Kumulatif'}
-            </button>
-          )
-        })}
-      </div>
+      {/* Trends & Breakdown Section */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div style={{
+          display: 'inline-flex',
+          background: 'rgba(15, 76, 215, 0.05)',
+          padding: 4,
+          borderRadius: 12,
+          border: '1px solid rgba(15, 76, 215, 0.08)',
+          alignSelf: 'flex-start',
+        }}>
+          {['monthly', 'cumulative'].map(t => {
+            const isActive = tab === t
+            return (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                style={{
+                  padding: '6px 16px',
+                  borderRadius: 9,
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  transition: 'all 0.2s ease',
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: isActive ? 'var(--bg-card)' : 'transparent',
+                  color: isActive ? 'var(--pln-blue)' : 'var(--text-muted)',
+                  boxShadow: isActive ? '0 2px 8px rgba(15, 76, 215, 0.12)' : 'none',
+                }}
+                onMouseEnter={e => {
+                  if (!isActive) e.currentTarget.style.color = 'var(--text-primary)'
+                }}
+                onMouseLeave={e => {
+                  if (!isActive) e.currentTarget.style.color = 'var(--text-muted)'
+                }}
+              >
+                {t === 'monthly' ? 'Bulanan' : 'Kumulatif'}
+              </button>
+            )
+          })}
+        </div>
 
-      {/* Charts row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* Main SAIDI chart */}
-        <ChartWrapper
-          title={tab === 'monthly' ? 'SAIDI Bulanan' : 'SAIDI Kumulatif'}
-          subtitle={`Target vs Realisasi ${filters.year}`}
-          loading={loading}
-          error={error}
-          empty={data.length === 0}
-          height={280}
-          onRetry={fetchData}
-        >
-          <ResponsiveContainer width="100%" height={280}>
-            <ComposedChart data={tab === 'monthly' ? data : cumulativeData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-              <XAxis dataKey="label" tick={{ fontSize: 12.5, fontWeight: 650 }} />
-              <YAxis tick={{ fontSize: 12.5, fontWeight: 650 }} />
-              <Tooltip content={<CUSTOM_TOOLTIP />} />
-              <Legend wrapperStyle={{ fontSize: 13, fontWeight: 600 }} />
-              <Bar
-                dataKey={tab === 'monthly' ? 'realisasi' : 'cumulativeReal'}
-                name="Realisasi"
-                fill="#0F4CD7"
-                radius={[4,4,0,0]}
-              />
-              <Line
-                dataKey={tab === 'monthly' ? 'target' : 'cumulativeTgt'}
-                name="Target"
-                stroke="#F59E0B"
-                strokeWidth={2}
-                strokeDasharray="5 5"
-                dot={{ r: 4, fill: '#F59E0B' }}
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
-        </ChartWrapper>
+        {/* Charts row */}
+        <div className="grid grid-cols-1 lg:grid-cols-2" style={{ gap: 'var(--card-gap, 16px)' }}>
+          {/* Main SAIDI chart */}
+          <ChartWrapper
+            title={tab === 'monthly' ? 'SAIDI Bulanan' : 'SAIDI Kumulatif'}
+            subtitle={`Target vs Realisasi ${filters.year}`}
+            loading={loading}
+            error={error}
+            empty={data.length === 0}
+            height={280}
+            onRetry={fetchData}
+          >
+            <ResponsiveContainer width="100%" height={280}>
+              <ComposedChart data={tab === 'monthly' ? data : cumulativeData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="label" tick={{ fontSize: 12.5, fontWeight: 650 }} />
+                <YAxis tick={{ fontSize: 12.5, fontWeight: 650 }} />
+                <Tooltip content={<CUSTOM_TOOLTIP />} />
+                <Legend wrapperStyle={{ fontSize: 13, fontWeight: 600 }} />
+                <Bar
+                  dataKey={tab === 'monthly' ? 'realisasi' : 'cumulativeReal'}
+                  name="Realisasi"
+                  fill="#0F4CD7"
+                  radius={[4,4,0,0]}
+                />
+                <Line
+                  dataKey={tab === 'monthly' ? 'target' : 'cumulativeTgt'}
+                  name="Target"
+                  stroke="#F59E0B"
+                  strokeWidth={2}
+                  strokeDasharray="5 5"
+                  dot={{ r: 4, fill: '#F59E0B' }}
+                />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </ChartWrapper>
 
-        {/* Breakdown by cause */}
-        <ChartWrapper
-          title="Breakdown Penyebab SAIDI"
-          subtitle="Komposisi durasi gangguan per kategori"
-          loading={loading}
-          empty={filled.length === 0}
-          height={280}
-        >
-          <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={data.filter(d => d.realisasi != null)}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-              <XAxis dataKey="label" tick={{ fontSize: 12.5, fontWeight: 650 }} />
-              <YAxis tick={{ fontSize: 12.5, fontWeight: 650 }} />
-              <Tooltip content={<CUSTOM_TOOLTIP />} />
-              <Legend wrapperStyle={{ fontSize: 13, fontWeight: 600 }} />
-              {['penyulang', 'gardu', 'jtr', 'srapp', 'pemeliharaan'].map((key, i) => (
-                <Bar key={key} dataKey={key} name={SAIDI_CAUSES[i]} stackId="a"
-                  fill={CHART_COLORS[i]} />
-              ))}
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartWrapper>
+          {/* Breakdown by cause */}
+          <ChartWrapper
+            title="Breakdown Penyebab SAIDI"
+            subtitle="Komposisi durasi gangguan per kategori"
+            loading={loading}
+            empty={filled.length === 0}
+            height={280}
+          >
+            <ResponsiveContainer width="100%" height={280}>
+              <BarChart data={data.filter(d => d.realisasi != null)}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                <XAxis dataKey="label" tick={{ fontSize: 12.5, fontWeight: 650 }} />
+                <YAxis tick={{ fontSize: 12.5, fontWeight: 650 }} />
+                <Tooltip content={<CUSTOM_TOOLTIP />} />
+                <Legend wrapperStyle={{ fontSize: 13, fontWeight: 600 }} />
+                {['penyulang', 'gardu', 'jtr', 'srapp', 'pemeliharaan'].map((key, i) => (
+                  <Bar key={key} dataKey={key} name={SAIDI_CAUSES[i]} stackId="a"
+                    fill={CHART_COLORS[i]} />
+                ))}
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartWrapper>
+        </div>
       </div>
 
       {/* Detail table */}
-      <div className="card p-5">
-        <h3 className="section-title mb-4">Detail Data SAIDI Bulanan</h3>
+      <div className="card" style={{ padding: '20px 22px' }}>
+        <div style={{ marginBottom: 20 }}>
+          <h3 style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: 3 }}>
+            Rekapitulasi Kinerja Keandalan Sistem
+          </h3>
+          <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+            Detail Data SAIDI Bulanan · Tahun {filters.year}
+          </p>
+        </div>
         <DataTable
           columns={[
             { key: 'label', label: 'Bulan', width: '80px', align: 'center' },
             { key: 'target', label: 'Target', align: 'center', render: v => v?.toFixed(3) ?? '—' },
             { key: 'realisasi', label: 'Realisasi', align: 'center',
-              render: v => v != null ? <span className="font-bold text-blue-600">{v.toFixed(3)}</span> : <span className="text-slate-400 text-xs">Belum ada</span> },
+              render: v => v != null ? <span style={{ fontWeight: 800, color: 'var(--pln-blue)' }}>{v.toFixed(3)}</span> : <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 600 }}>Belum ada</span> },
             { key: 'penyulang', label: 'Penyulang', align: 'center', render: v => v?.toFixed(3) ?? '—' },
             { key: 'gardu', label: 'Gardu', align: 'center', render: v => v?.toFixed(3) ?? '—' },
             { key: 'jtr', label: 'JTR', align: 'center', render: v => v?.toFixed(3) ?? '—' },
