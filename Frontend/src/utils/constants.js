@@ -46,51 +46,75 @@ export const TARIFF_SEGMENTS = [
 ]
 
 export const NAV_ITEMS = [
+  { type: 'item', key: 'home', label: 'HOME', icon: 'Home', path: '/' },
+  { type: 'item', key: 'copy-home', label: 'Copy of HOME', icon: 'Home', path: '/copy-home' },
   {
-    group: 'OVERVIEW',
+    type: 'group',
+    group: 'NKO',
+    icon: 'Info',
     items: [
-      { key: 'executive',    label: 'Executive Overview',   icon: 'LayoutDashboard', path: '/' },
-      { key: 'nko',          label: 'NKO Performance',      icon: 'Target',          path: '/nko' },
+      { key: 'nko-sub', label: 'NKO', path: '/nko' },
+      { key: 'trend-nko', label: 'TREND NKO', path: '/trend-nko' },
     ],
   },
   {
-    group: 'KEANDALAN',
+    type: 'group',
+    group: 'PEGAWAI',
+    icon: 'Users',
     items: [
-      { key: 'saidi',        label: 'SAIDI',                icon: 'Clock',           path: '/saidi' },
-      { key: 'saifi',        label: 'SAIFI',                icon: 'Zap',             path: '/saifi' },
-      { key: 'ens',          label: 'ENS',                  icon: 'Battery',         path: '/ens' },
-      { key: 'gangguan',     label: 'Gangguan',             icon: 'AlertTriangle',   path: '/gangguan' },
+      { key: 'pegawai-up3', label: 'PEGAWAI UP3 CKR', path: '/pegawai-up3' },
     ],
   },
   {
-    group: 'KOMERSIAL',
+    type: 'group',
+    group: 'KINERJA',
+    icon: 'TrendingUp',
     items: [
-      { key: 'pelanggan',    label: 'Pelanggan',            icon: 'Users',           path: '/pelanggan' },
-      { key: 'daya-sambung', label: 'Daya Sambung',         icon: 'Plug',            path: '/daya-sambung' },
-      { key: 'penjualan',    label: 'Penjualan TL',         icon: 'ShoppingCart',    path: '/penjualan' },
-      { key: 'pendapatan',   label: 'Pendapatan',           icon: 'Wallet',          path: '/pendapatan' },
+      {
+        type: 'subgroup',
+        group: 'JARINGAN',
+        items: [
+          { key: 'saidi', label: 'SAIDI', path: '/saidi' },
+          { key: 'saifi', label: 'SAIFI', path: '/saifi' },
+          { key: 'ens', label: 'ENS', path: '/ens' },
+          { key: 'ggn-tm-5-plus', label: 'GGN TM > 5 MENIT', path: '/ggn-tm-5-plus' },
+          { key: 'ggn-tm-5-min', label: 'GGN TM ≤ 5 MENIT', path: '/ggn-tm-5-min' },
+          { key: 'ggn-berulang', label: 'GGN BERULANG', path: '/ggn-berulang' },
+        ],
+      },
+      {
+        type: 'subgroup',
+        group: 'PEMASARAN',
+        items: [
+          { key: 'jml-pelanggan', label: 'JUMLAH PELANGGAN', path: '/jml-pelanggan' },
+          { key: 'daya-tersambung', label: 'DAYA TERSAMBUNG', path: '/daya-tersambung' },
+          { key: 'penjualan-tl', label: 'PENJUALAN TL (GWH)', path: '/penjualan-tl' },
+          { key: 'pendapatan-tl', label: 'PENDAPATAN TL (RP...)', path: '/pendapatan-tl' },
+          { key: 'data-tarif', label: 'DATA PER TARIF', path: '/data-tarif' },
+        ],
+      },
+      {
+        type: 'subgroup',
+        group: 'TRANSAKSI ENERGI',
+        items: [
+          { key: 'susut', label: 'SUSUT (%)', path: '/susut' },
+          { key: 'kwh-p2tl', label: 'KwH P2TL', path: '/kwh-p2tl' },
+          { key: 'ganti-meter', label: 'Ganti Meter', path: '/ganti-meter' },
+          { key: 'lbkb', label: 'LBKB', path: '/lbkb' },
+          { key: 'niaga', label: 'NIAGA', path: '/niaga' },
+        ],
+      },
     ],
   },
   {
-    group: 'TEKNIK & NIAGA',
+    type: 'group',
+    group: 'ANGGARAN',
+    icon: 'Target',
     items: [
-      { key: 'susut',        label: 'Susut',                icon: 'TrendingDown',    path: '/susut' },
-      { key: 'p2tl',         label: 'P2TL',                 icon: 'Search',          path: '/p2tl' },
-      { key: 'ganti-meter',  label: 'Ganti Meter',          icon: 'Settings',        path: '/ganti-meter' },
-      { key: 'niaga',        label: 'Niaga',                icon: 'Briefcase',       path: '/niaga' },
+      { key: 'skki-luncuran', label: 'SKKI LUNCURAN', path: '/skki-luncuran' },
+      { key: 'skki-murni', label: 'SKKI MURNI', path: '/skki-murni' },
+      { key: 'skko', label: 'SKKO', path: '/skko' },
     ],
   },
-  {
-    group: 'MANAJEMEN',
-    items: [
-      { key: 'skki',         label: 'SKKI / Pengadaan',     icon: 'FileText',        path: '/skki' },
-      { key: 'management',   label: 'Struktur Manajemen',   icon: 'Building2',       path: '/management' },
-    ],
-  },
-  {
-    group: 'INTEGRASI',
-    items: [
-      { key: 'spreadsheet',  label: 'Live Spreadsheet',     icon: 'LayoutDashboard', path: '/spreadsheet' },
-    ],
-  },
+  { type: 'item', key: 'informasi-gi', label: 'INFORMASI GI', icon: 'FileText', path: '/informasi-gi' },
 ]

@@ -11,6 +11,8 @@ import OverviewPage from '@/pages/Overview'
 import SaidiPage from '@/pages/Saidi'
 import SaifiPage from '@/pages/Saifi'
 import GangguanPage from '@/pages/Gangguan'
+import NkoPage from '@/pages/Nko'
+import EnsPage from '@/pages/Ens'
 import PlaceholderPage from '@/pages/Placeholder'
 import SpreadsheetDemo from '@/pages/SpreadsheetDemo'
 
@@ -83,12 +85,12 @@ export default function App() {
               {/* Phase 2 Placeholders */}
               <Route path="/nko" element={
                 <ProtectedRoute>
-                  <PlaceholderPage title="NKO Performance" />
+                  <NkoPage />
                 </ProtectedRoute>
               } />
               <Route path="/ens" element={
                 <ProtectedRoute>
-                  <PlaceholderPage title="ENS (Energy Not Supplied)" />
+                  <EnsPage />
                 </ProtectedRoute>
               } />
               <Route path="/pelanggan" element={

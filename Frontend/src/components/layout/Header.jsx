@@ -206,7 +206,15 @@ function FilterPill({ value, onChange, options, width }) {
 }
 
 function getBreadcrumb(pathname) {
-  const all = NAV_ITEMS.flatMap(g => g.items)
-  const found = all.find(item => item.path==='/' ? pathname==='/' : pathname.startsWith(item.path))
+  const getAllPaths = (items) => {
+    let list = []
+    items.forEach(item => {
+      if (item.path) list.push(item)
+      if (item.items) list.push(...getAllPaths(item.items))
+    })
+    return list
+  }
+  const all = getAllPaths(NAV_ITEMS)
+  const found = all.find(item => item.path === '/' ? pathname === '/' : pathname.startsWith(item.path))
   return found?.label || 'Dashboard'
 }

@@ -4,6 +4,7 @@ import {
   LayoutDashboard, Target, Clock, Zap, Battery, AlertTriangle,
   Users, Plug, ShoppingCart, Wallet, TrendingDown, Search,
   Settings, Briefcase, FileText, Building2, ChevronDown, X,
+  Home, Info, TrendingUp, Activity, ChevronRight
 } from 'lucide-react'
 import { NAV_ITEMS } from '@/utils/constants'
 import PlnLogo from '@/components/ui/PlnLogo'
@@ -11,7 +12,7 @@ import PlnLogo from '@/components/ui/PlnLogo'
 const ICON_MAP = {
   LayoutDashboard, Target, Clock, Zap, Battery, AlertTriangle,
   Users, Plug, ShoppingCart, Wallet, TrendingDown, Search,
-  Settings, Briefcase, FileText, Building2,
+  Settings, Briefcase, FileText, Building2, Home, Info, TrendingUp, Activity
 }
 
 export default function Sidebar({ mobileOpen, onMobileClose }) {
@@ -62,55 +63,93 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
 
         {/* Navigation */}
         <nav style={{ flex:1, minHeight: 0, padding:'8px 0 12px', overflowY:'auto' }}>
-          {NAV_ITEMS.map((group) => (
-            <div key={group.group}>
-              <button
-                className="sidebar-group-label"
-                onClick={() => toggle(group.group)}
-              >
-                <span>{group.group}</span>
-                <ChevronDown
-                  size={10}
-                  style={{
-                    transition: 'transform 0.2s',
-                    transform: collapsed[group.group] ? 'rotate(-90deg)' : 'rotate(0)',
-                    color: 'rgba(255, 255, 255, 0.55)',
-                    marginRight: 10,
-                  }}
-                />
-              </button>
-
-              {!collapsed[group.group] && (
-                <ul style={{ listStyle:'none', marginTop:2 }}>
-                  {group.items.map((item) => {
-                    const IconComp = ICON_MAP[item.icon] || LayoutDashboard
-                    const isActive = location.pathname === item.path ||
-                      (item.path !== '/' && location.pathname.startsWith(item.path))
- 
-                    return (
-                      <li key={item.key}>
-                        <NavLink
-                          to={item.path}
-                          onClick={onMobileClose}
-                          className={`sidebar-nav-item ${isActive ? 'active' : ''}`}
-                        >
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+            {NAV_ITEMS.map((item) => {
+              const renderItem = (navItem, depth = 0) => {
+                if (navItem.type === 'item' || (!navItem.type && navItem.path)) {
+                  const IconComp = ICON_MAP[navItem.icon] || LayoutDashboard
+                  const isActive = location.pathname === navItem.path ||
+                    (navItem.path !== '/' && location.pathname.startsWith(navItem.path))
+                  
+                  return (
+                    <li key={navItem.key}>
+                      <NavLink
+                        to={navItem.path}
+                        onClick={onMobileClose}
+                        className={`sidebar-nav-item ${isActive ? 'active' : ''}`}
+                        style={{ paddingLeft: 16 + (depth * 24) }}
+                      >
+                        {depth === 0 ? (
                           <IconComp
                             size={15}
                             style={{
-                              color: isActive ? '#FFFFFF' : 'rgba(255, 255, 255, 0.65)',
+                              color: isActive ? 'inherit' : 'rgba(255, 255, 255, 0.65)',
                               flexShrink: 0,
                               transition: 'color 0.15s',
                             }}
                           />
-                          <span style={{ fontSize:'0.8125rem' }}>{item.label}</span>
-                        </NavLink>
-                      </li>
-                    )
-                  })}
-                </ul>
-              )}
-            </div>
-          ))}
+                        ) : null}
+                        <span style={{ fontSize:'0.8125rem' }}>{navItem.label}</span>
+                      </NavLink>
+                    </li>
+                  )
+                }
+
+                if (navItem.type === 'group' || navItem.type === 'subgroup') {
+                  const isCollapsed = collapsed[navItem.group]
+                  const IconComp = navItem.icon ? ICON_MAP[navItem.icon] : null
+
+                  return (
+                    <div key={navItem.group}>
+                      <button
+                        className="sidebar-group-label"
+                        onClick={() => toggle(navItem.group)}
+                        style={{
+                          paddingLeft: 16 + (depth * 24),
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'flex-start',
+                          gap: '8px',
+                          width: '100%',
+                          border: 'none',
+                          background: 'transparent',
+                          cursor: 'pointer',
+                          paddingTop: '10px',
+                          paddingBottom: '10px',
+                          paddingRight: '16px',
+                          color: 'rgba(255,255,255,0.65)'
+                        }}
+                      >
+                        <ChevronDown
+                          size={12}
+                          style={{
+                            transition: 'transform 0.2s',
+                            transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0)',
+                            flexShrink: 0,
+                          }}
+                        />
+                        {IconComp && (
+                          <IconComp
+                            size={15}
+                            style={{ flexShrink: 0 }}
+                          />
+                        )}
+                        <span style={{ flex: 1, textAlign: 'left', fontSize: '0.75rem', fontWeight: 600 }}>{navItem.group}</span>
+                      </button>
+
+                      {!isCollapsed && (
+                        <ul style={{ listStyle:'none', marginTop:2, padding: 0 }}>
+                          {navItem.items.map(subItem => renderItem(subItem, depth + 1))}
+                        </ul>
+                      )}
+                    </div>
+                  )
+                }
+                return null
+              }
+              return renderItem(item)
+            })}
+          </ul>
         </nav>
 
         {/* Footer */}

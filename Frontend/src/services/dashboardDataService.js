@@ -79,8 +79,12 @@ export const getDashboardData = async (year = 2026) => {
         if (kategori.toLowerCase() === 'target') result.gangguan[mIdx].target = nilai;
       }
       
-      // Store other raw data for Overview
-      if (!result._raw) result._raw = { nko: {}, losses: {}, ens: {} };
+      // Store other raw data for Overview and NKO
+      if (!result._raw) result._raw = { 
+        nko: {}, losses: {}, ens: {}, 
+        ensBulananAll: {}, ensKumulatifAll: {},
+        penjualan: {}, gantiMeter: {}, p2tlPerolehan: {}, p2tlPenyelesaian: {} 
+      };
       if (kpi === 'NKO Kumulatif') {
         if (kategori === yearStr) result._raw.nko[mIdx] = { ...result._raw.nko[mIdx], val: nilai };
         if (kategori.toLowerCase() === 'target') result._raw.nko[mIdx] = { ...result._raw.nko[mIdx], tgt: nilai };
@@ -89,9 +93,36 @@ export const getDashboardData = async (year = 2026) => {
         if (kategori === yearStr) result._raw.losses[mIdx] = { ...result._raw.losses[mIdx], val: nilai };
         if (kategori.toLowerCase() === 'target' || kategori.toLowerCase() === 'target,') result._raw.losses[mIdx] = { ...result._raw.losses[mIdx], tgt: nilai };
       }
+      if (kpi === 'ENS Bulanan (MWh)') {
+        if (!result._raw.ensBulananAll[mIdx]) result._raw.ensBulananAll[mIdx] = {};
+        const key = kategori.toLowerCase() === 'target' ? 'target' : kategori;
+        result._raw.ensBulananAll[mIdx][key] = nilai;
+      }
       if (kpi === 'ENS Kumulatif (MWh)') {
         if (kategori === yearStr) result._raw.ens[mIdx] = { ...result._raw.ens[mIdx], val: nilai };
         if (kategori.toLowerCase() === 'target') result._raw.ens[mIdx] = { ...result._raw.ens[mIdx], tgt: nilai };
+        
+        if (!result._raw.ensKumulatifAll[mIdx]) result._raw.ensKumulatifAll[mIdx] = {};
+        const key = kategori.toLowerCase() === 'target' ? 'target' : kategori;
+        result._raw.ensKumulatifAll[mIdx][key] = nilai;
+      }
+      if (kpi === 'Penjualan TL (GWh)') {
+        if (kategori === yearStr) result._raw.penjualan[mIdx] = { ...result._raw.penjualan[mIdx], val: nilai };
+        if (kategori.toLowerCase() === 'target') result._raw.penjualan[mIdx] = { ...result._raw.penjualan[mIdx], tgt: nilai };
+      }
+      if (kpi === 'Penyelesaian Ganti Meter') {
+        if (kategori === yearStr) result._raw.gantiMeter[mIdx] = { ...result._raw.gantiMeter[mIdx], val: nilai };
+        if (kategori.toLowerCase() === 'target') result._raw.gantiMeter[mIdx] = { ...result._raw.gantiMeter[mIdx], tgt: nilai };
+      }
+      if (kpi === 'Perolehan P2TL' || kpi === 'Perolehan Temuan P2TL') {
+        if (kategori.toLowerCase() === 'realisasi') result._raw.p2tlPerolehan[mIdx] = { ...result._raw.p2tlPerolehan[mIdx], val: nilai };
+        if (kategori.toLowerCase() === 'target') result._raw.p2tlPerolehan[mIdx] = { ...result._raw.p2tlPerolehan[mIdx], tgt: nilai };
+        if (kategori.toLowerCase() === 'pencapaian') result._raw.p2tlPerolehan[mIdx] = { ...result._raw.p2tlPerolehan[mIdx], pencapaian: nilai };
+      }
+      if (kpi === 'Penyelesaian P2TL' || kpi === 'Penyelesaian Temuan P2TL') {
+        if (kategori.toLowerCase() === 'realisasi' || kategori === yearStr) result._raw.p2tlPenyelesaian[mIdx] = { ...result._raw.p2tlPenyelesaian[mIdx], val: nilai };
+        if (kategori.toLowerCase() === 'target') result._raw.p2tlPenyelesaian[mIdx] = { ...result._raw.p2tlPenyelesaian[mIdx], tgt: nilai };
+        if (kategori.toLowerCase() === 'pencapaian') result._raw.p2tlPenyelesaian[mIdx] = { ...result._raw.p2tlPenyelesaian[mIdx], pencapaian: nilai };
       }
     });
 
@@ -138,6 +169,65 @@ export const getDashboardData = async (year = 2026) => {
       list: gangguanList
     };
 
+    // Prepare NKO Table Data
+    const nkoTableData = [];
+    for (let i = 0; i < 12; i++) {
+      const calcPencapaian = (real, tgt, isInverse = false) => {
+        if (tgt == null || real == null || tgt === 0) return 0;
+        let pct = isInverse ? (tgt / real) * 100 : (real / tgt) * 100;
+        // The image shows some pencapaian capped at 110% when it overflows wildly.
+        // But for precision, we return the exact percentage.
+        return Math.max(pct, 0); 
+      };
+
+      const ensTgt = result._raw?.ens[i]?.tgt || 0;
+      const ensVal = result._raw?.ens[i]?.val || 0;
+      
+      const penTgt = result._raw?.penjualan[i]?.tgt || 0;
+      const penVal = result._raw?.penjualan[i]?.val || 0;
+
+      const gmTgt = result._raw?.gantiMeter[i]?.tgt || 0;
+      const gmVal = result._raw?.gantiMeter[i]?.val || 0;
+
+      const p2tlSelesaiTgt = 100; 
+      const p2tlSelesaiVal = result._raw?.p2tlPenyelesaian[i]?.val || 0; 
+      // sometimes pencapaian is already present
+      let p2tlSelesaiPct = result._raw?.p2tlPenyelesaian[i]?.pencapaian ? result._raw.p2tlPenyelesaian[i].pencapaian * 100 : calcPencapaian(p2tlSelesaiVal, p2tlSelesaiTgt, false);
+
+      const p2tlOlehTgt = 100; 
+      const p2tlOlehVal = result._raw?.p2tlPerolehan[i]?.val ? (result._raw.p2tlPerolehan[i].val / 10000) : 0; // dummy scale
+      let p2tlOlehPct = result._raw?.p2tlPerolehan[i]?.pencapaian ? result._raw.p2tlPerolehan[i].pencapaian * 100 : 0;
+      
+      // If we don't have real values, fallback to 0
+      if (!p2tlOlehPct) p2tlOlehPct = 0;
+
+      const saidiTgt = result.saidi[i].target || 0;
+      const saidiVal = result.saidi[i].realisasi || 0;
+
+      const saifiTgt = result.saifi[i].target || 0;
+      const saifiVal = result.saifi[i].realisasi || 0;
+
+      const susutTgt = result._raw?.losses[i]?.tgt || 0;
+      const susutVal = result._raw?.losses[i]?.val || 0;
+
+      nkoTableData.push({
+        bulan: i + 1,
+        label: MONTHS_SHORT[i + 1],
+        totalNko: result._raw?.nko[i]?.val || 0,
+        metrics: [
+          { kpi: 'ENS', satuan: 'MWh', target: ensTgt, realisasi: ensVal, pencapaian: calcPencapaian(ensVal, ensTgt, true), isInverse: true },
+          { kpi: 'Penjualan Tenaga Listrik', satuan: 'GWh', target: penTgt, realisasi: penVal, pencapaian: calcPencapaian(penVal, penTgt, false) },
+          { kpi: 'Penyelesaian Ganti Meter', satuan: 'Unit', target: gmTgt, realisasi: gmVal, pencapaian: calcPencapaian(gmVal, gmTgt, false) },
+          { kpi: 'Penyelesaian Temuan P2TL', satuan: '%', target: p2tlSelesaiTgt, realisasi: p2tlSelesaiVal, pencapaian: p2tlSelesaiPct },
+          { kpi: 'Perolehan Temuan P2TL', satuan: '%', target: p2tlOlehTgt, realisasi: p2tlOlehVal, pencapaian: p2tlOlehPct },
+          { kpi: 'SAIDI', satuan: 'menit/pelanggan', target: saidiTgt, realisasi: saidiVal, pencapaian: calcPencapaian(saidiVal, saidiTgt, true), isInverse: true },
+          { kpi: 'SAIFI', satuan: 'kali/pelanggan', target: saifiTgt, realisasi: saifiVal, pencapaian: calcPencapaian(saifiVal, saifiTgt, true), isInverse: true },
+          { kpi: 'Susut Distribusi', satuan: '%', target: susutTgt, realisasi: susutVal, pencapaian: calcPencapaian(susutVal, susutTgt, true), isInverse: true },
+        ]
+      });
+    }
+    result.nkoTable = nkoTableData;
+
     // Prepare Overview Data
     const validSaidi = result.saidi.filter(d => d.realisasi != null);
     const validSaifi = result.saifi.filter(d => d.realisasi != null);
@@ -177,6 +267,37 @@ export const getDashboardData = async (year = 2026) => {
         { id:5, kpiName:'P2TL - Penertiban Pemakaian TL', target:'Rp 4.5 M',      realYtd:'Rp 4.2 M',       score:93.3 },
       ]
     };
+
+    // Prepare ENS Page Data
+    const ensMonthlyData = [];
+    for (let i = 0; i < 12; i++) {
+      const bRaw = result._raw.ensBulananAll[i] || {};
+      const kRaw = result._raw.ensKumulatifAll[i] || {};
+
+      // Use the current year for breakdown dummy (fallback to 0 if null)
+      const bCurr = bRaw[year.toString()] || 0;
+      const kCurr = kRaw[year.toString()] || 0;
+
+      ensMonthlyData.push({
+        bulan: i + 1,
+        label: MONTHS_SHORT[i + 1],
+        bulanan: {
+          ...bRaw,
+          target: bRaw['target'] || null, // ensure target is always present even if null
+          padam_terencana: bCurr * 0.35,
+          tidak_terencana: bCurr * 0.50,
+          bencana_alam: bCurr * 0.15
+        },
+        kumulatif: {
+          ...kRaw,
+          target: kRaw['target'] || null,
+          padam_terencana: kCurr * 0.35,
+          tidak_terencana: kCurr * 0.50,
+          bencana_alam: kCurr * 0.15
+        }
+      });
+    }
+    result.ensPageData = ensMonthlyData;
 
     delete result._raw;
 
