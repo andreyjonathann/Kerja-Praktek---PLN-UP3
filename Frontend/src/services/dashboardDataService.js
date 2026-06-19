@@ -1,7 +1,7 @@
 import { fetchSpreadsheetData } from './googleSheetsService';
 import { MONTHS_SHORT } from '@/utils/formatters';
 
-const SPREADSHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQF3eNDzC3vf9FXeLWl8quvpRk9UopQABmqH05jXu2CxMrqUvju_XYFuNUbvhpXdw/pub?output=csv';
+const SPREADSHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/1PH1QJfsEsVKt8Ub91DS22xf6FCwrHxvz/gviz/tq?tqx=out:csv&sheet=MASTER_DATA';
 
 const parseNumber = (val) => {
   if (val === null || val === undefined || val === '') return null;
@@ -20,21 +20,45 @@ const createMonthlyTemplate = () => {
   }));
 };
 
-// Auto calculate breakdown to ensure charts don't break
 const calculateBreakdown = (data, proportions) => {
   return data.map(d => {
-    if (d.realisasi == null) return d;
     const result = { ...d };
-    Object.keys(proportions).forEach(key => {
-      result[key] = d.realisasi * proportions[key];
-    });
+    if (d.realisasi != null) {
+      Object.keys(proportions).forEach(key => {
+        result[key] = d.realisasi * proportions[key];
+      });
+    }
+    if (d.cumulativeReal != null) {
+      Object.keys(proportions).forEach(key => {
+        result[`c_${key}`] = d.cumulativeReal * proportions[key];
+      });
+    }
     return result;
   });
 };
 
 export const getDashboardData = async (year = 2026) => {
   try {
-    const rawData = await fetchSpreadsheetData(SPREADSHEET_CSV_URL);
+    let urlsToFetch = [SPREADSHEET_CSV_URL];
+    
+    const saved = localStorage.getItem('sigap_spreadsheet_urls');
+    if (saved) {
+       try {
+         const parsed = JSON.parse(saved);
+         const validUrls = Object.values(parsed).filter(url => typeof url === 'string' && url.trim().length > 0);
+         if (validUrls.length > 0) {
+           urlsToFetch = validUrls;
+         }
+       } catch(e) { console.error('Error parsing urls from localStorage', e); }
+    }
+
+    const allFetches = urlsToFetch.map(url => fetchSpreadsheetData(url).catch(e => {
+        console.error("Failed to fetch from URL:", url, e);
+        return []; 
+    }));
+    
+    const results = await Promise.all(allFetches);
+    const rawData = results.flat();
     
     const result = {
       saidi: createMonthlyTemplate(),
@@ -44,54 +68,84 @@ export const getDashboardData = async (year = 2026) => {
 
     const saidiKumulatifTargets = {};
     const saifiKumulatifTargets = {};
+    const yearStr = year.toString();
 
-    rawData.forEach(row => {
-      const kpi = row.KPI;
-      const bulanNum = parseInt(row.Bulan_Num);
-      const kategori = row.Kategori ? row.Kategori.toString().trim() : '';
-      const nilai = parseNumber(row.Nilai);
+    rawData.forEach((row, rowIndex) => {
+      const keys = Object.keys(row);
+      const isUnpivoted = row.Bulan_Num !== undefined || row.Nilai !== undefined;
+      
+      if (isUnpivoted) {
+        const kpi = row.KPI ? row.KPI.trim() : '';
+        if (!kpi) return;
+        const kategori = row.Kategori ? row.Kategori.toString().trim() : '';
+        const bulanNum = parseInt(row.Bulan_Num);
+        if (isNaN(bulanNum) || bulanNum < 1 || bulanNum > 12) return;
+        const mIdx = bulanNum - 1;
+        const nilai = parseNumber(row.Nilai);
+        processCell(kpi, kategori, mIdx, nilai);
+      } else {
+        if (keys.length < 3) return;
+        const kpi = row[keys[1]]?.trim();
+        if (!kpi) return;
+        const kategori = row[keys[2]]?.toString().trim();
+        for (let i = 0; i < 12; i++) {
+          const colKey = keys[i + 3];
+          if (!colKey) continue;
+          let nilai = parseNumber(row[colKey]);
+          processCell(kpi, kategori, i, nilai);
+        }
+      }
+    });
 
-      if (isNaN(bulanNum) || bulanNum < 1 || bulanNum > 12) return;
-      const mIdx = bulanNum - 1;
-      const yearStr = year.toString();
-
-      // SAIDI
+    function processCell(kpi, kategori, mIdx, nilai) {
+      if (kpi === 'Penjualan Tenaga Listrik (GWh)') {
+        if (kategori === yearStr) result.penjualan[mIdx].realisasi = nilai;
+        if (kategori.toLowerCase() === 'target') result.penjualan[mIdx].target = nilai;
+      }
+      if (kpi === 'Pendapatan Penjualan TL (Milyar Rp)') {
+        if (kategori === yearStr) result.pendapatan[mIdx].realisasi = nilai;
+        if (kategori.toLowerCase() === 'target') result.pendapatan[mIdx].target = nilai;
+      }
       if (kpi === 'SAIDI Bulanan') {
         if (kategori === yearStr) result.saidi[mIdx].realisasi = nilai;
         if (kategori.toLowerCase() === 'target') result.saidi[mIdx].target = nilai;
       }
-      if (kpi === 'SAIDI Kumulatif' && kategori.toLowerCase() === 'target') {
-        saidiKumulatifTargets[mIdx] = nilai;
+      if (kpi === 'SAIDI Kumulatif') {
+        if (kategori === yearStr) result.saidi[mIdx].cumulativeReal = nilai;
+        if (kategori.toLowerCase() === 'target') {
+          saidiKumulatifTargets[mIdx] = nilai;
+          result.saidi[mIdx].cumulativeTgt = nilai;
+        }
       }
-
-      // SAIFI
       if (kpi === 'SAIFI Bulanan') {
         if (kategori === yearStr) result.saifi[mIdx].realisasi = nilai;
         if (kategori.toLowerCase() === 'target') result.saifi[mIdx].target = nilai;
       }
-      if (kpi === 'SAIFI Kumulatif' && kategori.toLowerCase() === 'target') {
-        saifiKumulatifTargets[mIdx] = nilai;
+      if (kpi === 'SAIFI Kumulatif') {
+        if (kategori === yearStr) result.saifi[mIdx].cumulativeReal = nilai;
+        if (kategori.toLowerCase() === 'target') {
+          saifiKumulatifTargets[mIdx] = nilai;
+          result.saifi[mIdx].cumulativeTgt = nilai;
+        }
       }
-
-      // Gangguan
       if (kpi === 'Gangguan TM') {
         if (kategori === yearStr) result.gangguan[mIdx].gangguan = nilai;
         if (kategori.toLowerCase() === 'target') result.gangguan[mIdx].target = nilai;
       }
       
-      // Store other raw data for Overview and NKO
       if (!result._raw) result._raw = { 
         nko: {}, losses: {}, ens: {}, 
         ensBulananAll: {}, ensKumulatifAll: {},
         penjualan: {}, gantiMeter: {}, p2tlPerolehan: {}, p2tlPenyelesaian: {} 
       };
-      if (kpi === 'NKO Kumulatif') {
+      
+      if (kpi === 'NKO Kumulatif' || kpi === 'NKO (%)') {
         if (kategori === yearStr) result._raw.nko[mIdx] = { ...result._raw.nko[mIdx], val: nilai };
         if (kategori.toLowerCase() === 'target') result._raw.nko[mIdx] = { ...result._raw.nko[mIdx], tgt: nilai };
       }
-      if (kpi === 'Susut (%)') {
+      if (kpi === 'Susut (%)' || kpi === 'Susut / Losses (%)') {
         if (kategori === yearStr) result._raw.losses[mIdx] = { ...result._raw.losses[mIdx], val: nilai };
-        if (kategori.toLowerCase() === 'target' || kategori.toLowerCase() === 'target,') result._raw.losses[mIdx] = { ...result._raw.losses[mIdx], tgt: nilai };
+        if (kategori.toLowerCase().includes('target')) result._raw.losses[mIdx] = { ...result._raw.losses[mIdx], tgt: nilai };
       }
       if (kpi === 'ENS Bulanan (MWh)') {
         if (!result._raw.ensBulananAll[mIdx]) result._raw.ensBulananAll[mIdx] = {};
@@ -124,23 +178,96 @@ export const getDashboardData = async (year = 2026) => {
         if (kategori.toLowerCase() === 'target') result._raw.p2tlPenyelesaian[mIdx] = { ...result._raw.p2tlPenyelesaian[mIdx], tgt: nilai };
         if (kategori.toLowerCase() === 'pencapaian') result._raw.p2tlPenyelesaian[mIdx] = { ...result._raw.p2tlPenyelesaian[mIdx], pencapaian: nilai };
       }
-    });
+      if (kategori === yearStr && kpi === 'Gangguan TM > 5 Menit') result.gangguan[mIdx].gt5 = nilai || 0;
+      if (kategori === yearStr && kpi === 'Gangguan TM ≤ 5 Menit') result.gangguan[mIdx].le5 = nilai || 0;
+      if (kategori === yearStr && kpi === 'Gangguan Berulang') result.gangguan[mIdx].berulang = nilai || 0;
+    }
 
-    // Derive monthly targets from cumulative if not provided explicitly in 'Bulanan'
+    // Derive monthly realisasi and targets from cumulative if not provided explicitly in 'Bulanan'
     for (let i = 0; i < 12; i++) {
       if (result.saidi[i].target == null && saidiKumulatifTargets[i] != null) {
-        const prev = i > 0 ? (saidiKumulatifTargets[i-1] || 0) : 0;
-        result.saidi[i].target = Math.max(0, saidiKumulatifTargets[i] - prev);
+        result.saidi[i].target = saidiKumulatifTargets[i];
       }
+      if (result.saidi[i].realisasi == null && result.saidi[i].cumulativeReal != null) {
+        result.saidi[i].realisasi = result.saidi[i].cumulativeReal;
+      }
+
       if (result.saifi[i].target == null && saifiKumulatifTargets[i] != null) {
-        const prev = i > 0 ? (saifiKumulatifTargets[i-1] || 0) : 0;
-        result.saifi[i].target = Math.max(0, saifiKumulatifTargets[i] - prev);
+        result.saifi[i].target = saifiKumulatifTargets[i];
+      }
+      if (result.saifi[i].realisasi == null && result.saifi[i].cumulativeReal != null) {
+        result.saifi[i].realisasi = result.saifi[i].cumulativeReal;
       }
     }
 
-    // Apply Breakdown for SAIDI and SAIFI
-    result.saidi = calculateBreakdown(result.saidi, { penyulang: 0.45, gardu: 0.25, jtr: 0.15, srapp: 0.10, pemeliharaan: 0.05 });
-    result.saifi = calculateBreakdown(result.saifi, { penyulang: 0.45, gardu: 0.25, jtr: 0.15, srapp: 0.10, pemeliharaan: 0.05 });
+    // Fetch Breakdown data only for 2026
+    if (yearStr === '2026') {
+      try {
+        const bRawData = await fetchSpreadsheetData('https://docs.google.com/spreadsheets/d/1PH1QJfsEsVKt8Ub91DS22xf6FCwrHxvz/gviz/tq?tqx=out:csv&sheet=BREAKDOWN_SAIDI_SAIFI_ENS');
+        let currentSection = 'SAIDI'; // Default to SAIDI because its title is in the header
+        bRawData.forEach(row => {
+          const keys = Object.keys(row);
+          const compNameRaw = row[keys[1]];
+          if (!compNameRaw || typeof compNameRaw !== 'string') return;
+          
+          const compName = compNameRaw.trim();
+          
+          if (compName.includes('SAIDI BULANAN')) { currentSection = 'SAIDI'; return; }
+          if (compName.includes('SAIFI BULANAN')) { currentSection = 'SAIFI'; return; }
+          if (compName.includes('ENS BULANAN')) { currentSection = 'ENS'; return; }
+          if (compName.includes('TOTAL') || compName.includes('Komponen') || compName.includes('BREAKDOWN')) return;
+          
+          if (!currentSection) return;
+          
+          const mapCompName = (name) => {
+            name = name.toLowerCase();
+            if (name.includes('har') || name.includes('pemeliharaan')) return 'pemeliharaan';
+            if (name.includes('penyulang')) return 'penyulang';
+            if (name.includes('gardu')) return 'gardu';
+            if (name.includes('jtr')) return 'jtr';
+            if (name.includes('sr & app') || name.includes('srapp')) return 'srapp';
+            if (name.includes('bencana')) return 'bencana_alam';
+            if (name.includes('sistem') || name.includes('transmisi')) return 'transmisi';
+            return null;
+          };
+          
+          const field = mapCompName(compName);
+          if (field) {
+            keys.forEach(k => {
+              const mIdx = MONTHS_SHORT.indexOf(k.trim());
+              if (mIdx > 0) {
+                let val = parseNumber(row[k]);
+                if (val != null) {
+                  if (currentSection === 'SAIDI') result.saidi[mIdx - 1][field] = val;
+                  else if (currentSection === 'SAIFI') result.saifi[mIdx - 1][field] = val;
+                }
+              }
+            });
+          }
+        });
+        
+        // Calculate cumulative breakdown manually from the parsed bulanan
+        ['saidi', 'saifi'].forEach(kpi => {
+          const fields = ['pemeliharaan', 'penyulang', 'gardu', 'jtr', 'srapp', 'bencana_alam', 'transmisi'];
+          result[kpi].forEach((d, i) => {
+            let sumB = 0;
+            fields.forEach(f => {
+              if (d[f] != null) {
+                sumB += d[f];
+                const prevC = i > 0 ? (result[kpi][i-1][`c_${f}`] || 0) : 0;
+                result[kpi][i][`c_${f}`] = prevC + d[f];
+              }
+            });
+            // Auto-fill realisasi from breakdown if it is missing in MASTER_DATA
+            if (d.realisasi === null && sumB > 0) {
+              d.realisasi = sumB;
+            }
+          });
+        });
+      } catch (err) {
+        console.warn("Failed to fetch BREAKDOWN sheet, falling back to empty breakdown.", err);
+      }
+    }
     
     // Gangguan page expects a specific structure: { list, by_cause, monthly_trend }
     const gangguanMonthly = result.gangguan.map(d => ({
@@ -234,20 +361,26 @@ export const getDashboardData = async (year = 2026) => {
     const lastMIdx = validSaidi.length > 0 ? validSaidi[validSaidi.length - 1].id - 1 : 0;
     
     // sum saidi and saifi for YTD (they are bulanan in our parsed array)
-    const saidiYtd = validSaidi.reduce((s,d) => s + d.realisasi, 0);
-    const saifiYtd = validSaifi.reduce((s,d) => s + d.realisasi, 0);
-    const saidiTgt = validSaidi.reduce((s,d) => s + d.target, 0);
-    const saifiTgt = validSaifi.reduce((s,d) => s + d.target, 0);
+    const saidiYtd = validSaidi.length > 0 ? (validSaidi[validSaidi.length - 1].cumulativeReal ?? validSaidi.reduce((s,d) => s + d.realisasi, 0)) : 0;
+    const saifiYtd = validSaifi.length > 0 ? (validSaifi[validSaifi.length - 1].cumulativeReal ?? validSaifi.reduce((s,d) => s + d.realisasi, 0)) : 0;
+    const saidiTgt = validSaidi.length > 0 ? (validSaidi[validSaidi.length - 1].cumulativeTgt ?? validSaidi.reduce((s,d) => s + d.target, 0)) : 0;
+    const saifiTgt = validSaifi.length > 0 ? (validSaifi[validSaifi.length - 1].cumulativeTgt ?? validSaifi.reduce((s,d) => s + d.target, 0)) : 0;
 
-    const nkoVal = result._raw?.nko[lastMIdx]?.val || 0;
-    const lossesVal = result._raw?.losses[lastMIdx]?.val || 0;
-    const ensVal = result._raw?.ens[lastMIdx]?.val || 0;
+    // Independent last month indexes for each KPI
+    const validNkoIdx = Object.keys(result._raw?.nko || {}).map(Number).filter(m => result._raw.nko[m]?.val != null).sort((a,b)=>a-b).pop() ?? 0;
+    const validLossesIdx = Object.keys(result._raw?.losses || {}).map(Number).filter(m => result._raw.losses[m]?.val != null).sort((a,b)=>a-b).pop() ?? 0;
+    const validEnsIdx = Object.keys(result._raw?.ens || {}).map(Number).filter(m => result._raw.ens[m]?.val != null).sort((a,b)=>a-b).pop() ?? 0;
+
+    const nkoVal = result._raw?.nko[validNkoIdx]?.val || 0;
+    const lossesVal = result._raw?.losses[validLossesIdx]?.val || 0;
+    const ensVal = result._raw?.ens[validEnsIdx]?.val || 0;
+    const ensTgt = result._raw?.ens[validEnsIdx]?.tgt || 150000;
 
     result.overview = {
       kpis: {
         saidi:    { val: saidiYtd,   target: saidiTgt, isInverse: true,  unit: 'mnt/plg' },
         saifi:    { val: saifiYtd,   target: saifiTgt, isInverse: true,  unit: 'kali/plg' },
-        ens:      { val: ensVal,     target: result._raw?.ens[lastMIdx]?.tgt || 150000, isInverse: true,  unit: 'MWh' },
+        ens:      { val: ensVal,     target: ensTgt, isInverse: true,  unit: 'MWh' },
         gangguan: { val: totalGangguan, target: 160, isInverse: true, unit: 'kali' },
         nko:      { val: nkoVal,     target: 100, isInverse: false, unit: '%' },
         losses:   { val: lossesVal,  target: 6.00, isInverse: true, unit: '%' },

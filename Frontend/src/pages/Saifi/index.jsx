@@ -73,16 +73,23 @@ export default function SaifiPage() {
     return () => window.removeEventListener('sigap:refresh', h)
   }, [fetchData])
 
-  const filled      = data.filter(d => d.realisasi != null)
-  const totalReal   = filled.reduce((s, d) => s + d.realisasi, 0)
-  const totalTgt    = filled.reduce((s, d) => s + d.target, 0)
-  const achievement = totalTgt > 0 ? Math.min(150, (totalTgt / Math.max(0.0001, totalReal)) * 100) : 0
-  const lastMonth   = filled[filled.length - 1]
+  const filled     = data.filter(d => d.realisasi != null)
+  const lastMonth  = filled[filled.length - 1]
+  const totalReal  = lastMonth ? lastMonth.realisasi : 0
+  const totalTgt   = lastMonth ? lastMonth.target : 0
+  const achievement = totalTgt > 0 ? Math.min(150, (totalTgt / Math.max(0.001, totalReal)) * 100) : 0
+  
+  const breakdownData = [
+    { name: 'Penyulang', value: filled.reduce((s, x) => s + (x.penyulang || 0), 0) },
+    { name: 'Gardu', value: filled.reduce((s, x) => s + (x.gardu || 0), 0) },
+    { name: 'JTR', value: filled.reduce((s, x) => s + (x.jtr || 0), 0) },
+    { name: 'SRAPP', value: filled.reduce((s, x) => s + (x.srapp || 0), 0) },
+    { name: 'Pemeliharaan', value: filled.reduce((s, x) => s + (x.pemeliharaan || 0), 0) },
+    { name: 'Bencana Alam', value: filled.reduce((s, x) => s + (x.bencana_alam || 0), 0) },
+    { name: 'Transmisi', value: filled.reduce((s, x) => s + (x.transmisi || 0), 0) },
+  ].filter(d => d.value > 0);
 
-  const cumulativeData = data.map((d, i) => {
-    const prev = data.slice(0, i + 1).filter(x => x.realisasi != null)
-    return { ...d, cumulativeReal: prev.reduce((s, x) => s + x.realisasi, 0), cumulativeTgt: data.slice(0, i + 1).reduce((s, x) => s + x.target, 0) }
-  })
+  const cumulativeData = data;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '48px' }} className="animate-fade-in">
@@ -113,7 +120,7 @@ export default function SaifiPage() {
         <KpiCard title="SAIFI YTD" value={totalReal.toFixed(4)} unit="kali/plg" achievement={achievement} icon={Zap} color="yellow" isInverse loading={loading} />
         <KpiCard title="Target YTD" value={totalTgt.toFixed(4)} unit="kali/plg" icon={Target} color="green" loading={loading} />
         <KpiCard title="Bulan Terakhir" value={lastMonth?.realisasi?.toFixed(4) ?? '—'} unit="kali/plg" icon={Activity} color="blue" loading={loading} />
-        <KpiCard title="Pencapaian" value={achievement.toFixed(1) + '%'} icon={TrendingDown} color={achievement >= 90 ? 'green' : achievement >= 70 ? 'yellow' : 'red'} loading={loading} />
+        <KpiCard title="Pencapaian" value={achievement.toFixed(1) + '%'} icon={TrendingDown} color={totalReal > totalTgt ? 'red' : 'green'} loading={loading} />
       </div>
 
       <div style={{
@@ -166,7 +173,14 @@ export default function SaifiPage() {
               <Tooltip content={<CUSTOM_TOOLTIP />} />
               <Legend wrapperStyle={{ fontSize: 13, fontWeight: 600 }} />
               <Bar dataKey={tab === 'monthly' ? 'realisasi' : 'cumulativeReal'} name="Realisasi" fill="#2F7BFF" radius={[4,4,0,0]} />
-              <Line dataKey={tab === 'monthly' ? 'target' : 'cumulativeTgt'} name="Target" stroke="#F59E0B" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 4, fill: '#F59E0B' }} />
+              <Line
+                dataKey={tab === 'monthly' ? 'target' : 'cumulativeTgt'}
+                name="Target"
+                stroke="#EF4444"
+                strokeWidth={2}
+                strokeDasharray="5 5"
+                dot={{ r: 4, fill: '#EF4444' }}
+              />
             </ComposedChart>
           </ResponsiveContainer>
         </ChartWrapper>
@@ -179,7 +193,7 @@ export default function SaifiPage() {
               <YAxis tick={{ fontSize: 12.5, fontWeight: 650 }} />
               <Tooltip content={<CUSTOM_TOOLTIP />} />
               <Legend wrapperStyle={{ fontSize: 13, fontWeight: 600 }} />
-              {['penyulang','gardu','jtr','srapp','pemeliharaan','bencana_alam'].map((key, i) => (
+              {['penyulang','gardu','jtr','srapp','pemeliharaan','bencana_alam','transmisi'].map((key, i) => (
                 <Bar key={key} dataKey={key} name={SAIFI_CAUSES[i]} stackId="a" fill={CHART_COLORS[i]} />
               ))}
             </BarChart>
@@ -188,18 +202,19 @@ export default function SaifiPage() {
       </div>
 
       <div className="card p-5">
-        <h3 className="section-title mb-4">Detail Data SAIFI Bulanan</h3>
+        <h3 className="section-title mb-4">Detail Data SAIFI {tab === 'monthly' ? 'Bulanan' : 'Kumulatif'}</h3>
         <DataTable
           columns={[
             { key: 'label', label: 'Bulan', width: '80px', align: 'center' },
-            { key: 'target', label: 'Target', align: 'center', render: v => v?.toFixed(4) ?? '—' },
-            { key: 'realisasi', label: 'Realisasi', align: 'center', render: v => v != null ? <span className="font-bold text-amber-600">{v.toFixed(4)}</span> : <span className="text-slate-400 text-xs">Belum ada</span> },
-            { key: 'penyulang', label: 'Penyulang', align: 'center', render: v => v?.toFixed(4) ?? '—' },
-            { key: 'gardu', label: 'Gardu', align: 'center', render: v => v?.toFixed(4) ?? '—' },
-            { key: 'jtr', label: 'JTR', align: 'center', render: v => v?.toFixed(4) ?? '—' },
-            { key: 'srapp', label: 'SRAPP', align: 'center', render: v => v?.toFixed(4) ?? '—' },
-            { key: 'pemeliharaan', label: 'Pemeliharaan', align: 'center', render: v => v?.toFixed(4) ?? '—' },
-            { key: 'bencana_alam', label: 'Bencana Alam', align: 'center', render: v => v?.toFixed(4) ?? '—' },
+            { key: tab === 'monthly' ? 'target' : 'cumulativeTgt', label: 'Target', align: 'center', render: v => v?.toFixed(4) ?? '-' },
+            { key: tab === 'monthly' ? 'realisasi' : 'cumulativeReal', label: 'Realisasi', align: 'center', render: (v, row) => v != null ? <span className={`font-bold ${v > (tab === 'monthly' ? row.target : row.cumulativeTgt) ? 'text-red-500' : 'text-emerald-500'}`}>{v.toFixed(4)}</span> : <span className="text-slate-400 text-xs font-bold">-</span> },
+            { key: tab === 'monthly' ? 'penyulang' : 'c_penyulang', label: <span style={{ color: 'var(--text-muted)' }}>Penyulang</span>, align: 'center', render: v => v != null ? <span style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-secondary)', padding: '2px 8px', borderRadius: 6, fontWeight: 600, fontSize: '0.75rem' }}>{v.toFixed(3)}</span> : '-' },
+            { key: tab === 'monthly' ? 'gardu' : 'c_gardu', label: <span style={{ color: 'var(--text-muted)' }}>Gardu</span>, align: 'center', render: v => v != null ? <span style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-secondary)', padding: '2px 8px', borderRadius: 6, fontWeight: 600, fontSize: '0.75rem' }}>{v.toFixed(3)}</span> : '-' },
+            { key: tab === 'monthly' ? 'jtr' : 'c_jtr', label: <span style={{ color: 'var(--text-muted)' }}>JTR</span>, align: 'center', render: v => v != null ? <span style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-secondary)', padding: '2px 8px', borderRadius: 6, fontWeight: 600, fontSize: '0.75rem' }}>{v.toFixed(3)}</span> : '-' },
+            { key: tab === 'monthly' ? 'srapp' : 'c_srapp', label: <span style={{ color: 'var(--text-muted)' }}>SRAPP</span>, align: 'center', render: v => v != null ? <span style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-secondary)', padding: '2px 8px', borderRadius: 6, fontWeight: 600, fontSize: '0.75rem' }}>{v.toFixed(3)}</span> : '-' },
+            { key: tab === 'monthly' ? 'pemeliharaan' : 'c_pemeliharaan', label: <span style={{ color: 'var(--text-muted)' }}>Pemeliharaan</span>, align: 'center', render: v => v != null ? <span style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-secondary)', padding: '2px 8px', borderRadius: 6, fontWeight: 600, fontSize: '0.75rem' }}>{v.toFixed(3)}</span> : '-' },
+            { key: tab === 'monthly' ? 'bencana_alam' : 'c_bencana_alam', label: <span style={{ color: 'var(--text-muted)' }}>Bencana Alam</span>, align: 'center', render: v => v != null ? <span style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-secondary)', padding: '2px 8px', borderRadius: 6, fontWeight: 600, fontSize: '0.75rem' }}>{v.toFixed(3)}</span> : '-' },
+            { key: tab === 'monthly' ? 'transmisi' : 'c_transmisi', label: <span style={{ color: 'var(--text-muted)' }}>Transmisi</span>, align: 'center', render: v => v != null ? <span style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-secondary)', padding: '2px 8px', borderRadius: 6, fontWeight: 600, fontSize: '0.75rem' }}>{v.toFixed(3)}</span> : '-' },
           ]}
           data={data}
           paginated={false}

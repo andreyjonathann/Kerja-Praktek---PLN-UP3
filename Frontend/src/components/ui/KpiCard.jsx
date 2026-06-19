@@ -57,9 +57,12 @@ export default function KpiCard({
 
   let achKey = 'good'
   if (achievement != null) {
-    const eff = isInverse ? (200 - achievement) : achievement
-    if (eff < 70) achKey = 'bad'
-    else if (eff < 90) achKey = 'warn'
+    if (isInverse) {
+      achKey = achievement >= 100 ? 'good' : 'bad'
+    } else {
+      if (achievement < 70) achKey = 'bad'
+      else if (achievement < 90) achKey = 'warn'
+    }
   }
   const ach = getAchColors(achKey, dark)
 

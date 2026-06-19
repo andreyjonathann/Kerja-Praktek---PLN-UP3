@@ -3,9 +3,12 @@ import { getDashboardData } from '@/services/dashboardDataService'
 import { useFilter } from '@/context/FilterContext'
 import { MONTHS } from '@/utils/constants'
 import { Bolt } from 'lucide-react'
+import DataTable from '@/components/ui/DataTable'
+import { useTheme } from '@/context/ThemeContext'
 
-// --- Premium Speedometer Component ---
+// --- Clean Speedometer Component ---
 const Speedometer = ({ value }) => {
+  const { dark } = useTheme()
   const radius = 90
   const strokeWidth = 14
   const circumference = Math.PI * radius
@@ -14,12 +17,12 @@ const Speedometer = ({ value }) => {
   const strokeDashoffset = circumference - fillPct * circumference
 
   // Determine text color based on score
-  const scoreColor = safeValue >= 100 ? 'text-emerald-400' : safeValue >= 80 ? 'text-blue-400' : 'text-rose-400'
+  const scoreColor = safeValue >= 100 ? '#10B981' : safeValue >= 80 ? '#0F4CD7' : '#EF4444'
 
   return (
     <div className="flex flex-col items-center justify-center pt-6 pb-2 w-full relative">
-      <div className="relative w-full max-w-[360px] aspect-[2/1] overflow-hidden flex justify-center">
-        <svg viewBox="0 0 240 120" className="w-full h-full overflow-visible drop-shadow-2xl">
+      <div className="relative w-full max-w-[320px] aspect-[2/1] overflow-hidden flex justify-center">
+        <svg viewBox="0 0 240 120" className="w-full h-full overflow-visible">
           {/* Gradient Definition */}
           <defs>
             <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -28,7 +31,7 @@ const Speedometer = ({ value }) => {
               <stop offset="100%" stopColor="#10b981" /> {/* Green */}
             </linearGradient>
             <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur stdDeviation="5" result="blur" />
+              <feGaussianBlur stdDeviation="3" result="blur" />
               <feComposite in="SourceGraphic" in2="blur" operator="over" />
             </filter>
           </defs>
@@ -37,7 +40,7 @@ const Speedometer = ({ value }) => {
           <path
             d="M 20 110 A 90 90 0 0 1 220 110"
             fill="none"
-            stroke="rgba(255,255,255,0.1)"
+            stroke={dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}
             strokeWidth={strokeWidth}
             strokeLinecap="round"
           />
@@ -51,20 +54,20 @@ const Speedometer = ({ value }) => {
             strokeDasharray={circumference}
             strokeDashoffset={strokeDashoffset}
             className="transition-all duration-1000 ease-out"
-            filter="url(#glow)"
+            filter={dark ? "url(#glow)" : ""}
           />
         </svg>
         
         {/* Score Display */}
         <div className="absolute bottom-1 left-0 w-full text-center flex flex-col items-center">
-          <span className={`text-7xl font-black tracking-tighter ${scoreColor} drop-shadow-md`}>
+          <span style={{ color: scoreColor, fontSize: '3.5rem', fontWeight: 800, lineHeight: 1, letterSpacing: '-0.025em' }}>
             {safeValue > 0 ? safeValue.toFixed(2).replace('.', ',') : '0,00'}
           </span>
         </div>
         
         {/* Scale Markers */}
-        <span className="absolute bottom-[-5px] left-[10px] text-slate-400 font-bold text-xs opacity-70">0</span>
-        <span className="absolute bottom-[-5px] right-[10px] text-slate-400 font-bold text-xs opacity-70">100</span>
+        <span className="absolute bottom-[-5px] left-[15px] font-bold text-xs" style={{ color: 'var(--text-muted)' }}>0</span>
+        <span className="absolute bottom-[-5px] right-[15px] font-bold text-xs" style={{ color: 'var(--text-muted)' }}>100</span>
       </div>
     </div>
   )
@@ -110,8 +113,12 @@ export default function NkoPage() {
 
   if (loading && !data) {
     return (
-      <div className="flex h-[80vh] items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="flex flex-col gap-12">
+        <div className="skeleton" style={{ height: 80, borderRadius: 16 }}></div>
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-5">
+          <div className="skeleton xl:col-span-3" style={{ height: 400, borderRadius: 16 }}></div>
+          <div className="skeleton xl:col-span-1" style={{ height: 400, borderRadius: 16 }}></div>
+        </div>
       </div>
     )
   }
@@ -128,33 +135,55 @@ export default function NkoPage() {
     )
   }
 
+  const tableColumns = [
+    { key: 'no', label: 'No', width: '60px', align: 'center', render: (_, __, idx) => idx + 1 },
+    { key: 'kpi', label: 'Indikator KPI' },
+    { key: 'satuan', label: 'Satuan', align: 'center', render: v => <span style={{ color: 'var(--text-muted)' }}>{v}</span> },
+    { key: 'target', label: 'Target', align: 'right', render: v => v != null ? Number(v).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-' },
+    { key: 'realisasi', label: 'Realisasi', align: 'right', render: v => <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '1.05rem' }}>{v != null ? Number(v).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}</span> },
+    { key: 'pencapaian', label: 'Pencapaian', align: 'right', render: (v) => {
+        if (v == null) return '-'
+        const isSuccess = v >= 100;
+        // if the percentage is Infinity or completely broken
+        if (!isFinite(v)) return <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>N/A</span>
+        
+        return (
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            padding: '4px 10px', borderRadius: '8px', fontSize: '0.8125rem', fontWeight: 700,
+            background: isSuccess ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+            color: isSuccess ? '#10B981' : '#EF4444',
+            border: `1px solid ${isSuccess ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`
+          }}>
+            {Number(v).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
+          </span>
+        )
+    }}
+  ]
+
   return (
-    <div className="p-4 md:p-6 w-full animate-fade-in space-y-4">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }} className="animate-fade-in">
       
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
-            <Bolt size={26} />
+      <div className="card" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div className="icon-wrapper-interactive" style={{ width: 48, height: 48, borderRadius: 12, background: 'linear-gradient(135deg, rgba(37,99,235,0.2), rgba(37,99,235,0.08))', border: '1px solid rgba(37,99,235,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Bolt size={24} style={{ color: '#2563EB' }} />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-              Nilai Kinerja Organisasi (NKO)
-            </h1>
-            <p className="text-slate-500 dark:text-slate-400 text-sm mt-0.5">
-              Pantau ringkasan pencapaian KPI bulanan secara real-time.
-            </p>
+            <h1 className="page-heading" style={{ marginBottom: 4 }}>Nilai Kinerja Organisasi (NKO)</h1>
+            <p className="page-description">Pantau ringkasan pencapaian KPI bulanan secara real-time.</p>
           </div>
         </div>
 
         {/* Filters */}
-        <div className="flex flex-col items-start md:items-end">
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1 ml-1">Pilih Bulan</span>
-          <div className="bg-slate-50 dark:bg-slate-900 p-1.5 rounded-lg flex items-center border border-slate-200 dark:border-slate-700 shadow-inner">
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4, marginLeft: 4 }}>Pilih Bulan</span>
+          <div style={{ background: 'var(--bg-elevated)', padding: '6px 12px', borderRadius: 10, border: '1px solid var(--border)' }}>
             <select
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(Number(e.target.value))}
-              className="bg-transparent border-none text-base font-bold text-blue-700 dark:text-blue-400 focus:ring-0 cursor-pointer pl-3 pr-8 outline-none"
+              style={{ background: 'transparent', border: 'none', fontSize: '0.95rem', fontWeight: 700, color: 'var(--pln-blue)', outline: 'none', cursor: 'pointer' }}
             >
               {MONTHS.map(m => (
                 <option key={m.value} value={m.value}>{m.label}</option>
@@ -164,75 +193,33 @@ export default function NkoPage() {
         </div>
       </div>
 
-      {/* Main Content Grid - Adjusted ratio 3:1 to give table more space and reduce empty gaps */}
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-4">
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-5">
         
         {/* Table Section */}
-        <div className="xl:col-span-3 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col">
-          <div className="p-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 rounded-t-2xl">
-            <h2 className="font-bold text-slate-800 dark:text-white text-lg">Rincian KPI - {currentData.label}</h2>
+        <div className="card xl:col-span-3" style={{ padding: 0, overflow: 'hidden' }}>
+          <div style={{ padding: '18px 24px', borderBottom: '1px solid var(--border)', background: 'var(--bg-elevated)' }}>
+            <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>Rincian KPI - {currentData.label}</h2>
           </div>
-          
-          <div className="overflow-x-auto">
-            <table className="w-full text-base text-left">
-              <thead className="bg-slate-50 dark:bg-slate-900/40 text-slate-500 dark:text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-700/50">
-                <tr>
-                  <th className="px-6 py-5 w-12 text-center text-sm">No</th>
-                  <th className="px-6 py-5 text-sm">Indikator KPI</th>
-                  <th className="px-6 py-5 text-center text-sm">Satuan</th>
-                  <th className="px-6 py-5 text-right text-sm">Target</th>
-                  <th className="px-6 py-5 text-right text-sm">Realisasi</th>
-                  <th className="px-6 py-5 text-right text-sm">Pencapaian</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
-                {currentData.metrics.map((row, idx) => {
-                  const isSuccess = row.pencapaian >= 100;
-                  
-                  const rowClass = "hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors duration-200"
-                  const badgeClass = isSuccess 
-                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20"
-                    : "bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20"
-
-                  const fmtTgt = row.target != null ? Number(row.target).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-';
-                  const fmtReal = row.realisasi != null ? Number(row.realisasi).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-';
-                  const fmtPct = row.pencapaian != null ? `${Number(row.pencapaian).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%` : '-';
-
-                  return (
-                    <tr key={idx} className={rowClass}>
-                      <td className="px-6 py-5 text-center text-slate-400 dark:text-slate-500">{idx + 1}</td>
-                      <td className="px-6 py-5 font-semibold text-slate-700 dark:text-slate-200">{row.kpi}</td>
-                      <td className="px-6 py-5 text-center text-slate-500 dark:text-slate-400">{row.satuan}</td>
-                      <td className="px-6 py-5 text-right font-medium text-slate-600 dark:text-slate-300">{fmtTgt}</td>
-                      <td className="px-6 py-5 text-right font-bold text-slate-900 dark:text-white text-lg">{fmtReal}</td>
-                      <td className="px-6 py-5 text-right">
-                        <span className={`inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-sm font-bold ${badgeClass}`}>
-                          {fmtPct}
-                        </span>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
+          <DataTable
+            columns={tableColumns}
+            data={currentData.metrics}
+            paginated={false}
+            searchable={false}
+          />
         </div>
 
-        {/* Speedometer Section - Colored Frame */}
-        <div className="xl:col-span-1 bg-gradient-to-br from-slate-800 to-slate-950 rounded-2xl shadow-xl border border-slate-700 flex flex-col overflow-hidden relative text-white">
-          {/* Subtle Grid Background */}
-          <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at center, #ffffff 1px, transparent 1px)', backgroundSize: '16px 16px' }}></div>
-          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
-          
-          <div className="p-5 border-b border-white/10 relative z-10 flex justify-between items-center">
-            <h2 className="font-bold text-white text-lg">Total NKO</h2>
-            <div className="px-2 py-0.5 rounded bg-white/10 text-xs font-bold tracking-widest text-slate-300 border border-white/5">SCORE</div>
+        {/* Speedometer Section */}
+        <div className="card xl:col-span-1" style={{ padding: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <div style={{ padding: '18px 24px', borderBottom: '1px solid var(--border)', background: 'var(--bg-elevated)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>Total NKO</h2>
+            <div style={{ padding: '2px 8px', borderRadius: 6, background: 'var(--border)', fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>SCORE</div>
           </div>
           
-          <div className="flex-1 flex flex-col justify-center items-center p-4 relative z-10">
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '24px' }}>
             <Speedometer value={currentData.totalNko} />
-            <p className="text-sm font-medium text-slate-400 mt-6 text-center uppercase tracking-widest">
-              Kinerja Bulan Ini
+            <p style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)', marginTop: 24, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Kinerja Bulan {currentData.label}
             </p>
           </div>
         </div>

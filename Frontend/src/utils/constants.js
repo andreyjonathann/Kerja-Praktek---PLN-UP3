@@ -8,7 +8,7 @@ export const PLN_COLORS = {
 
 export const CHART_COLORS = [
   '#0070C0', '#16A34A', '#D97706', '#DC2626', '#7C3AED',
-  '#0891B2', '#BE185D', '#D97706', '#059669', '#6366F1',
+  '#BE185D', '#0891B2', '#D97706', '#059669', '#6366F1',
 ]
 
 export const YEARS = [2022, 2023, 2024, 2025, 2026]
@@ -30,8 +30,8 @@ export const MONTHS = [
 
 export const UP3_LIST = ['Kebon Jeruk']
 
-export const SAIDI_CAUSES = ['Penyulang', 'Gardu', 'JTR', 'SRAPP', 'Pemeliharaan']
-export const SAIFI_CAUSES = ['Penyulang', 'Gardu', 'JTR', 'SRAPP', 'Pemeliharaan', 'Bencana Alam']
+export const SAIDI_CAUSES = ['Penyulang', 'Gardu', 'JTR', 'SRAPP', 'Pemeliharaan', 'Bencana Alam', 'Transmisi']
+export const SAIFI_CAUSES = ['Penyulang', 'Gardu', 'JTR', 'SRAPP', 'Pemeliharaan', 'Bencana Alam', 'Transmisi']
 export const ENS_CAUSES   = ['Padam Terencana', 'Tidak Terencana', 'Bencana Alam']
 
 export const TARIFF_SEGMENTS = [
@@ -117,4 +117,5 @@ export const NAV_ITEMS = [
     ],
   },
   { type: 'item', key: 'informasi-gi', label: 'INFORMASI GI', icon: 'FileText', path: '/informasi-gi' },
+  { type: 'item', key: 'spreadsheet', label: 'LIVE SPREADSHEET', icon: 'LayoutDashboard', path: '/spreadsheet' },
 ]

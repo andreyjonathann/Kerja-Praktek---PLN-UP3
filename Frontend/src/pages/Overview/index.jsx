@@ -14,6 +14,7 @@ import DataTable from '@/components/ui/DataTable'
 import { TrafficLight, StatusBadge } from '@/components/shared/StatusBadge'
 import { useFilter } from '@/context/FilterContext'
 import { useAuth } from '@/context/AuthContext'
+import { useNavigate } from 'react-router-dom'
 import { formatNumber, formatCurrency, formatPercent } from '@/utils/formatters'
 import { getDashboardData } from '@/services/dashboardDataService'
 
@@ -49,6 +50,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 export default function OverviewPage() {
   const { filters } = useFilter()
   const { isAdmin } = useAuth()
+  const navigate = useNavigate()
   const [data,         setData]         = useState(null)
   const [loading,      setLoading]      = useState(true)
   const [uploadStatus, setUploadStatus] = useState({ state: 'idle', msg: '' })
@@ -196,6 +198,7 @@ export default function OverviewPage() {
           icon={Award}
           color="blue"
           loading={loading}
+          onClick={() => navigate('/nko')}
         />
         <KpiCard
           title="SAIDI YTD"
@@ -203,9 +206,10 @@ export default function OverviewPage() {
           unit="mnt/plg"
           achievement={getAch(kpis.saidi)}
           icon={Clock}
-          color="yellow"
+          color={(kpis.saidi?.val > kpis.saidi?.target) ? 'red' : 'green'}
           isInverse
           loading={loading}
+          onClick={() => navigate('/saidi')}
         />
         <KpiCard
           title="SAIFI YTD"
@@ -213,17 +217,19 @@ export default function OverviewPage() {
           unit="kali/plg"
           achievement={getAch(kpis.saifi)}
           icon={Zap}
-          color="orange"
+          color={(kpis.saifi?.val > kpis.saifi?.target) ? 'red' : 'green'}
           isInverse
           loading={loading}
+          onClick={() => navigate('/saifi')}
         />
         <KpiCard
           title="Energi Tidak Tersalur (ENS)"
           value={formatNumber(kpis.ens?.val ?? 0)}
           unit="kWh"
           icon={ShieldAlert}
-          color="red"
+          color={(kpis.ens?.val > kpis.ens?.target) ? 'red' : 'green'}
           loading={loading}
+          onClick={() => navigate('/ens')}
         />
         <KpiCard
           title="Gangguan YTD"
@@ -234,6 +240,7 @@ export default function OverviewPage() {
           color="red"
           isInverse
           loading={loading}
+          onClick={() => navigate('/gangguan')}
         />
         <KpiCard
           title="Susut Jaringan"
@@ -244,6 +251,7 @@ export default function OverviewPage() {
           color="green"
           isInverse
           loading={loading}
+          onClick={() => navigate('/susut')}
         />
       </div>
 
@@ -277,10 +285,10 @@ export default function OverviewPage() {
               <Legend wrapperStyle={{ fontSize: 13, fontWeight: 600, paddingTop: 16 }} />
               <Bar yAxisId="left" dataKey="saidi" name="SAIDI Real" fill="#0F4CD7" radius={[4,4,0,0]} fillOpacity={0.85} />
               <Line yAxisId="left" type="monotone" dataKey="targetSaidi" name="SAIDI Target"
-                stroke="#F59E0B" strokeWidth={2} strokeDasharray="4 4" dot={false} />
+                stroke="#EF4444" strokeWidth={2} strokeDasharray="4 4" dot={false} />
               <Bar yAxisId="right" dataKey="saifi" name="SAIFI Real" fill="#2F7BFF" radius={[4,4,0,0]} fillOpacity={0.85} />
               <Line yAxisId="right" type="monotone" dataKey="targetSaifi" name="SAIFI Target"
-                stroke="#F59E0B" strokeWidth={2} strokeDasharray="4 4" dot={false} />
+                stroke="#10B981" strokeWidth={2} strokeDasharray="4 4" dot={false} />
             </ComposedChart>
           </ResponsiveContainer>
         </ChartWrapper>
