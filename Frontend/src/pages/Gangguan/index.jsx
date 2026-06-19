@@ -53,7 +53,7 @@ export default function GangguanPage() {
   const totalBeban     = data?.list?.reduce((s, x) => s + x.beban_padam, 0) ?? 0
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '48px' }} className="animate-fade-in">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--page-gap, 20px)' }} className="animate-fade-in">
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div
@@ -78,7 +78,7 @@ export default function GangguanPage() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4" style={{ gap: 'var(--card-gap, 16px)' }}>
         <KpiCard
           title="Total Gangguan Jaringan"
           value={totalGangguan}
@@ -114,7 +114,7 @@ export default function GangguanPage() {
       </div>
 
       {/* Chart Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+      <div className="grid grid-cols-1 lg:grid-cols-3" style={{ gap: 'var(--card-gap, 16px)' }}>
         {/* Trend line chart */}
         <div className="lg:col-span-2">
           <ChartWrapper
@@ -168,11 +168,26 @@ export default function GangguanPage() {
       </div>
 
       {/* Events detail list */}
-      <div className="card p-5">
-        <h3 className="section-title mb-4 flex items-center justify-between">
-          <span>Daftar Peristiwa Gangguan Terkini</span>
-          <span className="badge badge-success text-2xs">Real-Time Sync</span>
-        </h3>
+      <div className="card" style={{ padding: '20px 22px' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
+          <div>
+            <h3 style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: 3 }}>
+              Daftar Peristiwa Gangguan Terkini
+            </h3>
+            <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+              Rincian pemadaman listrik tingkat gardu dan penyulang · Tahun {filters.year}
+            </p>
+          </div>
+          <span style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            fontSize: '0.65rem', fontWeight: 700, padding: '4px 10px',
+            borderRadius: 99, background: 'rgba(16,185,129,0.1)',
+            color: '#34D399', border: '1px solid rgba(16,185,129,0.2)',
+          }}>
+            <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#10B981', display: 'inline-block', boxShadow: '0 0 6px #10B98180' }} />
+            Real-Time Sync
+          </span>
+        </div>
         <DataTable
           columns={[
             { key: 'penyulang', label: 'Penyulang', width: '120px', render: (v) => <span style={{ fontWeight: 800, color: 'var(--text-primary)' }}>{v}</span> },
