@@ -283,12 +283,73 @@ export const getDashboardData = async (year = 2026) => {
       { name: 'JTR', value: Math.round(totalGangguan * 0.25) },
     ];
     
-    // Return original mock list for detailed events since it's not in CSV
-    const gangguanList = [
-      { id: 1, penyulang: 'Krakatau', tanggal: '2026-06-08', lokasi: 'Gardu CK12, Jl. Daan Mogot', pelanggan_padam: 1240, beban_padam: 0.85, durasi: 45, status: 'Selesai', penyebab: 'Penyulang' },
-      { id: 2, penyulang: 'Bromo', tanggal: '2026-06-07', lokasi: 'Gardu CK45, Kamal Muara', pelanggan_padam: 850, beban_padam: 0.62, durasi: 120, status: 'Selesai', penyebab: 'Gardu' },
-      { id: 3, penyulang: 'Semeru', tanggal: '2026-06-05', lokasi: 'Gardu KJ09, Jl. Panjang, Kebon Jeruk', pelanggan_padam: 2450, beban_padam: 1.45, durasi: 15, status: 'Selesai', penyebab: 'Bencana Alam' },
-    ];
+    // Fetch actual FGTM history for the selected year
+    let gangguanList = [];
+    try {
+      const fgtmUrl = `https://docs.google.com/spreadsheets/d/1CkfVBalvg8Azrot2ahomH7QaQTf3Ew1N8I6jcD-Etc0/gviz/tq?tqx=out:csv&sheet=FGTM%20${yearStr}`;
+      const fgtmRawData = await fetchSpreadsheetData(fgtmUrl);
+      
+      let idCounter = 1;
+      fgtmRawData.forEach(row => {
+        const penyulang = row['Penyulang'] || '';
+        const garduInduk = row['Gardu Induk'] || '';
+        if (!penyulang && !garduInduk) return; // skip empty rows
+        
+        // Filter hanya untuk GI Kebon Jeruk
+        if (!garduInduk.toUpperCase().includes('KEBON JERUK')) return;
+        
+        const tglPadam = row['Tgl Padam'] || '';
+        const jamPadam = row['Jam Padam'] || '';
+        const tglNyala = row['Tgl Nyala'] || '';
+        const jamNyala = row['Jam Nyala'] || '';
+        const segmenGardu = row['Segmen / Gardu'] || '';
+        const jenisGangguan = row['Jenis Gangguan'] || '';
+        const keterangan = row['Keterangan'] || '';
+        
+        // Calculate duration
+        let durasi = 0;
+        try {
+          if (tglPadam && jamPadam && tglNyala && jamNyala) {
+             const parseDateTime = (dateStr, timeStr) => {
+               let cleanTime = timeStr.replace(/:+$/, ''); 
+               const parts = cleanTime.split(':');
+               const hours = parseInt(parts[0]) || 0;
+               const mins = parseInt(parts[1]) || 0;
+               const dParts = dateStr.split('/');
+               if (dParts.length === 3) {
+                 return new Date(dParts[2], dParts[1] - 1, dParts[0], hours, mins).getTime();
+               }
+               return null;
+             };
+             
+             const start = parseDateTime(tglPadam, jamPadam);
+             const end = parseDateTime(tglNyala, jamNyala);
+             if (start && end && end >= start) {
+                durasi = Math.round((end - start) / 60000); // in minutes
+             }
+          }
+        } catch(e) { }
+
+        gangguanList.push({
+          id: idCounter++,
+          penyulang: penyulang,
+          gardu_induk: garduInduk,
+          tanggal: tglPadam,
+          waktu_padam: jamPadam,
+          waktu_nyala: jamNyala,
+          lokasi: segmenGardu ? `Gardu ${segmenGardu}` : (garduInduk || penyulang),
+          kode_gardu: segmenGardu,
+          durasi: durasi,
+          penyebab: jenisGangguan,
+          keterangan: keterangan,
+          pelanggan_padam: 0,
+          beban_padam: 0, 
+          status: 'Selesai'
+        });
+      });
+    } catch (err) {
+      console.warn(`Failed to fetch FGTM ${yearStr} sheet, falling back to empty list.`, err);
+    }
 
     result.gangguan = {
       monthly_trend: gangguanMonthly,

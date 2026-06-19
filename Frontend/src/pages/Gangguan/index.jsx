@@ -15,10 +15,15 @@ import { formatNumber, formatPercent } from '@/utils/formatters'
 import { CHART_COLORS } from '@/utils/constants'
 import { getDashboardData } from '@/services/dashboardDataService'
 
-export default function GangguanPage() {
+export default function GangguanPage({ defaultTab = 'all' }) {
   const { filters } = useFilter()
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [listTab, setListTab] = useState(defaultTab)
+
+  useEffect(() => {
+    setListTab(defaultTab)
+  }, [defaultTab])
 
   const fetchData = useCallback(async (isBackground = false) => {
     if (!isBackground) setLoading(true)
@@ -172,7 +177,7 @@ export default function GangguanPage() {
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
           <div>
             <h3 style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: 3 }}>
-              Daftar Peristiwa Gangguan Terkini
+              Histori Gangguan TM
             </h3>
             <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
               Rincian pemadaman listrik tingkat gardu dan penyulang · Tahun {filters.year}
@@ -188,11 +193,43 @@ export default function GangguanPage() {
             Real-Time Sync
           </span>
         </div>
+
+        {/* Filters */}
+        <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
+          {[
+            { id: 'all', label: 'Semua Gangguan' },
+            { id: '>5', label: '> 5 Menit' },
+            { id: '<=5', label: '≤ 5 Menit' },
+          ].map(tab => {
+            const isActive = listTab === tab.id
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setListTab(tab.id)}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: 8,
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  transition: 'all 0.2s ease',
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: isActive ? 'var(--bg-card)' : 'transparent',
+                  color: isActive ? 'var(--pln-blue)' : 'var(--text-muted)',
+                  boxShadow: isActive ? '0 2px 8px rgba(15, 76, 215, 0.12)' : 'none',
+                }}
+              >
+                {tab.label}
+              </button>
+            )
+          })}
+        </div>
+
         <DataTable
           columns={[
-            { key: 'penyulang', label: 'Penyulang', width: '120px', render: (v) => <span style={{ fontWeight: 800, color: 'var(--text-primary)' }}>{v}</span> },
-            { key: 'tanggal', label: 'Tanggal Padam', width: '110px' },
-            { key: 'lokasi', label: 'Lokasi Gardu / Jaringan', width: '260px',
+            { key: 'gardu_induk', label: 'Gardu Induk', width: '130px' },
+            { key: 'penyulang', label: 'Penyulang', width: '110px', render: (v) => <span style={{ fontWeight: 800, color: 'var(--text-primary)' }}>{v}</span> },
+            { key: 'lokasi', label: 'Segmen / Gardu', width: '160px',
               render: (v) => (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
                   <MapPin size={12} style={{ color: 'var(--text-muted)' }} />
@@ -200,11 +237,12 @@ export default function GangguanPage() {
                 </div>
               )
             },
-            { key: 'beban_padam', label: 'Beban Padam', align: 'right', width: '110px', render: v => `${v.toFixed(2)} MW` },
-            { key: 'pelanggan_padam', label: 'Pelanggan Terdampak', align: 'right', width: '160px', render: v => formatNumber(v) },
-            { key: 'durasi', label: 'Durasi Padam', align: 'right', width: '110px', render: v => `${v} menit` },
-            { key: 'penyebab', label: 'Penyebab', align: 'center', width: '110px', render: v => <span className="badge badge-secondary text-2xs">{v}</span> },
-            { key: 'status', label: 'Status', align: 'center', width: '100px',
+            { key: 'tanggal', label: 'Tgl Padam', width: '90px' },
+            { key: 'waktu_padam', label: 'Jam Padam', width: '80px' },
+            { key: 'waktu_nyala', label: 'Jam Nyala', width: '80px' },
+            { key: 'durasi', label: 'Durasi', align: 'right', width: '80px', render: v => <span style={{ fontWeight: 700, color: v > 5 ? '#EF4444' : '#10B981' }}>{v} mnt</span> },
+            { key: 'penyebab', label: 'Penyebab', align: 'center', width: '110px', render: v => <span className="badge badge-secondary text-2xs">{v || '-'}</span> },
+            { key: 'status', label: 'Status', align: 'center', width: '90px',
               render: (v) => (
                 <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, fontSize: '0.75rem', fontWeight: 700, color: 'var(--success)' }}>
                   <CheckCircle2 size={12} />
@@ -213,10 +251,14 @@ export default function GangguanPage() {
               )
             }
           ]}
-          data={data?.list || []}
+          data={(data?.list || []).filter(item => {
+            if (listTab === '>5') return item.durasi > 5;
+            if (listTab === '<=5') return item.durasi <= 5;
+            return true;
+          })}
           searchable
           paginated
-          pageSize={5}
+          pageSize={10}
         />
       </div>
     </div>

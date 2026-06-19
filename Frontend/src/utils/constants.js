@@ -11,7 +11,7 @@ export const CHART_COLORS = [
   '#BE185D', '#0891B2', '#D97706', '#059669', '#6366F1',
 ]
 
-export const YEARS = [2022, 2023, 2024, 2025, 2026]
+export const YEARS = [2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026]
 
 export const MONTHS = [
   { value: 1,  label: 'Januari' },
@@ -77,9 +77,7 @@ export const NAV_ITEMS = [
           { key: 'saidi', label: 'SAIDI', path: '/saidi' },
           { key: 'saifi', label: 'SAIFI', path: '/saifi' },
           { key: 'ens', label: 'ENS', path: '/ens' },
-          { key: 'ggn-tm-5-plus', label: 'GGN TM > 5 MENIT', path: '/ggn-tm-5-plus' },
-          { key: 'ggn-tm-5-min', label: 'GGN TM ≤ 5 MENIT', path: '/ggn-tm-5-min' },
-          { key: 'ggn-berulang', label: 'GGN BERULANG', path: '/ggn-berulang' },
+          { key: 'gangguan', label: 'GANGGUAN', path: '/gangguan' },
         ],
       },
       {
