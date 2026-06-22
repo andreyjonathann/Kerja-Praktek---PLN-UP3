@@ -139,8 +139,8 @@ export const getDashboardData = async (year = 2026) => {
         penjualan: {}, gantiMeter: {}, p2tlPerolehan: {}, p2tlPenyelesaian: {} 
       };
       
-      if (kpi === 'NKO Kumulatif' || kpi === 'NKO (%)') {
-        if (kategori === yearStr) result._raw.nko[mIdx] = { ...result._raw.nko[mIdx], val: nilai };
+      if (kpi === 'NKO Kumulatif' || kpi === 'NKO (%)' || kpi.toUpperCase() === 'NKO' || kpi.toUpperCase().includes('NKO')) {
+        if (kategori === yearStr || kategori.toLowerCase() === 'realisasi') result._raw.nko[mIdx] = { ...result._raw.nko[mIdx], val: nilai };
         if (kategori.toLowerCase() === 'target') result._raw.nko[mIdx] = { ...result._raw.nko[mIdx], tgt: nilai };
       }
       if (kpi === 'Susut (%)' || kpi === 'Susut / Losses (%)') {
@@ -356,6 +356,81 @@ export const getDashboardData = async (year = 2026) => {
       by_cause: gangguanByCause,
       list: gangguanList
     };
+
+    // Fetch explicitly from SAIDI_SAIFI sheet
+    try {
+      const saidiUrl = 'https://docs.google.com/spreadsheets/d/1CkfVBalvg8Azrot2ahomH7QaQTf3Ew1N8I6jcD-Etc0/gviz/tq?tqx=out:csv&sheet=SAIDI_SAIFI';
+      const ssRawData = await fetchSpreadsheetData(saidiUrl);
+      
+      let currentSection = '';
+      ssRawData.forEach(row => {
+         const keys = Object.keys(row);
+         const firstCol = row[keys[0]] || row['Tahun'] || row[keys[1]] || '';
+         if (typeof firstCol === 'string') {
+             if (firstCol.toUpperCase().includes('SAIDI KUMULATIF')) currentSection = 'SAIDI_KUMULATIF';
+             else if (firstCol.toUpperCase().includes('SAIDI BULANAN')) currentSection = 'SAIDI_BULANAN';
+             else if (firstCol.toUpperCase().includes('SAIFI KUMULATIF')) currentSection = 'SAIFI_KUMULATIF';
+             else if (firstCol.toUpperCase().includes('SAIFI BULANAN')) currentSection = 'SAIFI_BULANAN';
+             else if (firstCol.toUpperCase().includes('ENS KUMULATIF')) currentSection = 'ENS_KUMULATIF';
+         }
+
+         const tahunStr = (row['Tahun'] || row[keys[0]] || row[keys[1]] || '').toString().trim();
+         if (tahunStr === yearStr || tahunStr.toLowerCase() === 'target') {
+            const isTarget = tahunStr.toLowerCase() === 'target';
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+            months.forEach((month, idx) => {
+               const val = parseNumber(row[month] || row[keys[idx+1]] || row[keys[idx+2]]);
+               if (val != null) {
+                  if (currentSection === 'SAIDI_KUMULATIF') {
+                      if (isTarget) { saidiKumulatifTargets[idx] = val; result.saidi[idx].cumulativeTgt = val; }
+                      else result.saidi[idx].cumulativeReal = val;
+                  }
+                  if (currentSection === 'SAIDI_BULANAN') {
+                      if (isTarget) result.saidi[idx].target = val;
+                      else result.saidi[idx].realisasi = val;
+                  }
+                  if (currentSection === 'SAIFI_KUMULATIF') {
+                      if (isTarget) { saifiKumulatifTargets[idx] = val; result.saifi[idx].cumulativeTgt = val; }
+                      else result.saifi[idx].cumulativeReal = val;
+                  }
+                  if (currentSection === 'SAIFI_BULANAN') {
+                      if (isTarget) result.saifi[idx].target = val;
+                      else result.saifi[idx].realisasi = val;
+                  }
+                  if (currentSection === 'ENS_KUMULATIF') {
+                      if (!result._raw.ens[idx]) result._raw.ens[idx] = {};
+                      if (isTarget) result._raw.ens[idx].tgt = val;
+                      else result._raw.ens[idx].val = val;
+                  }
+               }
+            });
+         }
+      });
+    } catch (err) {
+      console.warn('Failed to fetch SAIDI_SAIFI sheet:', err);
+    }
+
+    // Fetch NKO explicitly from NKO sheet
+    try {
+      const nkoUrl = 'https://docs.google.com/spreadsheets/d/1CkfVBalvg8Azrot2ahomH7QaQTf3Ew1N8I6jcD-Etc0/gviz/tq?tqx=out:csv&sheet=NKO';
+      const nkoRawData = await fetchSpreadsheetData(nkoUrl);
+      
+      nkoRawData.forEach(row => {
+        const keys = Object.keys(row);
+        const tahun = row['Tahun'] || row[keys[0]] || row[keys[1]];
+        if (tahun && tahun.toString().trim() === yearStr) {
+          const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+          months.forEach((month, idx) => {
+            const val = parseNumber(row[month] || row[keys[idx+1]] || row[keys[idx+2]]);
+            if (val != null) {
+              result._raw.nko[idx] = { ...result._raw.nko[idx], val: val, tgt: 100 };
+            }
+          });
+        }
+      });
+    } catch (err) {
+      console.warn('Failed to fetch NKO sheet:', err);
+    }
 
     // Prepare NKO Table Data
     const nkoTableData = [];
