@@ -1,18 +1,44 @@
 <?php
 
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Api\KinerjaController;
+use App\Http\Controllers\Api\NkoController;
+use App\Http\Controllers\Api\TargetTahunanController;
+use App\Http\Controllers\Api\DataJaringanController;
 
-// Auth Routes
-Route::post('/auth/login', [DashboardController::class, 'login']);
+Route::get('/user', function (Request $request) {
+    return $request->user();
+})->middleware('auth:sanctum');
 
-// Protected Dashboard API Group
-Route::middleware([])->group(function () {
-    Route::get('/dashboard/overview', [DashboardController::class, 'overview']);
-    Route::get('/dashboard/saidi', [DashboardController::class, 'saidi']);
-    Route::get('/dashboard/saifi', [DashboardController::class, 'saifi']);
-    Route::get('/dashboard/gangguan', [DashboardController::class, 'gangguan']);
+// Wrap in sanctum middleware later when auth is fully setup
+use App\Http\Controllers\Api\AuthController;
+
+Route::post('/auth/login', [AuthController::class, 'login']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/auth/logout', [AuthController::class, 'logout']);
+    Route::get('/auth/me', [AuthController::class, 'me']);
+});
+
+Route::middleware('api')->group(function () {
+    Route::get('/nko/summary', [NkoController::class, 'summary']);
     
-    // Spreadsheet Upload
-    Route::post('/spreadsheet/upload', [DashboardController::class, 'uploadSpreadsheet']);
+    // Data Jaringan (Dashboard)
+    Route::get('/jaringan/dashboard', [DataJaringanController::class, 'getDashboardData']);
+
+    // Jaringan CRUD
+    Route::post('/jaringan/ens', [DataJaringanController::class, 'saveEns']);
+    Route::post('/jaringan/gangguan', [DataJaringanController::class, 'saveGangguan']);
+    Route::post('/jaringan/gangguan-list', [DataJaringanController::class, 'saveGangguanList']);
+    Route::get('/jaringan/gangguan-list', [DataJaringanController::class, 'getGangguanList']);
+    Route::delete('/jaringan/gangguan-list/{id}', [DataJaringanController::class, 'deleteGangguanList']);
+    
+    // Target Tahunan
+    Route::get('/targets', [TargetTahunanController::class, 'index']);
+    Route::post('/targets', [TargetTahunanController::class, 'store']);
+    
+    // Kinerja endpoints
+    Route::get('/kinerja/{bidang}', [KinerjaController::class, 'index']);
+    Route::post('/kinerja/{bidang}', [KinerjaController::class, 'store']);
 });

@@ -4,9 +4,13 @@ import api from '@/services/api'
 const AuthContext = createContext(null)
 
 export const ROLES = {
-  ADMIN:  'Admin',
-  PIC:    'PIC',
-  VIEWER: 'Viewer',
+  ADMIN:  'admin',
+  PIC_ASET: 'pic_aset',
+  PIC_JARINGAN: 'pic_jaringan',
+  PIC_TE: 'pic_transaksi_energi',
+  PIC_NIAGA: 'pic_niaga',
+  PIC_PEMASARAN: 'pic_pemasaran',
+  PIC_KEUANGAN: 'pic_keuangan',
 }
 
 export function AuthProvider({ children }) {
@@ -25,7 +29,7 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     try {
-      const res  = await api.post('/auth/login', { email, password })
+      const res  = await api.post('/auth/login', { username: email, password })
       const { token, user: userData } = res.data
       localStorage.setItem('sigap_token', token)
       localStorage.setItem('sigap_user', JSON.stringify(userData))
@@ -52,7 +56,7 @@ export function AuthProvider({ children }) {
   }
 
   const isAdmin  = user?.role === ROLES.ADMIN
-  const isPic    = user?.role === ROLES.PIC || isAdmin
+  const isPic    = user?.role?.startsWith('pic_')
   const isViewer = !!user
 
   return (

@@ -3,10 +3,8 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\User;
-use App\Models\Division;
-use App\Models\KpiIndicator;
 use Illuminate\Support\Facades\Hash;
+use App\Models\User;
 
 class DatabaseSeeder extends Seeder
 {
@@ -15,197 +13,78 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // 1. Seed Default Users
         $users = [
             [
-                'name' => 'Administrator PLN',
+                'name' => 'Administrator',
                 'username' => 'admin',
-                'password' => Hash::make('plnadmin123'),
-                'role' => 'Admin',
+                'email' => 'admin@pln.co.id',
+                'password' => Hash::make('password'),
+                'role' => 'admin',
                 'is_active' => true,
             ],
             [
-                'name' => 'PIC Planning PLN',
-                'username' => 'pic',
-                'password' => Hash::make('plnpic123'),
-                'role' => 'PIC',
+                'name' => 'PIC Aset',
+                'username' => 'pic_aset',
+                'email' => 'aset@pln.co.id',
+                'password' => Hash::make('password'),
+                'role' => 'pic_aset',
                 'is_active' => true,
             ],
             [
-                'name' => 'Viewer Manager PLN',
-                'username' => 'viewer',
-                'password' => Hash::make('plnviewer123'),
-                'role' => 'Viewer',
+                'name' => 'PIC Jaringan',
+                'username' => 'pic_jaringan',
+                'email' => 'jaringan@pln.co.id',
+                'password' => Hash::make('password'),
+                'role' => 'pic_jaringan',
                 'is_active' => true,
             ],
+            [
+                'name' => 'PIC Transaksi Energi',
+                'username' => 'pic_transaksi_energi',
+                'email' => 'te@pln.co.id',
+                'password' => Hash::make('password'),
+                'role' => 'pic_transaksi_energi',
+                'is_active' => true,
+            ],
+            [
+                'name' => 'PIC Niaga',
+                'username' => 'pic_niaga',
+                'email' => 'niaga@pln.co.id',
+                'password' => Hash::make('password'),
+                'role' => 'pic_niaga',
+                'is_active' => true,
+            ],
+            [
+                'name' => 'PIC Pemasaran',
+                'username' => 'pic_pemasaran',
+                'email' => 'pemasaran@pln.co.id',
+                'password' => Hash::make('password'),
+                'role' => 'pic_pemasaran',
+                'is_active' => true,
+            ],
+            [
+                'name' => 'PIC Keuangan',
+                'username' => 'pic_keuangan',
+                'email' => 'keuangan@pln.co.id',
+                'password' => Hash::make('password'),
+                'role' => 'pic_keuangan',
+                'is_active' => true,
+            ]
         ];
 
-        foreach ($users as $userData) {
+        foreach ($users as $user) {
             User::updateOrCreate(
-                ['username' => $userData['username']],
-                $userData
+                ['email' => $user['email']],
+                $user
             );
         }
-
-        // 2. Seed Divisions & KPI Indicators
-        $kpisData = [
-            'Teknik' => [
-                'description' => 'Divisi Teknik & Gangguan Jaringan PLN UP3',
-                'kpis' => [
-                    [
-                        'code' => 'TEK_SAIDI',
-                        'name' => 'SAIDI (System Average Interruption Duration Index)',
-                        'unit' => 'Menit/Pelanggan',
-                        'aggregation_method' => 'SUM',
-                    ],
-                    [
-                        'code' => 'TEK_SAIFI',
-                        'name' => 'SAIFI (System Average Interruption Frequency Index)',
-                        'unit' => 'Kali/Pelanggan',
-                        'aggregation_method' => 'SUM',
-                    ],
-                    [
-                        'code' => 'TEK_GGN_SELESAI',
-                        'name' => 'Gangguan Terselesaikan',
-                        'unit' => '%',
-                        'aggregation_method' => 'LATEST',
-                    ],
-                    [
-                        'code' => 'TEK_SR_BARU',
-                        'name' => 'Pemasangan SR (Sambungan Rumah) Baru',
-                        'unit' => 'Pelanggan',
-                        'aggregation_method' => 'SUM',
-                    ],
-                ]
-            ],
-            'Niaga' => [
-                'description' => 'Divisi Niaga, Pemasaran & Pelayanan Pelanggan',
-                'kpis' => [
-                    [
-                        'code' => 'NIA_KWH_SOLD',
-                        'name' => 'Penjualan kWh Listrik',
-                        'unit' => 'kWh',
-                        'aggregation_method' => 'SUM',
-                    ],
-                    [
-                        'code' => 'NIA_PLG_BARU',
-                        'name' => 'Pelanggan Baru',
-                        'unit' => 'Pelanggan',
-                        'aggregation_method' => 'SUM',
-                    ],
-                    [
-                        'code' => 'NIA_REVENUE',
-                        'name' => 'Pendapatan Penjualan',
-                        'unit' => 'IDR',
-                        'aggregation_method' => 'SUM',
-                    ],
-                    [
-                        'code' => 'NIA_TUNGGAKAN',
-                        'name' => 'Tunggakan Tertagih',
-                        'unit' => '%',
-                        'aggregation_method' => 'LATEST',
-                    ],
-                ]
-            ],
-            'Konstruksi' => [
-                'description' => 'Divisi Konstruksi & Pembangunan Infrastruktur Kelistrikan',
-                'kpis' => [
-                    [
-                        'code' => 'KON_PROGRESS',
-                        'name' => 'Progress Pembangunan Infrastruktur',
-                        'unit' => '%',
-                        'aggregation_method' => 'LATEST',
-                    ],
-                    [
-                        'code' => 'KON_REAL_ANGGARAN',
-                        'name' => 'Realisasi Anggaran Konstruksi',
-                        'unit' => '%',
-                        'aggregation_method' => 'LATEST',
-                    ],
-                    [
-                        'code' => 'KON_MILESTONE',
-                        'name' => 'Milestone Proyek On-Time',
-                        'unit' => '%',
-                        'aggregation_method' => 'LATEST',
-                    ],
-                ]
-            ],
-            'Perencanaan' => [
-                'description' => 'Divisi Perencanaan Strategis & Evaluasi Kinerja (Planning Division)',
-                'kpis' => [
-                    [
-                        'code' => 'REN_REAL_RKAP',
-                        'name' => 'Realisasi RKAP (Rencana Kerja Anggaran Perusahaan)',
-                        'unit' => '%',
-                        'aggregation_method' => 'LATEST',
-                    ],
-                    [
-                        'code' => 'REN_PROG_SELESAI',
-                        'name' => 'Program Kerja Selesai',
-                        'unit' => '%',
-                        'aggregation_method' => 'LATEST',
-                    ],
-                ]
-            ],
-            'SDM' => [
-                'description' => 'Divisi Sumber Daya Manusia, Umum, & K3 (Kesehatan & Keselamatan Kerja)',
-                'kpis' => [
-                    [
-                        'code' => 'SDM_HADIR',
-                        'name' => 'Kehadiran Karyawan',
-                        'unit' => '%',
-                        'aggregation_method' => 'LATEST',
-                    ],
-                    [
-                        'code' => 'SDM_TRAINING',
-                        'name' => 'Realisasi Program Pelatihan Mandiri',
-                        'unit' => '%',
-                        'aggregation_method' => 'LATEST',
-                    ],
-                    [
-                        'code' => 'SDM_K3_INCIDENT',
-                        'name' => 'Insiden Kecelakaan Kerja K3',
-                        'unit' => 'Kasus',
-                        'aggregation_method' => 'SUM',
-                    ],
-                ]
-            ],
-            'Keuangan' => [
-                'description' => 'Divisi Keuangan, Akuntansi & Pembayaran Vendor',
-                'kpis' => [
-                    [
-                        'code' => 'KEU_OPEX',
-                        'name' => 'Realisasi Belanja Operasional (OPEX)',
-                        'unit' => '%',
-                        'aggregation_method' => 'LATEST',
-                    ],
-                    [
-                        'code' => 'KEU_PAY_VENDOR',
-                        'name' => 'Ketepatan Waktu Pembayaran Vendor',
-                        'unit' => '%',
-                        'aggregation_method' => 'LATEST',
-                    ],
-                ]
-            ],
-        ];
-
-        foreach ($kpisData as $divName => $divInfo) {
-            $division = Division::updateOrCreate(
-                ['name' => $divName],
-                ['description' => $divInfo['description']]
+        
+        // Buat Periode Januari - Desember 2026 jika belum ada
+        for ($i = 1; $i <= 12; $i++) {
+            \App\Models\Periode::updateOrCreate(
+                ['bulan' => $i, 'tahun' => 2026],
+                ['is_active' => true]
             );
-
-            foreach ($divInfo['kpis'] as $kpi) {
-                KpiIndicator::updateOrCreate(
-                    ['code' => $kpi['code']],
-                    [
-                        'division_id' => $division->id,
-                        'name' => $kpi['name'],
-                        'unit' => $kpi['unit'],
-                        'aggregation_method' => $kpi['aggregation_method'],
-                    ]
-                );
-            }
         }
     }
 }

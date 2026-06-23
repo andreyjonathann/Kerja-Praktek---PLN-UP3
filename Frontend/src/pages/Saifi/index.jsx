@@ -42,6 +42,9 @@ export default function SaifiPage() {
   const [data,   setData]   = useState([])
   const [loading,setLoading]= useState(true)
   const [error,  setError]  = useState(null)
+  
+  const [tableYear, setTableYear] = useState(filters.year)
+  const [tableData, setTableData] = useState([])
 
   const fetchData = useCallback(async (isBackground = false) => {
     if (!isBackground) { setLoading(true); setError(null) }
@@ -73,6 +76,22 @@ export default function SaifiPage() {
     return () => window.removeEventListener('sigap:refresh', h)
   }, [fetchData])
 
+  useEffect(() => {
+    setTableYear(filters.year)
+  }, [filters.year])
+
+  useEffect(() => {
+    let isMounted = true
+    if (tableYear === filters.year) {
+      setTableData(data)
+    } else {
+      getDashboardData(tableYear).then(res => {
+        if (isMounted) setTableData(res.saifi || [])
+      }).catch(err => console.error(err))
+    }
+    return () => { isMounted = false }
+  }, [tableYear, filters.year, data])
+
   const filled     = data.filter(d => d.realisasi != null)
   const lastMonth  = filled[filled.length - 1]
   const totalReal  = lastMonth ? lastMonth.realisasi : 0
@@ -92,7 +111,7 @@ export default function SaifiPage() {
   const cumulativeData = data;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '48px' }} className="animate-fade-in">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }} className="animate-fade-in">
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div
@@ -202,7 +221,29 @@ export default function SaifiPage() {
       </div>
 
       <div className="card p-5">
-        <h3 className="section-title mb-4">Detail Data SAIFI {tab === 'monthly' ? 'Bulanan' : 'Kumulatif'}</h3>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <h3 className="section-title mb-0">Detail Data SAIFI {tab === 'monthly' ? 'Bulanan' : 'Kumulatif'}</h3>
+          <select
+            value={tableYear}
+            onChange={(e) => setTableYear(Number(e.target.value))}
+            style={{
+              background: 'var(--bg-elevated)',
+              border: '1px solid var(--border)',
+              color: 'var(--text-primary)',
+              fontSize: '0.75rem',
+              fontWeight: 600,
+              padding: '4px 28px 4px 10px',
+              borderRadius: '6px',
+              outline: 'none',
+              cursor: 'pointer',
+              appearance: 'auto'
+            }}
+          >
+            {[2024, 2025, 2026, 2027].map(y => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+        </div>
         <DataTable
           columns={[
             { key: 'label', label: 'Bulan', width: '80px', align: 'center' },
@@ -216,7 +257,7 @@ export default function SaifiPage() {
             { key: tab === 'monthly' ? 'bencana_alam' : 'c_bencana_alam', label: <span style={{ color: 'var(--text-muted)' }}>Bencana Alam</span>, align: 'center', render: v => v != null ? <span style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-secondary)', padding: '2px 8px', borderRadius: 6, fontWeight: 600, fontSize: '0.75rem' }}>{v.toFixed(3)}</span> : '-' },
             { key: tab === 'monthly' ? 'transmisi' : 'c_transmisi', label: <span style={{ color: 'var(--text-muted)' }}>Transmisi</span>, align: 'center', render: v => v != null ? <span style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-secondary)', padding: '2px 8px', borderRadius: 6, fontWeight: 600, fontSize: '0.75rem' }}>{v.toFixed(3)}</span> : '-' },
           ]}
-          data={data}
+          data={tableData}
           paginated={false}
           searchable={false}
         />

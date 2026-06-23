@@ -7,6 +7,7 @@ import {
   Home, Info, TrendingUp, Activity, ChevronRight
 } from 'lucide-react'
 import { NAV_ITEMS } from '@/utils/constants'
+import { useAuth } from '@/context/AuthContext'
 import PlnLogo from '@/components/ui/PlnLogo'
 
 const ICON_MAP = {
@@ -18,8 +19,52 @@ const ICON_MAP = {
 export default function Sidebar({ mobileOpen, onMobileClose }) {
   const location = useLocation()
   const [collapsed, setCollapsed] = useState({})
+  const { user, isAdmin } = useAuth()
 
   const toggle = (g) => setCollapsed(p => ({ ...p, [g]: !p[g] }))
+
+  const getFilteredNavItems = () => {
+    if (isAdmin) return NAV_ITEMS;
+    
+    const roleMap = {
+      'pic_jaringan': 'JARINGAN',
+      'pic_pemasaran': 'PEMASARAN',
+      'pic_transaksi_energi': 'TRANSAKSI ENERGI',
+      'pic_aset': 'ASET',
+      'pic_niaga': 'NIAGA',
+      'pic_keuangan': 'KEUANGAN'
+    };
+    
+    const userGroup = user ? roleMap[user.role] : null;
+    
+    return NAV_ITEMS.flatMap(item => {
+      // Keep HOME
+      if (item.key === 'home') return [item];
+      
+      // Keep NKO group but remove kelola-target
+      if (item.group === 'NKO') {
+         const filteredItems = item.items.filter(i => i.key !== 'kelola-target');
+         return [{ ...item, items: filteredItems }];
+      }
+      
+      // Flatten the specific KINERJA subgroup into top-level items
+      if (item.group === 'KINERJA') {
+         if (!userGroup) return [];
+         const matchingSubgroup = item.items.find(sub => sub.group === userGroup);
+         if (!matchingSubgroup) return [];
+         
+         // Extract the items from the subgroup and render them flatly
+         return matchingSubgroup.items.map(subItem => ({ 
+             ...subItem, 
+             type: 'item' // Ensure they render as clickable items, not groups
+         }));
+      }
+      
+      return [];
+    });
+  }
+
+  const filteredItems = getFilteredNavItems();
 
   return (
     <>
@@ -64,7 +109,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
         {/* Navigation */}
         <nav style={{ flex:1, minHeight: 0, padding:'8px 0 12px', overflowY:'auto' }}>
           <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-            {NAV_ITEMS.map((item) => {
+            {filteredItems.map((item) => {
               const renderItem = (navItem, depth = 0) => {
                 if (navItem.type === 'item' || (!navItem.type && navItem.path)) {
                   const IconComp = ICON_MAP[navItem.icon] || LayoutDashboard

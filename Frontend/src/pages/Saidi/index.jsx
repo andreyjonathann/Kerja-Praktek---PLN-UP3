@@ -95,7 +95,7 @@ export default function SaidiPage() {
   ].filter(d => d.value > 0);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '48px' }} className="animate-fade-in">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }} className="animate-fade-in">
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div

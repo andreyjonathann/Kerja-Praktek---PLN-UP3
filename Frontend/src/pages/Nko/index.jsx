@@ -2,9 +2,9 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { getDashboardData } from '@/services/dashboardDataService'
 import { useFilter } from '@/context/FilterContext'
 import { MONTHS } from '@/utils/constants'
-import { Bolt } from 'lucide-react'
-import DataTable from '@/components/ui/DataTable'
+import { Bolt, Download } from 'lucide-react'
 import { useTheme } from '@/context/ThemeContext'
+import { exportToExcel } from '@/utils/exportExcel'
 
 // --- Clean Speedometer Component ---
 const Speedometer = ({ value }) => {
@@ -135,31 +135,39 @@ export default function NkoPage() {
     )
   }
 
-  const tableColumns = [
-    { key: 'no', label: 'No', width: '60px', align: 'center', render: (_, __, idx) => idx + 1 },
-    { key: 'kpi', label: 'Indikator KPI' },
-    { key: 'satuan', label: 'Satuan', align: 'center', render: v => <span style={{ color: 'var(--text-muted)' }}>{v}</span> },
-    { key: 'target', label: 'Target', align: 'right', render: v => v != null ? Number(v).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-' },
-    { key: 'realisasi', label: 'Realisasi', align: 'right', render: v => <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '1.05rem' }}>{v != null ? Number(v).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}</span> },
-    { key: 'pencapaian', label: 'Pencapaian', align: 'right', render: (v) => {
-        if (v == null) return '-'
-        const isSuccess = v >= 100;
-        // if the percentage is Infinity or completely broken
-        if (!isFinite(v)) return <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>N/A</span>
-        
-        return (
-          <span style={{
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            padding: '4px 10px', borderRadius: '8px', fontSize: '0.8125rem', fontWeight: 700,
-            background: isSuccess ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-            color: isSuccess ? '#10B981' : '#EF4444',
-            border: `1px solid ${isSuccess ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`
-          }}>
-            {Number(v).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
-          </span>
-        )
-    }}
-  ]
+  const formatNum = (v) => {
+    if (v == null) return '-'
+    return Number(v).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  }
+
+  const handleExport = () => {
+    if (!currentData || !currentData.metrics) return;
+    const exportData = currentData.metrics.map((row, index) => ({
+      'No': index + 1,
+      'Indikator KPI': row.kpi,
+      'Satuan': row.satuan,
+      'Target': row.target,
+      'Realisasi': row.realisasi,
+      'Pencapaian (%)': row.pencapaian != null ? parseFloat(row.pencapaian.toFixed(2)) : null
+    }));
+    exportToExcel(exportData, `Data_NKO_\${currentData.label}_\${filters.year}`);
+  }
+
+  const renderPencapaian = (v) => {
+    if (v == null || !isFinite(v)) return <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>N/A</span>
+    const isSuccess = v >= 100
+    return (
+      <span style={{
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        padding: '3px 10px', borderRadius: 6, fontSize: '0.8rem', fontWeight: 700,
+        background: isSuccess ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+        color: isSuccess ? '#10B981' : '#EF4444',
+        border: `1px solid ${isSuccess ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`
+      }}>
+        {formatNum(v)}%
+      </span>
+    )
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }} className="animate-fade-in">
@@ -176,49 +184,100 @@ export default function NkoPage() {
           </div>
         </div>
 
-        {/* Filters */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4, marginLeft: 4 }}>Pilih Bulan</span>
-          <div style={{ background: 'var(--bg-elevated)', padding: '6px 12px', borderRadius: 10, border: '1px solid var(--border)' }}>
-            <select
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(Number(e.target.value))}
-              style={{ background: 'transparent', border: 'none', fontSize: '0.95rem', fontWeight: 700, color: 'var(--pln-blue)', outline: 'none', cursor: 'pointer' }}
-            >
-              {MONTHS.map(m => (
-                <option key={m.value} value={m.value}>{m.label}</option>
-              ))}
-            </select>
+        {/* Filters and Actions */}
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '16px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4, marginLeft: 4 }}>Pilih Bulan</span>
+            <div style={{ background: 'var(--bg-elevated)', padding: '6px 12px', borderRadius: 10, border: '1px solid var(--border)' }}>
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                style={{ background: 'transparent', border: 'none', fontSize: '0.95rem', fontWeight: 700, color: 'var(--pln-blue)', outline: 'none', cursor: 'pointer' }}
+              >
+                {MONTHS.map(m => (
+                  <option key={m.value} value={m.value}>{m.label}</option>
+                ))}
+              </select>
+            </div>
           </div>
+          <button 
+            onClick={handleExport}
+            style={{ 
+              display: 'flex', alignItems: 'center', gap: '8px', 
+              padding: '10px 16px', borderRadius: '10px', 
+              background: '#10B981', color: 'white', 
+              border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '0.9rem'
+            }}
+            className="hover:bg-emerald-600 transition shadow-sm"
+          >
+            <Download size={18} />
+            Export Excel
+          </button>
         </div>
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-5">
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 20, alignItems: 'start' }} className="nko-grid">
         
-        {/* Table Section */}
-        <div className="card xl:col-span-3" style={{ padding: 0, overflow: 'hidden' }}>
-          <div style={{ padding: '18px 24px', borderBottom: '1px solid var(--border)', background: 'var(--bg-elevated)' }}>
-            <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>Rincian KPI - {currentData.label}</h2>
+        {/* Table Section — custom table for better control */}
+        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)', background: 'var(--bg-elevated)' }}>
+            <h2 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)' }}>Rincian KPI — {currentData.label}</h2>
           </div>
-          <DataTable
-            columns={tableColumns}
-            data={currentData.metrics}
-            paginated={false}
-            searchable={false}
-          />
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', tableLayout: 'fixed' }}>
+              <colgroup>
+                <col style={{ width: '6%' }} />
+                <col style={{ width: '28%' }} />
+                <col style={{ width: '16%' }} />
+                <col style={{ width: '16%' }} />
+                <col style={{ width: '16%' }} />
+                <col style={{ width: '18%' }} />
+              </colgroup>
+              <thead>
+                <tr style={{ background: 'var(--bg-table-head)', borderBottom: '2px solid var(--border-strong)' }}>
+                  <th style={thStyle({ textAlign: 'center' })}>NO</th>
+                  <th style={thStyle({ textAlign: 'left' })}>INDIKATOR KPI</th>
+                  <th style={thStyle({ textAlign: 'left' })}>SATUAN</th>
+                  <th style={thStyle({ textAlign: 'right' })}>TARGET</th>
+                  <th style={thStyle({ textAlign: 'right' })}>REALISASI</th>
+                  <th style={thStyle({ textAlign: 'center' })}>PENCAPAIAN</th>
+                </tr>
+              </thead>
+              <tbody>
+                {currentData.metrics.map((row, idx) => (
+                  <tr
+                    key={row.kpi}
+                    style={{
+                      borderBottom: idx < currentData.metrics.length - 1 ? '1px solid var(--border)' : 'none',
+                      transition: 'background 0.15s',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <td style={tdStyle({ textAlign: 'center', color: 'var(--text-muted)', fontWeight: 600 })}>{idx + 1}</td>
+                    <td style={tdStyle({ fontWeight: 700, color: 'var(--text-primary)' })}>{row.kpi}</td>
+                    <td style={tdStyle({ textAlign: 'left', color: 'var(--text-muted)' })}>{row.satuan}</td>
+                    <td style={tdStyle({ textAlign: 'right', fontWeight: 600, color: 'var(--text-secondary)' })}>{formatNum(row.target)}</td>
+                    <td style={tdStyle({ textAlign: 'right', fontWeight: 800, color: 'var(--text-primary)', fontSize: '0.9rem' })}>{formatNum(row.realisasi)}</td>
+                    <td style={tdStyle({ textAlign: 'center' })}>{renderPencapaian(row.pencapaian)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {/* Speedometer Section */}
-        <div className="card xl:col-span-1" style={{ padding: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <div style={{ padding: '18px 24px', borderBottom: '1px solid var(--border)', background: 'var(--bg-elevated)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>Total NKO</h2>
-            <div style={{ padding: '2px 8px', borderRadius: 6, background: 'var(--border)', fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>SCORE</div>
+        <div className="card" style={{ padding: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)', background: 'var(--bg-elevated)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h2 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)' }}>Total NKO</h2>
+            <div style={{ padding: '2px 8px', borderRadius: 6, background: 'var(--border)', fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>SCORE</div>
           </div>
           
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '24px' }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '24px 16px' }}>
             <Speedometer value={currentData.totalNko} />
-            <p style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)', marginTop: 24, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <p style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', marginTop: 20, textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'center' }}>
               Kinerja Bulan {currentData.label}
             </p>
           </div>
@@ -226,6 +285,38 @@ export default function NkoPage() {
 
       </div>
 
+      {/* Responsive style override */}
+      <style>{`
+        @media (max-width: 1024px) {
+          .nko-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
+
     </div>
   )
+}
+
+// ─── Table style helpers ────────────────────────────────────────────
+function thStyle(overrides = {}) {
+  return {
+    padding: '10px 10px',
+    fontSize: '0.7rem',
+    fontWeight: 800,
+    color: 'var(--text-muted)',
+    textTransform: 'uppercase',
+    letterSpacing: '0.06em',
+    whiteSpace: 'nowrap',
+    ...overrides,
+  }
+}
+
+function tdStyle(overrides = {}) {
+  return {
+    padding: '12px 10px',
+    fontSize: '0.85rem',
+    whiteSpace: 'nowrap',
+    ...overrides,
+  }
 }

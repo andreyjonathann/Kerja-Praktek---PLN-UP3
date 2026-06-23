@@ -165,12 +165,12 @@ export default function LoginPage() {
               {/* Email */}
               <div>
                 <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#334155', marginBottom: 8, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-                  Email
+                  Username atau Email
                 </label>
                 <div style={{ position: 'relative' }}>
                   <Mail size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#0F4CD7' }} />
                   <input
-                    type="email"
+                    type="text"
                     style={{
                       width: '100%',
                       height: 46,

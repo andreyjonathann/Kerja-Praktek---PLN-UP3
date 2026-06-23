@@ -55,6 +55,9 @@ export default function OverviewPage() {
   const [loading,      setLoading]      = useState(true)
   const [uploadStatus, setUploadStatus] = useState({ state: 'idle', msg: '' })
 
+  const [tableYear, setTableYear] = useState(filters.year)
+  const [tableData, setTableData] = useState([])
+
   const fetchData = useCallback(async (isBackground = false) => {
     if (!isBackground) setLoading(true)
     try {
@@ -81,6 +84,22 @@ export default function OverviewPage() {
     window.addEventListener('sigap:refresh', h)
     return () => window.removeEventListener('sigap:refresh', h)
   }, [fetchData])
+
+  useEffect(() => {
+    setTableYear(filters.year)
+  }, [filters.year])
+
+  useEffect(() => {
+    let isMounted = true
+    if (tableYear === filters.year) {
+      setTableData(data?.monthlyPerf || [])
+    } else {
+      getDashboardData(tableYear).then(res => {
+        if (isMounted) setTableData(res.overview?.monthlyPerf || [])
+      }).catch(err => console.error(err))
+    }
+    return () => { isMounted = false }
+  }, [tableYear, filters.year, data])
 
   const handleFileUpload = async (e) => {
     const file = e.target.files[0]
@@ -127,7 +146,7 @@ export default function OverviewPage() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '48px' }} className="animate-fade-in">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }} className="animate-fade-in">
 
       {/* ── Page Header ─────────────────────────────────────── */}
       <div className="space-y-5" style={{ marginBottom: 16 }}>
@@ -355,18 +374,40 @@ export default function OverviewPage() {
               Rekapitulasi Kinerja Operasional Bulanan
             </h3>
             <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-              SAIDI & SAIFI realisasi vs target · {filters.year}
+              SAIDI & SAIFI realisasi vs target · {tableYear}
             </p>
           </div>
-          <span style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            fontSize: '0.65rem', fontWeight: 700, padding: '4px 10px',
-            borderRadius: 99, background: 'rgba(16,185,129,0.1)',
-            color: '#34D399', border: '1px solid rgba(16,185,129,0.2)',
-          }}>
-            <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#10B981', display: 'inline-block', boxShadow: '0 0 6px #10B98180' }} />
-            Real-Time Sync
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <select
+              value={tableYear}
+              onChange={(e) => setTableYear(Number(e.target.value))}
+              style={{
+                background: 'var(--bg-elevated)',
+                border: '1px solid var(--border)',
+                color: 'var(--text-primary)',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                padding: '4px 28px 4px 10px',
+                borderRadius: '6px',
+                outline: 'none',
+                cursor: 'pointer',
+                appearance: 'auto'
+              }}
+            >
+              {[2024, 2025, 2026, 2027].map(y => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+            <span style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              fontSize: '0.65rem', fontWeight: 700, padding: '4px 10px',
+              borderRadius: 99, background: 'rgba(16,185,129,0.1)',
+              color: '#34D399', border: '1px solid rgba(16,185,129,0.2)',
+            }}>
+              <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#10B981', display: 'inline-block', boxShadow: '0 0 6px #10B98180' }} />
+              Real-Time Sync
+            </span>
+          </div>
         </div>
         <DataTable
           columns={[
@@ -385,7 +426,7 @@ export default function OverviewPage() {
                 ? <StatusBadge value={(r.targetSaidi / v) * 100} size="sm" />
                 : '—' },
           ]}
-          data={data?.monthlyPerf || []}
+          data={tableData}
           paginated={false}
           searchable={false}
         />

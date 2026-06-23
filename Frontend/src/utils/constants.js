@@ -47,7 +47,6 @@ export const TARIFF_SEGMENTS = [
 
 export const NAV_ITEMS = [
   { type: 'item', key: 'home', label: 'HOME', icon: 'Home', path: '/' },
-  { type: 'item', key: 'copy-home', label: 'Copy of HOME', icon: 'Home', path: '/copy-home' },
   {
     type: 'group',
     group: 'NKO',
@@ -55,6 +54,7 @@ export const NAV_ITEMS = [
     items: [
       { key: 'nko-sub', label: 'NKO', path: '/nko' },
       { key: 'trend-nko', label: 'TREND NKO', path: '/trend-nko' },
+      { key: 'kelola-target', label: 'KELOLA TARGET', path: '/kelola-target' },
     ],
   },
   {
@@ -74,6 +74,8 @@ export const NAV_ITEMS = [
         type: 'subgroup',
         group: 'JARINGAN',
         items: [
+          { key: 'input-kpi-jaringan', label: 'INPUT KPI', path: '/input' },
+          { key: 'kelola_jaringan', label: 'KELOLA JARINGAN', path: '/kelola-jaringan' },
           { key: 'saidi', label: 'SAIDI', path: '/saidi' },
           { key: 'saifi', label: 'SAIFI', path: '/saifi' },
           { key: 'ens', label: 'ENS', path: '/ens' },
@@ -84,6 +86,7 @@ export const NAV_ITEMS = [
         type: 'subgroup',
         group: 'PEMASARAN',
         items: [
+          { key: 'input-kpi-pemasaran', label: 'INPUT KPI', path: '/input' },
           { key: 'jml-pelanggan', label: 'JUMLAH PELANGGAN', path: '/jml-pelanggan' },
           { key: 'daya-tersambung', label: 'DAYA TERSAMBUNG', path: '/daya-tersambung' },
           { key: 'penjualan-tl', label: 'PENJUALAN TL (GWH)', path: '/penjualan-tl' },
@@ -95,11 +98,33 @@ export const NAV_ITEMS = [
         type: 'subgroup',
         group: 'TRANSAKSI ENERGI',
         items: [
+          { key: 'input-kpi-te', label: 'INPUT KPI', path: '/input' },
           { key: 'susut', label: 'SUSUT (%)', path: '/susut' },
           { key: 'kwh-p2tl', label: 'KwH P2TL', path: '/kwh-p2tl' },
           { key: 'ganti-meter', label: 'Ganti Meter', path: '/ganti-meter' },
           { key: 'lbkb', label: 'LBKB', path: '/lbkb' },
           { key: 'niaga', label: 'NIAGA', path: '/niaga' },
+        ],
+      },
+      {
+        type: 'subgroup',
+        group: 'ASET',
+        items: [
+          { key: 'input-kpi-aset', label: 'INPUT KPI', path: '/input' },
+        ],
+      },
+      {
+        type: 'subgroup',
+        group: 'NIAGA',
+        items: [
+          { key: 'input-kpi-niaga', label: 'INPUT KPI', path: '/input' },
+        ],
+      },
+      {
+        type: 'subgroup',
+        group: 'KEUANGAN',
+        items: [
+          { key: 'input-kpi-keuangan', label: 'INPUT KPI', path: '/input' },
         ],
       },
     ],

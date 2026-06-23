@@ -91,7 +91,7 @@ export default function DataTable({
                 <tr key={row.id ?? idx} className="animate-fade-in">
                   {columns.map(col => (
                     <td key={col.key} style={{ textAlign: col.align==='right'?'right' : col.align==='center'?'center':'left' }}>
-                      {col.render ? col.render(row[col.key], row) : (row[col.key] ?? '—')}
+                      {col.render ? col.render(row[col.key], row, idx) : (row[col.key] ?? '—')}
                     </td>
                   ))}
                 </tr>

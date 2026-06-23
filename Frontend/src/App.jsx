@@ -15,6 +15,10 @@ import NkoPage from '@/pages/Nko'
 import EnsPage from '@/pages/Ens'
 import PlaceholderPage from '@/pages/Placeholder'
 import SpreadsheetDemo from '@/pages/SpreadsheetDemo'
+import InputKinerjaPage from '@/pages/InputKinerja'
+import KelolaTargetPage from '@/pages/KelolaTarget'
+import KelolaJaringanPage from '@/pages/KelolaJaringan'
+
 
 // Protected Route Wrapper
 function ProtectedRoute({ children }) {
@@ -55,6 +59,24 @@ export default function App() {
               <Route path="/" element={
                 <ProtectedRoute>
                   <OverviewPage />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/input" element={
+                <ProtectedRoute>
+                  <InputKinerjaPage />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/kelola-target" element={
+                <ProtectedRoute>
+                  <KelolaTargetPage />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/kelola-jaringan" element={
+                <ProtectedRoute>
+                  <KelolaJaringanPage />
                 </ProtectedRoute>
               } />
               
