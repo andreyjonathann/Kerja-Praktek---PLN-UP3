@@ -6,7 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { MONTHS } from '@/utils/constants';
 import { CheckCircle, AlertCircle, Activity, Save, Target, Calendar, ArrowLeft } from 'lucide-react';
 
-export default function InputKinerjaPage() {
+export default function InputSaifiPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -161,7 +161,7 @@ export default function InputKinerjaPage() {
             {bidang === 'jaringan' && (
             <div className="bg-white rounded-none border border-slate-200 overflow-hidden">
                 <div className="bg-slate-50 border-b border-slate-200 p-4 flex justify-between items-center">
-                    <h3 className="font-semibold text-lg text-blue-600">Matriks Jaringan (SAIDI)</h3>
+                    <h3 className="font-semibold text-lg text-blue-600">Matriks Jaringan (SAIFI)</h3>
                 </div>
                 
                 <div className="p-0 overflow-x-auto">
@@ -170,7 +170,7 @@ export default function InputKinerjaPage() {
                             <tr className="bg-gray-100 border-b border-slate-200">
                                 <th className="py-3 px-4 font-bold text-slate-600 text-[11px] tracking-wider w-12">NO</th>
                                 <th className="py-3 px-4 font-bold text-slate-600 text-[11px] tracking-wider">KATEGORI PEMADAMAN</th>
-                                <th className="py-3 px-4 font-bold text-slate-600 text-[11px] tracking-wider w-1/3">SAIDI (MENIT/PLG)</th>
+                                <th className="py-3 px-4 font-bold text-slate-600 text-[11px] tracking-wider w-1/3">SAIFI (KALI/PLG)</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 bg-white">
@@ -188,7 +188,7 @@ export default function InputKinerjaPage() {
                                 <td className="py-4 px-4">
                                     <input 
                                         type="number" step="0.0001" 
-                                        {...register(`saidi_\${kat}`)} 
+                                        {...register(`saifi_\${kat}`)} 
                                         className="w-full max-w-[200px] px-3 py-1.5 bg-white border border-slate-200 rounded-none outline-none focus:border-blue-500 text-slate-700 text-sm" 
                                         placeholder="0.00" 
                                     />

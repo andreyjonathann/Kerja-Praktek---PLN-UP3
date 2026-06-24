@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer, BarChart
 } from 'recharts'
-import { Zap, Target, Activity, TrendingDown } from 'lucide-react'
+import { Zap, Target, Activity, TrendingDown, Plus } from 'lucide-react'
 import ChartWrapper from '@/components/ui/ChartWrapper'
 import KpiCard from '@/components/ui/KpiCard'
 import DataTable from '@/components/ui/DataTable'
@@ -12,6 +13,8 @@ import { useFilter } from '@/context/FilterContext'
 import { MONTHS_SHORT } from '@/utils/formatters'
 import { CHART_COLORS, SAIFI_CAUSES } from '@/utils/constants'
 import { getDashboardData } from '@/services/dashboardDataService'
+import api from '@/services/api'
+import ExportModal from '@/components/ui/ExportModal'
 
 
 
@@ -36,7 +39,79 @@ const CUSTOM_TOOLTIP = ({ active, payload, label }) => {
   )
 }
 
+const EditableCell = ({ value, row, field, tableYear, onSave }) => {
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [val, setVal] = React.useState(value != null ? Number(value).toFixed(4) : '');
+  const [loading, setLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    setVal(value != null ? Number(value).toFixed(4) : '');
+  }, [value]);
+
+  const handleSave = async () => {
+    setIsEditing(false);
+    const numVal = parseFloat(val);
+    if (isNaN(numVal) || (value != null && numVal === Number(Number(value).toFixed(4)))) {
+      setVal(value != null ? Number(value).toFixed(4) : '');
+      return; 
+    }
+    
+    setLoading(true);
+    try {
+      await api.post('/kinerja/jaringan', {
+        periode_id: row.bulan, 
+        tahun: tableYear,
+        [`saifi_${field}`]: numVal
+      });
+      onSave(); 
+    } catch (err) {
+      alert("Gagal menyimpan data: " + err.message);
+      setVal(value != null ? Number(value).toFixed(4) : '');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') handleSave();
+    if (e.key === 'Escape') {
+      setIsEditing(false);
+      setVal(value != null ? Number(value).toFixed(4) : '');
+    }
+  };
+
+  if (loading) return <span className="text-blue-500 font-bold text-xs animate-pulse">Memproses...</span>;
+
+  if (isEditing) {
+    return (
+      <input
+        autoFocus
+        type="number"
+        step="0.0001"
+        value={val}
+        onChange={e => setVal(e.target.value)}
+        onBlur={handleSave}
+        onKeyDown={handleKeyDown}
+        className="w-full text-center outline-none border border-blue-400 rounded-md py-1 px-1 text-[11px] font-bold text-slate-800"
+        style={{ minWidth: '60px' }}
+      />
+    );
+  }
+
+  return (
+    <div 
+      onClick={() => setIsEditing(true)} 
+      className="cursor-pointer hover:bg-blue-50 transition-colors"
+      style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-secondary)', padding: '2px 8px', borderRadius: 6, fontWeight: 600, fontSize: '0.75rem', display: 'inline-block', minWidth: '60px' }}
+      title="Klik untuk mengedit"
+    >
+      {value != null ? Number(value).toFixed(4) : '—'}
+    </div>
+  );
+};
+
 export default function SaifiPage() {
+  const navigate = useNavigate()
   const { filters }         = useFilter()
   const [tab,    setTab]    = useState('monthly')
   const [data,   setData]   = useState([])
@@ -54,7 +129,7 @@ export default function SaifiPage() {
     } catch (err) {
       console.error(err)
       if (!isBackground) {
-        setError("Gagal mengambil data dari Google Sheets.")
+        setError("Gagal mengambil data dari server.")
         setData([])
       }
     } finally { 
@@ -110,6 +185,13 @@ export default function SaifiPage() {
 
   const cumulativeData = data;
 
+  const renderEditable = (v, row, field) => {
+    if (tab === 'monthly') {
+      return <EditableCell value={v} row={row} field={field} tableYear={tableYear} onSave={fetchData} />;
+    }
+    return v != null ? <span style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-secondary)', padding: '2px 8px', borderRadius: 6, fontWeight: 600, fontSize: '0.75rem' }}>{Number(v).toFixed(4)}</span> : '—';
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }} className="animate-fade-in">
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -136,21 +218,25 @@ export default function SaifiPage() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-        <KpiCard title="SAIFI YTD" value={totalReal.toFixed(4)} unit="kali/plg" achievement={achievement} icon={Zap} color="yellow" isInverse loading={loading} />
-        <KpiCard title="Target YTD" value={totalTgt.toFixed(4)} unit="kali/plg" icon={Target} color="green" loading={loading} />
-        <KpiCard title="Bulan Terakhir" value={lastMonth?.realisasi?.toFixed(4) ?? '—'} unit="kali/plg" icon={Activity} color="blue" loading={loading} />
-        <KpiCard title="Pencapaian" value={achievement.toFixed(1) + '%'} icon={TrendingDown} color={totalReal > totalTgt ? 'red' : 'green'} loading={loading} />
+        <KpiCard title="SAIFI YTD" value={Number(totalReal).toFixed(4)} unit="kali/plg" achievement={achievement} icon={Zap} color="yellow" isInverse loading={loading} />
+        <KpiCard title="Target YTD" value={Number(totalTgt).toFixed(4)} unit="kali/plg" icon={Target} color="green" loading={loading} />
+        <KpiCard title="Bulan Terakhir" value={lastMonth?.realisasi != null ? Number(lastMonth.realisasi).toFixed(4) : '—'} unit="kali/plg" icon={Activity} color="blue" loading={loading} />
+        <KpiCard title="Pencapaian" value={Number(achievement).toFixed(1) + '%'} icon={TrendingDown} color={totalReal > totalTgt ? 'red' : 'green'} loading={loading} />
       </div>
 
       <div style={{
-        display: 'inline-flex',
-        background: 'rgba(15, 76, 215, 0.05)',
-        padding: 4,
-        borderRadius: 12,
-        border: '1px solid rgba(15, 76, 215, 0.08)',
-        alignSelf: 'flex-start',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
         margin: '12px 0 16px',
       }}>
+        <div style={{
+          display: 'inline-flex',
+          background: 'rgba(15, 76, 215, 0.05)',
+          padding: 4,
+          borderRadius: 12,
+          border: '1px solid rgba(15, 76, 215, 0.08)',
+        }}>
         {['monthly','cumulative'].map(t => {
           const isActive = tab === t
           return (
@@ -180,6 +266,47 @@ export default function SaifiPage() {
             </button>
           )
         })}
+        </div>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <div style={{
+            display: 'inline-flex',
+            background: 'rgba(37, 99, 235, 0.05)',
+            padding: 4,
+            borderRadius: 12,
+            border: '1px solid rgba(37, 99, 235, 0.15)',
+            cursor: 'pointer'
+          }}>
+            <button
+              onClick={() => navigate('/input-saifi')}
+              style={{
+                padding: '6px 16px',
+                borderRadius: 9,
+                fontSize: '0.85rem',
+                fontWeight: 700,
+                transition: 'all 0.2s ease',
+                border: 'none',
+                cursor: 'pointer',
+                background: 'var(--bg-card)',
+                color: '#2563EB',
+                boxShadow: '0 2px 8px rgba(37, 99, 235, 0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+              onMouseEnter={e => {
+                 e.currentTarget.style.background = '#2563EB';
+                 e.currentTarget.style.color = '#FFFFFF';
+              }}
+              onMouseLeave={e => {
+                 e.currentTarget.style.background = 'var(--bg-card)';
+                 e.currentTarget.style.color = '#2563EB';
+              }}
+            >
+              <Plus size={16} /> Tambah SAIFI
+            </button>
+          </div>
+          <ExportModal kpiType="SAIFI" />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
@@ -247,15 +374,15 @@ export default function SaifiPage() {
         <DataTable
           columns={[
             { key: 'label', label: 'Bulan', width: '80px', align: 'center' },
-            { key: tab === 'monthly' ? 'target' : 'cumulativeTgt', label: 'Target', align: 'center', render: v => v?.toFixed(4) ?? '-' },
-            { key: tab === 'monthly' ? 'realisasi' : 'cumulativeReal', label: 'Realisasi', align: 'center', render: (v, row) => v != null ? <span className={`font-bold ${v > (tab === 'monthly' ? row.target : row.cumulativeTgt) ? 'text-red-500' : 'text-emerald-500'}`}>{v.toFixed(4)}</span> : <span className="text-slate-400 text-xs font-bold">-</span> },
-            { key: tab === 'monthly' ? 'penyulang' : 'c_penyulang', label: <span style={{ color: 'var(--text-muted)' }}>Penyulang</span>, align: 'center', render: v => v != null ? <span style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-secondary)', padding: '2px 8px', borderRadius: 6, fontWeight: 600, fontSize: '0.75rem' }}>{v.toFixed(3)}</span> : '-' },
-            { key: tab === 'monthly' ? 'gardu' : 'c_gardu', label: <span style={{ color: 'var(--text-muted)' }}>Gardu</span>, align: 'center', render: v => v != null ? <span style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-secondary)', padding: '2px 8px', borderRadius: 6, fontWeight: 600, fontSize: '0.75rem' }}>{v.toFixed(3)}</span> : '-' },
-            { key: tab === 'monthly' ? 'jtr' : 'c_jtr', label: <span style={{ color: 'var(--text-muted)' }}>JTR</span>, align: 'center', render: v => v != null ? <span style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-secondary)', padding: '2px 8px', borderRadius: 6, fontWeight: 600, fontSize: '0.75rem' }}>{v.toFixed(3)}</span> : '-' },
-            { key: tab === 'monthly' ? 'srapp' : 'c_srapp', label: <span style={{ color: 'var(--text-muted)' }}>SRAPP</span>, align: 'center', render: v => v != null ? <span style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-secondary)', padding: '2px 8px', borderRadius: 6, fontWeight: 600, fontSize: '0.75rem' }}>{v.toFixed(3)}</span> : '-' },
-            { key: tab === 'monthly' ? 'pemeliharaan' : 'c_pemeliharaan', label: <span style={{ color: 'var(--text-muted)' }}>Pemeliharaan</span>, align: 'center', render: v => v != null ? <span style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-secondary)', padding: '2px 8px', borderRadius: 6, fontWeight: 600, fontSize: '0.75rem' }}>{v.toFixed(3)}</span> : '-' },
-            { key: tab === 'monthly' ? 'bencana_alam' : 'c_bencana_alam', label: <span style={{ color: 'var(--text-muted)' }}>Bencana Alam</span>, align: 'center', render: v => v != null ? <span style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-secondary)', padding: '2px 8px', borderRadius: 6, fontWeight: 600, fontSize: '0.75rem' }}>{v.toFixed(3)}</span> : '-' },
-            { key: tab === 'monthly' ? 'transmisi' : 'c_transmisi', label: <span style={{ color: 'var(--text-muted)' }}>Transmisi</span>, align: 'center', render: v => v != null ? <span style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-secondary)', padding: '2px 8px', borderRadius: 6, fontWeight: 600, fontSize: '0.75rem' }}>{v.toFixed(3)}</span> : '-' },
+            { key: tab === 'monthly' ? 'target' : 'cumulativeTgt', label: 'Target', align: 'center', render: v => v != null ? Number(v).toFixed(4) : '-' },
+            { key: tab === 'monthly' ? 'realisasi' : 'cumulativeReal', label: 'Realisasi', align: 'center', render: (v, row) => v != null ? <span className={`font-bold ${v > (tab === 'monthly' ? row.target : row.cumulativeTgt) ? 'text-red-500' : 'text-emerald-500'}`}>{Number(v).toFixed(4)}</span> : <span className="text-slate-400 text-xs font-bold">-</span> },
+            { key: tab === 'monthly' ? 'penyulang' : 'c_penyulang', label: <span style={{ color: 'var(--text-muted)' }}>Penyulang</span>, align: 'center', render: (v, row) => renderEditable(v, row, 'penyulang') },
+            { key: tab === 'monthly' ? 'gardu' : 'c_gardu', label: <span style={{ color: 'var(--text-muted)' }}>Gardu</span>, align: 'center', render: (v, row) => renderEditable(v, row, 'gardu') },
+            { key: tab === 'monthly' ? 'jtr' : 'c_jtr', label: <span style={{ color: 'var(--text-muted)' }}>JTR</span>, align: 'center', render: (v, row) => renderEditable(v, row, 'jtr') },
+            { key: tab === 'monthly' ? 'srapp' : 'c_srapp', label: <span style={{ color: 'var(--text-muted)' }}>SRAPP</span>, align: 'center', render: (v, row) => renderEditable(v, row, 'sr_app') },
+            { key: tab === 'monthly' ? 'pemeliharaan' : 'c_pemeliharaan', label: <span style={{ color: 'var(--text-muted)' }}>Pemeliharaan</span>, align: 'center', render: (v, row) => renderEditable(v, row, 'har') },
+            { key: tab === 'monthly' ? 'bencana_alam' : 'c_bencana_alam', label: <span style={{ color: 'var(--text-muted)' }}>Bencana Alam</span>, align: 'center', render: (v, row) => renderEditable(v, row, 'bencana_alam') },
+            { key: tab === 'monthly' ? 'transmisi' : 'c_transmisi', label: <span style={{ color: 'var(--text-muted)' }}>Transmisi</span>, align: 'center', render: (v, row) => renderEditable(v, row, 'sistem_transmisi') },
           ]}
           data={tableData}
           paginated={false}

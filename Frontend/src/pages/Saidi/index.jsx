@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, ComposedChart, BarChart
 } from 'recharts'
-import { Clock, TrendingDown, Target, Activity } from 'lucide-react'
+import { Clock, TrendingDown, Target, Activity, Plus } from 'lucide-react'
 import ChartWrapper from '@/components/ui/ChartWrapper'
 import KpiCard from '@/components/ui/KpiCard'
 import DataTable from '@/components/ui/DataTable'
@@ -12,6 +13,7 @@ import { useFilter } from '@/context/FilterContext'
 import { MONTHS_SHORT } from '@/utils/formatters'
 import { CHART_COLORS, SAIDI_CAUSES } from '@/utils/constants'
 import { getDashboardData } from '@/services/dashboardDataService'
+import ExportModal from '@/components/ui/ExportModal'
 
 
 
@@ -37,6 +39,7 @@ const CUSTOM_TOOLTIP = ({ active, payload, label }) => {
 }
 
 export default function SaidiPage() {
+  const navigate = useNavigate()
   const { filters }         = useFilter()
   const [tab,    setTab]    = useState('monthly')  // monthly | cumulative
   const [data,   setData]   = useState([])
@@ -157,14 +160,18 @@ export default function SaidiPage() {
       </div>
 
       <div style={{
-        display: 'inline-flex',
-        background: 'rgba(15, 76, 215, 0.05)',
-        padding: 4,
-        borderRadius: 12,
-        border: '1px solid rgba(15, 76, 215, 0.08)',
-        alignSelf: 'flex-start',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
         margin: '12px 0 16px',
       }}>
+        <div style={{
+          display: 'inline-flex',
+          background: 'rgba(15, 76, 215, 0.05)',
+          padding: 4,
+          borderRadius: 12,
+          border: '1px solid rgba(15, 76, 215, 0.08)',
+        }}>
         {['monthly', 'cumulative'].map(t => {
           const isActive = tab === t
           return (
@@ -194,6 +201,47 @@ export default function SaidiPage() {
             </button>
           )
         })}
+        </div>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <div style={{
+            display: 'inline-flex',
+            background: 'rgba(37, 99, 235, 0.05)',
+            padding: 4,
+            borderRadius: 12,
+            border: '1px solid rgba(37, 99, 235, 0.15)',
+            cursor: 'pointer'
+          }}>
+            <button
+              onClick={() => navigate('/input')}
+              style={{
+                padding: '6px 16px',
+                borderRadius: 9,
+                fontSize: '0.85rem',
+                fontWeight: 700,
+                transition: 'all 0.2s ease',
+                border: 'none',
+                cursor: 'pointer',
+                background: 'var(--bg-card)',
+                color: '#2563EB',
+                boxShadow: '0 2px 8px rgba(37, 99, 235, 0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+              onMouseEnter={e => {
+                 e.currentTarget.style.background = '#2563EB';
+                 e.currentTarget.style.color = '#FFFFFF';
+              }}
+              onMouseLeave={e => {
+                 e.currentTarget.style.background = 'var(--bg-card)';
+                 e.currentTarget.style.color = '#2563EB';
+              }}
+            >
+              <Plus size={16} /> Tambah SAIDI
+            </button>
+          </div>
+          <ExportModal kpiType="SAIDI" />
+        </div>
       </div>
 
       {/* Charts row */}

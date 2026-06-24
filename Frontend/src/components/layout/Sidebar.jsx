@@ -53,10 +53,10 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
          const matchingSubgroup = item.items.find(sub => sub.group === userGroup);
          if (!matchingSubgroup) return [];
          
-         // Extract the items from the subgroup and render them flatly
+         // Extract the items from the subgroup and render them flatly, but preserve nested groups
          return matchingSubgroup.items.map(subItem => ({ 
              ...subItem, 
-             type: 'item' // Ensure they render as clickable items, not groups
+             type: subItem.type || 'item' 
          }));
       }
       
@@ -114,7 +114,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
                 if (navItem.type === 'item' || (!navItem.type && navItem.path)) {
                   const IconComp = ICON_MAP[navItem.icon] || LayoutDashboard
                   const isActive = location.pathname === navItem.path ||
-                    (navItem.path !== '/' && location.pathname.startsWith(navItem.path))
+                    (navItem.path !== '/' && location.pathname.startsWith(navItem.path + '/'))
                   
                   return (
                     <li key={navItem.key}>

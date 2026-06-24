@@ -236,6 +236,89 @@ export default function EnsPage() {
         </div>
       </div>
 
+      {/* Recap Table */}
+      <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
+        <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-4">Rekapitulasi ENS Tahun {filters.year}</h2>
+        <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+          <table className="w-full text-sm text-left">
+            <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300">
+              <tr>
+                <th className="py-3 px-4 font-bold">Bulan</th>
+                <th className="py-3 px-4 font-bold text-right">Terencana</th>
+                <th className="py-3 px-4 font-bold text-right">Tidak Terencana</th>
+                <th className="py-3 px-4 font-bold text-right">Bencana Alam</th>
+                <th className="py-3 px-4 font-bold text-right">Total Realisasi</th>
+                <th className="py-3 px-4 font-bold text-right">Target</th>
+                <th className="py-3 px-4 font-bold text-center">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.map((row, idx) => {
+                const year = filters.year;
+                const realisasi = row[`b_${year}`];
+                const hasData = realisasi != null;
+                const isOver = hasData && realisasi > row.b_target;
+                
+                return (
+                  <tr key={idx} className="border-b border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                    <td className="py-3 px-4 font-semibold text-slate-700 dark:text-slate-200">{row.label}</td>
+                    <td className="py-3 px-4 text-right text-slate-600 dark:text-slate-400">{hasData && row.b_terencana ? (row.b_terencana).toFixed(3) : '-'}</td>
+                    <td className="py-3 px-4 text-right text-slate-600 dark:text-slate-400">{hasData && row.b_tidakTerencana ? (row.b_tidakTerencana).toFixed(3) : '-'}</td>
+                    <td className="py-3 px-4 text-right text-slate-600 dark:text-slate-400">{hasData && row.b_bencanaAlam ? (row.b_bencanaAlam).toFixed(3) : '-'}</td>
+                    <td className={`py-3 px-4 text-right font-bold ${hasData ? (isOver ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400') : 'text-slate-400 dark:text-slate-500'}`}>
+                      {hasData ? realisasi.toFixed(3) : '-'}
+                    </td>
+                    <td className="py-3 px-4 text-right font-semibold text-slate-600 dark:text-slate-300">{(row.b_target || 0).toFixed(3)}</td>
+                    <td className="py-3 px-4 flex justify-center">
+                      {hasData ? (
+                        isOver 
+                        ? <span className="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-2 py-0.5 rounded text-xs font-bold border border-red-200 dark:border-red-800">Over</span>
+                        : <span className="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded text-xs font-bold border border-emerald-200 dark:border-emerald-800">Aman</span>
+                      ) : <span className="text-slate-300 dark:text-slate-600">-</span>}
+                    </td>
+                  </tr>
+                )
+              })}
+              {/* YTD Row */}
+              <tr className="bg-slate-100 dark:bg-slate-900/80 border-t-2 border-slate-300 dark:border-slate-600">
+                <td className="py-3 px-4 font-bold text-slate-800 dark:text-white">Kumulatif YTD</td>
+                <td className="py-3 px-4 text-right font-semibold text-slate-700 dark:text-slate-300">
+                  {data.reduce((s, x) => x[`b_${filters.year}`] != null ? s + (x.b_terencana || 0) : s, 0).toFixed(3)}
+                </td>
+                <td className="py-3 px-4 text-right font-semibold text-slate-700 dark:text-slate-300">
+                  {data.reduce((s, x) => x[`b_${filters.year}`] != null ? s + (x.b_tidakTerencana || 0) : s, 0).toFixed(3)}
+                </td>
+                <td className="py-3 px-4 text-right font-semibold text-slate-700 dark:text-slate-300">
+                  {data.reduce((s, x) => x[`b_${filters.year}`] != null ? s + (x.b_bencanaAlam || 0) : s, 0).toFixed(3)}
+                </td>
+                {(() => {
+                  const filled = data.filter(d => d[`k_${filters.year}`] != null);
+                  const lastFilled = filled.length > 0 ? filled[filled.length - 1] : null;
+                  const totalEnsYTD = lastFilled ? lastFilled[`k_${filters.year}`] : 0;
+                  const targetEnsYTD = lastFilled ? lastFilled.k_target : 0;
+                  const isOverYTD = totalEnsYTD > targetEnsYTD;
+                  return (
+                    <>
+                      <td className={`py-3 px-4 text-right font-extrabold ${isOverYTD ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                        {totalEnsYTD.toFixed(3)}
+                      </td>
+                      <td className="py-3 px-4 text-right font-extrabold text-slate-800 dark:text-white">{targetEnsYTD.toFixed(3)}</td>
+                      <td className="py-3 px-4 text-center">
+                          {filled.length > 0 && (
+                            isOverYTD 
+                            ? <span className="text-red-500 font-bold">X</span>
+                            : <span className="text-emerald-500 font-bold">✓</span>
+                          )}
+                      </td>
+                    </>
+                  );
+                })()}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       {/* Charts Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         

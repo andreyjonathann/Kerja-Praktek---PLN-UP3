@@ -16,6 +16,7 @@ import EnsPage from '@/pages/Ens'
 import PlaceholderPage from '@/pages/Placeholder'
 import SpreadsheetDemo from '@/pages/SpreadsheetDemo'
 import InputKinerjaPage from '@/pages/InputKinerja'
+import InputSaifiPage from '@/pages/InputSaifi'
 import KelolaTargetPage from '@/pages/KelolaTarget'
 import KelolaJaringanPage from '@/pages/KelolaJaringan'
 
@@ -68,13 +69,19 @@ export default function App() {
                 </ProtectedRoute>
               } />
 
+              <Route path="/input-saifi" element={
+                <ProtectedRoute>
+                  <InputSaifiPage />
+                </ProtectedRoute>
+              } />
+
               <Route path="/kelola-target" element={
                 <ProtectedRoute>
                   <KelolaTargetPage />
                 </ProtectedRoute>
               } />
 
-              <Route path="/kelola-jaringan" element={
+              <Route path="/kelola-jaringan/*" element={
                 <ProtectedRoute>
                   <KelolaJaringanPage />
                 </ProtectedRoute>

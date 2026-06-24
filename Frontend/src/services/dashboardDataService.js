@@ -4,12 +4,12 @@ import { MONTHS_SHORT } from '@/utils/formatters';
 export const getDashboardData = async (year = 2026) => {
   try {
     // 1. Fetch Jaringan Dashboard Data (SAIDI, SAIFI, ENS, Gangguan)
-    const jaringanRes = await api.get(`/jaringan/dashboard?tahun=\${year}`);
+    const jaringanRes = await api.get(`/jaringan/dashboard?tahun=${year}`);
     const result = jaringanRes.data;
 
     // 2. Fetch NKO Summary Data
     try {
-      const nkoRes = await api.get(`/nko/summary?tahun=\${year}`);
+      const nkoRes = await api.get(`/nko/summary?tahun=${year}`);
       if (nkoRes.data && Array.isArray(nkoRes.data)) {
         nkoRes.data.sort((a, b) => a.bulan - b.bulan);
         const fullNkoTable = [];

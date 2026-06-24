@@ -1,16 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useLocation, useNavigate } from 'react-router-dom';
 import api from '@/services/api';
 import { MONTHS } from '@/utils/constants';
+import { AlertCircle } from 'lucide-react';
 
 export default function KelolaJaringanPage() {
-  const { isPic, user, isAdmin } = useAuth();
-  const isJaringan = user?.role === 'pic_jaringan' || isAdmin;
+  const { user } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const isJaringan = user?.role === 'pic_jaringan' || user?.role === 'admin';
   
   const [activeTab, setActiveTab] = useState('ens');
-  const [periodeId, setPeriodeId] = useState('');
+
+  // Sync tab with URL
+  useEffect(() => {
+    const path = location.pathname;
+    if (path.includes('rekap-gangguan')) setActiveTab('gg_bulanan');
+    else if (path.includes('log-histori')) setActiveTab('log_gangguan');
+    else if (path.includes('ens')) setActiveTab('ens');
+    else setActiveTab('ens'); // Default
+  }, [location.pathname]);
+
+  const handleTabClick = (tab, path) => {
+    setActiveTab(tab);
+    navigate(path);
+  };
   
-  const [ensForm, setEnsForm] = useState({ terencana: 0, tidak_terencana: 0, bencana_alam: 0 });
+  const [periodeId, setPeriodeId] = useState('');
+  const [tahun, setTahun] = useState(new Date().getFullYear());
+  
+  const [ensForm, setEnsForm] = useState({ terencana: '', tidak_terencana: '', bencana_alam: '' });
   const [ggBulananForm, setGgBulananForm] = useState({ gt_5_menit: 0, le_5_menit: 0, berulang: 0 });
   
   const [ggList, setGgList] = useState([]);
@@ -21,18 +41,33 @@ export default function KelolaJaringanPage() {
 
   const handleEnsSubmit = async (e) => {
       e.preventDefault();
-      if (!periodeId) return alert('Pilih bulan!');
+      if (!periodeId || !tahun) return alert('Pilih bulan dan tahun!');
+      
+      const t = parseFloat(ensForm.terencana);
+      const tt = parseFloat(ensForm.tidak_terencana);
+      const b = parseFloat(ensForm.bencana_alam);
+
+      if (isNaN(t) || isNaN(tt) || isNaN(b)) return alert('Semua field ENS harus diisi dengan angka valid!');
+      if (t < 0 || tt < 0 || b < 0) return alert('Nilai ENS tidak boleh negatif!');
+
+      const monthLabel = MONTHS.find(m => m.value == periodeId)?.label || periodeId;
+      
+      if (!window.confirm(`Apakah Anda yakin ingin menyimpan data ENS bulan ${monthLabel} tahun ${tahun}?`)) {
+          return;
+      }
+
       try {
-          await api.post('/jaringan/ens', { periode_id: periodeId, ...ensForm });
-          alert('Data ENS tersimpan!');
+          await api.post('/jaringan/ens', { periode_id: periodeId, tahun, terencana: t, tidak_terencana: tt, bencana_alam: b });
+          alert('Data ENS berhasil tersimpan!');
+          setEnsForm({ terencana: '', tidak_terencana: '', bencana_alam: '' });
       } catch (err) { alert(err.message); }
   };
 
   const handleGgBulananSubmit = async (e) => {
       e.preventDefault();
-      if (!periodeId) return alert('Pilih bulan!');
+      if (!periodeId || !tahun) return alert('Pilih bulan dan tahun!');
       try {
-          await api.post('/jaringan/gangguan', { periode_id: periodeId, ...ggBulananForm });
+          await api.post('/jaringan/gangguan', { periode_id: periodeId, tahun, ...ggBulananForm });
           alert('Data Gangguan Bulanan tersimpan!');
       } catch (err) { alert(err.message); }
   };
@@ -58,7 +93,7 @@ export default function KelolaJaringanPage() {
 
   const handleDeleteGgList = async (id) => {
       if(!window.confirm('Hapus log ini?')) return;
-      await api.delete(`/jaringan/gangguan-list/\${id}`);
+      await api.delete(`/jaringan/gangguan-list/${id}`);
       fetchGgList();
   };
 
@@ -66,36 +101,69 @@ export default function KelolaJaringanPage() {
       return <div className="p-8 text-center text-slate-500">Akses ditolak. Khusus PIC Jaringan.</div>;
   }
 
+  const totalEnsInput = (parseFloat(ensForm.terencana) || 0) + (parseFloat(ensForm.tidak_terencana) || 0) + (parseFloat(ensForm.bencana_alam) || 0);
+
   return (
     <div className="p-8 max-w-4xl mx-auto animate-fade-in">
       <h1 className="text-2xl font-bold mb-6">Kelola Data Jaringan</h1>
       
-      <div className="flex gap-4 mb-6 border-b border-slate-200 pb-2">
-          <button onClick={() => setActiveTab('ens')} className={`font-bold \${activeTab === 'ens' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500'}`}>ENS Bulanan</button>
-          <button onClick={() => setActiveTab('gg_bulanan')} className={`font-bold \${activeTab === 'gg_bulanan' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500'}`}>Rekap Gangguan</button>
-          <button onClick={() => setActiveTab('log_gangguan')} className={`font-bold \${activeTab === 'log_gangguan' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500'}`}>Log Histori Gangguan</button>
-          <a href="/input" className="font-bold text-slate-500 ml-auto">Ke Input SAIDI/SAIFI →</a>
-      </div>
-
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
           {(activeTab === 'ens' || activeTab === 'gg_bulanan') && (
-              <div className="mb-6">
-                  <label className="block text-sm font-bold mb-2">Pilih Periode (Bulan)</label>
-                  <select value={periodeId} onChange={e => setPeriodeId(e.target.value)} className="p-2 border rounded-lg">
-                      <option value="">Pilih Bulan...</option>
-                      {MONTHS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-                  </select>
+              <div className="mb-6 grid grid-cols-2 gap-4">
+                  <div>
+                      <label className="block text-sm font-bold mb-2">Pilih Bulan</label>
+                      <select value={periodeId} onChange={e => setPeriodeId(e.target.value)} className="w-full p-2 border rounded-lg bg-slate-50">
+                          <option value="">Pilih Bulan...</option>
+                          {MONTHS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+                      </select>
+                  </div>
+                  <div>
+                      <label className="block text-sm font-bold mb-2">Pilih Tahun</label>
+                      <select value={tahun} onChange={e => setTahun(Number(e.target.value))} className="w-full p-2 border rounded-lg bg-slate-50">
+                          {[2023, 2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
+                      </select>
+                  </div>
               </div>
           )}
 
           {activeTab === 'ens' && (
-              <form onSubmit={handleEnsSubmit} className="space-y-4">
-                  <h2 className="font-bold text-lg">Input ENS (MWh)</h2>
-                  <div><label>Padam Terencana</label><input type="number" step="0.01" className="w-full p-2 border rounded-lg" value={ensForm.terencana} onChange={e => setEnsForm({...ensForm, terencana: e.target.value})} /></div>
-                  <div><label>Tidak Terencana</label><input type="number" step="0.01" className="w-full p-2 border rounded-lg" value={ensForm.tidak_terencana} onChange={e => setEnsForm({...ensForm, tidak_terencana: e.target.value})} /></div>
-                  <div><label>Bencana Alam</label><input type="number" step="0.01" className="w-full p-2 border rounded-lg" value={ensForm.bencana_alam} onChange={e => setEnsForm({...ensForm, bencana_alam: e.target.value})} /></div>
-                  <button type="submit" className="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold w-full">Simpan ENS</button>
-              </form>
+              <div className="space-y-8">
+                  <form onSubmit={handleEnsSubmit} className="space-y-5 bg-slate-50 p-6 rounded-xl border border-slate-200">
+                      <div className="flex items-center gap-2 mb-4">
+                        <AlertCircle size={20} className="text-blue-600" />
+                        <h2 className="font-bold text-lg text-slate-800">Input ENS (MWh)</h2>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                          <label className="block text-sm font-semibold mb-2 text-slate-600">Padam Terencana</label>
+                          <input type="number" step="0.001" min="0" placeholder="0.000" required className="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-shadow" value={ensForm.terencana} onChange={e => setEnsForm({...ensForm, terencana: e.target.value})} />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold mb-2 text-slate-600">Tidak Terencana</label>
+                          <input type="number" step="0.001" min="0" placeholder="0.000" required className="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-shadow" value={ensForm.tidak_terencana} onChange={e => setEnsForm({...ensForm, tidak_terencana: e.target.value})} />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold mb-2 text-slate-600">Bencana Alam</label>
+                          <input type="number" step="0.001" min="0" placeholder="0.000" required className="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-shadow" value={ensForm.bencana_alam} onChange={e => setEnsForm({...ensForm, bencana_alam: e.target.value})} />
+                        </div>
+                      </div>
+
+                      <div className="mt-6 flex flex-col md:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-200">
+                        <div>
+                          <p className="text-sm font-bold text-slate-500">Total Input ENS:</p>
+                          <p className="text-2xl font-extrabold text-slate-800">{totalEnsInput.toFixed(3)}</p>
+                        </div>
+                        <button 
+                          type="submit" 
+                          disabled={!periodeId || !tahun || ensForm.terencana === '' || ensForm.tidak_terencana === '' || ensForm.bencana_alam === ''}
+                          className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white px-8 py-3 rounded-lg font-bold transition-colors w-full md:w-auto"
+                        >
+                          Simpan ENS
+                        </button>
+                      </div>
+                  </form>
+              </div>
           )}
 
           {activeTab === 'gg_bulanan' && (
