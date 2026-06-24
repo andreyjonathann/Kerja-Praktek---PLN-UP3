@@ -89,7 +89,7 @@ export default function GangguanPage({ defaultTab = 'all' }) {
           value={totalGangguan}
           unit="kali"
           icon={AlertTriangle}
-          color="red"
+          color="blue"
           loading={loading}
         />
         <KpiCard
@@ -97,7 +97,7 @@ export default function GangguanPage({ defaultTab = 'all' }) {
           value={formatNumber(totalPelanggan)}
           unit="pelanggan"
           icon={Activity}
-          color="orange"
+          color="blue"
           loading={loading}
         />
         <KpiCard
@@ -105,7 +105,7 @@ export default function GangguanPage({ defaultTab = 'all' }) {
           value={avgDurasi.toFixed(1)}
           unit="menit"
           icon={Clock}
-          color="yellow"
+          color="blue"
           loading={loading}
         />
         <KpiCard

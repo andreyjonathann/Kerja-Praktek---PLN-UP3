@@ -72,7 +72,7 @@ export default function KpiCard({
 
   if (loading) {
     return (
-      <div className="card" style={{ padding:0, minHeight:168, display:'flex', flexDirection:'column' }}>
+      <div className="card" style={{ padding:0, minHeight:130, display:'flex', flexDirection:'column' }}>
         <div style={{ height:3, background:'rgba(255,255,255,0.06)', borderRadius:'14px 14px 0 0' }} />
         <div style={{ padding:'18px 20px', flex:1, display:'flex', flexDirection:'column', gap:14 }}>
           <div style={{ display:'flex', justifyContent:'space-between' }}>
@@ -91,7 +91,7 @@ export default function KpiCard({
       className="card hover-lift"
       onClick={onClick}
       style={{
-        padding:0, minHeight:168,
+        padding:0, minHeight:130,
         display:'flex', flexDirection:'column',
         cursor: onClick ? 'pointer' : 'default',
         overflow:'hidden',
@@ -105,11 +105,11 @@ export default function KpiCard({
         boxShadow:`0 0 14px ${c.glow}`,
       }} />
 
-      <div style={{ padding:'16px 20px 20px', flex:1, display:'flex', flexDirection:'column' }}>
+      <div style={{ padding:'12px 16px 16px', flex:1, display:'flex', flexDirection:'column' }}>
         {/* Header */}
-        <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:14 }}>
+        <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:10 }}>
           <p style={{
-            fontSize:'0.85rem', fontWeight:700, color:'var(--text-muted)',
+            fontSize:'0.75rem', fontWeight:700, color:'var(--text-muted)',
             textTransform:'uppercase', letterSpacing:'0.1em', lineHeight:1.3,
             paddingRight:8, flex:1,
           }}>
@@ -119,22 +119,22 @@ export default function KpiCard({
             <div
               className="icon-wrapper-interactive"
               style={{
-                width:38, height:38, borderRadius:10,
+                width:32, height:32, borderRadius:8,
                 background:c.iconBg, display:'flex', alignItems:'center',
                 justifyContent:'center', flexShrink:0,
                 border:`1px solid ${c.accent}22`,
               }}
             >
-              <Icon size={18} style={{ color:c.icon }} />
+              <Icon size={16} style={{ color:c.icon }} />
             </div>
           )}
         </div>
 
         {/* Value */}
-        <div style={{ flex:1, marginBottom:12 }}>
+        <div style={{ flex:1, marginBottom:8 }}>
           <div style={{ display:'flex', alignItems:'baseline', gap:6 }}>
             <span style={{
-              fontSize: value && value.length > 7 ? '2.1rem' : '2.4rem', fontWeight:800, color:'var(--text-primary)',
+              fontSize: value && value.length > 7 ? '1.5rem' : '1.8rem', fontWeight:800, color:'var(--text-primary)',
               lineHeight:1.1, letterSpacing:'-0.025em',
               fontFeatureSettings:'"tnum"',
             }}>

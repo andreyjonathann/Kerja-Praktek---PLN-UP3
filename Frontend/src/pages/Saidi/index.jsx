@@ -139,7 +139,7 @@ export default function SaidiPage() {
           value={totalTgt.toFixed(3)}
           unit="mnt/plg"
           icon={Target}
-          color="green"
+          color="blue"
           loading={loading}
         />
         <KpiCard
@@ -147,7 +147,7 @@ export default function SaidiPage() {
           value={lastMonth?.realisasi?.toFixed(3) ?? '—'}
           unit="mnt/plg"
           icon={Activity}
-          color="yellow"
+          color="blue"
           loading={loading}
         />
         <KpiCard
@@ -161,8 +161,10 @@ export default function SaidiPage() {
 
       <div style={{
         display: 'flex',
+        flexWrap: 'wrap',
         alignItems: 'center',
         justifyContent: 'space-between',
+        gap: '16px',
         margin: '12px 0 16px',
       }}>
         <div style={{
@@ -202,7 +204,7 @@ export default function SaidiPage() {
           )
         })}
         </div>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
           <div style={{
             display: 'inline-flex',
             background: 'rgba(37, 99, 235, 0.05)',

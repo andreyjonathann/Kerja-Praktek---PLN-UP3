@@ -74,22 +74,7 @@ export const NAV_ITEMS = [
         type: 'subgroup',
         group: 'JARINGAN',
         items: [
-          {
-            type: 'group',
-            group: 'KELOLA JARINGAN',
-            icon: 'Settings',
-            items: [
-              { key: 'ens-bulanan', label: 'ENS BULANAN', path: '/kelola-jaringan/ens' },
-              {
-                type: 'group',
-                group: 'GANGGUAN',
-                items: [
-                  { key: 'rekap-gangguan', label: 'TABEL REKAP GANGGUAN', path: '/kelola-jaringan/rekap-gangguan' },
-                  { key: 'log-histori', label: 'LOG HISTORI GANGGUAN', path: '/kelola-jaringan/log-histori' },
-                ]
-              },
-            ]
-          },
+
           {
             type: 'group',
             group: 'REKAP JARINGAN',
@@ -98,9 +83,8 @@ export const NAV_ITEMS = [
               { key: 'saidi', label: 'SAIDI', path: '/saidi' },
               { key: 'saifi', label: 'SAIFI', path: '/saifi' },
               { key: 'ens', label: 'ENS', path: '/ens' },
-              { key: 'gangguan-tm', label: 'GANGGUAN TM', path: '/gangguan-tm' },
-              { key: 'gangguan-switching', label: 'GANGGUAN SWITCHING', path: '/gangguan-switching' },
-              { key: 'rating-negatif', label: 'RATING NEGATIF', path: '/rating-negatif' },
+              { key: 'gangguan-tm', label: 'GANGGUAN TM', path: '/jaringan/gangguan-tm' },
+              { key: 'rating-negatif', label: 'RATING NEGATIF', path: '/jaringan/rating-negatif' },
               { key: 'rpt-g', label: 'RPT G (TANPA CT)', path: '/rpt-g' },
               { key: 'srdag', label: 'SRDAG', path: '/srdag' },
               { key: 'mvod', label: 'MVOD', path: '/mvod' },

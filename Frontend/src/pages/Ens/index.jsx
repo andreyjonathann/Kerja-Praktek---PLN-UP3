@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   ComposedChart,
   BarChart,
@@ -14,7 +15,9 @@ import {
 } from 'recharts'
 import { getDashboardData } from '@/services/dashboardDataService'
 import { useFilter } from '@/context/FilterContext'
-import { Activity, AlertTriangle } from 'lucide-react'
+import * as XLSX from 'xlsx'
+import { Activity, AlertTriangle, Plus } from 'lucide-react'
+import EnsExportModal from './EnsExportModal'
 
 // Custom colors for charts
 const COLORS = {
@@ -32,13 +35,13 @@ const COLORS = {
 const CustomBreakdownTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-white dark:bg-slate-800 p-3 rounded-lg shadow-lg border border-slate-100 dark:border-slate-700 text-sm">
-        <p className="font-bold text-slate-800 dark:text-white mb-2 pb-2 border-b border-slate-100 dark:border-slate-700">{label}</p>
+      <div className="bg-white p-3 rounded-lg shadow-lg border border-slate-100 text-sm">
+        <p className="font-bold text-slate-800 mb-2 pb-2 border-b border-slate-100">{label}</p>
         {payload.map((entry, index) => (
           <div key={`item-${index}`} className="flex items-center gap-2 mb-1">
             <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: entry.color }} />
-            <span className="text-slate-600 dark:text-slate-300 capitalize">{entry.name}:</span>
-            <span className="font-bold text-slate-900 dark:text-white ml-auto">
+            <span className="text-slate-600 capitalize">{entry.name}:</span>
+            <span className="font-bold text-slate-900 ml-auto">
               {Number(entry.value).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
           </div>
@@ -53,8 +56,8 @@ const CustomBreakdownTooltip = ({ active, payload, label }) => {
 const CustomEnsTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-white dark:bg-slate-800 p-3 rounded-lg shadow-lg border border-slate-100 dark:border-slate-700 text-sm min-w-[150px]">
-        <p className="font-bold text-slate-800 dark:text-white mb-2 pb-2 border-b border-slate-100 dark:border-slate-700">{label}</p>
+      <div className="bg-white p-3 rounded-lg shadow-lg border border-slate-100 text-sm min-w-[150px]">
+        <p className="font-bold text-slate-800 mb-2 pb-2 border-b border-slate-100">{label}</p>
         {payload.map((entry, index) => (
           <div key={`item-${index}`} className="flex items-center gap-2 mb-1">
             {entry.name === 'target' ? (
@@ -62,10 +65,10 @@ const CustomEnsTooltip = ({ active, payload, label }) => {
             ) : (
                <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: entry.color }} />
             )}
-            <span className="text-slate-600 dark:text-slate-300 capitalize">
+            <span className="text-slate-600 capitalize">
               {entry.name === 'target' ? 'Target' : entry.name}:
             </span>
-            <span className="font-bold text-slate-900 dark:text-white ml-auto">
+            <span className="font-bold text-slate-900 ml-auto">
               {Number(entry.value).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
           </div>
@@ -76,13 +79,13 @@ const CustomEnsTooltip = ({ active, payload, label }) => {
   return null;
 };
 
-const DYNAMIC_YEAR_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4'];
+const DYNAMIC_YEAR_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6'];
 
 // Formatter for Bar labels
 const renderCustomBarLabel = ({ x, y, width, value }) => {
   if (value == null || value === 0) return null;
   return (
-    <text x={x + width / 2} y={y - 5} fill="#64748b" textAnchor="middle" fontSize={10} className="dark:fill-slate-400 font-medium">
+    <text x={x + width / 2} y={y - 5} fill="#64748b" textAnchor="middle" fontSize={10} className=" font-medium">
       {Number(value).toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
     </text>
   );
@@ -90,10 +93,11 @@ const renderCustomBarLabel = ({ x, y, width, value }) => {
 
 
 export default function EnsPage() {
+  const navigate = useNavigate()
   const { filters } = useFilter()
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(true)
-
+  
   // Dynamic years list and toggle state
   const [availableYears, setAvailableYears] = useState([])
   const [showYears, setShowYears] = useState({})
@@ -194,141 +198,85 @@ export default function EnsPage() {
   }
 
   return (
-    <div className="p-4 md:p-6 w-full animate-fade-in space-y-6">
+    <div className="p-4 md:p-6 w-full animate-fade-in space-y-8">
       
-      {/* Header & Filter Section */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
+      {/* Header Section */}
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 card p-5">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
+          <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
             <Activity size={26} />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+            <h1 className="text-2xl font-bold text-slate-900">
               ENS (Energy Not Supplied)
             </h1>
-            <p className="text-slate-500 dark:text-slate-400 text-sm mt-0.5">
+            <p className="text-slate-500 text-sm mt-0.5">
               Pemantauan kinerja keandalan pasokan listrik bulanan dan kumulatif.
             </p>
           </div>
         </div>
 
-        {/* Year Toggles */}
-        <div className="flex flex-col items-start lg:items-end">
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">Filter Tahun</span>
-          <div className="flex gap-2 bg-slate-50 dark:bg-slate-900/50 p-1 rounded-xl border border-slate-200 dark:border-slate-700 flex-wrap">
-            {availableYears.map((year) => {
-              const isActive = showYears[year];
-              return (
-                <button
-                  key={year}
-                  onClick={() => setShowYears(prev => ({...prev, [year]: !prev[year]}))}
-                  className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${
-                    isActive 
-                      ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm border border-slate-200 dark:border-slate-600' 
-                      : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
-                  }`}
-                >
-                  {year}
-                </button>
-              )
-            })}
+        {/* Action Button */}
+          <div style={{
+            display: 'inline-flex',
+            background: 'rgba(37, 99, 235, 0.05)',
+            padding: 4,
+            borderRadius: 12,
+            border: '1px solid rgba(37, 99, 235, 0.15)',
+            cursor: 'pointer'
+          }}>
+            <button
+              onClick={() => navigate('/input')}
+              style={{
+                padding: '6px 16px',
+                borderRadius: 9,
+                fontSize: '0.85rem',
+                fontWeight: 700,
+                transition: 'all 0.2s ease',
+                border: 'none',
+                cursor: 'pointer',
+                background: 'var(--bg-card)',
+                color: '#2563EB',
+                boxShadow: '0 2px 8px rgba(37, 99, 235, 0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+              onMouseEnter={e => {
+                 e.currentTarget.style.background = '#2563EB';
+                 e.currentTarget.style.color = '#FFFFFF';
+              }}
+              onMouseLeave={e => {
+                 e.currentTarget.style.background = 'var(--bg-card)';
+                 e.currentTarget.style.color = '#2563EB';
+              }}
+            >
+              <Plus size={16} /> Tambah ENS
+            </button>
+          </div>
+      </div>
+
+      {/* Filter and Export Actions */}
+      <div className="card p-5">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <h2 className="text-lg font-bold text-slate-800">Export Data ENS</h2>
+          
+          <div className="flex items-center gap-3">
+            <EnsExportModal />
           </div>
         </div>
       </div>
 
-      {/* Recap Table */}
-      <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
-        <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-4">Rekapitulasi ENS Tahun {filters.year}</h2>
-        <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300">
-              <tr>
-                <th className="py-3 px-4 font-bold">Bulan</th>
-                <th className="py-3 px-4 font-bold text-right">Terencana</th>
-                <th className="py-3 px-4 font-bold text-right">Tidak Terencana</th>
-                <th className="py-3 px-4 font-bold text-right">Bencana Alam</th>
-                <th className="py-3 px-4 font-bold text-right">Total Realisasi</th>
-                <th className="py-3 px-4 font-bold text-right">Target</th>
-                <th className="py-3 px-4 font-bold text-center">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.map((row, idx) => {
-                const year = filters.year;
-                const realisasi = row[`b_${year}`];
-                const hasData = realisasi != null;
-                const isOver = hasData && realisasi > row.b_target;
-                
-                return (
-                  <tr key={idx} className="border-b border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
-                    <td className="py-3 px-4 font-semibold text-slate-700 dark:text-slate-200">{row.label}</td>
-                    <td className="py-3 px-4 text-right text-slate-600 dark:text-slate-400">{hasData && row.b_terencana ? (row.b_terencana).toFixed(3) : '-'}</td>
-                    <td className="py-3 px-4 text-right text-slate-600 dark:text-slate-400">{hasData && row.b_tidakTerencana ? (row.b_tidakTerencana).toFixed(3) : '-'}</td>
-                    <td className="py-3 px-4 text-right text-slate-600 dark:text-slate-400">{hasData && row.b_bencanaAlam ? (row.b_bencanaAlam).toFixed(3) : '-'}</td>
-                    <td className={`py-3 px-4 text-right font-bold ${hasData ? (isOver ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400') : 'text-slate-400 dark:text-slate-500'}`}>
-                      {hasData ? realisasi.toFixed(3) : '-'}
-                    </td>
-                    <td className="py-3 px-4 text-right font-semibold text-slate-600 dark:text-slate-300">{(row.b_target || 0).toFixed(3)}</td>
-                    <td className="py-3 px-4 flex justify-center">
-                      {hasData ? (
-                        isOver 
-                        ? <span className="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-2 py-0.5 rounded text-xs font-bold border border-red-200 dark:border-red-800">Over</span>
-                        : <span className="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded text-xs font-bold border border-emerald-200 dark:border-emerald-800">Aman</span>
-                      ) : <span className="text-slate-300 dark:text-slate-600">-</span>}
-                    </td>
-                  </tr>
-                )
-              })}
-              {/* YTD Row */}
-              <tr className="bg-slate-100 dark:bg-slate-900/80 border-t-2 border-slate-300 dark:border-slate-600">
-                <td className="py-3 px-4 font-bold text-slate-800 dark:text-white">Kumulatif YTD</td>
-                <td className="py-3 px-4 text-right font-semibold text-slate-700 dark:text-slate-300">
-                  {data.reduce((s, x) => x[`b_${filters.year}`] != null ? s + (x.b_terencana || 0) : s, 0).toFixed(3)}
-                </td>
-                <td className="py-3 px-4 text-right font-semibold text-slate-700 dark:text-slate-300">
-                  {data.reduce((s, x) => x[`b_${filters.year}`] != null ? s + (x.b_tidakTerencana || 0) : s, 0).toFixed(3)}
-                </td>
-                <td className="py-3 px-4 text-right font-semibold text-slate-700 dark:text-slate-300">
-                  {data.reduce((s, x) => x[`b_${filters.year}`] != null ? s + (x.b_bencanaAlam || 0) : s, 0).toFixed(3)}
-                </td>
-                {(() => {
-                  const filled = data.filter(d => d[`k_${filters.year}`] != null);
-                  const lastFilled = filled.length > 0 ? filled[filled.length - 1] : null;
-                  const totalEnsYTD = lastFilled ? lastFilled[`k_${filters.year}`] : 0;
-                  const targetEnsYTD = lastFilled ? lastFilled.k_target : 0;
-                  const isOverYTD = totalEnsYTD > targetEnsYTD;
-                  return (
-                    <>
-                      <td className={`py-3 px-4 text-right font-extrabold ${isOverYTD ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                        {totalEnsYTD.toFixed(3)}
-                      </td>
-                      <td className="py-3 px-4 text-right font-extrabold text-slate-800 dark:text-white">{targetEnsYTD.toFixed(3)}</td>
-                      <td className="py-3 px-4 text-center">
-                          {filled.length > 0 && (
-                            isOverYTD 
-                            ? <span className="text-red-500 font-bold">X</span>
-                            : <span className="text-emerald-500 font-bold">✓</span>
-                          )}
-                      </td>
-                    </>
-                  );
-                })()}
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
       {/* Charts Grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
         
         {/* ENS Bulanan */}
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-5 flex flex-col h-[400px]">
-          <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-4 text-center">ENS BULANAN (MWh)</h2>
+        <div className="card p-5 flex flex-col h-[400px]">
+          <h2 className="text-lg font-bold text-slate-800 mb-4 text-center">ENS BULANAN (MWh)</h2>
           <div className="flex-1 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={data} margin={{ top: 20, right: 20, bottom: 0, left: -10 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" className="dark:stroke-slate-700" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" className="" />
                 <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} dy={10} />
                 <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} />
                 <Tooltip content={<CustomEnsTooltip />} cursor={{fill: 'rgba(0,0,0,0.05)'}} />
@@ -349,12 +297,12 @@ export default function EnsPage() {
         </div>
 
         {/* ENS Kumulatif */}
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-5 flex flex-col h-[400px]">
-          <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-4 text-center">ENS KUMULATIF (MWh)</h2>
+        <div className="card p-5 flex flex-col h-[400px]">
+          <h2 className="text-lg font-bold text-slate-800 mb-4 text-center">ENS KUMULATIF (MWh)</h2>
           <div className="flex-1 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={data} margin={{ top: 20, right: 20, bottom: 0, left: -10 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" className="dark:stroke-slate-700" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" className="" />
                 <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} dy={10} />
                 <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} />
                 <Tooltip content={<CustomEnsTooltip />} cursor={{fill: 'rgba(0,0,0,0.05)'}} />
@@ -375,12 +323,12 @@ export default function EnsPage() {
         </div>
 
         {/* Breakdown Bulanan */}
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-5 flex flex-col h-[400px]">
-          <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-4 text-center">Breakdown ENS Bulanan</h2>
+        <div className="card p-5 flex flex-col h-[400px]">
+          <h2 className="text-lg font-bold text-slate-800 mb-4 text-center">Breakdown ENS Bulanan</h2>
           <div className="flex-1 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data} margin={{ top: 20, right: 20, bottom: 0, left: -10 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" className="dark:stroke-slate-700" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" className="" />
                 <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} dy={10} />
                 <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} />
                 <Tooltip content={<CustomBreakdownTooltip />} cursor={{fill: 'rgba(0,0,0,0.05)'}} />
@@ -395,12 +343,12 @@ export default function EnsPage() {
         </div>
 
         {/* Breakdown Kumulatif */}
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-5 flex flex-col h-[400px]">
-          <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-4 text-center">Breakdown ENS Kumulatif</h2>
+        <div className="card p-5 flex flex-col h-[400px]">
+          <h2 className="text-lg font-bold text-slate-800 mb-4 text-center">Breakdown ENS Kumulatif</h2>
           <div className="flex-1 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data} margin={{ top: 20, right: 20, bottom: 0, left: -10 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" className="dark:stroke-slate-700" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" className="" />
                 <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} dy={10} />
                 <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} />
                 <Tooltip content={<CustomBreakdownTooltip />} cursor={{fill: 'rgba(0,0,0,0.05)'}} />

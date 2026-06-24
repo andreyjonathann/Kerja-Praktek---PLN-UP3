@@ -94,9 +94,9 @@ export default function InputKinerjaPage() {
               <Activity size={16} />
               <span>Form Realisasi Bulanan</span>
           </div>
-          <div className="flex flex-col md:flex-row md:items-baseline gap-2 md:gap-4">
+          <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
               <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
-                  Kinerja <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 capitalize">{bidang?.replace(/_/g, ' ') || 'Pilih Bidang'}</span>
+                  SAIDI
               </h1>
               <p className="text-slate-400 text-xs font-semibold max-w-2xl leading-snug">
                   Sistem penginputan data realisasi operasional. Seluruh perubahan pada halaman ini akan langsung berdampak pada kalkulasi NKO dan grafik dashboard utama.
@@ -119,42 +119,6 @@ export default function InputKinerjaPage() {
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 lg:space-y-12">
         
-        {/* TOP SECTION: Periode Settings */}
-        <div className="bg-white rounded-none border border-slate-200 p-4 md:p-6 mb-8">
-            <div className="flex flex-col gap-4">
-                {/* Month Selection */}
-                <div className="relative group/select w-full">
-                    <select 
-                        {...register('periode_id', { required: true })} 
-                        className="w-full pl-4 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-none outline-none focus:border-blue-500 focus:bg-white transition-all text-slate-700 cursor-pointer appearance-none"
-                    >
-                        <option value="">Pilih Bulan</option>
-                        {MONTHS.map(m => (
-                        <option key={m.value} value={m.value}>{m.label}</option>
-                        ))}
-                    </select>
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                        <ChevronDownIcon />
-                    </div>
-                </div>
-
-                {/* Year Selection */}
-                <div className="w-full">
-                    <label className="block text-xs font-bold text-slate-500 mb-1 tracking-wider uppercase">Ketik Tahun</label>
-                    <div className="relative w-full">
-                        <input 
-                            type="number"
-                            {...register('tahun', { required: true })} 
-                            defaultValue={2024}
-                            placeholder="Contoh: 2024"
-                            className="w-full pl-4 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-none outline-none focus:border-blue-500 focus:bg-white transition-all text-slate-700 appearance-none"
-                        />
-                    </div>
-                </div>
-            </div>
-            {(errors.periode_id || errors.tahun) && <p className="text-red-500 text-xs mt-2 font-bold"><AlertCircle size={12} className="inline mr-1"/> Wajib pilih bulan dan tahun!</p>}
-        </div>
-        
         {/* MIDDLE SECTION: Data Input Forms */}
         <div>
             {/* Jaringan Layout */}
@@ -162,6 +126,52 @@ export default function InputKinerjaPage() {
             <div className="bg-white rounded-none border border-slate-200 overflow-hidden">
                 <div className="bg-slate-50 border-b border-slate-200 p-4 flex justify-between items-center">
                     <h3 className="font-semibold text-lg text-blue-600">Matriks Jaringan (SAIDI)</h3>
+                </div>
+
+                {/* PERIODE SETTINGS */}
+                <div className="p-4 bg-white border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex flex-wrap items-center gap-4 w-full">
+                    <div style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      alignItems: 'center',
+                      gap: '12px',
+                      background: 'rgba(37, 99, 235, 0.05)',
+                      padding: '8px 12px',
+                      borderRadius: 16,
+                      border: '1px solid rgba(37, 99, 235, 0.15)',
+                    }}>
+                        {/* Month Selection */}
+                        <div className="relative group/select w-48">
+                            <select 
+                                {...register('periode_id', { required: true })} 
+                                className="w-full pl-4 pr-10 py-2.5 bg-white border-none rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 transition-all text-slate-700 font-bold cursor-pointer appearance-none shadow-sm"
+                                style={{ fontSize: '0.85rem' }}
+                            >
+                                <option value="">PILIH BULAN</option>
+                                {MONTHS.map(m => (
+                                <option key={m.value} value={m.value}>{m.label}</option>
+                                ))}
+                            </select>
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-blue-500">
+                                <ChevronDownIcon />
+                            </div>
+                        </div>
+
+                        {/* Year Selection */}
+                        <div className="relative w-32">
+                            <input 
+                                type="number"
+                                {...register('tahun', { required: true })} 
+                                defaultValue={2024}
+                                placeholder="TAHUN"
+                                className="w-full px-4 py-2.5 bg-white border-none rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 transition-all text-slate-700 font-bold text-center appearance-none shadow-sm"
+                                style={{ fontSize: '0.85rem' }}
+                            />
+                        </div>
+                    </div>
+                    {(errors.periode_id || errors.tahun) && <p className="text-red-500 text-xs font-bold"><AlertCircle size={12} className="inline mr-1"/> Wajib pilih bulan dan tahun!</p>}
+                  </div>
                 </div>
                 
                 <div className="p-0 overflow-x-auto">
@@ -205,7 +215,7 @@ export default function InputKinerjaPage() {
             {bidang && bidang !== 'jaringan' && (
             <div className="bg-white rounded-none shadow-sm border border-slate-200 overflow-hidden hover:shadow-2xl transition-shadow duration-500">
                 <div className="bg-gradient-to-r from-slate-50 to-white border-b border-slate-100 p-6 lg:px-10 flex items-center gap-4">
-                    <div className="w-12 h-12 bg-indigo-100 rounded-none flex items-center justify-center text-indigo-600 shadow-inner">
+                    <div className="w-12 h-12 bg-blue-100 rounded-none flex items-center justify-center text-blue-600 shadow-inner">
                         <Target size={24} />
                     </div>
                     <div>
@@ -228,10 +238,10 @@ export default function InputKinerjaPage() {
                             {targets.map(t => {
                                 const key = t.indikator.toLowerCase().replace(/ /g, '_');
                                 return (
-                                    <div key={key} className="bg-white p-6 rounded-none border-2 border-slate-100 hover:border-indigo-300 hover:shadow-xl transition-all duration-300 group hover:-translate-y-1 relative overflow-hidden">
-                                        <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 rounded-none -z-0 group-hover:scale-150 transition-transform duration-500"></div>
+                                    <div key={key} className="bg-white p-6 rounded-none border-2 border-slate-100 hover:border-blue-300 hover:shadow-xl transition-all duration-300 group hover:-translate-y-1 relative overflow-hidden">
+                                        <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-none -z-0 group-hover:scale-150 transition-transform duration-500"></div>
                                         <div className="flex justify-between items-start mb-6 relative z-10">
-                                            <label className="block text-base lg:text-lg font-extrabold text-slate-800 line-clamp-2 pr-4 group-hover:text-indigo-700 transition-colors" title={t.indikator}>
+                                            <label className="block text-base lg:text-lg font-extrabold text-slate-800 line-clamp-2 pr-4 group-hover:text-blue-700 transition-colors" title={t.indikator}>
                                                 {t.indikator}
                                             </label>
                                             <span className="inline-block px-3 py-1.5 bg-slate-100 text-slate-600 text-[10px] lg:text-xs font-extrabold rounded-none uppercase tracking-widest whitespace-nowrap shadow-sm border border-slate-200">
@@ -242,10 +252,10 @@ export default function InputKinerjaPage() {
                                             <input 
                                                 type="number" step="0.0001" 
                                                 {...register(key)} 
-                                                className="w-full pl-5 pr-12 py-4 bg-slate-50 border-2 border-slate-100 rounded-none outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white transition-all text-slate-800 shadow-inner font-extrabold text-xl hover:border-indigo-200" 
+                                                className="w-full pl-5 pr-12 py-4 bg-slate-50 border-2 border-slate-100 rounded-none outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white transition-all text-slate-800 shadow-inner font-extrabold text-xl hover:border-blue-200" 
                                                 placeholder="0.00"
                                             />
-                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover/input:opacity-100 transition-opacity text-indigo-500 pointer-events-none">
+                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover/input:opacity-100 transition-opacity text-blue-500 pointer-events-none">
                                                 <Target size={20} />
                                             </div>
                                         </div>

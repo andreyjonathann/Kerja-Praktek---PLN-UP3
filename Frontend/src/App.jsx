@@ -14,13 +14,13 @@ import GangguanPage from '@/pages/Gangguan'
 import NkoPage from '@/pages/Nko'
 import EnsPage from '@/pages/Ens'
 import PlaceholderPage from '@/pages/Placeholder'
-import SpreadsheetDemo from '@/pages/SpreadsheetDemo'
 import InputKinerjaPage from '@/pages/InputKinerja'
 import InputSaifiPage from '@/pages/InputSaifi'
 import KelolaTargetPage from '@/pages/KelolaTarget'
-import KelolaJaringanPage from '@/pages/KelolaJaringan'
-
-
+import RatingNegatifPage from '@/pages/RatingNegatif'
+import InputRatingNegatifPage from '@/pages/InputRatingNegatif'
+import GangguanTmPage from '@/pages/GangguanTm'
+import InputGangguanTmPage from '@/pages/InputGangguanTm'
 // Protected Route Wrapper
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -81,12 +81,7 @@ export default function App() {
                 </ProtectedRoute>
               } />
 
-              <Route path="/kelola-jaringan/*" element={
-                <ProtectedRoute>
-                  <KelolaJaringanPage />
-                </ProtectedRoute>
-              } />
-              
+
               <Route path="/saidi" element={
                 <ProtectedRoute>
                   <SaidiPage />
@@ -105,9 +100,27 @@ export default function App() {
                 </ProtectedRoute>
               } />
 
-              <Route path="/spreadsheet" element={
+              <Route path="/jaringan/rating-negatif" element={
                 <ProtectedRoute>
-                  <SpreadsheetDemo />
+                  <RatingNegatifPage />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/jaringan/rating-negatif/input" element={
+                <ProtectedRoute>
+                  <InputRatingNegatifPage />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/jaringan/gangguan-tm" element={
+                <ProtectedRoute>
+                  <GangguanTmPage />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/jaringan/gangguan-tm/input" element={
+                <ProtectedRoute>
+                  <InputGangguanTmPage />
                 </ProtectedRoute>
               } />
 
@@ -172,6 +185,10 @@ export default function App() {
                   <PlaceholderPage title="Struktur Manajemen" />
                 </ProtectedRoute>
               } />
+
+              {/* Legacy Routes Redirect */}
+              <Route path="/gangguan-tm" element={<Navigate to="/jaringan/gangguan-tm" replace />} />
+              <Route path="/gangguan-switching" element={<Navigate to="/jaringan/gangguan-tm" replace />} />
 
               {/* Fallback */}
               <Route path="*" element={<Navigate to="/" replace />} />

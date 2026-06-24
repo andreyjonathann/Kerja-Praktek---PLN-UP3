@@ -4,10 +4,6 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\User;
-use App\Models\KpiIndicator;
-use App\Models\KpiTarget;
-use App\Models\DailyKpiInput;
-use App\Models\Division;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -70,10 +66,7 @@ class DashboardController extends Controller
     {
         $year = $request->query('year', date('Y'));
 
-        // Query database to see if we have actual KPI indicators seeded
-        $nkoCount = KpiIndicator::count();
-
-        // If we have actual KPI data in the DB, let's aggregate them
+        $nkoCount = 0;
         if ($nkoCount > 0) {
             // Fetch real database records and map to overview JSON schema
             // (or fall back to premium default mockup if no daily inputs are registered yet)
@@ -226,25 +219,5 @@ class DashboardController extends Controller
         ]);
     }
 
-    /**
-     * Upload spreadsheet and update database metrics
-     */
-    public function uploadSpreadsheet(Request $request)
-    {
-        $request->validate([
-            'file' => 'required|file|mimes:xlsx,xls,csv',
-            'year' => 'nullable|integer',
-        ]);
 
-        $file = $request->file('file');
-        $year = $request->input('year', date('Y'));
-
-        // For demo simplicity, log the file metadata and simulate success
-        Log::info("SIGAP spreadsheet uploaded: Name=" . $file->getClientOriginalName() . " Size=" . $file->getSize() . " Year=" . $year);
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Spreadsheet \'' . $file->getClientOriginalName() . '\' berhasil diunggah. Database KPI telah disinkronisasikan!'
-        ]);
-    }
 }

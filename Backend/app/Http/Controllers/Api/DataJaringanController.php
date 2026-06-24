@@ -111,12 +111,14 @@ class DataJaringanController extends Controller
                     'padam_terencana' => $ensData ? $ensData->terencana : 0,
                     'tidak_terencana' => $ensData ? $ensData->tidak_terencana : 0,
                     'bencana_alam' => $ensData ? $ensData->bencana_alam : 0,
+                    $tahun => $ensData ? $ensBulananReal : null,
                 ],
                 'kumulatif' => [
                     'target' => ($tgtEnsVal / 12) * $i,
                     'padam_terencana' => $totalEns * 0.35, // dummy approx for cumulative
                     'tidak_terencana' => $totalEns * 0.50,
                     'bencana_alam' => $totalEns * 0.15,
+                    $tahun => $ensData ? $totalEns : null,
                 ]
             ];
 

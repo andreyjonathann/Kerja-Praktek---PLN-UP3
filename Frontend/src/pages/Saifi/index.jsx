@@ -167,23 +167,32 @@ export default function SaifiPage() {
     return () => { isMounted = false }
   }, [tableYear, filters.year, data])
 
+  const [chartYear, setChartYear] = useState(filters.year)
+  const [chartData, setChartData] = useState([])
+
+  useEffect(() => {
+    setChartYear(filters.year)
+  }, [filters.year])
+
+  useEffect(() => {
+    let isMounted = true
+    if (chartYear === filters.year) {
+      setChartData(data)
+    } else {
+      getDashboardData(chartYear).then(res => {
+        if (isMounted) setChartData(res.saifi || [])
+      }).catch(err => console.error(err))
+    }
+    return () => { isMounted = false }
+  }, [chartYear, filters.year, data])
+
   const filled     = data.filter(d => d.realisasi != null)
   const lastMonth  = filled[filled.length - 1]
   const totalReal  = lastMonth ? lastMonth.realisasi : 0
   const totalTgt   = lastMonth ? lastMonth.target : 0
   const achievement = totalTgt > 0 ? Math.min(150, (totalTgt / Math.max(0.001, totalReal)) * 100) : 0
   
-  const breakdownData = [
-    { name: 'Penyulang', value: filled.reduce((s, x) => s + (x.penyulang || 0), 0) },
-    { name: 'Gardu', value: filled.reduce((s, x) => s + (x.gardu || 0), 0) },
-    { name: 'JTR', value: filled.reduce((s, x) => s + (x.jtr || 0), 0) },
-    { name: 'SRAPP', value: filled.reduce((s, x) => s + (x.srapp || 0), 0) },
-    { name: 'Pemeliharaan', value: filled.reduce((s, x) => s + (x.pemeliharaan || 0), 0) },
-    { name: 'Bencana Alam', value: filled.reduce((s, x) => s + (x.bencana_alam || 0), 0) },
-    { name: 'Transmisi', value: filled.reduce((s, x) => s + (x.transmisi || 0), 0) },
-  ].filter(d => d.value > 0);
-
-  const cumulativeData = data;
+  const chartFilled = chartData.filter(d => d.realisasi != null)
 
   const renderEditable = (v, row, field) => {
     if (tab === 'monthly') {
@@ -218,16 +227,18 @@ export default function SaifiPage() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-        <KpiCard title="SAIFI YTD" value={Number(totalReal).toFixed(4)} unit="kali/plg" achievement={achievement} icon={Zap} color="yellow" isInverse loading={loading} />
-        <KpiCard title="Target YTD" value={Number(totalTgt).toFixed(4)} unit="kali/plg" icon={Target} color="green" loading={loading} />
+        <KpiCard title="SAIFI YTD" value={Number(totalReal).toFixed(4)} unit="kali/plg" achievement={achievement} icon={Zap} color="blue" isInverse loading={loading} />
+        <KpiCard title="Target YTD" value={Number(totalTgt).toFixed(4)} unit="kali/plg" icon={Target} color="blue" loading={loading} />
         <KpiCard title="Bulan Terakhir" value={lastMonth?.realisasi != null ? Number(lastMonth.realisasi).toFixed(4) : '—'} unit="kali/plg" icon={Activity} color="blue" loading={loading} />
         <KpiCard title="Pencapaian" value={Number(achievement).toFixed(1) + '%'} icon={TrendingDown} color={totalReal > totalTgt ? 'red' : 'green'} loading={loading} />
       </div>
 
       <div style={{
         display: 'flex',
+        flexWrap: 'wrap',
         alignItems: 'center',
         justifyContent: 'space-between',
+        gap: '16px',
         margin: '12px 0 16px',
       }}>
         <div style={{
@@ -267,7 +278,7 @@ export default function SaifiPage() {
           )
         })}
         </div>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
           <div style={{
             display: 'inline-flex',
             background: 'rgba(37, 99, 235, 0.05)',
@@ -310,9 +321,49 @@ export default function SaifiPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <ChartWrapper title={tab === 'monthly' ? 'SAIFI Bulanan' : 'SAIFI Kumulatif'} subtitle={`Target vs Realisasi ${filters.year}`} loading={loading} error={error} empty={data.length === 0} height={280} onRetry={fetchData}>
+        <ChartWrapper 
+          title={tab === 'monthly' ? 'SAIFI Bulanan' : 'SAIFI Kumulatif'} 
+          subtitle="Target vs Realisasi" 
+          loading={loading} 
+          error={error} 
+          empty={chartData.length === 0} 
+          height={280} 
+          onRetry={fetchData}
+          actions={
+            <div style={{
+              display: 'inline-flex',
+              background: 'rgba(37, 99, 235, 0.05)',
+              padding: 4,
+              borderRadius: 12,
+              border: '1px solid rgba(37, 99, 235, 0.15)',
+              cursor: 'pointer'
+            }}>
+              <select
+                value={chartYear}
+                onChange={(e) => setChartYear(Number(e.target.value))}
+                style={{
+                  padding: '2px 24px 2px 8px',
+                  borderRadius: 9,
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  transition: 'all 0.2s ease',
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: 'transparent',
+                  color: '#2563EB',
+                  outline: 'none',
+                  appearance: 'auto'
+                }}
+              >
+                {[2024, 2025, 2026, 2027].map(y => (
+                  <option key={y} value={y} style={{ color: 'var(--text-primary)' }}>{y}</option>
+                ))}
+              </select>
+            </div>
+          }
+        >
           <ResponsiveContainer width="100%" height={280}>
-            <ComposedChart data={tab === 'monthly' ? data : cumulativeData}>
+            <ComposedChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
               <XAxis dataKey="label" tick={{ fontSize: 12.5, fontWeight: 650 }} />
               <YAxis tick={{ fontSize: 12.5, fontWeight: 650 }} />
@@ -331,9 +382,9 @@ export default function SaifiPage() {
           </ResponsiveContainer>
         </ChartWrapper>
 
-        <ChartWrapper title="Breakdown Penyebab SAIFI" subtitle="Komposisi frekuensi per kategori" loading={loading} empty={filled.length === 0} height={280}>
+        <ChartWrapper title="Breakdown Penyebab SAIFI" subtitle="Komposisi frekuensi per kategori" loading={loading} empty={chartFilled.length === 0} height={280}>
           <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={filled}>
+            <BarChart data={chartFilled}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
               <XAxis dataKey="label" tick={{ fontSize: 12.5, fontWeight: 650 }} />
               <YAxis tick={{ fontSize: 12.5, fontWeight: 650 }} />
@@ -347,29 +398,51 @@ export default function SaifiPage() {
         </ChartWrapper>
       </div>
 
-      <div className="card p-5">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-          <h3 className="section-title mb-0">Detail Data SAIFI {tab === 'monthly' ? 'Bulanan' : 'Kumulatif'}</h3>
-          <select
-            value={tableYear}
-            onChange={(e) => setTableYear(Number(e.target.value))}
-            style={{
-              background: 'var(--bg-elevated)',
-              border: '1px solid var(--border)',
-              color: 'var(--text-primary)',
-              fontSize: '0.75rem',
-              fontWeight: 600,
-              padding: '4px 28px 4px 10px',
-              borderRadius: '6px',
-              outline: 'none',
-              cursor: 'pointer',
-              appearance: 'auto'
-            }}
-          >
-            {[2024, 2025, 2026, 2027].map(y => (
-              <option key={y} value={y}>{y}</option>
-            ))}
-          </select>
+      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+        <div style={{
+          padding: '18px 22px 14px',
+          borderBottom: '1px solid var(--border)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12
+        }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h3 style={{
+              fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)',
+              letterSpacing: '-0.01em', lineHeight: 1.3,
+              marginBottom: 0,
+            }}>
+              Detail Data SAIFI {tab === 'monthly' ? 'Bulanan' : 'Kumulatif'}
+            </h3>
+          </div>
+          <div style={{
+            display: 'inline-flex',
+            background: 'rgba(16, 185, 129, 0.05)',
+            padding: 4,
+            borderRadius: 12,
+            border: '1px solid rgba(16, 185, 129, 0.15)',
+            cursor: 'pointer'
+          }}>
+            <select
+              value={tableYear}
+              onChange={(e) => setTableYear(Number(e.target.value))}
+              style={{
+                padding: '2px 24px 2px 8px',
+                borderRadius: 9,
+                fontSize: '0.85rem',
+                fontWeight: 700,
+                transition: 'all 0.2s ease',
+                border: 'none',
+                cursor: 'pointer',
+                background: 'transparent',
+                color: '#10B981',
+                outline: 'none',
+                appearance: 'auto'
+              }}
+            >
+              {[2024, 2025, 2026, 2027].map(y => (
+                <option key={y} value={y} style={{ color: 'var(--text-primary)' }}>{y}</option>
+              ))}
+            </select>
+          </div>
         </div>
         <DataTable
           columns={[

@@ -53,7 +53,6 @@ export default function OverviewPage() {
   const navigate = useNavigate()
   const [data,         setData]         = useState(null)
   const [loading,      setLoading]      = useState(true)
-  const [uploadStatus, setUploadStatus] = useState({ state: 'idle', msg: '' })
 
   const [tableYear, setTableYear] = useState(filters.year)
   const [tableData, setTableData] = useState([])
@@ -101,24 +100,7 @@ export default function OverviewPage() {
     return () => { isMounted = false }
   }, [tableYear, filters.year, data])
 
-  const handleFileUpload = async (e) => {
-    const file = e.target.files[0]
-    if (!file) return
-    setUploadStatus({ state: 'loading', msg: 'Mengunggah spreadsheet...' })
-    const fd = new FormData()
-    fd.append('file', file)
-    fd.append('year', filters.year)
-    try {
-      const res = await api.post('/spreadsheet/upload', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
-      setUploadStatus({ state: 'success', msg: `✓ ${res.data.message}` })
-      fetchData()
-    } catch {
-      setTimeout(() => {
-        setUploadStatus({ state: 'success', msg: '✓ Demo Mode: Data berhasil diperbarui dari spreadsheet!' })
-        fetchData()
-      }, 1500)
-    }
-  }
+
 
   if (loading && !data) {
     return (
@@ -162,49 +144,7 @@ export default function OverviewPage() {
               </p>
             </div>
           </div>
-
-          {/* Upload button (Admin only) */}
-          {isAdmin && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <label style={{
-                display: 'flex', alignItems: 'center', gap: 8,
-                padding: '8px 16px', borderRadius: 10, fontSize: '0.8125rem', fontWeight: 600,
-                background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-strong)',
-                color: 'var(--text-primary)', cursor: 'pointer', transition: 'all 0.15s',
-              }}
-                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.09)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-              >
-                <UploadCloud size={15} style={{ color: '#60A5FA' }} />
-                Upload Excel / CSV
-                <input type="file" style={{ display: 'none' }} accept=".xlsx,.xls,.csv" onChange={handleFileUpload} />
-              </label>
-              {uploadStatus.state === 'loading' && (
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <RefreshCw size={11} className="animate-spin" /> Memproses...
-                </span>
-              )}
-            </div>
-          )}
         </div>
-
-        {/* Upload success */}
-        {uploadStatus.state === 'success' && (
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)',
-            borderRadius: 12, padding: '10px 16px',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <CheckCircle2 size={15} style={{ color: '#34D399' }} />
-              <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#34D399' }}>{uploadStatus.msg}</span>
-            </div>
-            <button
-              onClick={() => setUploadStatus({ state: 'idle', msg: '' })}
-              style={{ background: 'none', border: 'none', color: '#34D399', cursor: 'pointer', fontSize: '1rem', lineHeight: 1 }}
-            >×</button>
-          </div>
-        )}
       </div>
 
       {/* ── KPI Cards Grid ─────────────────────────────────── */}
