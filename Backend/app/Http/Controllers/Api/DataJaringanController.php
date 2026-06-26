@@ -7,8 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Periode;
 use App\Models\KinerjaJaringan;
 use App\Models\EnsBulanan;
-use App\Models\GangguanBulanan;
-use App\Models\GangguanList;
+
 use App\Models\TargetTahunan;
 
 class DataJaringanController extends Controller
@@ -23,15 +22,7 @@ class DataJaringanController extends Controller
         $result = [
             'saidi' => [],
             'saifi' => [],
-            'gangguan' => [
-                'monthly_trend' => [],
-                'by_cause' => [
-                    ['name' => 'Penyulang', 'value' => 0],
-                    ['name' => 'Gardu', 'value' => 0],
-                    ['name' => 'JTR', 'value' => 0],
-                ],
-                'list' => []
-            ],
+
             'ensPageData' => [],
             'overview' => []
         ];
@@ -50,19 +41,19 @@ class DataJaringanController extends Controller
         $totalSaidi = 0;
         $totalSaifi = 0;
         $totalEns = 0;
-        $totalGangguan = 0;
+
 
         for ($i = 1; $i <= 12; $i++) {
             $p = $periodes->firstWhere('bulan', $i);
             
             $saidiData = null;
             $ensData = null;
-            $gangguanData = null;
+
 
             if ($p) {
                 $saidiData = KinerjaJaringan::where('periode_id', $p->id)->first();
                 $ensData = EnsBulanan::where('periode_id', $p->id)->first();
-                $gangguanData = GangguanBulanan::where('periode_id', $p->id)->first();
+
             }
 
             // SAIDI
@@ -122,24 +113,14 @@ class DataJaringanController extends Controller
                 ]
             ];
 
-            // Gangguan
-            $gg = $gangguanData ? ($gangguanData->gt_5_menit + $gangguanData->le_5_menit) : 0;
-            $totalGangguan += $gg;
-            $result['gangguan']['monthly_trend'][] = [
-                'name' => $bulanMap[$i-1],
-                'gangguan' => $gg,
-                'durasi' => $gg * 45 // dummy
-            ];
         }
-
-        $result['gangguan']['list'] = GangguanList::where('tahun', $tahun)->get();
 
         $result['overview'] = [
             'kpis' => [
                 'saidi' => ['val' => $totalSaidi, 'target' => $tgtSaidiVal, 'isInverse' => true, 'unit' => 'mnt/plg'],
                 'saifi' => ['val' => $totalSaifi, 'target' => $tgtSaifiVal, 'isInverse' => true, 'unit' => 'kali/plg'],
                 'ens'   => ['val' => $totalEns, 'target' => $tgtEnsVal, 'isInverse' => true, 'unit' => 'MWh'],
-                'gangguan' => ['val' => $totalGangguan, 'target' => 160, 'isInverse' => true, 'unit' => 'kali'],
+
                 'losses' => ['val' => 5.5, 'target' => 6.0, 'isInverse' => true, 'unit' => '%'],
             ],
             'monthlyPerf' => array_map(function($sd, $sf) {

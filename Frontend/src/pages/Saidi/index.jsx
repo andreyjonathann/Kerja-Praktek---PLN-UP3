@@ -8,6 +8,7 @@ import { Clock, TrendingDown, Target, Activity, Plus } from 'lucide-react'
 import ChartWrapper from '@/components/ui/ChartWrapper'
 import KpiCard from '@/components/ui/KpiCard'
 import DataTable from '@/components/ui/DataTable'
+import TargetWarning from '@/components/ui/TargetWarning'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { useFilter } from '@/context/FilterContext'
 import { MONTHS_SHORT } from '@/utils/formatters'
@@ -121,6 +122,8 @@ export default function SaidiPage() {
           Indeks rata-rata durasi pemadaman per pelanggan · Tahun {filters.year}
         </p>
       </div>
+
+      <TargetWarning up3={filters.up3} year={filters.year} isVisible={!loading && !data.some(d => d.target && d.target > 0)} />
 
       {/* KPI Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">

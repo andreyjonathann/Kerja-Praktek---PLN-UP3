@@ -79,30 +79,27 @@ export default function InputKinerjaPage() {
     <div className="p-4 md:p-8 lg:p-10 animate-fade-in w-full flex flex-col">
       
       {/* Header */}
-      <div className="mb-10 flex flex-col gap-6">
-        <div className="flex items-center">
-          <button 
-            onClick={() => navigate(-1)}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 font-bold rounded-lg hover:bg-slate-50 hover:text-blue-600 transition-colors shadow-sm whitespace-nowrap"
-          >
-            <ArrowLeft size={18} />
-            Kembali
-          </button>
-        </div>
-        <div>
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-50 text-blue-700 rounded-none text-sm font-bold mb-4 border border-blue-100 shadow-sm transition-transform hover:scale-105 cursor-default">
-              <Activity size={16} />
-              <span>Form Realisasi Bulanan</span>
-          </div>
-          <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
-              <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
-                  SAIDI
+      <div className="bg-white border-b border-slate-200 py-6 px-6 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-50 rounded-full blur-3xl opacity-50 -translate-y-1/2 translate-x-1/4"></div>
+        <div className="max-w-6xl mx-auto flex items-center justify-between relative z-10">
+          <div className="flex items-center gap-5">
+            <button 
+                type="button" 
+                onClick={() => navigate('/saidi')}
+                className="w-10 h-10 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-colors"
+            >
+                <ArrowLeft size={20} />
+            </button>
+            <div>
+              <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-3">
+                  Input Realisasi SAIDI
               </h1>
               <p className="text-slate-400 text-xs font-semibold max-w-2xl leading-snug">
-                  Sistem penginputan data realisasi operasional. Seluruh perubahan pada halaman ini akan langsung berdampak pada kalkulasi NKO dan grafik dashboard utama.
+                  Sistem penginputan data realisasi SAIDI. Seluruh perubahan pada halaman ini akan langsung berdampak pada kalkulasi NKO dan grafik dashboard utama.
               </p>
           </div>
         </div>
+      </div>
       </div>
 
       {success && (
@@ -163,7 +160,7 @@ export default function InputKinerjaPage() {
                             <input 
                                 type="number"
                                 {...register('tahun', { required: true })} 
-                                defaultValue={2024}
+                                defaultValue={new Date().getFullYear()}
                                 placeholder="TAHUN"
                                 className="w-full px-4 py-2.5 bg-white border-none rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 transition-all text-slate-700 font-bold text-center appearance-none shadow-sm"
                                 style={{ fontSize: '0.85rem' }}
@@ -174,39 +171,41 @@ export default function InputKinerjaPage() {
                   </div>
                 </div>
                 
-                <div className="p-0 overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-gray-100 border-b border-slate-200">
-                                <th className="py-3 px-4 font-bold text-slate-600 text-[11px] tracking-wider w-12">NO</th>
-                                <th className="py-3 px-4 font-bold text-slate-600 text-[11px] tracking-wider">KATEGORI PEMADAMAN</th>
-                                <th className="py-3 px-4 font-bold text-slate-600 text-[11px] tracking-wider w-1/3">SAIDI (MENIT/PLG)</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100 bg-white">
-                            {saidiSaifiCategories.map((kat, index) => (
-                            <tr key={kat} className="hover:bg-slate-50 transition-colors">
-                                <td className="py-4 px-4 text-slate-700 text-sm">
-                                    {index + 1}
-                                </td>
-                                <td className="py-4 px-4">
-                                    <span className="font-bold text-slate-800 text-xs md:text-sm uppercase">
-                                        {formatLabel(kat)}
-                                    </span>
-                                </td>
-                                
-                                <td className="py-4 px-4">
-                                    <input 
-                                        type="number" step="0.0001" 
-                                        {...register(`saidi_\${kat}`)} 
-                                        className="w-full max-w-[200px] px-3 py-1.5 bg-white border border-slate-200 rounded-none outline-none focus:border-blue-500 text-slate-700 text-sm" 
-                                        placeholder="0.00" 
-                                    />
-                                </td>
-                            </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                <div className="grid grid-cols-1 gap-6 p-4 bg-slate-50">
+                    {/* SAIDI Table */}
+                    <div className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+                        <div className="bg-blue-50 border-b border-blue-100 p-3">
+                            <h4 className="font-bold text-blue-800 text-sm">SAIDI (Lama Padam)</h4>
+                            <p className="text-xs text-blue-600">Satuan: Menit/Pelanggan</p>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="bg-gray-50 border-b border-slate-200">
+                                        <th className="py-2 px-3 font-bold text-slate-600 text-[10px] tracking-wider w-8">NO</th>
+                                        <th className="py-2 px-3 font-bold text-slate-600 text-[10px] tracking-wider">KATEGORI</th>
+                                        <th className="py-2 px-3 font-bold text-slate-600 text-[10px] tracking-wider w-32">NILAI</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {saidiSaifiCategories.map((kat, index) => (
+                                    <tr key={`saidi_${kat}`} className="hover:bg-slate-50 transition-colors">
+                                        <td className="py-3 px-3 text-slate-700 text-xs">{index + 1}</td>
+                                        <td className="py-3 px-3 font-bold text-slate-800 text-xs uppercase">{formatLabel(kat)}</td>
+                                        <td className="py-3 px-3">
+                                            <input 
+                                                type="number" step="0.0001" 
+                                                {...register(`saidi_${kat}`)} 
+                                                className="w-full px-2 py-1.5 bg-white border border-slate-200 rounded outline-none focus:border-blue-500 text-slate-700 text-sm" 
+                                                placeholder="0.00" 
+                                            />
+                                        </td>
+                                    </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
             )}

@@ -18,6 +18,7 @@ import { useAuth } from '@/context/AuthContext'
 import * as XLSX from 'xlsx'
 import { Activity, Plus, FileSpreadsheet, Target, TrendingDown, TrendingUp, AlertTriangle } from 'lucide-react'
 import KpiCard from '@/components/ui/KpiCard'
+import TargetWarning from '@/components/ui/TargetWarning'
 import DataTable from '@/components/ui/DataTable'
 import ChartWrapper from '@/components/ui/ChartWrapper'
 
@@ -470,12 +471,12 @@ export default function GangguanTmPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-slate-200 mt-4 overflow-x-auto">
+      <div className="flex border-b border-slate-200 mb-6 w-full max-w-2xl bg-white rounded-lg shadow-sm overflow-hidden">
         {TABS.map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`px-6 py-3 font-semibold text-sm transition-colors whitespace-nowrap ${
+            className={`flex-1 py-3 px-4 text-sm font-semibold transition-colors duration-200 ${
               activeTab === tab.id 
                 ? 'border-b-2 border-blue-600 text-blue-600' 
                 : 'text-slate-500 hover:text-slate-700 hover:border-slate-300 border-b-2 border-transparent'
@@ -486,8 +487,10 @@ export default function GangguanTmPage() {
         ))}
       </div>
 
+      <TargetWarning up3={filters.up3} year={filters.year} isVisible={summary.target == null} />
+
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
         <KpiCard
           title="Realisasi YTD"
           value={Number(summary.ytd).toLocaleString('id-ID')}

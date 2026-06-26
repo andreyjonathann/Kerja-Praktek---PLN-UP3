@@ -10,17 +10,30 @@ import LoginPage from '@/pages/Login'
 import OverviewPage from '@/pages/Overview'
 import SaidiPage from '@/pages/Saidi'
 import SaifiPage from '@/pages/Saifi'
-import GangguanPage from '@/pages/Gangguan'
-import NkoPage from '@/pages/Nko'
 import EnsPage from '@/pages/Ens'
+import NkoPage from '@/pages/Nko'
 import PlaceholderPage from '@/pages/Placeholder'
 import InputKinerjaPage from '@/pages/InputKinerja'
 import InputSaifiPage from '@/pages/InputSaifi'
-import KelolaTargetPage from '@/pages/KelolaTarget'
 import RatingNegatifPage from '@/pages/RatingNegatif'
 import InputRatingNegatifPage from '@/pages/InputRatingNegatif'
 import GangguanTmPage from '@/pages/GangguanTm'
 import InputGangguanTmPage from '@/pages/InputGangguanTm'
+import GangguanSwitchingPage from '@/pages/GangguanSwitching'
+import InputGangguanSwitchingPage from '@/pages/InputGangguanSwitching'
+import TargetGangguanSwitchingPage from '@/pages/TargetGangguanSwitching'
+import RptGangguanPage from '@/pages/RptGangguan'
+import InputRptGangguanPage from '@/pages/InputRptGangguan'
+import SrdagPage from '@/pages/Srdag'
+import InputSrdagPage from '@/pages/InputSrdag'
+import TargetSrdagPage from '@/pages/TargetSrdag'
+import MvodPage from '@/pages/Mvod'
+import InputMvodPage from '@/pages/InputMvod'
+import TargetMvodPage from '@/pages/TargetMvod'
+import MttrPage from '@/pages/Mttr'
+import InputMttrPage from '@/pages/InputMttr'
+import TargetMttrPage from '@/pages/TargetMttr'
+
 // Protected Route Wrapper
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -75,12 +88,6 @@ export default function App() {
                 </ProtectedRoute>
               } />
 
-              <Route path="/kelola-target" element={
-                <ProtectedRoute>
-                  <KelolaTargetPage />
-                </ProtectedRoute>
-              } />
-
 
               <Route path="/saidi" element={
                 <ProtectedRoute>
@@ -91,12 +98,6 @@ export default function App() {
               <Route path="/saifi" element={
                 <ProtectedRoute>
                   <SaifiPage />
-                </ProtectedRoute>
-              } />
-
-              <Route path="/gangguan" element={
-                <ProtectedRoute>
-                  <GangguanPage />
                 </ProtectedRoute>
               } />
 
@@ -121,6 +122,90 @@ export default function App() {
               <Route path="/jaringan/gangguan-tm/input" element={
                 <ProtectedRoute>
                   <InputGangguanTmPage />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/jaringan/gangguan-switching" element={
+                <ProtectedRoute>
+                  <GangguanSwitchingPage />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/jaringan/input-gangguan-switching" element={
+                <ProtectedRoute>
+                  <InputGangguanSwitchingPage />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/jaringan/rpt-gangguan" element={
+                <ProtectedRoute>
+                  <RptGangguanPage />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/jaringan/input-rpt-gangguan" element={
+                <ProtectedRoute>
+                  <InputRptGangguanPage />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/jaringan/gangguan-switching/target" element={
+                <ProtectedRoute>
+                  <TargetGangguanSwitchingPage />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/jaringan/srdag" element={
+                <ProtectedRoute>
+                  <SrdagPage />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/jaringan/input-srdag" element={
+                <ProtectedRoute>
+                  <InputSrdagPage />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/jaringan/srdag/target" element={
+                <ProtectedRoute>
+                  <TargetSrdagPage />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/jaringan/mvod" element={
+                <ProtectedRoute>
+                  <MvodPage />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/jaringan/input-mvod" element={
+                <ProtectedRoute>
+                  <InputMvodPage />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/jaringan/mvod/target" element={
+                <ProtectedRoute>
+                  <TargetMvodPage />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/jaringan/mttr-siaga1" element={
+                <ProtectedRoute>
+                  <MttrPage />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/jaringan/input-mttr" element={
+                <ProtectedRoute>
+                  <InputMttrPage />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/jaringan/mttr-siaga1/target" element={
+                <ProtectedRoute>
+                  <TargetMttrPage />
                 </ProtectedRoute>
               } />
 
@@ -188,7 +273,6 @@ export default function App() {
 
               {/* Legacy Routes Redirect */}
               <Route path="/gangguan-tm" element={<Navigate to="/jaringan/gangguan-tm" replace />} />
-              <Route path="/gangguan-switching" element={<Navigate to="/jaringan/gangguan-tm" replace />} />
 
               {/* Fallback */}
               <Route path="*" element={<Navigate to="/" replace />} />

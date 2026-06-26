@@ -5,6 +5,8 @@ import api from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { MONTHS } from '@/utils/constants';
 import { CheckCircle, AlertCircle, Activity, Save, ArrowLeft } from 'lucide-react';
+import TargetWarning from '@/components/ui/TargetWarning';
+import { getDashboardData } from '@/services/dashboardDataService';
 
 export default function InputRatingNegatifPage() {
   const navigate = useNavigate();
@@ -12,11 +14,29 @@ export default function InputRatingNegatifPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  const { register, handleSubmit, watch, formState: { errors }, reset, setValue } = useForm({
+  const [hasTarget, setHasTarget] = useState(true);
+
+  const { register, handleSubmit, watch, formState: { errors }, reset, setValue, control } = useForm({
       defaultValues: {
           tahun: new Date().getFullYear(),
       }
   });
+
+  const selectedYear = watch('tahun');
+
+  useEffect(() => {
+    if (!selectedYear) return;
+    const checkTarget = async () => {
+      try {
+        const dbData = await getDashboardData(selectedYear);
+        const targetValue = dbData.ratingNegatif?.target || 0;
+        setHasTarget(targetValue > 0);
+      } catch (err) {
+        setHasTarget(true); // default true on error
+      }
+    };
+    checkTarget();
+  }, [selectedYear]);
 
   const watchRatingNegatif = watch('jml_rating_negatif', 0);
   const watchWo = watch('jml_wo_pln_mobile', 0);
@@ -103,7 +123,11 @@ export default function InputRatingNegatifPage() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+      <div className="mb-6">
+        <TargetWarning up3={user?.up3 || 'Semua UP3'} year={selectedYear} isVisible={!hasTarget} />
+      </div>
+
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 lg:space-y-12">
         
         <div className="bg-white rounded-none border border-slate-200 overflow-hidden shadow-sm">
             <div className="bg-slate-50 border-b border-slate-200 p-4 flex justify-between items-center">
@@ -141,6 +165,7 @@ export default function InputRatingNegatifPage() {
                         <input 
                             type="number"
                             {...register('tahun', { required: true })} 
+                            defaultValue={new Date().getFullYear()}
                             placeholder="TAHUN"
                             className="w-full px-4 py-2.5 bg-white border-none rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 transition-all text-slate-700 font-bold text-center appearance-none shadow-sm"
                         />

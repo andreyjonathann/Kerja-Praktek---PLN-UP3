@@ -304,7 +304,7 @@ export default function LoginPage() {
         </div>
 
         <p style={{ textAlign: 'center', fontSize: '0.75rem', color: '#64748B', marginTop: 28, fontWeight: 500 }}>
-          PT PLN (Persero) • UP3 Kebon Jeruk • 2026
+          PT PLN (Persero) &bull; UP3 Kebon Jeruk &bull; {new Date().getFullYear()}
         </p>
       </div>
     </div>

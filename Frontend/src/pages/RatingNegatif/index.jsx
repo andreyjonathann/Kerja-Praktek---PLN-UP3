@@ -20,6 +20,7 @@ import { Activity, Plus, Download, Target, TrendingDown, TrendingUp, FileSpreads
 import KpiCard from '@/components/ui/KpiCard'
 import DataTable from '@/components/ui/DataTable'
 import ChartWrapper from '@/components/ui/ChartWrapper'
+import TargetWarning from '@/components/ui/TargetWarning'
 // Custom colors
 const COLORS = {
   target: '#ef4444',
@@ -289,6 +290,8 @@ export default function RatingNegatifPage() {
           </div>
         </div>
       </div>
+      
+      <TargetWarning up3={filters.up3} year={filters.year} isVisible={!loading && targetValue === 0} />
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">

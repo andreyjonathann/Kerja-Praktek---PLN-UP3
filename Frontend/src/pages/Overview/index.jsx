@@ -17,6 +17,7 @@ import { useAuth } from '@/context/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import { formatNumber, formatCurrency, formatPercent } from '@/utils/formatters'
 import { getDashboardData } from '@/services/dashboardDataService'
+import { YEARS } from '@/utils/constants'
 
 const CHART_COLORS = {
   saidi:       '#0F4CD7',
@@ -190,17 +191,7 @@ export default function OverviewPage() {
           loading={loading}
           onClick={() => navigate('/ens')}
         />
-        <KpiCard
-          title="Gangguan YTD"
-          value={kpis.gangguan?.val ?? '—'}
-          unit="kali"
-          achievement={getAch(kpis.gangguan)}
-          icon={AlertTriangle}
-          color="red"
-          isInverse
-          loading={loading}
-          onClick={() => navigate('/gangguan')}
-        />
+
         <KpiCard
           title="Susut Jaringan"
           value={kpis.losses?.val?.toFixed(2) ?? '—'}
@@ -334,7 +325,7 @@ export default function OverviewPage() {
                 appearance: 'auto'
               }}
             >
-              {[2024, 2025, 2026, 2027].map(y => (
+              {YEARS.map(y => (
                 <option key={y} value={y}>{y}</option>
               ))}
             </select>

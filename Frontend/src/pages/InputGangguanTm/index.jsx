@@ -1,22 +1,44 @@
-import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import React, { useState, useEffect } from 'react';
+import { useForm, useWatch } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import api from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { MONTHS } from '@/utils/constants';
 import { CheckCircle, AlertCircle, Activity, Save, ArrowLeft } from 'lucide-react';
+import TargetWarning from '@/components/ui/TargetWarning';
 
 export default function InputGangguanTmPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [hasTarget, setHasTarget] = useState(true);
 
-  const { register, handleSubmit, formState: { errors }, reset } = useForm({
+  const { register, handleSubmit, formState: { errors }, reset, control } = useForm({
       defaultValues: {
           tahun: new Date().getFullYear(),
       }
   });
+
+  const selectedYear = useWatch({ control, name: 'tahun' });
+
+  useEffect(() => {
+    if (!selectedYear) return;
+    const checkTarget = async () => {
+      try {
+        const res = await api.get('/jaringan/dashboard', { params: { tahun: selectedYear } });
+        const summary = res.data.rekap_kinerja_ytd;
+        let isTargetSet = false;
+        if (summary) {
+           isTargetSet = Object.values(summary).some(t => t.target_tahunan > 0);
+        }
+        setHasTarget(isTargetSet);
+      } catch (err) {
+        setHasTarget(true); // Default to true on error to avoid unnecessary panic
+      }
+    };
+    checkTarget();
+  }, [selectedYear]);
 
   const onSubmit = async (data) => {
     setLoading(true);
@@ -98,6 +120,10 @@ export default function InputGangguanTmPage() {
             </div>
         </div>
       )}
+
+      <div className="mb-6">
+        <TargetWarning up3={user?.up3 || 'Semua UP3'} year={selectedYear} isVisible={!hasTarget} />
+      </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
         

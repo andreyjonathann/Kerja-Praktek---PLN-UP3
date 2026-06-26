@@ -11,7 +11,9 @@ export const CHART_COLORS = [
   '#BE185D', '#0891B2', '#D97706', '#059669', '#6366F1',
 ]
 
-export const YEARS = [2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026]
+const currentYear = new Date().getFullYear()
+// Generate years from 2023 up to 5 years in the future
+export const YEARS = Array.from({ length: (currentYear + 5) - 2023 + 1 }, (_, i) => 2023 + i)
 
 export const MONTHS = [
   { value: 1,  label: 'Januari' },
@@ -83,12 +85,13 @@ export const NAV_ITEMS = [
               { key: 'saidi', label: 'SAIDI', path: '/saidi' },
               { key: 'saifi', label: 'SAIFI', path: '/saifi' },
               { key: 'ens', label: 'ENS', path: '/ens' },
-              { key: 'gangguan-tm', label: 'GANGGUAN TM', path: '/jaringan/gangguan-tm' },
-              { key: 'rating-negatif', label: 'RATING NEGATIF', path: '/jaringan/rating-negatif' },
-              { key: 'rpt-g', label: 'RPT G (TANPA CT)', path: '/rpt-g' },
-              { key: 'srdag', label: 'SRDAG', path: '/srdag' },
-              { key: 'mvod', label: 'MVOD', path: '/mvod' },
-              { key: 'mttr-siaga-1', label: 'MTTR SIAGA 1', path: '/mttr-siaga-1' },
+              { key: 'gangguan-tm', label: 'Gangguan TM', path: '/jaringan/gangguan-tm' },
+              { key: 'gangguan-switching', label: 'Gangguan Switching (Kubikel & Trafo)', path: '/jaringan/gangguan-switching' },
+              { key: 'rating-negatif', label: 'Rating Negatif', path: '/jaringan/rating-negatif' },
+              { key: 'rpt-g', label: 'RPT G (Tanpa CT)', path: '/jaringan/rpt-gangguan' },
+              { key: 'srdag', label: 'SRDAG', path: '/jaringan/srdag' },
+              { key: 'mvod', label: 'MVOD', path: '/jaringan/mvod' },
+              { key: 'mttr-siaga-1', label: 'MTTR Siaga 1', path: '/jaringan/mttr-siaga1' },
             ]
           },
         ],

@@ -22,6 +22,56 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 Route::middleware('api')->group(function () {
+    // Gangguan Switching & Trafo
+    Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
+        Route::get('/gangguan-switching', [\App\Http\Controllers\Api\GangguanSwitchingController::class, 'indexSwitching']);
+        Route::post('/gangguan-switching', [\App\Http\Controllers\Api\GangguanSwitchingController::class, 'storeSwitching']);
+        Route::put('/gangguan-switching/{id}', [\App\Http\Controllers\Api\GangguanSwitchingController::class, 'updateSwitching']);
+        
+        Route::get('/gangguan-trafo', [\App\Http\Controllers\Api\GangguanSwitchingController::class, 'indexTrafo']);
+        Route::post('/gangguan-trafo', [\App\Http\Controllers\Api\GangguanSwitchingController::class, 'storeTrafo']);
+        Route::put('/gangguan-trafo/{id}', [\App\Http\Controllers\Api\GangguanSwitchingController::class, 'updateTrafo']);
+
+        Route::get('/gangguan-switching/targets', [\App\Http\Controllers\Api\GangguanSwitchingController::class, 'indexTargets']);
+        Route::post('/gangguan-switching/targets', [\App\Http\Controllers\Api\GangguanSwitchingController::class, 'storeTargets']);
+
+        Route::get('/gangguan-switching/dashboard', [\App\Http\Controllers\Api\GangguanSwitchingController::class, 'dashboard']);
+
+        Route::get('/rpt-gangguan', [\App\Http\Controllers\Api\RptGangguanController::class, 'index']);
+        Route::post('/rpt-gangguan', [\App\Http\Controllers\Api\RptGangguanController::class, 'store']);
+        Route::put('/rpt-gangguan/{id}', [\App\Http\Controllers\Api\RptGangguanController::class, 'update']);
+        Route::get('/rpt-gangguan/dashboard', [\App\Http\Controllers\Api\RptGangguanController::class, 'dashboard']);
+        
+        Route::get('/rpt-gangguan/targets', [\App\Http\Controllers\Api\RptGangguanController::class, 'indexTargets']);
+        Route::post('/rpt-gangguan/targets', [\App\Http\Controllers\Api\RptGangguanController::class, 'storeTargets']);
+
+        // SRDAG
+        Route::get('/srdag', [\App\Http\Controllers\Api\SrdagController::class, 'index']);
+        Route::post('/srdag', [\App\Http\Controllers\Api\SrdagController::class, 'store']);
+        Route::put('/srdag/{id}', [\App\Http\Controllers\Api\SrdagController::class, 'update']);
+        Route::get('/srdag/dashboard', [\App\Http\Controllers\Api\SrdagController::class, 'dashboard']);
+        
+        Route::get('/srdag/targets', [\App\Http\Controllers\Api\SrdagController::class, 'indexTargets']);
+        Route::post('/srdag/targets', [\App\Http\Controllers\Api\SrdagController::class, 'storeTargets']);
+
+        // MVOD
+        Route::get('/mvod', [\App\Http\Controllers\Api\MvodController::class, 'index']);
+        Route::post('/mvod', [\App\Http\Controllers\Api\MvodController::class, 'store']);
+        Route::put('/mvod/{id}', [\App\Http\Controllers\Api\MvodController::class, 'update']);
+        Route::get('/mvod/dashboard', [\App\Http\Controllers\Api\MvodController::class, 'dashboard']);
+        
+        Route::get('/mvod/targets', [\App\Http\Controllers\Api\MvodController::class, 'targets']);
+        Route::post('/mvod/targets', [\App\Http\Controllers\Api\MvodController::class, 'storeTargets']);
+
+        // MTTR Siaga 1
+        Route::get('/mttr', [\App\Http\Controllers\Api\MttrController::class, 'index']);
+        Route::post('/mttr', [\App\Http\Controllers\Api\MttrController::class, 'store']);
+        Route::put('/mttr/{id}', [\App\Http\Controllers\Api\MttrController::class, 'update']);
+        Route::get('/mttr/dashboard', [\App\Http\Controllers\Api\MttrController::class, 'dashboard']);
+        
+        Route::get('/mttr/targets', [\App\Http\Controllers\Api\MttrController::class, 'targets']);
+        Route::post('/mttr/targets', [\App\Http\Controllers\Api\MttrController::class, 'storeTargets']);
+    });
     Route::get('/nko/summary', [NkoController::class, 'summary']);
     
     // Data Jaringan (Dashboard)

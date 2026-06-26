@@ -8,10 +8,11 @@ import { Zap, Target, Activity, TrendingDown, Plus } from 'lucide-react'
 import ChartWrapper from '@/components/ui/ChartWrapper'
 import KpiCard from '@/components/ui/KpiCard'
 import DataTable from '@/components/ui/DataTable'
+import TargetWarning from '@/components/ui/TargetWarning'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { useFilter } from '@/context/FilterContext'
 import { MONTHS_SHORT } from '@/utils/formatters'
-import { CHART_COLORS, SAIFI_CAUSES } from '@/utils/constants'
+import { CHART_COLORS, SAIFI_CAUSES, YEARS } from '@/utils/constants'
 import { getDashboardData } from '@/services/dashboardDataService'
 import api from '@/services/api'
 import ExportModal from '@/components/ui/ExportModal'
@@ -225,6 +226,7 @@ export default function SaifiPage() {
           Rata-rata frekuensi pemadaman per pelanggan · Tahun {filters.year}
         </p>
       </div>
+      <TargetWarning up3={filters.up3} year={filters.year} isVisible={!loading && !data.some(d => d.target && d.target > 0)} />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
         <KpiCard title="SAIFI YTD" value={Number(totalReal).toFixed(4)} unit="kali/plg" achievement={achievement} icon={Zap} color="blue" isInverse loading={loading} />
@@ -355,9 +357,9 @@ export default function SaifiPage() {
                   appearance: 'auto'
                 }}
               >
-                {[2024, 2025, 2026, 2027].map(y => (
-                  <option key={y} value={y} style={{ color: 'var(--text-primary)' }}>{y}</option>
-                ))}
+                {YEARS.map(y => (
+                <option key={y} value={y} style={{ color: 'var(--text-primary)' }}>{y}</option>
+              ))}
               </select>
             </div>
           }
@@ -438,7 +440,7 @@ export default function SaifiPage() {
                 appearance: 'auto'
               }}
             >
-              {[2024, 2025, 2026, 2027].map(y => (
+              {YEARS.map(y => (
                 <option key={y} value={y} style={{ color: 'var(--text-primary)' }}>{y}</option>
               ))}
             </select>
