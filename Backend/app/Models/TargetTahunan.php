@@ -6,5 +6,15 @@ use Illuminate\Database\Eloquent\Model;
 
 class TargetTahunan extends Model
 {
-    //
+    protected $table = 'target_tahunan';
+
+    protected $fillable = [
+        'bidang',
+        'indikator',
+        'satuan',
+        'polaritas',
+        'bobot',
+        'target',
+        'tahun',
+    ];
 }
