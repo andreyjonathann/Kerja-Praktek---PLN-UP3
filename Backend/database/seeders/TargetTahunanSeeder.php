@@ -191,7 +191,7 @@ class TargetTahunanSeeder extends Seeder
             $kategori = trim($row[3], '"');
             $nilaiStr = trim($row[5], '"');
 
-            if ($kategori === 'Target' && $bulan === 'Des') {
+            if (strcasecmp($kategori, 'target') === 0 && $bulan === 'Des') {
                 if (isset($mapping[$kpiName])) {
                     $map = $mapping[$kpiName];
                     $nilai = floatval(str_replace(',', '.', $nilaiStr));
