@@ -1,10 +1,96 @@
 import * as XLSX from 'xlsx';
 
+const kpiConfig = {
+  saidi: {
+    unit: 'Menit/Plgn',
+    monthlyTargetKey: 'target',
+    monthlyRealKey: 'realisasi',
+    cumTargetKey: 'cumulativeTgt',
+    cumRealKey: 'cumulativeReal',
+    detailHeaders: ["Bulan", "Tidak Terencana", "Terencana", "Bencana Alam", "Transmisi", "Pembangkit", "Total Realisasi"],
+    detailKeys: ['distribusi_padam_tidak_terencana', 'distribusi_padam_terencana', 'distribusi_bencana_alam', 'transmisi', 'pembangkit', 'realisasi']
+  },
+  saifi: {
+    unit: 'Kali/Plgn',
+    monthlyTargetKey: 'target',
+    monthlyRealKey: 'realisasi',
+    cumTargetKey: 'cumulativeTgt',
+    cumRealKey: 'cumulativeReal',
+    detailHeaders: ["Bulan", "Tidak Terencana", "Terencana", "Bencana Alam", "Transmisi", "Pembangkit", "Total Realisasi"],
+    detailKeys: ['distribusi_padam_tidak_terencana', 'distribusi_padam_terencana', 'distribusi_bencana_alam', 'transmisi', 'pembangkit', 'realisasi']
+  },
+  penjualan: {
+    unit: 'kWh',
+    monthlyTargetKey: 'penjualan_target',
+    monthlyRealKey: 'penjualan_total',
+    cumTargetKey: 'c_penjualan_target',
+    cumRealKey: 'c_penjualan_total',
+    detailHeaders: ["Bulan", "S - Sosial", "R - Rumah Tangga", "B - Bisnis", "I - Industri", "P - Pemerintah", "T - Traksi", "L - Layanan Khusus", "C - Curah", "Total Realisasi"],
+    detailKeys: ['penjualan_s', 'penjualan_r', 'penjualan_b', 'penjualan_i', 'penjualan_p', 'penjualan_t', 'penjualan_l', 'penjualan_c', 'penjualan_total']
+  },
+  pelanggan: {
+    unit: 'Pelanggan',
+    monthlyTargetKey: 'pelanggan_target',
+    monthlyRealKey: 'pelanggan_total',
+    cumTargetKey: 'c_pelanggan_target',
+    cumRealKey: 'c_pelanggan_total',
+    detailHeaders: ["Bulan", "S - Sosial", "R - Rumah Tangga", "B - Bisnis", "I - Industri", "P - Pemerintah", "T - Traksi", "L - Layanan Khusus", "C - Curah", "Total Realisasi"],
+    detailKeys: ['pelanggan_s', 'pelanggan_r', 'pelanggan_b', 'pelanggan_i', 'pelanggan_p', 'pelanggan_t', 'pelanggan_l', 'pelanggan_c', 'pelanggan_total']
+  },
+  daya_tersambung: {
+    unit: 'VA',
+    monthlyTargetKey: 'daya_target',
+    monthlyRealKey: 'daya_total',
+    cumTargetKey: 'c_daya_target',
+    cumRealKey: 'c_daya_total',
+    detailHeaders: ["Bulan", "S - Sosial", "R - Rumah Tangga", "B - Bisnis", "I - Industri", "P - Pemerintah", "T - Traksi", "L - Layanan Khusus", "C - Curah", "Total Realisasi"],
+    detailKeys: ['daya_s', 'daya_r', 'daya_b', 'daya_i', 'daya_p', 'daya_t', 'daya_l', 'daya_c', 'daya_total']
+  },
+  daya: {
+    unit: 'VA',
+    monthlyTargetKey: 'daya_target',
+    monthlyRealKey: 'daya_total',
+    cumTargetKey: 'c_daya_target',
+    cumRealKey: 'c_daya_total',
+    detailHeaders: ["Bulan", "S - Sosial", "R - Rumah Tangga", "B - Bisnis", "I - Industri", "P - Pemerintah", "T - Traksi", "L - Layanan Khusus", "C - Curah", "Total Realisasi"],
+    detailKeys: ['daya_s', 'daya_r', 'daya_b', 'daya_i', 'daya_p', 'daya_t', 'daya_l', 'daya_c', 'daya_total']
+  },
+  pendapatan_bp: {
+    unit: 'Juta Rp',
+    monthlyTargetKey: 'pendapatan_target',
+    monthlyRealKey: 'pendapatan_total',
+    cumTargetKey: 'c_pendapatan_target',
+    cumRealKey: 'c_pendapatan_total',
+    detailHeaders: ["Bulan", "PB - Pasang Baru", "TD - Multi Guna", "Total Pendapatan BP"],
+    detailKeys: ['pendapatan_pb', 'pendapatan_td', 'pendapatan_total']
+  },
+  pendapatan: {
+    unit: 'Juta Rp',
+    monthlyTargetKey: 'pendapatan_target',
+    monthlyRealKey: 'pendapatan_total',
+    cumTargetKey: 'c_pendapatan_target',
+    cumRealKey: 'c_pendapatan_total',
+    detailHeaders: ["Bulan", "PB - Pasang Baru", "TD - Multi Guna", "Total Pendapatan BP"],
+    detailKeys: ['pendapatan_pb', 'pendapatan_td', 'pendapatan_total']
+  },
+  pln_mobile: {
+    unit: 'Transaksi',
+    monthlyTargetKey: 'pln_mobile_transaksi_target',
+    monthlyRealKey: 'pln_mobile_transaksi',
+    cumTargetKey: 'c_pln_mobile_transaksi_target',
+    cumRealKey: 'c_pln_mobile_transaksi',
+    detailHeaders: ["Bulan", "Pengguna Aktif", "Jumlah Transaksi", "Nilai Transaksi (Juta Rp)"],
+    detailKeys: ['pln_mobile_pengguna', 'pln_mobile_transaksi', 'pln_mobile_nilai']
+  }
+};
+
 export const exportToExcel = (kpiType, startYear, endYear, dataMap) => {
   const wb = XLSX.utils.book_new();
   
   // Prepare data rows
   const wsData = [];
+  const typeKey = kpiType.toLowerCase().replace(/ /g, '_');
+  const cfg = kpiConfig[typeKey] || kpiConfig.saidi;
   
   // ========== TABLE 1: AKUMULASI ==========
   const years = [];
@@ -36,18 +122,18 @@ export const exportToExcel = (kpiType, startYear, endYear, dataMap) => {
     // Add cumulative value for each year
     years.forEach(y => {
       const monthData = dataMap[y] ? dataMap[y].find(d => parseInt(d.bulan) === targetBulan) : null;
-      const val = monthData ? (monthData.cumulativeReal ?? monthData.realisasi ?? 0) : "";
+      const val = monthData ? (monthData[cfg.cumRealKey] ?? monthData[cfg.monthlyRealKey] ?? 0) : "";
       row.push(val);
     });
     
     // Add Target and Pencapaian for endYear
     const endYearData = dataMap[endYear] ? dataMap[endYear].find(d => parseInt(d.bulan) === targetBulan) : null;
-    const target = endYearData ? (endYearData.cumulativeTgt ?? endYearData.target ?? 0) : "";
+    const target = endYearData ? (endYearData[cfg.cumTargetKey] ?? endYearData[cfg.monthlyTargetKey] ?? 0) : "";
     
     let pencapaian = "";
     if (endYearData) {
-      const real = endYearData.cumulativeReal ?? endYearData.realisasi ?? 0;
-      const tgt = endYearData.cumulativeTgt ?? endYearData.target ?? 0;
+      const real = endYearData[cfg.cumRealKey] ?? endYearData[cfg.monthlyRealKey] ?? 0;
+      const tgt = endYearData[cfg.cumTargetKey] ?? endYearData[cfg.monthlyTargetKey] ?? 0;
       if (tgt > 0) {
         // Formatted as decimal representing percentage
         pencapaian = real / tgt;
@@ -68,17 +154,15 @@ export const exportToExcel = (kpiType, startYear, endYear, dataMap) => {
   const titleRow2 = [`${endYear} Bulanan`];
   wsData.push(titleRow2);
   
-  const unit = kpiType.toUpperCase() === 'SAIDI' ? 'Menit/Plgn' : 'Kali/Plgn';
-  const headerRow2 = ["", `${kpiType.toUpperCase()} Bulanan (${unit})`];
+  const headerRow2 = ["", `${kpiType.toUpperCase()} Bulanan (${cfg.unit})`];
   wsData.push(headerRow2);
   
   for (let monthIdx = 0; monthIdx < 12; monthIdx++) {
     const row = [monthLabels[monthIdx]];
     const targetBulan = monthIdx + 1;
     
-    // Add cumulative value for endYear (Based on the reference image, the monthly chart actually plots the cumulative data)
     const endYearData = dataMap[endYear] ? dataMap[endYear].find(d => parseInt(d.bulan) === targetBulan) : null;
-    const val = endYearData ? (endYearData.cumulativeReal ?? endYearData.realisasi ?? 0) : "";
+    const val = endYearData ? (endYearData[cfg.monthlyRealKey] ?? 0) : "";
     
     row.push(val);
     wsData.push(row);
@@ -89,8 +173,7 @@ export const exportToExcel = (kpiType, startYear, endYear, dataMap) => {
   wsData.push([]);
   wsData.push([`${endYear} Detail Komponen Input`]);
   
-  const headerRow3 = ["Bulan", "Tidak Terencana", "Terencana", "Bencana Alam", "Transmisi", "Pembangkit", "Total Realisasi"];
-  wsData.push(headerRow3);
+  wsData.push(cfg.detailHeaders);
   
   for (let monthIdx = 0; monthIdx < 12; monthIdx++) {
     const row = [monthLabels[monthIdx]];
@@ -98,14 +181,13 @@ export const exportToExcel = (kpiType, startYear, endYear, dataMap) => {
     const endYearData = dataMap[endYear] ? dataMap[endYear].find(d => parseInt(d.bulan) === targetBulan) : null;
     
     if (endYearData) {
-      row.push(endYearData.distribusi_padam_tidak_terencana ?? "");
-      row.push(endYearData.distribusi_padam_terencana ?? "");
-      row.push(endYearData.distribusi_bencana_alam ?? "");
-      row.push(endYearData.transmisi ?? "");
-      row.push(endYearData.pembangkit ?? "");
-      row.push(endYearData.realisasi ?? "");
+      cfg.detailKeys.forEach(k => {
+        row.push(endYearData[k] ?? "");
+      });
     } else {
-      row.push("", "", "", "", "", "");
+      cfg.detailKeys.forEach(() => {
+        row.push("");
+      });
     }
     wsData.push(row);
   }

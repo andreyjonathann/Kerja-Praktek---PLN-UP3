@@ -6,6 +6,7 @@ import {
 import { ShoppingCart, TrendingUp, TrendingDown, Plus } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import KpiCard    from '@/components/ui/KpiCard'
+import ExportModal from '@/components/ui/ExportModal'
 import ChartWrapper from '@/components/ui/ChartWrapper'
 import DataTable  from '@/components/ui/DataTable'
 import { useFilter } from '@/context/FilterContext'
@@ -186,9 +187,10 @@ export default function PenjualanPage() {
                  e.currentTarget.style.color = '#16A34A';
               }}
             >
-              <Plus size={14} /> Input Data
+              <Plus size={14} /> Tambah Penjualan
             </button>
           </div>
+          <ExportModal kpiType="Penjualan" />
         </div>
       </div>
 

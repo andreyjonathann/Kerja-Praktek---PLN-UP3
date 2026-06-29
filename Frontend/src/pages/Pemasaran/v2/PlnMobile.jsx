@@ -6,6 +6,7 @@ import {
 import { Activity, TrendingUp, TrendingDown, Plus } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import KpiCard      from '@/components/ui/KpiCard'
+import ExportModal from '@/components/ui/ExportModal'
 import ChartWrapper from '@/components/ui/ChartWrapper'
 import DataTable    from '@/components/ui/DataTable'
 import { useFilter } from '@/context/FilterContext'
@@ -211,9 +212,10 @@ export default function PlnMobilePage() {
                  e.currentTarget.style.color = '#16A34A';
               }}
             >
-              <Plus size={14} /> Input Data
+              <Plus size={14} /> Tambah PLN Mobile
             </button>
           </div>
+          <ExportModal kpiType="PLN Mobile" />
         </div>
       </div>
 
