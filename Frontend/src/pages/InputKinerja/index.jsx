@@ -92,6 +92,14 @@ function InputKinerjaGenericPage({ bidang }) {
     }
     setLoading(true);
     setSuccess(false);
+
+    // Sum Tunai PRR and Cicil for Niaga
+    if (bidang === 'niaga') {
+      const tunai = parseFloat(data.tunai_prr) || 0;
+      const cicil = parseFloat(data.cicil) || 0;
+      data['pelunasan_prr_&_piutang'] = tunai + cicil;
+    }
+
     try {
       await api.post(`/kinerja/${bidang}`, data);
       setSuccess(true);
@@ -283,6 +291,61 @@ function InputKinerjaGenericPage({ bidang }) {
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
                             {targets.map(t => {
                                 const key = t.indikator.toLowerCase().replace(/ /g, '_');
+                                
+                                if (key === 'pelunasan_prr_&_piutang') {
+                                    return (
+                                        <React.Fragment key={key}>
+                                            {/* Tunai PRR */}
+                                            <div className="bg-white p-6 rounded-none border-2 border-slate-100 hover:border-blue-300 hover:shadow-xl transition-all duration-300 group hover:-translate-y-1 relative overflow-hidden">
+                                                <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 rounded-none -z-0 group-hover:scale-150 transition-transform duration-500"></div>
+                                                <div className="flex justify-between items-start mb-6 relative z-10">
+                                                    <label className="block text-base lg:text-lg font-extrabold text-slate-800 line-clamp-2 pr-4 group-hover:text-indigo-700 transition-colors" title="Tunai PRR">
+                                                        Tunai PRR
+                                                    </label>
+                                                    <span className="inline-block px-3 py-1.5 bg-slate-100 text-slate-600 text-[10px] lg:text-xs font-extrabold rounded-none uppercase tracking-widest whitespace-nowrap shadow-sm border border-slate-200">
+                                                        {t.satuan}
+                                                    </span>
+                                                </div>
+                                                <div className="relative z-10 group/input">
+                                                    <input 
+                                                        type="number" step="0.0001" 
+                                                        {...register('tunai_prr')} 
+                                                        className="w-full pl-5 pr-12 py-4 bg-slate-50 border-2 border-slate-100 rounded-none outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white transition-all text-slate-800 shadow-inner font-extrabold text-xl hover:border-indigo-200" 
+                                                        placeholder="0.00"
+                                                    />
+                                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover/input:opacity-100 transition-opacity text-indigo-500 pointer-events-none">
+                                                        <Target size={20} />
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Cicil */}
+                                            <div className="bg-white p-6 rounded-none border-2 border-slate-100 hover:border-blue-300 hover:shadow-xl transition-all duration-300 group hover:-translate-y-1 relative overflow-hidden">
+                                                <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 rounded-none -z-0 group-hover:scale-150 transition-transform duration-500"></div>
+                                                <div className="flex justify-between items-start mb-6 relative z-10">
+                                                    <label className="block text-base lg:text-lg font-extrabold text-slate-800 line-clamp-2 pr-4 group-hover:text-indigo-700 transition-colors" title="Cicil">
+                                                        Cicil
+                                                    </label>
+                                                    <span className="inline-block px-3 py-1.5 bg-slate-100 text-slate-600 text-[10px] lg:text-xs font-extrabold rounded-none uppercase tracking-widest whitespace-nowrap shadow-sm border border-slate-200">
+                                                        {t.satuan}
+                                                    </span>
+                                                </div>
+                                                <div className="relative z-10 group/input">
+                                                    <input 
+                                                        type="number" step="0.0001" 
+                                                        {...register('cicil')} 
+                                                        className="w-full pl-5 pr-12 py-4 bg-slate-50 border-2 border-slate-100 rounded-none outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white transition-all text-slate-800 shadow-inner font-extrabold text-xl hover:border-indigo-200" 
+                                                        placeholder="0.00"
+                                                    />
+                                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover/input:opacity-100 transition-opacity text-indigo-500 pointer-events-none">
+                                                        <Target size={20} />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </React.Fragment>
+                                    );
+                                }
+
                                 return (
                                     <div key={key} className="bg-white p-6 rounded-none border-2 border-slate-100 hover:border-blue-300 hover:shadow-xl transition-all duration-300 group hover:-translate-y-1 relative overflow-hidden">
                                         <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-none -z-0 group-hover:scale-150 transition-transform duration-500"></div>
