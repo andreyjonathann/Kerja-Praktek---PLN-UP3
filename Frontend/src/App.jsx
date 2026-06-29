@@ -34,6 +34,22 @@ import MttrPage from '@/pages/Mttr'
 import InputMttrPage from '@/pages/InputMttr'
 import TargetMttrPage from '@/pages/TargetMttr'
 
+// Pemasaran Pages (legacy)
+import OverviewPemasaranPage from '@/pages/Pemasaran/OverviewPemasaran'
+import JumlahPelangganPage from '@/pages/Pemasaran/JumlahPelanggan'
+import DayaTersambungPage from '@/pages/Pemasaran/DayaTersambung'
+import PenjualanTLPage from '@/pages/Pemasaran/PenjualanTL'
+import PendapatanTLPage from '@/pages/Pemasaran/PendapatanTL'
+import DataPerTarifPage from '@/pages/Pemasaran/DataPerTarif'
+
+// Pemasaran Pages v2 (role-based, pola sama dengan Jaringan)
+import InputKinerjaPermasaranPage from '@/pages/Pemasaran/v2/InputKinerjaPermasaran'
+import PenjualanPage     from '@/pages/Pemasaran/v2/Penjualan'
+import PelangganPage     from '@/pages/Pemasaran/v2/Pelanggan'
+import DayaTersambungV2Page  from '@/pages/Pemasaran/v2/DayaTersambung'
+import PendapatanBPPage  from '@/pages/Pemasaran/v2/PendapatanBP'
+import PlnMobilePage     from '@/pages/Pemasaran/v2/PlnMobile'
+
 // Protected Route Wrapper
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -59,6 +75,20 @@ function ProtectedRoute({ children }) {
   return <Layout>{children}</Layout>
 }
 
+// Role-based home: pic_pemasaran → /pemasaran, lainnya → Overview biasa
+function RoleBasedHome() {
+  const { user, loading } = useAuth()
+  if (loading) return null
+  if (user?.role === 'pic_pemasaran') {
+    return <Navigate to="/pemasaran" replace />
+  }
+  return (
+    <ProtectedRoute>
+      <OverviewPage />
+    </ProtectedRoute>
+  )
+}
+
 export default function App() {
   return (
     <ThemeProvider>
@@ -70,9 +100,44 @@ export default function App() {
               <Route path="/login" element={<LoginPage />} />
 
               {/* Protected dashboard routes */}
-              <Route path="/" element={
+              <Route path="/" element={<RoleBasedHome />} />
+
+              {/* Halaman Overview khusus PIC Pemasaran */}
+              <Route path="/pemasaran" element={
                 <ProtectedRoute>
-                  <OverviewPage />
+                  <OverviewPemasaranPage />
+                </ProtectedRoute>
+              } />
+
+              {/* ── Routes Pemasaran v2 (pola sama dengan Jaringan) ── */}
+              <Route path="/pemasaran/input" element={
+                <ProtectedRoute>
+                  <InputKinerjaPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/pemasaran/penjualan" element={
+                <ProtectedRoute>
+                  <PenjualanPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/pemasaran/pelanggan" element={
+                <ProtectedRoute>
+                  <PelangganPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/pemasaran/daya" element={
+                <ProtectedRoute>
+                  <DayaTersambungV2Page />
+                </ProtectedRoute>
+              } />
+              <Route path="/pemasaran/pendapatan-bp" element={
+                <ProtectedRoute>
+                  <PendapatanBPPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/pemasaran/pln-mobile" element={
+                <ProtectedRoute>
+                  <PlnMobilePage />
                 </ProtectedRoute>
               } />
 
@@ -220,26 +285,37 @@ export default function App() {
                   <EnsPage />
                 </ProtectedRoute>
               } />
-              <Route path="/pelanggan" element={
+              {/* Pemasaran Routes */}
+              <Route path="/jml-pelanggan" element={
                 <ProtectedRoute>
-                  <PlaceholderPage title="Data Pelanggan" />
+                  <JumlahPelangganPage />
                 </ProtectedRoute>
               } />
-              <Route path="/daya-sambung" element={
+              <Route path="/daya-tersambung" element={
                 <ProtectedRoute>
-                  <PlaceholderPage title="Daya Sambung" />
+                  <DayaTersambungPage />
                 </ProtectedRoute>
               } />
-              <Route path="/penjualan" element={
+              <Route path="/penjualan-tl" element={
                 <ProtectedRoute>
-                  <PlaceholderPage title="Penjualan TL" />
+                  <PenjualanTLPage />
                 </ProtectedRoute>
               } />
-              <Route path="/pendapatan" element={
+              <Route path="/pendapatan-tl" element={
                 <ProtectedRoute>
-                  <PlaceholderPage title="Pendapatan Daerah" />
+                  <PendapatanTLPage />
                 </ProtectedRoute>
               } />
+              <Route path="/data-tarif" element={
+                <ProtectedRoute>
+                  <DataPerTarifPage />
+                </ProtectedRoute>
+              } />
+              {/* Legacy Aliases */}
+              <Route path="/pelanggan" element={<ProtectedRoute><JumlahPelangganPage /></ProtectedRoute>} />
+              <Route path="/daya-sambung" element={<ProtectedRoute><DayaTersambungPage /></ProtectedRoute>} />
+              <Route path="/penjualan" element={<ProtectedRoute><PenjualanTLPage /></ProtectedRoute>} />
+              <Route path="/pendapatan" element={<ProtectedRoute><PendapatanTLPage /></ProtectedRoute>} />
               <Route path="/susut" element={
                 <ProtectedRoute>
                   <PlaceholderPage title="Susut Jaringan" />

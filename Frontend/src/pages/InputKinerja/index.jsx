@@ -5,13 +5,10 @@ import api from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { MONTHS } from '@/utils/constants';
 import { CheckCircle, AlertCircle, Activity, Save, Target, Calendar, ArrowLeft } from 'lucide-react';
+import InputKinerjaPermasaranPage from '@/pages/Pemasaran/v2/InputKinerjaPermasaran';
 
 export default function InputKinerjaPage() {
-  const navigate = useNavigate();
   const { user } = useAuth();
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [targets, setTargets] = useState([]);
   const bidangMap = {
     'pic_jaringan': 'jaringan',
     'pic_aset': 'aset',
@@ -23,20 +20,44 @@ export default function InputKinerjaPage() {
   
   const bidang = user ? bidangMap[user.role] : null;
 
+  if (bidang === 'pemasaran') {
+    return <InputKinerjaPermasaranPage />;
+  }
+
+  return <InputKinerjaGenericPage bidang={bidang} />;
+}
+
+function InputKinerjaGenericPage({ bidang }) {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [targets, setTargets] = useState([]);
+
+  const { register, handleSubmit, formState: { errors }, reset, watch } = useForm({
+    defaultValues: {
+      tahun: new Date().getFullYear(),
+      periode_id: ''
+    }
+  });
+
+  const selectedTahun = watch('tahun') || new Date().getFullYear();
+
   useEffect(() => {
     if (bidang && bidang !== 'jaringan') {
         const humanBidangMap = {
             'aset': 'Aset', 'transaksi_energi': 'Transaksi Energi', 
             'niaga': 'Niaga', 'pemasaran': 'Pemasaran', 'keuangan': 'Keuangan'
         };
-        api.get('/targets').then(res => {
+        api.get(`/targets?tahun=${selectedTahun}`).then(res => {
             const myTargets = res.data.filter(t => t.bidang === humanBidangMap[bidang]);
             setTargets(myTargets);
+        }).catch(err => {
+            console.error("Error fetching targets:", err);
+            setTargets([]);
         });
     }
-  }, [bidang]);
-
-  const { register, handleSubmit, formState: { errors }, reset } = useForm();
+  }, [bidang, selectedTahun]);
 
   const onSubmit = async (data) => {
     if (!bidang) {

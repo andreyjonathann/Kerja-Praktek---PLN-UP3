@@ -18,10 +18,10 @@ class TargetTahunan extends Model
         'polaritas',
         'bobot',
         'target',
-        'tahun'
+        'tahun',
     ];
 
     protected $casts = [
-        'target' => 'float'
+        'target' => 'float',
     ];
 }

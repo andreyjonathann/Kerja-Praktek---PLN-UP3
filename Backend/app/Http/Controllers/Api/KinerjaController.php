@@ -28,10 +28,17 @@ class KinerjaController extends Controller
         if (!$modelClass) return response()->json(['error' => 'Bidang not found'], 404);
 
         $periode_id = $request->input('periode_id');
+        $tahun = $request->input('tahun');
         $query = $modelClass::with('periode');
 
         if ($periode_id) {
             $query->where('periode_id', $periode_id);
+        }
+
+        if ($tahun) {
+            $query->whereHas('periode', function ($q) use ($tahun) {
+                $q->where('tahun', $tahun);
+            });
         }
 
         return response()->json($query->get());
@@ -69,8 +76,8 @@ class KinerjaController extends Controller
             $kinerja->save();
             NkoCalculationService::calculateJaringan($kinerja);
         } else {
-            // Generic JSON
-            $kinerja->data_realisasi = json_encode($request->except(['periode_id', '_token']));
+            // Generic JSON (Laravel automatically encodes array casted fields)
+            $kinerja->data_realisasi = $request->except(['periode_id', '_token', 'tahun']);
             $kinerja->save();
             $humanBidangMap = [
                 'aset' => 'Aset',

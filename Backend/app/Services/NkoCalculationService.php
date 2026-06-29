@@ -92,7 +92,9 @@ class NkoCalculationService
             $targets = TargetTahunan::where('tahun', $periode->tahun)->where('bidang', $bidang)->get();
             $total_score = 0;
             
-            $realisasi_data = json_decode($model->data_realisasi, true) ?? [];
+            $realisasi_data = is_array($model->data_realisasi) 
+                ? $model->data_realisasi 
+                : (json_decode($model->data_realisasi, true) ?? []);
 
             foreach ($targets as $target) {
                 $indikator_key = strtolower(str_replace(' ', '_', $target->indikator));
