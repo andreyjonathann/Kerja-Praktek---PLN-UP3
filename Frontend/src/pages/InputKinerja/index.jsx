@@ -31,6 +31,31 @@ export default function InputKinerjaPage() {
 function InputKinerjaGenericPage({ bidang }) {
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  const headerMap = {
+    'jaringan': {
+      title: 'Input Realisasi SAIDI',
+      desc: 'Sistem penginputan data realisasi SAIDI. Seluruh perubahan pada halaman ini akan langsung berdampak pada kalkulasi NKO dan grafik dashboard utama.',
+    },
+    'aset': {
+      title: 'Input Realisasi Kinerja Aset',
+      desc: 'Sistem penginputan data realisasi Aset. Seluruh perubahan pada halaman ini akan langsung berdampak pada kalkulasi NKO dan grafik dashboard utama.',
+    },
+    'transaksi_energi': {
+      title: 'Input Realisasi Kinerja Transaksi Energi',
+      desc: 'Sistem penginputan data realisasi Transaksi Energi. Seluruh perubahan pada halaman ini akan langsung berdampak pada kalkulasi NKO dan grafik dashboard utama.',
+    },
+    'niaga': {
+      title: 'Input Realisasi Kinerja Niaga',
+      desc: 'Sistem penginputan data realisasi Niaga. Seluruh perubahan pada halaman ini akan langsung berdampak pada kalkulasi NKO dan grafik dashboard utama.',
+    },
+    'keuangan': {
+      title: 'Input Realisasi Kinerja Keuangan',
+      desc: 'Sistem penginputan data realisasi Keuangan. Seluruh perubahan pada halaman ini akan langsung berdampak pada kalkulasi NKO dan grafik dashboard utama.',
+    }
+  };
+
+  const headerInfo = headerMap[bidang] || headerMap['jaringan'];
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [targets, setTargets] = useState([]);
@@ -107,17 +132,17 @@ function InputKinerjaGenericPage({ bidang }) {
           <div className="flex items-center gap-5">
             <button 
                 type="button" 
-                onClick={() => navigate('/saidi')}
+                onClick={() => navigate(-1)}
                 className="w-10 h-10 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-colors"
             >
                 <ArrowLeft size={20} />
             </button>
             <div>
               <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-3">
-                  Input Realisasi SAIDI
+                  {headerInfo.title}
               </h1>
               <p className="text-slate-400 text-xs font-semibold max-w-2xl leading-snug">
-                  Sistem penginputan data realisasi SAIDI. Seluruh perubahan pada halaman ini akan langsung berdampak pada kalkulasi NKO dan grafik dashboard utama.
+                  {headerInfo.desc}
               </p>
           </div>
         </div>
