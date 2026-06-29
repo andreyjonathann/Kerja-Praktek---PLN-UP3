@@ -33,6 +33,7 @@ import TargetMvodPage from '@/pages/TargetMvod'
 import MttrPage from '@/pages/Mttr'
 import InputMttrPage from '@/pages/InputMttr'
 import TargetMttrPage from '@/pages/TargetMttr'
+import NiagaPage from '@/pages/Niaga'
 
 // Pemasaran Pages (legacy)
 import OverviewPemasaranPage from '@/pages/Pemasaran/OverviewPemasaran'
@@ -333,7 +334,7 @@ export default function App() {
               } />
               <Route path="/niaga" element={
                 <ProtectedRoute>
-                  <PlaceholderPage title="Teknik &amp; Niaga" />
+                  <NiagaPage />
                 </ProtectedRoute>
               } />
               <Route path="/skki" element={

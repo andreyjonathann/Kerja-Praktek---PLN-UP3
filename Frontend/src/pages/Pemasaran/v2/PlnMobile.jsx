@@ -3,7 +3,8 @@ import {
   Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, ComposedChart,
 } from 'recharts'
-import { Activity, Smartphone, TrendingUp } from 'lucide-react'
+import { Activity, TrendingUp, TrendingDown, Plus } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import KpiCard      from '@/components/ui/KpiCard'
 import ChartWrapper from '@/components/ui/ChartWrapper'
 import DataTable    from '@/components/ui/DataTable'
@@ -44,6 +45,7 @@ const TOOLTIP_NILAI = ({ active, payload, label }) => {
 }
 
 export default function PlnMobilePage() {
+  const navigate = useNavigate()
   const { filters }          = useFilter()
   const [tab, setTab]        = useState('monthly')
   const [data, setData]      = useState([])
@@ -142,28 +144,77 @@ export default function PlnMobilePage() {
         <KpiCard title="% Pencapaian Nilai"   value={achNilai.toFixed(1) + '%'} icon={TrendingUp} color={achNilai >= 100 ? 'green' : achNilai >= 90 ? 'yellow' : 'red'} loading={loading} />
       </div>
 
-      {/* Tab */}
+      {/* Tab Toggle & Action Buttons */}
       <div style={{
-        display:'inline-flex', background:'rgba(15,76,215,0.05)', padding:4,
-        borderRadius:12, border:'1px solid rgba(15,76,215,0.08)', alignSelf:'flex-start', margin:'12px 0 16px',
+        display: 'flex',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: '16px',
+        margin: '12px 0 16px',
       }}>
-        {['monthly','cumulative'].map(t => {
-          const active = tab === t
-          return (
-            <button key={t} onClick={() => setTab(t)} style={{
-              padding:'6px 16px', borderRadius:9, fontSize:'0.85rem', fontWeight:700,
-              transition:'all 0.2s', border:'none', cursor:'pointer',
-              background: active ? 'var(--bg-card)' : 'transparent',
-              color: active ? 'var(--pln-blue)' : 'var(--text-muted)',
-              boxShadow: active ? '0 2px 8px rgba(15,76,215,0.12)' : 'none',
-            }}
-            onMouseEnter={e => { if (!active) e.currentTarget.style.color = 'var(--text-primary)' }}
-            onMouseLeave={e => { if (!active) e.currentTarget.style.color = 'var(--text-muted)' }}
+        <div style={{
+          display:'inline-flex', background:'rgba(15,76,215,0.05)', padding:4,
+          borderRadius:12, border:'1px solid rgba(15,76,215,0.08)',
+        }}>
+          {['monthly','cumulative'].map(t => {
+            const active = tab === t
+            return (
+              <button key={t} onClick={() => setTab(t)} style={{
+                padding:'6px 16px', borderRadius:9, fontSize:'0.85rem', fontWeight:700,
+                transition:'all 0.2s', border:'none', cursor:'pointer',
+                background: active ? 'var(--bg-card)' : 'transparent',
+                color: active ? 'var(--pln-blue)' : 'var(--text-muted)',
+                boxShadow: active ? '0 2px 8px rgba(15,76,215,0.12)' : 'none',
+              }}
+              onMouseEnter={e => { if (!active) e.currentTarget.style.color = 'var(--text-primary)' }}
+              onMouseLeave={e => { if (!active) e.currentTarget.style.color = 'var(--text-muted)' }}
+              >
+                {t === 'monthly' ? 'Bulanan' : 'Kumulatif'}
+              </button>
+            )
+          })}
+        </div>
+
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
+          <div style={{
+            display: 'inline-flex',
+            background: 'rgba(22, 163, 74, 0.05)',
+            padding: 4,
+            borderRadius: 12,
+            border: '1px solid rgba(22, 163, 74, 0.15)',
+            cursor: 'pointer'
+          }}>
+            <button
+              onClick={() => navigate('/pemasaran/input')}
+              style={{
+                padding: '6px 16px',
+                borderRadius: 9,
+                fontSize: '0.85rem',
+                fontWeight: 700,
+                transition: 'all 0.2s ease',
+                border: 'none',
+                cursor: 'pointer',
+                background: 'var(--bg-card)',
+                color: '#16A34A',
+                boxShadow: '0 2px 8px rgba(22, 163, 74, 0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+              onMouseEnter={e => {
+                 e.currentTarget.style.background = '#16A34A';
+                 e.currentTarget.style.color = '#FFFFFF';
+              }}
+              onMouseLeave={e => {
+                 e.currentTarget.style.background = 'var(--bg-card)';
+                 e.currentTarget.style.color = '#16A34A';
+              }}
             >
-              {t === 'monthly' ? 'Bulanan' : 'Kumulatif'}
+              <Plus size={14} /> Input Data
             </button>
-          )
-        })}
+          </div>
+        </div>
       </div>
 
       {/* Charts */}

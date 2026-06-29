@@ -101,7 +101,6 @@ export const NAV_ITEMS = [
         group: 'PEMASARAN',
         items: [
           { key: 'pemasaran-home',         label: 'DASHBOARD',        path: '/pemasaran',              icon: 'Home' },
-          { key: 'pemasaran-input',        label: 'INPUT KPI',        path: '/pemasaran/input',        icon: 'FileText' },
           { key: 'pemasaran-penjualan',    label: 'PENJUALAN',        path: '/pemasaran/penjualan',    icon: 'ShoppingCart' },
           { key: 'pemasaran-pelanggan',    label: 'PELANGGAN',        path: '/pemasaran/pelanggan',    icon: 'Users' },
           { key: 'pemasaran-daya',         label: 'DAYA TERSAMBUNG',  path: '/pemasaran/daya',         icon: 'Zap' },
@@ -132,7 +131,7 @@ export const NAV_ITEMS = [
         type: 'subgroup',
         group: 'NIAGA',
         items: [
-          { key: 'input-kpi-niaga', label: 'INPUT KPI', path: '/input' },
+          { key: 'niaga-dashboard', label: 'DASHBOARD', path: '/niaga', icon: 'Briefcase' },
         ],
       },
       {
