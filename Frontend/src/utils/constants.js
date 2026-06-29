@@ -32,8 +32,8 @@ export const MONTHS = [
 
 export const UP3_LIST = ['Kebon Jeruk']
 
-export const SAIDI_CAUSES = ['Penyulang', 'Gardu', 'JTR', 'SRAPP', 'Pemeliharaan', 'Bencana Alam', 'Transmisi']
-export const SAIFI_CAUSES = ['Penyulang', 'Gardu', 'JTR', 'SRAPP', 'Pemeliharaan', 'Bencana Alam', 'Transmisi']
+export const SAIDI_CAUSES = ['Dist. Tak Terencana', 'Dist. Terencana', 'Dist. Bencana', 'Transmisi', 'Pembangkit']
+export const SAIFI_CAUSES = ['Dist. Tak Terencana', 'Dist. Terencana', 'Dist. Bencana', 'Transmisi', 'Pembangkit']
 export const ENS_CAUSES   = ['Padam Terencana', 'Tidak Terencana', 'Bencana Alam']
 
 export const TARIFF_SEGMENTS = [

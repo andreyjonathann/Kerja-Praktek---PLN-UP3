@@ -65,13 +65,11 @@ class DataJaringanController extends Controller
                 'realisasi' => $sd_real,
                 'cumulativeReal' => $totalSaidi,
                 'cumulativeTgt' => ($tgtSaidiVal / 12) * $i,
-                'pemeliharaan' => $saidiData ? $saidiData->saidi_har : 0,
-                'penyulang' => $saidiData ? $saidiData->saidi_penyulang : 0,
-                'gardu' => $saidiData ? $saidiData->saidi_gardu : 0,
-                'jtr' => $saidiData ? $saidiData->saidi_jtr : 0,
-                'srapp' => $saidiData ? $saidiData->saidi_sr_app : 0,
-                'bencana_alam' => $saidiData ? $saidiData->saidi_bencana_alam : 0,
-                'transmisi' => $saidiData ? $saidiData->saidi_sistem_transmisi : 0,
+                'distribusi_padam_tidak_terencana' => $saidiData ? $saidiData->saidi_distribusi_padam_tidak_terencana : 0,
+                'distribusi_padam_terencana' => $saidiData ? $saidiData->saidi_distribusi_padam_terencana : 0,
+                'distribusi_bencana_alam' => $saidiData ? $saidiData->saidi_distribusi_bencana_alam : 0,
+                'transmisi' => $saidiData ? $saidiData->saidi_transmisi : 0,
+                'pembangkit' => $saidiData ? $saidiData->saidi_pembangkit : 0,
             ];
 
             // SAIFI
@@ -83,25 +81,31 @@ class DataJaringanController extends Controller
                 'realisasi' => $sf_real,
                 'cumulativeReal' => $totalSaifi,
                 'cumulativeTgt' => ($tgtSaifiVal / 12) * $i,
-                'pemeliharaan' => $saidiData ? $saidiData->saifi_har : 0,
-                'penyulang' => $saidiData ? $saidiData->saifi_penyulang : 0,
-                'gardu' => $saidiData ? $saidiData->saifi_gardu : 0,
-                'jtr' => $saidiData ? $saidiData->saifi_jtr : 0,
-                'srapp' => $saidiData ? $saidiData->saifi_sr_app : 0,
-                'bencana_alam' => $saidiData ? $saidiData->saifi_bencana_alam : 0,
-                'transmisi' => $saidiData ? $saidiData->saifi_sistem_transmisi : 0,
+                'distribusi_padam_tidak_terencana' => $saidiData ? $saidiData->saifi_distribusi_padam_tidak_terencana : 0,
+                'distribusi_padam_terencana' => $saidiData ? $saidiData->saifi_distribusi_padam_terencana : 0,
+                'distribusi_bencana_alam' => $saidiData ? $saidiData->saifi_distribusi_bencana_alam : 0,
+                'transmisi' => $saidiData ? $saidiData->saifi_transmisi : 0,
+                'pembangkit' => $saidiData ? $saidiData->saifi_pembangkit : 0,
             ];
 
             // ENS
-            $ensBulananReal = $ensData ? ($ensData->terencana + $ensData->tidak_terencana + $ensData->bencana_alam) : 0;
+            $ensBulananReal = $ensData ? (
+                $ensData->distribusi_padam_terencana +
+                $ensData->distribusi_padam_tidak_terencana +
+                $ensData->distribusi_bencana_alam +
+                $ensData->transmisi +
+                $ensData->pembangkit
+            ) : 0;
             $totalEns += $ensBulananReal;
             $result['ensPageData'][] = [
                 'bulan' => $i, 'label' => $bulanMap[$i-1],
                 'bulanan' => [
                     'target' => $tgtEnsVal / 12,
-                    'padam_terencana' => $ensData ? $ensData->terencana : 0,
-                    'tidak_terencana' => $ensData ? $ensData->tidak_terencana : 0,
-                    'bencana_alam' => $ensData ? $ensData->bencana_alam : 0,
+                    'padam_terencana' => $ensData ? $ensData->distribusi_padam_terencana : 0,
+                    'tidak_terencana' => $ensData ? $ensData->distribusi_padam_tidak_terencana : 0,
+                    'bencana_alam' => $ensData ? $ensData->distribusi_bencana_alam : 0,
+                    'transmisi' => $ensData ? $ensData->transmisi : 0,
+                    'pembangkit' => $ensData ? $ensData->pembangkit : 0,
                     $tahun => $ensData ? $ensBulananReal : null,
                 ],
                 'kumulatif' => [
@@ -137,9 +141,25 @@ class DataJaringanController extends Controller
 
     public function saveEns(Request $request)
     {
-        $request->validate(['periode_id' => 'required']);
-        $ens = EnsBulanan::firstOrNew(['periode_id' => $request->periode_id]);
-        $ens->fill($request->all());
+        $request->validate([
+            'periode_id' => 'required', // This is actually bulan from the frontend
+            'tahun' => 'required'
+        ]);
+
+        $periode = Periode::firstOrCreate([
+            'bulan' => $request->periode_id,
+            'tahun' => $request->tahun
+        ]);
+
+        $data = $request->except(['periode_id', 'tahun']);
+        foreach ($data as $key => $val) {
+            if ($val === null || $val === '') {
+                $data[$key] = 0;
+            }
+        }
+
+        $ens = EnsBulanan::firstOrNew(['periode_id' => $periode->id]);
+        $ens->fill($data);
         $ens->save();
         return response()->json(['message' => 'Data ENS tersimpan']);
     }

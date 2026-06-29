@@ -103,4 +103,5 @@ Route::middleware('api')->group(function () {
     // Kinerja endpoints
     Route::get('/kinerja/{bidang}', [KinerjaController::class, 'index']);
     Route::post('/kinerja/{bidang}', [KinerjaController::class, 'store']);
+    Route::delete('/kinerja/{bidang}', [KinerjaController::class, 'destroy']);
 });

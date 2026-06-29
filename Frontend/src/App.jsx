@@ -15,6 +15,7 @@ import NkoPage from '@/pages/Nko'
 import PlaceholderPage from '@/pages/Placeholder'
 import InputKinerjaPage from '@/pages/InputKinerja'
 import InputSaifiPage from '@/pages/InputSaifi'
+import InputEnsPage from '@/pages/InputEns'
 import RatingNegatifPage from '@/pages/RatingNegatif'
 import InputRatingNegatifPage from '@/pages/InputRatingNegatif'
 import GangguanTmPage from '@/pages/GangguanTm'
@@ -33,6 +34,7 @@ import TargetMvodPage from '@/pages/TargetMvod'
 import MttrPage from '@/pages/Mttr'
 import InputMttrPage from '@/pages/InputMttr'
 import TargetMttrPage from '@/pages/TargetMttr'
+import EditKinerjaPage from '@/pages/EditKinerja'
 
 // Protected Route Wrapper
 function ProtectedRoute({ children }) {
@@ -82,12 +84,28 @@ export default function App() {
                 </ProtectedRoute>
               } />
 
-              <Route path="/input-saifi" element={
+              <Route path="/saidi/input" element={
+                <ProtectedRoute>
+                  <InputKinerjaPage />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/saifi/input" element={
                 <ProtectedRoute>
                   <InputSaifiPage />
                 </ProtectedRoute>
               } />
 
+              <Route path="/:type/edit/:bulan/:tahun" element={
+                <ProtectedRoute>
+                  <EditKinerjaPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/ens/input" element={
+                <ProtectedRoute>
+                  <InputEnsPage />
+                </ProtectedRoute>
+              } />
 
               <Route path="/saidi" element={
                 <ProtectedRoute>

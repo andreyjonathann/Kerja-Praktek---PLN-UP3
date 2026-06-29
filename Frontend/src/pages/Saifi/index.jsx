@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid,
@@ -8,13 +8,11 @@ import { Zap, Target, Activity, TrendingDown, Plus } from 'lucide-react'
 import ChartWrapper from '@/components/ui/ChartWrapper'
 import KpiCard from '@/components/ui/KpiCard'
 import DataTable from '@/components/ui/DataTable'
+import KinerjaDetailModal from '@/components/ui/KinerjaDetailModal'
 import TargetWarning from '@/components/ui/TargetWarning'
-import { StatusBadge } from '@/components/shared/StatusBadge'
 import { useFilter } from '@/context/FilterContext'
-import { MONTHS_SHORT } from '@/utils/formatters'
-import { CHART_COLORS, SAIFI_CAUSES, YEARS } from '@/utils/constants'
+import { CHART_COLORS, SAIFI_CAUSES } from '@/utils/constants'
 import { getDashboardData } from '@/services/dashboardDataService'
-import api from '@/services/api'
 import ExportModal from '@/components/ui/ExportModal'
 
 
@@ -40,87 +38,17 @@ const CUSTOM_TOOLTIP = ({ active, payload, label }) => {
   )
 }
 
-const EditableCell = ({ value, row, field, tableYear, onSave }) => {
-  const [isEditing, setIsEditing] = React.useState(false);
-  const [val, setVal] = React.useState(value != null ? Number(value).toFixed(4) : '');
-  const [loading, setLoading] = React.useState(false);
-
-  React.useEffect(() => {
-    setVal(value != null ? Number(value).toFixed(4) : '');
-  }, [value]);
-
-  const handleSave = async () => {
-    setIsEditing(false);
-    const numVal = parseFloat(val);
-    if (isNaN(numVal) || (value != null && numVal === Number(Number(value).toFixed(4)))) {
-      setVal(value != null ? Number(value).toFixed(4) : '');
-      return; 
-    }
-    
-    setLoading(true);
-    try {
-      await api.post('/kinerja/jaringan', {
-        periode_id: row.bulan, 
-        tahun: tableYear,
-        [`saifi_${field}`]: numVal
-      });
-      onSave(); 
-    } catch (err) {
-      alert("Gagal menyimpan data: " + err.message);
-      setVal(value != null ? Number(value).toFixed(4) : '');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter') handleSave();
-    if (e.key === 'Escape') {
-      setIsEditing(false);
-      setVal(value != null ? Number(value).toFixed(4) : '');
-    }
-  };
-
-  if (loading) return <span className="text-blue-500 font-bold text-xs animate-pulse">Memproses...</span>;
-
-  if (isEditing) {
-    return (
-      <input
-        autoFocus
-        type="number"
-        step="0.0001"
-        value={val}
-        onChange={e => setVal(e.target.value)}
-        onBlur={handleSave}
-        onKeyDown={handleKeyDown}
-        className="w-full text-center outline-none border border-blue-400 rounded-md py-1 px-1 text-[11px] font-bold text-slate-800"
-        style={{ minWidth: '60px' }}
-      />
-    );
-  }
-
-  return (
-    <div 
-      onClick={() => setIsEditing(true)} 
-      className="cursor-pointer hover:bg-blue-50 transition-colors"
-      style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-secondary)', padding: '2px 8px', borderRadius: 6, fontWeight: 600, fontSize: '0.75rem', display: 'inline-block', minWidth: '60px' }}
-      title="Klik untuk mengedit"
-    >
-      {value != null ? Number(value).toFixed(4) : '—'}
-    </div>
-  );
-};
 
 export default function SaifiPage() {
   const navigate = useNavigate()
   const { filters }         = useFilter()
   const [tab,    setTab]    = useState('monthly')
+  const [selectedRow, setSelectedRow] = useState(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
   const [data,   setData]   = useState([])
   const [loading,setLoading]= useState(true)
   const [error,  setError]  = useState(null)
   
-  const [tableYear, setTableYear] = useState(filters.year)
-  const [tableData, setTableData] = useState([])
 
   const fetchData = useCallback(async (isBackground = false) => {
     if (!isBackground) { setLoading(true); setError(null) }
@@ -152,40 +80,6 @@ export default function SaifiPage() {
     return () => window.removeEventListener('sigap:refresh', h)
   }, [fetchData])
 
-  useEffect(() => {
-    setTableYear(filters.year)
-  }, [filters.year])
-
-  useEffect(() => {
-    let isMounted = true
-    if (tableYear === filters.year) {
-      setTableData(data)
-    } else {
-      getDashboardData(tableYear).then(res => {
-        if (isMounted) setTableData(res.saifi || [])
-      }).catch(err => console.error(err))
-    }
-    return () => { isMounted = false }
-  }, [tableYear, filters.year, data])
-
-  const [chartYear, setChartYear] = useState(filters.year)
-  const [chartData, setChartData] = useState([])
-
-  useEffect(() => {
-    setChartYear(filters.year)
-  }, [filters.year])
-
-  useEffect(() => {
-    let isMounted = true
-    if (chartYear === filters.year) {
-      setChartData(data)
-    } else {
-      getDashboardData(chartYear).then(res => {
-        if (isMounted) setChartData(res.saifi || [])
-      }).catch(err => console.error(err))
-    }
-    return () => { isMounted = false }
-  }, [chartYear, filters.year, data])
 
   const filled     = data.filter(d => d.realisasi != null)
   const lastMonth  = filled[filled.length - 1]
@@ -193,15 +87,6 @@ export default function SaifiPage() {
   const totalTgt   = lastMonth ? lastMonth.target : 0
   const achievement = totalTgt > 0 ? Math.min(150, (totalTgt / Math.max(0.001, totalReal)) * 100) : 0
   
-  const chartFilled = chartData.filter(d => d.realisasi != null)
-
-  const renderEditable = (v, row, field) => {
-    if (tab === 'monthly') {
-      return <EditableCell value={v} row={row} field={field} tableYear={tableYear} onSave={fetchData} />;
-    }
-    return v != null ? <span style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-secondary)', padding: '2px 8px', borderRadius: 6, fontWeight: 600, fontSize: '0.75rem' }}>{Number(v).toFixed(4)}</span> : '—';
-  };
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }} className="animate-fade-in">
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -290,7 +175,7 @@ export default function SaifiPage() {
             cursor: 'pointer'
           }}>
             <button
-              onClick={() => navigate('/input-saifi')}
+              onClick={() => navigate('/saifi/input')}
               style={{
                 padding: '6px 16px',
                 borderRadius: 9,
@@ -328,44 +213,12 @@ export default function SaifiPage() {
           subtitle="Target vs Realisasi" 
           loading={loading} 
           error={error} 
-          empty={chartData.length === 0} 
+          empty={data.length === 0} 
           height={280} 
           onRetry={fetchData}
-          actions={
-            <div style={{
-              display: 'inline-flex',
-              background: 'rgba(37, 99, 235, 0.05)',
-              padding: 4,
-              borderRadius: 12,
-              border: '1px solid rgba(37, 99, 235, 0.15)',
-              cursor: 'pointer'
-            }}>
-              <select
-                value={chartYear}
-                onChange={(e) => setChartYear(Number(e.target.value))}
-                style={{
-                  padding: '2px 24px 2px 8px',
-                  borderRadius: 9,
-                  fontSize: '0.85rem',
-                  fontWeight: 700,
-                  transition: 'all 0.2s ease',
-                  border: 'none',
-                  cursor: 'pointer',
-                  background: 'transparent',
-                  color: '#2563EB',
-                  outline: 'none',
-                  appearance: 'auto'
-                }}
-              >
-                {YEARS.map(y => (
-                <option key={y} value={y} style={{ color: 'var(--text-primary)' }}>{y}</option>
-              ))}
-              </select>
-            </div>
-          }
         >
           <ResponsiveContainer width="100%" height={280}>
-            <ComposedChart data={chartData}>
+            <ComposedChart data={data}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
               <XAxis dataKey="label" tick={{ fontSize: 12.5, fontWeight: 650 }} />
               <YAxis tick={{ fontSize: 12.5, fontWeight: 650 }} />
@@ -384,9 +237,9 @@ export default function SaifiPage() {
           </ResponsiveContainer>
         </ChartWrapper>
 
-        <ChartWrapper title="Breakdown Penyebab SAIFI" subtitle="Komposisi frekuensi per kategori" loading={loading} empty={chartFilled.length === 0} height={280}>
+        <ChartWrapper title="Breakdown Penyebab SAIFI" subtitle="Komposisi frekuensi per kategori" loading={loading} empty={filled.length === 0} height={280}>
           <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={chartFilled}>
+            <BarChart data={filled}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
               <XAxis dataKey="label" tick={{ fontSize: 12.5, fontWeight: 650 }} />
               <YAxis tick={{ fontSize: 12.5, fontWeight: 650 }} />
@@ -400,70 +253,33 @@ export default function SaifiPage() {
         </ChartWrapper>
       </div>
 
-      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        <div style={{
-          padding: '18px 22px 14px',
-          borderBottom: '1px solid var(--border)',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12
-        }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <h3 style={{
-              fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)',
-              letterSpacing: '-0.01em', lineHeight: 1.3,
-              marginBottom: 0,
-            }}>
-              Detail Data SAIFI {tab === 'monthly' ? 'Bulanan' : 'Kumulatif'}
-            </h3>
-          </div>
-          <div style={{
-            display: 'inline-flex',
-            background: 'rgba(16, 185, 129, 0.05)',
-            padding: 4,
-            borderRadius: 12,
-            border: '1px solid rgba(16, 185, 129, 0.15)',
-            cursor: 'pointer'
-          }}>
-            <select
-              value={tableYear}
-              onChange={(e) => setTableYear(Number(e.target.value))}
-              style={{
-                padding: '2px 24px 2px 8px',
-                borderRadius: 9,
-                fontSize: '0.85rem',
-                fontWeight: 700,
-                transition: 'all 0.2s ease',
-                border: 'none',
-                cursor: 'pointer',
-                background: 'transparent',
-                color: '#10B981',
-                outline: 'none',
-                appearance: 'auto'
-              }}
-            >
-              {YEARS.map(y => (
-                <option key={y} value={y} style={{ color: 'var(--text-primary)' }}>{y}</option>
-              ))}
-            </select>
-          </div>
-        </div>
+      <div className="card p-5">
+        <h3 className="section-title mb-4">Detail Data SAIFI {tab === 'monthly' ? 'Bulanan' : 'Kumulatif'}</h3>
         <DataTable
           columns={[
             { key: 'label', label: 'Bulan', width: '80px', align: 'center' },
             { key: tab === 'monthly' ? 'target' : 'cumulativeTgt', label: 'Target', align: 'center', render: v => v != null ? Number(v).toFixed(4) : '-' },
             { key: tab === 'monthly' ? 'realisasi' : 'cumulativeReal', label: 'Realisasi', align: 'center', render: (v, row) => v != null ? <span className={`font-bold ${v > (tab === 'monthly' ? row.target : row.cumulativeTgt) ? 'text-red-500' : 'text-emerald-500'}`}>{Number(v).toFixed(4)}</span> : <span className="text-slate-400 text-xs font-bold">-</span> },
-            { key: tab === 'monthly' ? 'penyulang' : 'c_penyulang', label: <span style={{ color: 'var(--text-muted)' }}>Penyulang</span>, align: 'center', render: (v, row) => renderEditable(v, row, 'penyulang') },
-            { key: tab === 'monthly' ? 'gardu' : 'c_gardu', label: <span style={{ color: 'var(--text-muted)' }}>Gardu</span>, align: 'center', render: (v, row) => renderEditable(v, row, 'gardu') },
-            { key: tab === 'monthly' ? 'jtr' : 'c_jtr', label: <span style={{ color: 'var(--text-muted)' }}>JTR</span>, align: 'center', render: (v, row) => renderEditable(v, row, 'jtr') },
-            { key: tab === 'monthly' ? 'srapp' : 'c_srapp', label: <span style={{ color: 'var(--text-muted)' }}>SRAPP</span>, align: 'center', render: (v, row) => renderEditable(v, row, 'sr_app') },
-            { key: tab === 'monthly' ? 'pemeliharaan' : 'c_pemeliharaan', label: <span style={{ color: 'var(--text-muted)' }}>Pemeliharaan</span>, align: 'center', render: (v, row) => renderEditable(v, row, 'har') },
-            { key: tab === 'monthly' ? 'bencana_alam' : 'c_bencana_alam', label: <span style={{ color: 'var(--text-muted)' }}>Bencana Alam</span>, align: 'center', render: (v, row) => renderEditable(v, row, 'bencana_alam') },
-            { key: tab === 'monthly' ? 'transmisi' : 'c_transmisi', label: <span style={{ color: 'var(--text-muted)' }}>Transmisi</span>, align: 'center', render: (v, row) => renderEditable(v, row, 'sistem_transmisi') },
           ]}
-          data={tableData}
+          onRowClick={(row) => {
+            setSelectedRow(row)
+            setIsModalOpen(true)
+          }}
+          data={data}
           paginated={false}
           searchable={false}
         />
       </div>
+
+      <KinerjaDetailModal
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        rowData={selectedRow}
+        titlePrefix="SAIFI"
+        isCumulative={tab === 'cumulative'}
+        year={filters.year}
+        onDeleteSuccess={fetchData}
+      />
     </div>
   )
 }

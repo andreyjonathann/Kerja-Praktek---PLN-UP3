@@ -144,6 +144,11 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
                   const isCollapsed = collapsed[navItem.group]
                   const IconComp = navItem.icon ? ICON_MAP[navItem.icon] : null
 
+                  const isChildActive = navItem.items && navItem.items.some(child => 
+                    location.pathname === child.path ||
+                    (child.path !== '/' && location.pathname.startsWith(child.path + '/'))
+                  );
+
                   return (
                     <div key={navItem.group}>
                       <button
@@ -162,7 +167,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
                           paddingTop: '10px',
                           paddingBottom: '10px',
                           paddingRight: '16px',
-                          color: 'rgba(255,255,255,0.65)'
+                          color: isChildActive ? '#3B82F6' : 'rgba(255,255,255,0.65)'
                         }}
                       >
                         <ChevronDown
@@ -179,7 +184,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
                             style={{ flexShrink: 0 }}
                           />
                         )}
-                        <span style={{ flex: 1, textAlign: 'left', fontSize: '0.75rem', fontWeight: 600 }}>{navItem.group}</span>
+                        <span style={{ flex: 1, textAlign: 'left', fontSize: '0.75rem', fontWeight: isChildActive ? 700 : 600 }}>{navItem.group}</span>
                       </button>
 
                       {!isCollapsed && (

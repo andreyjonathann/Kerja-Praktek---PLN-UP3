@@ -142,7 +142,8 @@ export default function InputRptGangguanPage() {
                     <div className="flex-1 relative">
                         <select 
                             {...register('bulan', { required: true })} 
-                            className="w-full pl-4 pr-10 py-2.5 bg-white border-none rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 transition-all text-slate-700 font-bold cursor-pointer appearance-none shadow-sm"
+                             
+                            className="w-full pl-5 pr-12 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-700 font-bold cursor-pointer appearance-none"
                             style={{ boxShadow: '0 2px 10px rgba(0,0,0,0.03)' }}
                         >
                             <option value="">-- PILIH BULAN --</option>
@@ -160,7 +161,8 @@ export default function InputRptGangguanPage() {
                             type="number"
                             {...register('tahun', { required: true })} 
                             placeholder="TAHUN"
-                            className="w-full px-4 py-2.5 bg-white border-none rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 transition-all text-slate-700 font-bold text-center appearance-none shadow-sm"
+                             
+                            className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-700 font-bold text-center"
                             style={{ fontSize: '0.85rem' }}
                         />
                     </div>

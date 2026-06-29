@@ -3,7 +3,7 @@ import { Search, ChevronLeft, ChevronRight, Download } from 'lucide-react'
 
 export default function DataTable({
   columns=[], data=[], searchable=true, paginated=true, pageSize=10,
-  loading=false, onExport, emptyMessage='Tidak ada data', className='',
+  loading=false, onExport, emptyMessage='Tidak ada data', className='', onRowClick
 }) {
   const [search, setSearch] = useState('')
   const [page,   setPage]   = useState(1)
@@ -88,7 +88,11 @@ export default function DataTable({
               </tr>
             ) : (
               paged.map((row, idx) => (
-                <tr key={row.id ?? idx} className="animate-fade-in">
+                <tr 
+                  key={row.id ?? idx} 
+                  className={`animate-fade-in ${onRowClick ? 'cursor-pointer hover:bg-slate-50/80 transition-colors' : ''}`}
+                  onClick={() => onRowClick && onRowClick(row, idx)}
+                >
                   {columns.map(col => (
                     <td key={col.key} style={{ textAlign: col.align==='right'?'right' : col.align==='center'?'center':'left' }}>
                       {col.render ? col.render(row[col.key], row, idx) : (row[col.key] ?? '—')}

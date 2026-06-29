@@ -62,11 +62,20 @@ class KinerjaController extends Controller
         $kinerja = $modelClass::firstOrNew(['periode_id' => $periode_id]);
 
         if (strtolower($bidang) === 'jaringan') {
-            $kinerja->fill($request->only([
-                'saidi_har', 'saidi_penyulang', 'saidi_gardu', 'saidi_jtr', 'saidi_sr_app', 'saidi_bencana_alam', 'saidi_sistem_transmisi',
-                'saifi_har', 'saifi_penyulang', 'saifi_gardu', 'saifi_jtr', 'saifi_sr_app', 'saifi_bencana_alam', 'saifi_sistem_transmisi',
-            ]));
+            $data = $request->only([
+                'saidi_distribusi_padam_tidak_terencana', 'saidi_distribusi_padam_terencana', 'saidi_distribusi_bencana_alam', 'saidi_transmisi', 'saidi_pembangkit',
+                'saifi_distribusi_padam_tidak_terencana', 'saifi_distribusi_padam_terencana', 'saifi_distribusi_bencana_alam', 'saifi_transmisi', 'saifi_pembangkit',
+            ]);
+
+            foreach ($data as $key => $val) {
+                if ($val === null || $val === '') {
+                    $data[$key] = 0;
+                }
+            }
+
+            $kinerja->fill($data);
             $kinerja->save();
+            $kinerja->refresh();
             NkoCalculationService::calculateJaringan($kinerja);
         } else {
             // Generic JSON
@@ -86,5 +95,62 @@ class KinerjaController extends Controller
             'message' => 'Data kinerja berhasil disimpan dan NKO dikalkulasi',
             'data' => $kinerja
         ]);
+    }
+
+    public function destroy($bidang, Request $request)
+    {
+        $modelClass = $this->getModelClass($bidang);
+        if (!$modelClass) return response()->json(['error' => 'Bidang not found'], 404);
+
+        $request->validate([
+            'bulan' => 'required|integer|min:1|max:12',
+            'tahun' => 'required|integer',
+        ]);
+
+        $bulan = $request->bulan;
+        $tahun = $request->tahun;
+
+        $periode = Periode::where('bulan', $bulan)->where('tahun', $tahun)->first();
+        if (!$periode) {
+            return response()->json(['message' => 'Data tidak ditemukan'], 404);
+        }
+
+        $kinerja = $modelClass::where('periode_id', $periode->id)->first();
+        if (!$kinerja) {
+            return response()->json(['message' => 'Data tidak ditemukan'], 404);
+        }
+
+        if (strtolower($bidang) === 'jaringan') {
+            $type = strtolower($request->type ?? '');
+
+            if ($type === 'saidi' || $type === '') {
+                $kinerja->fill([
+                    'saidi_distribusi_padam_tidak_terencana' => null,
+                    'saidi_distribusi_padam_terencana' => null,
+                    'saidi_distribusi_bencana_alam' => null,
+                    'saidi_transmisi' => null,
+                    'saidi_pembangkit' => null,
+                    'saidi_total' => null,
+                ]);
+            }
+            
+            if ($type === 'saifi' || $type === '') {
+                $kinerja->fill([
+                    'saifi_distribusi_padam_tidak_terencana' => null,
+                    'saifi_distribusi_padam_terencana' => null,
+                    'saifi_distribusi_bencana_alam' => null,
+                    'saifi_transmisi' => null,
+                    'saifi_pembangkit' => null,
+                    'saifi_total' => null,
+                ]);
+            }
+
+            $kinerja->save();
+            NkoCalculationService::calculateJaringan($kinerja);
+        } else {
+            $kinerja->delete();
+        }
+
+        return response()->json(['message' => 'Data berhasil dihapus']);
     }
 }

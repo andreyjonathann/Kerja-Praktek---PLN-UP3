@@ -135,21 +135,13 @@ export default function InputRatingNegatifPage() {
             </div>
 
             {/* PERIODE SETTINGS */}
-            <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-start gap-4">
-                <div style={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  alignItems: 'center',
-                  gap: '12px',
-                  background: 'rgba(37, 99, 235, 0.05)',
-                  padding: '8px 12px',
-                  borderRadius: 16,
-                  border: '1px solid rgba(37, 99, 235, 0.15)',
-                }}>
+            <div className="p-5 flex flex-col items-start gap-4 w-full">
+                <div className="grid grid-cols-2 gap-4 w-full">
                     <div className="relative group/select w-48">
                         <select 
                             {...register('bulan', { required: true })} 
-                            className="w-full pl-4 pr-10 py-2.5 bg-white border-none rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 transition-all text-slate-700 font-bold cursor-pointer appearance-none shadow-sm"
+                             
+                            className="w-full pl-5 pr-12 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-700 font-bold cursor-pointer appearance-none"
                         >
                             <option value="">PILIH BULAN</option>
                             {MONTHS.map(m => (
@@ -167,7 +159,8 @@ export default function InputRatingNegatifPage() {
                             {...register('tahun', { required: true })} 
                             defaultValue={new Date().getFullYear()}
                             placeholder="TAHUN"
-                            className="w-full px-4 py-2.5 bg-white border-none rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 transition-all text-slate-700 font-bold text-center appearance-none shadow-sm"
+                             
+                            className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-700 font-bold text-center"
                         />
                     </div>
                 </div>
@@ -182,7 +175,7 @@ export default function InputRatingNegatifPage() {
                         type="number" 
                         min="0"
                         {...register('jml_rating_negatif', { required: true })} 
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-blue-500 transition-colors text-slate-800 font-semibold"
+                        className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-slate-800 font-bold transition"
                         placeholder="Contoh: 5"
                     />
                     {errors.jml_rating_negatif && <p className="text-red-500 text-xs mt-1">Field ini wajib diisi</p>}
@@ -194,7 +187,7 @@ export default function InputRatingNegatifPage() {
                         type="number" 
                         min="1"
                         {...register('jml_wo_pln_mobile', { required: true })} 
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-blue-500 transition-colors text-slate-800 font-semibold"
+                        className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-slate-800 font-bold transition"
                         placeholder="Contoh: 100"
                     />
                     {errors.jml_wo_pln_mobile && <p className="text-red-500 text-xs mt-1">Field ini wajib diisi (minimal 1)</p>}
