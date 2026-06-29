@@ -7,16 +7,17 @@ import { MONTHS } from '@/utils/constants';
 import { CheckCircle, AlertCircle, Activity, Save, Target, Calendar, ArrowLeft } from 'lucide-react';
 import InputKinerjaPermasaranPage from '@/pages/Pemasaran/v2/InputKinerjaPermasaran';
 
+const bidangMap = {
+  'pic_jaringan': 'jaringan',
+  'pic_aset': 'aset',
+  'pic_transaksi_energi': 'transaksi_energi',
+  'pic_niaga': 'niaga',
+  'pic_pemasaran': 'pemasaran',
+  'pic_keuangan': 'keuangan',
+};
+
 export default function InputKinerjaPage() {
   const { user } = useAuth();
-  const bidangMap = {
-    'pic_jaringan': 'jaringan',
-    'pic_aset': 'aset',
-    'pic_transaksi_energi': 'transaksi_energi',
-    'pic_niaga': 'niaga',
-    'pic_pemasaran': 'pemasaran',
-    'pic_keuangan': 'keuangan',
-  };
   
   const bidang = user ? bidangMap[user.role] : null;
 
