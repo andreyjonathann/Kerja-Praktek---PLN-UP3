@@ -133,21 +133,13 @@ export default function InputGangguanTmPage() {
             </div>
 
             {/* PERIODE SETTINGS */}
-            <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-start gap-4">
-                <div style={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  alignItems: 'center',
-                  gap: '12px',
-                  background: 'rgba(37, 99, 235, 0.05)',
-                  padding: '8px 12px',
-                  borderRadius: 16,
-                  border: '1px solid rgba(37, 99, 235, 0.15)',
-                }}>
+            <div className="p-5 flex flex-col items-start gap-4 w-full">
+                <div className="grid grid-cols-2 gap-4 w-full">
                     <div className="relative group/select w-48">
                         <select 
                             {...register('bulan', { required: true })} 
-                            className="w-full pl-4 pr-10 py-2.5 bg-white border-none rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 transition-all text-slate-700 font-bold cursor-pointer appearance-none shadow-sm"
+                             
+                            className="w-full pl-5 pr-12 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-700 font-bold cursor-pointer appearance-none"
                         >
                             <option value="">PILIH BULAN</option>
                             {MONTHS.map(m => (
@@ -164,7 +156,8 @@ export default function InputGangguanTmPage() {
                             type="number"
                             {...register('tahun', { required: true })} 
                             placeholder="TAHUN"
-                            className="w-full px-4 py-2.5 bg-white border-none rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 transition-all text-slate-700 font-bold text-center appearance-none shadow-sm"
+                             
+                            className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-700 font-bold text-center"
                         />
                     </div>
                 </div>
@@ -179,7 +172,7 @@ export default function InputGangguanTmPage() {
                         type="number" 
                         min="0"
                         {...register('ggn_tm_lebih_5_mnt', { required: true })} 
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-blue-500 transition-colors text-slate-800 font-semibold"
+                        className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-slate-800 font-bold transition"
                         placeholder="Contoh: 2"
                     />
                     {errors.ggn_tm_lebih_5_mnt && <p className="text-red-500 text-xs mt-1">Field ini wajib diisi</p>}
@@ -191,7 +184,7 @@ export default function InputGangguanTmPage() {
                         type="number" 
                         min="0"
                         {...register('ggn_tm_kurang_5_mnt', { required: true })} 
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-blue-500 transition-colors text-slate-800 font-semibold"
+                        className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-slate-800 font-bold transition"
                         placeholder="Contoh: 1"
                     />
                     {errors.ggn_tm_kurang_5_mnt && <p className="text-red-500 text-xs mt-1">Field ini wajib diisi</p>}
@@ -203,7 +196,7 @@ export default function InputGangguanTmPage() {
                         type="number" 
                         min="0"
                         {...register('ggn_switching', { required: true })} 
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-blue-500 transition-colors text-slate-800 font-semibold"
+                        className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-slate-800 font-bold transition"
                         placeholder="Contoh: 0"
                     />
                     {errors.ggn_switching && <p className="text-red-500 text-xs mt-1">Field ini wajib diisi</p>}

@@ -22,14 +22,11 @@ import EnsExportModal from './EnsExportModal'
 // Custom colors for charts
 const COLORS = {
   target: '#ef4444',     // Red
-  y2024: '#3b82f6',      // Blue
-  y2025: '#10b981',      // Emerald
-  y2026: '#f59e0b',      // Amber
-  
-  terencana: '#3b82f6',  // Blue
-  tidakTerencana: '#06b6d4', // Cyan
-  bencanaAlam: '#ec4899' // Pink
 }
+
+const DYNAMIC_YEAR_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6'];
+const CHART_COLORS_MAIN = ['#3b82f6', '#f59e0b', '#10b981']
+const ENS_CAUSES_MAIN = ['Distribusi', 'Transmisi', 'Pembangkit']
 
 // Custom Tooltip for Breakdown Charts
 const CustomBreakdownTooltip = ({ active, payload, label }) => {
@@ -79,8 +76,6 @@ const CustomEnsTooltip = ({ active, payload, label }) => {
   return null;
 };
 
-const DYNAMIC_YEAR_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6'];
-
 // Formatter for Bar labels
 const renderCustomBarLabel = ({ x, y, width, value }) => {
   if (value == null || value === 0) return null;
@@ -91,23 +86,24 @@ const renderCustomBarLabel = ({ x, y, width, value }) => {
   );
 };
 
-
 export default function EnsPage() {
   const navigate = useNavigate()
   const { filters } = useFilter()
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(true)
   
-  // Dynamic years list and toggle state
   const [availableYears, setAvailableYears] = useState([])
   const [showYears, setShowYears] = useState({})
+
+  const [showModal, setShowModal] = useState(false)
+  const [selectedDistribusi, setSelectedDistribusi] = useState(null)
+  const [modalType, setModalType] = useState('bulanan') // 'bulanan' or 'kumulatif'
 
   const fetchData = useCallback(async (isBackground = false) => {
     if (!isBackground) setLoading(true)
     try {
       const dbData = await getDashboardData(filters.year)
       
-      // Extract unique years from the data dynamically
       const yearSet = new Set()
       dbData.ensPageData.forEach(d => {
         Object.keys(d.bulanan).forEach(k => {
@@ -120,7 +116,6 @@ export default function EnsPage() {
       const sortedYears = Array.from(yearSet).sort()
       setAvailableYears(sortedYears)
       
-      // Initialize toggles if empty
       setShowYears(prev => {
         if (Object.keys(prev).length === 0) {
           const initToggles = {}
@@ -130,22 +125,42 @@ export default function EnsPage() {
         return prev
       })
 
-      // Map the nested structure to flat structure for Recharts
       const formattedData = dbData.ensPageData.map(d => {
+        const b_terencana = d.bulanan.padam_terencana || 0
+        const b_tidak = d.bulanan.tidak_terencana || 0
+        const b_bencana = d.bulanan.bencana_alam || 0
+        const b_transmisi = d.bulanan.transmisi || 0
+        const b_pembangkit = d.bulanan.pembangkit || 0
+
+        const k_terencana = d.kumulatif.padam_terencana || 0
+        const k_tidak = d.kumulatif.tidak_terencana || 0
+        const k_bencana = d.kumulatif.bencana_alam || 0
+        const k_transmisi = d.kumulatif.transmisi || 0 // Assuming cumulative transmisi is computed somewhere, but DataJaringanController gave dummy for ENS cumulative causes.
+        // Wait, for now we map them directly.
+        const k_pembangkit = d.kumulatif.pembangkit || 0
+
         const row = {
           label: d.label,
           b_target: d.bulanan.target,
-          b_terencana: d.bulanan.padam_terencana,
-          b_tidakTerencana: d.bulanan.tidak_terencana,
-          b_bencanaAlam: d.bulanan.bencana_alam,
-          
           k_target: d.kumulatif.target,
-          k_terencana: d.kumulatif.padam_terencana,
-          k_tidakTerencana: d.kumulatif.tidak_terencana,
-          k_bencanaAlam: d.kumulatif.bencana_alam,
+
+          // Breakdown details Bulanan
+          b_distribusi_padam_terencana: b_terencana,
+          b_distribusi_padam_tidak_terencana: b_tidak,
+          b_distribusi_bencana_alam: b_bencana,
+          b_distribusi_total: b_terencana + b_tidak + b_bencana,
+          b_transmisi: b_transmisi,
+          b_pembangkit: b_pembangkit,
+
+          // Breakdown details Kumulatif (Note: Dummy cumulative logic in backend)
+          k_distribusi_padam_terencana: k_terencana,
+          k_distribusi_padam_tidak_terencana: k_tidak,
+          k_distribusi_bencana_alam: k_bencana,
+          k_distribusi_total: k_terencana + k_tidak + k_bencana,
+          k_transmisi: k_transmisi,
+          k_pembangkit: k_pembangkit,
         }
         
-        // Map dynamic years
         sortedYears.forEach(y => {
           row[`b_${y}`] = d.bulanan[y] || null
           row[`k_${y}`] = d.kumulatif[y] || null
@@ -177,6 +192,14 @@ export default function EnsPage() {
     return () => window.removeEventListener('sigap:refresh', handler)
   }, [fetchData])
 
+  const handleBarClick = (entry, key, type) => {
+    if (key.includes('distribusi_total')) {
+      setSelectedDistribusi(entry);
+      setModalType(type);
+      setShowModal(true);
+    }
+  }
+
   if (loading && data.length === 0) {
     return (
       <div className="flex h-[80vh] items-center justify-center">
@@ -200,6 +223,36 @@ export default function EnsPage() {
   return (
     <div className="p-4 md:p-6 w-full animate-fade-in space-y-8">
       
+      {/* Modal Detail Distribusi */}
+      {showModal && selectedDistribusi && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)' }}>
+          <div style={{ background: '#fff', padding: '24px', borderRadius: '12px', width: '90%', maxWidth: '400px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#1e293b' }}>Detail Distribusi {modalType === 'bulanan' ? '(Bulanan)' : '(Kumulatif)'} - {selectedDistribusi.label}</h3>
+              <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b' }}>&times;</button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', background: '#f8fafc', borderRadius: '8px' }}>
+                <span style={{ fontWeight: 600, color: '#475569' }}>Tidak Terencana</span>
+                <span style={{ fontWeight: 'bold', color: '#0f172a' }}>{selectedDistribusi[modalType === 'bulanan' ? 'b_distribusi_padam_tidak_terencana' : 'k_distribusi_padam_tidak_terencana']?.toFixed(3) || '0.000'}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', background: '#f8fafc', borderRadius: '8px' }}>
+                <span style={{ fontWeight: 600, color: '#475569' }}>Terencana</span>
+                <span style={{ fontWeight: 'bold', color: '#0f172a' }}>{selectedDistribusi[modalType === 'bulanan' ? 'b_distribusi_padam_terencana' : 'k_distribusi_padam_terencana']?.toFixed(3) || '0.000'}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', background: '#f8fafc', borderRadius: '8px' }}>
+                <span style={{ fontWeight: 600, color: '#475569' }}>Bencana Alam</span>
+                <span style={{ fontWeight: 'bold', color: '#0f172a' }}>{selectedDistribusi[modalType === 'bulanan' ? 'b_distribusi_bencana_alam' : 'k_distribusi_bencana_alam']?.toFixed(3) || '0.000'}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', background: '#eff6ff', borderRadius: '8px', marginTop: '4px', border: '1px solid #bfdbfe' }}>
+                <span style={{ fontWeight: 700, color: '#1d4ed8' }}>Total Distribusi</span>
+                <span style={{ fontWeight: 800, color: '#1e40af' }}>{selectedDistribusi[modalType === 'bulanan' ? 'b_distribusi_total' : 'k_distribusi_total']?.toFixed(3) || '0.000'}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header Section */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 card p-5">
         <div className="flex items-center gap-4">
@@ -226,7 +279,7 @@ export default function EnsPage() {
             cursor: 'pointer'
           }}>
             <button
-              onClick={() => navigate('/input')}
+              onClick={() => navigate('/ens/input')}
               style={{
                 padding: '6px 16px',
                 borderRadius: 9,
@@ -324,19 +377,29 @@ export default function EnsPage() {
 
         {/* Breakdown Bulanan */}
         <div className="card p-5 flex flex-col h-[400px]">
-          <h2 className="text-lg font-bold text-slate-800 mb-4 text-center">Breakdown ENS Bulanan</h2>
+          <h2 className="text-lg font-bold text-slate-800 mb-1 text-center">Breakdown ENS Bulanan</h2>
+          <p className="text-center text-xs text-slate-500 mb-4">Klik batang Distribusi untuk melihat detail</p>
           <div className="flex-1 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data} margin={{ top: 20, right: 20, bottom: 0, left: -10 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" className="" />
+              <BarChart data={data.filter(d => d.b_distribusi_total > 0 || d.b_transmisi > 0 || d.b_pembangkit > 0)} margin={{ top: 20, right: 20, bottom: 0, left: -10 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                 <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} dy={10} />
                 <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} />
                 <Tooltip content={<CustomBreakdownTooltip />} cursor={{fill: 'rgba(0,0,0,0.05)'}} />
                 <Legend iconType="circle" wrapperStyle={{paddingTop: '20px', fontSize: '12px'}} />
                 
-                <Bar dataKey="b_terencana" name="Padam Terencana" fill={COLORS.terencana} radius={[4, 4, 0, 0]} maxBarSize={20}><LabelList content={renderCustomBarLabel} /></Bar>
-                <Bar dataKey="b_tidakTerencana" name="Tidak Terencana" fill={COLORS.tidakTerencana} radius={[4, 4, 0, 0]} maxBarSize={20}><LabelList content={renderCustomBarLabel} /></Bar>
-                <Bar dataKey="b_bencanaAlam" name="Bencana Alam" fill={COLORS.bencanaAlam} radius={[4, 4, 0, 0]} maxBarSize={20}><LabelList content={renderCustomBarLabel} /></Bar>
+                {['b_distribusi_total', 'b_transmisi', 'b_pembangkit'].map((key, i) => (
+                  <Bar 
+                    key={key} 
+                    dataKey={key} 
+                    name={ENS_CAUSES_MAIN[i]} 
+                    stackId="a"
+                    fill={CHART_COLORS_MAIN[i]} 
+                    onClick={(entry) => handleBarClick(entry, key, 'bulanan')}
+                    cursor={key === 'b_distribusi_total' ? 'pointer' : 'default'}
+                    maxBarSize={40}
+                  />
+                ))}
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -344,19 +407,29 @@ export default function EnsPage() {
 
         {/* Breakdown Kumulatif */}
         <div className="card p-5 flex flex-col h-[400px]">
-          <h2 className="text-lg font-bold text-slate-800 mb-4 text-center">Breakdown ENS Kumulatif</h2>
+          <h2 className="text-lg font-bold text-slate-800 mb-1 text-center">Breakdown ENS Kumulatif</h2>
+          <p className="text-center text-xs text-slate-500 mb-4">Klik batang Distribusi untuk melihat detail</p>
           <div className="flex-1 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data} margin={{ top: 20, right: 20, bottom: 0, left: -10 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" className="" />
+              <BarChart data={data.filter(d => d.k_distribusi_total > 0 || d.k_transmisi > 0 || d.k_pembangkit > 0)} margin={{ top: 20, right: 20, bottom: 0, left: -10 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                 <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} dy={10} />
                 <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} />
                 <Tooltip content={<CustomBreakdownTooltip />} cursor={{fill: 'rgba(0,0,0,0.05)'}} />
                 <Legend iconType="circle" wrapperStyle={{paddingTop: '20px', fontSize: '12px'}} />
                 
-                <Bar dataKey="k_terencana" name="Padam Terencana" fill={COLORS.terencana} radius={[4, 4, 0, 0]} maxBarSize={20}><LabelList content={renderCustomBarLabel} /></Bar>
-                <Bar dataKey="k_tidakTerencana" name="Tidak Terencana" fill={COLORS.tidakTerencana} radius={[4, 4, 0, 0]} maxBarSize={20}><LabelList content={renderCustomBarLabel} /></Bar>
-                <Bar dataKey="k_bencanaAlam" name="Bencana Alam" fill={COLORS.bencanaAlam} radius={[4, 4, 0, 0]} maxBarSize={20}><LabelList content={renderCustomBarLabel} /></Bar>
+                {['k_distribusi_total', 'k_transmisi', 'k_pembangkit'].map((key, i) => (
+                  <Bar 
+                    key={key} 
+                    dataKey={key} 
+                    name={ENS_CAUSES_MAIN[i]} 
+                    stackId="a"
+                    fill={CHART_COLORS_MAIN[i]} 
+                    onClick={(entry) => handleBarClick(entry, key, 'kumulatif')}
+                    cursor={key === 'k_distribusi_total' ? 'pointer' : 'default'}
+                    maxBarSize={40}
+                  />
+                ))}
               </BarChart>
             </ResponsiveContainer>
           </div>

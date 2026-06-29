@@ -151,7 +151,8 @@ export default function InputSrdagPage() {
                     <div className="relative">
                         <select 
                             {...register('bulan')} 
-                            className="w-full bg-white border border-slate-300 text-slate-800 rounded-none px-4 py-3 font-semibold appearance-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 relative z-10"
+                             
+                            className="w-full pl-5 pr-12 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-700 font-bold cursor-pointer appearance-none"
                             style={{ boxShadow: '0 2px 10px rgba(0,0,0,0.03)' }}
                         >
                             <option value="">-- PILIH BULAN --</option>

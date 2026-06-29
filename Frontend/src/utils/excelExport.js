@@ -84,6 +84,32 @@ export const exportToExcel = (kpiType, startYear, endYear, dataMap) => {
     wsData.push(row);
   }
   
+  // ========== TABLE 3: BREAKDOWN KOMPONEN ==========
+  wsData.push([]);
+  wsData.push([]);
+  wsData.push([`${endYear} Detail Komponen Input`]);
+  
+  const headerRow3 = ["Bulan", "Tidak Terencana", "Terencana", "Bencana Alam", "Transmisi", "Pembangkit", "Total Realisasi"];
+  wsData.push(headerRow3);
+  
+  for (let monthIdx = 0; monthIdx < 12; monthIdx++) {
+    const row = [monthLabels[monthIdx]];
+    const targetBulan = monthIdx + 1;
+    const endYearData = dataMap[endYear] ? dataMap[endYear].find(d => parseInt(d.bulan) === targetBulan) : null;
+    
+    if (endYearData) {
+      row.push(endYearData.distribusi_padam_tidak_terencana ?? "");
+      row.push(endYearData.distribusi_padam_terencana ?? "");
+      row.push(endYearData.distribusi_bencana_alam ?? "");
+      row.push(endYearData.transmisi ?? "");
+      row.push(endYearData.pembangkit ?? "");
+      row.push(endYearData.realisasi ?? "");
+    } else {
+      row.push("", "", "", "", "", "");
+    }
+    wsData.push(row);
+  }
+  
   // Create Worksheet
   const ws = XLSX.utils.aoa_to_sheet(wsData);
   

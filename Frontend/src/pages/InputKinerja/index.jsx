@@ -1,13 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useForm, useWatch } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import api from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { MONTHS } from '@/utils/constants';
 import { 
   CheckCircle, AlertCircle, Target, Calendar, ArrowLeft, Save, 
-  Info, Coins, Activity, TrendingDown, BookOpen, Layers
+  Info, Coins, Activity, TrendingDown, BookOpen, Layers,
+  Zap, RadioTower, Factory, ChevronDown, ChevronRight
 } from 'lucide-react';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine
+} from 'recharts';
 import InputKinerjaPermasaranPage from '@/pages/Pemasaran/v2/InputKinerjaPermasaran';
 
 const bidangMap = {
@@ -33,29 +37,61 @@ export default function InputKinerjaPage({ kpiFilter }) {
 function InputKinerjaGenericPage({ bidang, kpiFilter }) {
   const navigate = useNavigate();
   const { user } = useAuth();
+  
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  
   const [targets, setTargets] = useState([]);
   const [existingRecord, setExistingRecord] = useState(null);
+  
+  const [isDistribusiOpen, setIsDistribusiOpen] = useState(true);
+  const [dashboardData, setDashboardData] = useState(null);
+  const [loadingData, setLoadingData] = useState(false);
 
-  const { register, handleSubmit, formState: { errors }, reset, watch, setValue } = useForm({
+  const { register, handleSubmit, formState: { errors }, reset, control, setValue, watch } = useForm({
     defaultValues: {
       tahun: new Date().getFullYear(),
-      periode_id: ''
+      periode_id: '',
+      saidi_distribusi_padam_tidak_terencana: '',
+      saidi_distribusi_padam_terencana: '',
+      saidi_distribusi_bencana_alam: '',
+      saidi_transmisi: '',
+      saidi_pembangkit: '',
+      saidi_har: '',
+      saidi_penyulang: '',
+      saidi_gardu: '',
+      saidi_jtr: '',
+      saidi_sr_app: '',
+      saidi_bencana_alam: '',
+      saidi_sistem_transmisi: '',
+      
+      // Niaga inputs
+      tunai_prr: '',
+      cicil: '',
+      penghapusan_prr: '',
+      tindak_lanjut_lbkb: ''
     }
   });
 
-  const selectedTahun = watch('tahun') || new Date().getFullYear();
-  const selectedBulan = watch('periode_id');
+  const selectedMonth = useWatch({ control, name: 'periode_id' });
+  const selectedYear = useWatch({ control, name: 'tahun' }) || new Date().getFullYear();
 
-  // 1. Fetch Targets for current year
+  const val1 = useWatch({ control, name: 'saidi_distribusi_padam_tidak_terencana' }) || 0;
+  const val2 = useWatch({ control, name: 'saidi_distribusi_padam_terencana' }) || 0;
+  const val3 = useWatch({ control, name: 'saidi_distribusi_bencana_alam' }) || 0;
+  const val4 = useWatch({ control, name: 'saidi_transmisi' }) || 0;
+  const val5 = useWatch({ control, name: 'saidi_pembangkit' }) || 0;
+
+  const liveTotal = parseFloat(val1 || 0) + parseFloat(val2 || 0) + parseFloat(val3 || 0) + parseFloat(val4 || 0) + parseFloat(val5 || 0);
+
+  // 1. Fetch Targets for current year (non-Jaringan)
   useEffect(() => {
     if (bidang && bidang !== 'jaringan') {
         const humanBidangMap = {
             'aset': 'Aset', 'transaksi_energi': 'Transaksi Energi', 
             'niaga': 'Niaga', 'pemasaran': 'Pemasaran', 'keuangan': 'Keuangan'
         };
-        api.get(`/targets?tahun=${selectedTahun}`).then(res => {
+        api.get(`/targets?tahun=${selectedYear}`).then(res => {
             let myTargets = res.data.filter(t => t.bidang === humanBidangMap[bidang]);
             
             // Filter by KPI if specified
@@ -75,12 +111,30 @@ function InputKinerjaGenericPage({ bidang, kpiFilter }) {
             setTargets([]);
         });
     }
-  }, [bidang, selectedTahun, kpiFilter]);
+  }, [bidang, selectedYear, kpiFilter]);
 
-  // 2. Fetch Existing record when year & month change
+  // 2. Fetch Jaringan Dashboard Data
   useEffect(() => {
-    if (bidang && selectedTahun && selectedBulan) {
-      api.get(`/kinerja/${bidang}?tahun=${selectedTahun}&periode_id=${selectedBulan}`)
+    if (bidang === 'jaringan' && selectedYear) {
+      const fetchDashboardData = async () => {
+        setLoadingData(true);
+        try {
+          const res = await api.get(`/jaringan/dashboard?tahun=${selectedYear}`);
+          setDashboardData(res.data);
+        } catch (err) {
+          console.error(err);
+        } finally {
+          setLoadingData(false);
+        }
+      };
+      fetchDashboardData();
+    }
+  }, [bidang, selectedYear]);
+
+  // 3. Fetch Existing record when year & month change
+  useEffect(() => {
+    if (bidang && selectedYear && selectedMonth) {
+      api.get(`/kinerja/${bidang}?tahun=${selectedYear}&periode_id=${selectedMonth}`)
         .then(res => {
           if (res.data && res.data.length > 0) {
             const record = res.data[0];
@@ -91,28 +145,39 @@ function InputKinerjaGenericPage({ bidang, kpiFilter }) {
               ? raw
               : JSON.parse(raw || '{}');
             
-            // Populate form
             reset({
-              tahun: selectedTahun,
-              periode_id: selectedBulan,
+              tahun: selectedYear,
+              periode_id: selectedMonth,
               ...realData
             });
           } else {
             setExistingRecord(null);
-            // Reset dynamic fields
             reset({
-              tahun: selectedTahun,
-              periode_id: selectedBulan,
+              tahun: selectedYear,
+              periode_id: selectedMonth,
               tunai_prr: '',
               cicil: '',
               penghapusan_prr: '',
-              tindak_lanjut_lbkb: ''
+              tindak_lanjut_lbkb: '',
+              saidi_distribusi_padam_tidak_terencana: '',
+              saidi_distribusi_padam_terencana: '',
+              saidi_distribusi_bencana_alam: '',
+              saidi_transmisi: '',
+              saidi_pembangkit: '',
+              saidi_har: '',
+              saidi_penyulang: '',
+              saidi_gardu: '',
+              saidi_jtr: '',
+              saidi_sr_app: '',
+              saidi_bencana_alam: '',
+              saidi_sistem_transmisi: ''
             });
-            // Also reset generic target keys
-            targets.forEach(t => {
-              const key = t.indikator.toLowerCase().replace(/ /g, '_');
-              setValue(key, '');
-            });
+            if (targets && targets.length > 0) {
+              targets.forEach(t => {
+                const key = t.indikator.toLowerCase().replace(/ /g, '_');
+                setValue(key, '');
+              });
+            }
           }
         })
         .catch(err => {
@@ -122,13 +187,9 @@ function InputKinerjaGenericPage({ bidang, kpiFilter }) {
     } else {
       setExistingRecord(null);
     }
-  }, [bidang, selectedTahun, selectedBulan, reset, targets, setValue]);
+  }, [bidang, selectedYear, selectedMonth, reset, targets, setValue]);
 
   const onSubmit = async (data) => {
-    if (!bidang) {
-        alert("Role Anda tidak memiliki akses input data.");
-        return;
-    }
     setLoading(true);
     setSuccess(false);
 
@@ -142,15 +203,43 @@ function InputKinerjaGenericPage({ bidang, kpiFilter }) {
     }
 
     try {
-      const res = await api.post(`/kinerja/${bidang}`, data);
-      setSuccess(true);
-      // Reload existing status
-      if (res.data && res.data.data) {
-        setExistingRecord(res.data.data);
+      if (bidang === 'jaringan') {
+        const payload = {
+          periode_id: selectedMonth,
+          tahun: selectedYear,
+          data_realisasi: JSON.stringify({
+            saidi_har: data.saidi_har,
+            saidi_penyulang: data.saidi_penyulang,
+            saidi_gardu: data.saidi_gardu,
+            saidi_jtr: data.saidi_jtr,
+            saidi_sr_app: data.saidi_sr_app,
+            saidi_bencana_alam: data.saidi_bencana_alam,
+            saidi_sistem_transmisi: data.saidi_sistem_transmisi,
+            
+            saidi_distribusi_padam_tidak_terencana: data.saidi_distribusi_padam_tidak_terencana,
+            saidi_distribusi_padam_terencana: data.saidi_distribusi_padam_terencana,
+            saidi_distribusi_bencana_alam: data.saidi_distribusi_bencana_alam,
+            saidi_transmisi: data.saidi_transmisi,
+            saidi_pembangkit: data.saidi_pembangkit,
+            
+            saidi_realisasi: liveTotal
+          }),
+          saidi: liveTotal
+        };
+        const res = await api.post('/kinerja/jaringan', payload);
+        if (res.data && res.data.data) {
+          setExistingRecord(res.data.data);
+        }
+      } else {
+        const res = await api.post(`/kinerja/${bidang}`, data);
+        if (res.data && res.data.data) {
+          setExistingRecord(res.data.data);
+        }
       }
-      setTimeout(() => setSuccess(false), 5000);
+      setSuccess(true);
     } catch (err) {
-      alert("Error: " + err.message);
+      console.error(err);
+      alert("Gagal menyimpan data realisasi.");
     } finally {
       setLoading(false);
     }
@@ -205,6 +294,69 @@ function InputKinerjaGenericPage({ bidang, kpiFilter }) {
 
   const headerInfo = headerMap[bidang] || headerMap['jaringan'];
   const saidiSaifiCategories = ['har', 'penyulang', 'gardu', 'jtr', 'sr_app', 'bencana_alam', 'sistem_transmisi'];
+
+  const saidiData = dashboardData?.saidi || [];
+  const currentMonthData = saidiData.find(d => parseInt(d.bulan) === parseInt(selectedMonth));
+  const target = currentMonthData ? currentMonthData.target : 0;
+  const percentage = target > 0 ? (liveTotal / target) * 100 : 0;
+  const isOverTarget = liveTotal > target;
+
+  const prevMonthData = saidiData.find(d => parseInt(d.bulan) === parseInt(selectedMonth) - 1);
+  const getPrevMonthValue = (key) => {
+    if (!prevMonthData) return '—';
+    const val = prevMonthData[key];
+    if (val === null || val === undefined) return '—';
+    return Number(val).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
+  const trendData = useMemo(() => {
+    if (!selectedMonth || !dashboardData) return [];
+    const monthInt = parseInt(selectedMonth);
+    const data = [];
+    for (let i = 5; i >= 0; i--) {
+      const m = monthInt - i;
+      if (m >= 1 && m <= 12) {
+        const mData = saidiData.find(d => parseInt(d.bulan) === m);
+        if (mData) {
+          const realisasi = mData.realisasi;
+          if (realisasi !== null && realisasi !== undefined) {
+            data.push({
+              name: mData.label,
+              realisasi: realisasi,
+              target: mData.target
+            });
+          }
+        }
+      }
+    }
+    return data;
+  }, [selectedMonth, dashboardData, saidiData]);
+
+  const CustomTrendTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-3 rounded-lg shadow-lg border border-slate-100 text-sm">
+          <p className="font-bold text-slate-800 mb-2">{label}</p>
+          {payload.map((entry, index) => (
+            <div key={`item-${index}`} className="flex items-center gap-2 mb-1">
+              <span className="text-slate-600 capitalize">{entry.name}:</span>
+              <span className="font-bold text-slate-900 ml-auto">
+                {Number(entry.value).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Menit
+              </span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const getSatuanText = () => {
+    if (bidang === 'jaringan') return 'menit/pelanggan (untuk SAIDI)';
+    if (bidang === 'niaga') return kpiFilter === 'lbkb' ? 'laporan (Lap)' : 'rupiah (Rp)';
+    if (bidang === 'keuangan') return 'rupiah (Rp)';
+    return 'sesuai indikator masing-masing';
+  };
 
   // Format date helper
   const formatDateTime = (dateStr) => {
@@ -270,7 +422,6 @@ function InputKinerjaGenericPage({ bidang, kpiFilter }) {
                 <input 
                   type="number"
                   {...register('tahun', { required: true })} 
-                  defaultValue={new Date().getFullYear()}
                   className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-slate-700 font-bold text-sm shadow-sm"
                 />
                 <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
@@ -331,46 +482,234 @@ function InputKinerjaGenericPage({ bidang, kpiFilter }) {
         <div>
             {/* Jaringan Layout */}
             {bidang === 'jaringan' && (
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="bg-slate-50 border-b border-slate-200 p-4 flex justify-between items-center">
-                    <h3 className="font-semibold text-lg text-blue-600">Matriks Jaringan (SAIDI)</h3>
-                </div>
-                
-                <div className="grid grid-cols-1 gap-6 p-6 bg-slate-50/50">
-                    <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-                        <div className="bg-blue-50/50 border-b border-blue-100 p-3">
-                            <h4 className="font-bold text-blue-800 text-sm">SAIDI (Lama Padam)</h4>
-                            <p className="text-xs text-blue-600">Satuan: Menit/Pelanggan</p>
+            <div className="flex flex-col gap-6">
+              
+              {/* SAIDI live progress info strip */}
+              {selectedMonth && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* Target Card */}
+                  <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                      Target Bulan {MONTHS.find(m => m.value === parseInt(selectedMonth))?.label}
+                    </p>
+                    <p className="text-2xl font-black text-slate-800">
+                      {target > 0 ? `${Number(target).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Menit` : '—'}
+                    </p>
+                  </div>
+                  {/* Realisasi Card */}
+                  <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Live Realisasi (Jumlah Detail)</p>
+                    <p className={`text-2xl font-black ${isOverTarget && target > 0 ? 'text-red-500' : 'text-emerald-500'}`}>
+                      {Number(liveTotal).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Menit
+                    </p>
+                  </div>
+                  {/* Achievement Card */}
+                  <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Pencapaian vs Target</p>
+                    <div className="flex items-center gap-3">
+                      <span className={`text-2xl font-black ${isOverTarget && target > 0 ? 'text-red-500' : 'text-emerald-500'}`}>
+                        {target > 0 ? `${percentage.toFixed(1)}%` : '—'}
+                      </span>
+                      {target > 0 && (
+                        <div className="h-2.5 w-24 bg-slate-100 rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full rounded-full transition-all duration-300 ${isOverTarget ? 'bg-red-500' : 'bg-emerald-500'}`} 
+                            style={{ width: `${Math.min(percentage, 100)}%` }} 
+                          />
                         </div>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse">
-                                <thead>
-                                    <tr className="bg-gray-50 border-b border-slate-200">
-                                        <th className="py-2.5 px-4 font-bold text-slate-600 text-[10px] tracking-wider w-8">NO</th>
-                                        <th className="py-2.5 px-4 font-bold text-slate-600 text-[10px] tracking-wider">KATEGORI</th>
-                                        <th className="py-2.5 px-4 font-bold text-slate-600 text-[10px] tracking-wider w-32">NILAI</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100">
-                                    {saidiSaifiCategories.map((kat, index) => (
-                                    <tr key={`saidi_${kat}`} className="hover:bg-slate-50/50 transition-colors">
-                                        <td className="py-3 px-4 text-slate-700 text-xs">{index + 1}</td>
-                                        <td className="py-3 px-4 font-bold text-slate-800 text-xs uppercase">{formatLabel(kat)}</td>
-                                        <td className="py-3 px-4">
-                                            <input 
-                                                type="number" step="0.0001" 
-                                                {...register(`saidi_${kat}`)} 
-                                                className="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-lg outline-none focus:border-blue-500 text-slate-700 text-sm" 
-                                                placeholder="0.00" 
-                                            />
-                                        </td>
-                                    </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* SAIDI Table + Chart Section */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                {/* SAIDI Categories Table */}
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div className="bg-slate-50 border-b border-slate-200 p-4 flex justify-between items-center">
+                        <h3 className="font-semibold text-lg text-blue-600">Matriks Jaringan (SAIDI)</h3>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 gap-6 p-6 bg-slate-50/50">
+                        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                            <div className="bg-blue-50/50 border-b border-blue-100 p-3">
+                                <h4 className="font-bold text-blue-800 text-sm">SAIDI (Lama Padam)</h4>
+                                <p className="text-xs text-blue-600">Satuan: Menit/Pelanggan</p>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr className="bg-gray-50 border-b border-slate-200">
+                                            <th className="py-2.5 px-4 font-bold text-slate-600 text-[10px] tracking-wider w-8">NO</th>
+                                            <th className="py-2.5 px-4 font-bold text-slate-600 text-[10px] tracking-wider">KATEGORI</th>
+                                            <th className="py-2.5 px-4 font-bold text-slate-600 text-[10px] tracking-wider w-32">NILAI</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {saidiSaifiCategories.map((kat, index) => (
+                                        <tr key={`saidi_${kat}`} className="hover:bg-slate-50/50 transition-colors">
+                                            <td className="py-3 px-4 text-slate-700 text-xs">{index + 1}</td>
+                                            <td className="py-3 px-4 font-bold text-slate-800 text-xs uppercase">{formatLabel(kat)}</td>
+                                            <td className="py-3 px-4">
+                                                <input 
+                                                    type="number" step="0.0001" 
+                                                    {...register(`saidi_${kat}`)} 
+                                                    className="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-lg outline-none focus:border-blue-500 text-slate-700 text-sm" 
+                                                    placeholder="0.00" 
+                                                />
+                                            </td>
+                                        </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
+
+                {/* Trend Chart Card */}
+                {selectedMonth && trendData.length > 0 && (
+                  <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col gap-4">
+                    <div>
+                      <h4 className="font-extrabold text-slate-800 text-base">Tren Realisasi & Target SAIDI</h4>
+                      <p className="text-slate-400 text-2xs font-semibold">6 Bulan Terakhir</p>
+                    </div>
+                    <div className="h-64 md:h-72 w-full mt-2">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                          <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} tickLine={false} />
+                          <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} />
+                          <Tooltip content={<CustomTrendTooltip />} />
+                          <Bar dataKey="realisasi" name="Realisasi" fill="#14A2BA" radius={[4, 4, 0, 0]}>
+                            {trendData.map((entry, index) => (
+                              <Cell 
+                                key={`cell-${index}`} 
+                                fill={entry.realisasi > entry.target && entry.target > 0 ? '#ef4444' : '#14A2BA'} 
+                              />
+                            ))}
+                          </Bar>
+                          <ReferenceLine y={target} stroke="#f59e0b" strokeDasharray="5 5" label={{ value: 'Target', position: 'top', fill: '#d97706', fontSize: 10, fontWeight: 700 }} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                )}
+
+              </div>
+
+              {/* SAIDI Detail Components section */}
+              <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                <div 
+                   className="flex flex-col md:flex-row md:items-center justify-between px-5 py-[20px] bg-slate-50 border-b border-slate-200 gap-4 hover:bg-slate-100/50 transition cursor-pointer"
+                   onClick={() => setIsDistribusiOpen(!isDistribusiOpen)}
+                >
+                   <div className="flex items-center gap-4 flex-1">
+                     <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
+                       <Zap size={20} />
+                     </div>
+                     <div>
+                       <label className="font-extrabold text-slate-800 text-[15px] cursor-pointer">Detail Komponen SAIDI (Distribusi, Transmisi, Pembangkit)</label>
+                       <p className="text-xs text-slate-400 font-medium mt-[6px]">Klik untuk membuka / menutup detail input</p>
+                     </div>
+                   </div>
+                   <div className="text-slate-400">
+                     {isDistribusiOpen ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
+                   </div>
+                </div>
+
+                {isDistribusiOpen && (
+                  <div className="bg-slate-50/30 p-6 divide-y divide-slate-100">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between py-[20px] gap-4">
+                       <div className="flex items-center gap-4 flex-1">
+                         <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                         <div>
+                           <label className="font-bold text-slate-600 text-[13px]">Distribusi — Padam Tidak Terencana</label>
+                         </div>
+                       </div>
+                       <div className="relative flex-1 flex justify-end">
+                         <input 
+                            type="number" step="0.0001" 
+                            {...register('saidi_distribusi_padam_tidak_terencana')} 
+                            className="w-full max-w-xs border border-slate-200 rounded-lg bg-white px-3 py-2 text-right outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-sm font-semibold" 
+                            placeholder="0.00" 
+                         />
+                       </div>
+                    </div>
+
+                    <div className="flex flex-col md:flex-row md:items-center justify-between py-[20px] gap-4">
+                       <div className="flex items-center gap-4 flex-1">
+                         <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                         <div>
+                           <label className="font-bold text-slate-600 text-[13px]">Distribusi — Padam Terencana</label>
+                         </div>
+                       </div>
+                       <div className="relative flex-1 flex justify-end">
+                         <input 
+                            type="number" step="0.0001" 
+                            {...register('saidi_distribusi_padam_terencana')} 
+                            className="w-full max-w-xs border border-slate-200 rounded-lg bg-white px-3 py-2 text-right outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-sm font-semibold" 
+                            placeholder="0.00" 
+                         />
+                       </div>
+                    </div>
+
+                    <div className="flex flex-col md:flex-row md:items-center justify-between py-[20px] gap-4">
+                       <div className="flex items-center gap-4 flex-1">
+                         <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                         <div>
+                           <label className="font-bold text-slate-600 text-[13px]">Distribusi — Bencana Alam</label>
+                         </div>
+                       </div>
+                       <div className="relative flex-1 flex justify-end">
+                         <input 
+                            type="number" step="0.0001" 
+                            {...register('saidi_distribusi_bencana_alam')} 
+                            className="w-full max-w-xs border border-slate-200 rounded-lg bg-white px-3 py-2 text-right outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-sm font-semibold" 
+                            placeholder="0.00" 
+                         />
+                       </div>
+                    </div>
+
+                    <div className="flex flex-col md:flex-row md:items-center justify-between py-[20px] gap-4">
+                       <div className="flex items-center gap-4 flex-1">
+                         <span className="w-2 h-2 rounded-full bg-teal-500"></span>
+                         <div>
+                           <label className="font-bold text-slate-600 text-[13px]">Transmisi</label>
+                         </div>
+                       </div>
+                       <div className="relative flex-1 flex justify-end">
+                         <input 
+                            type="number" step="0.0001" 
+                            {...register('saidi_transmisi')} 
+                            className="w-full max-w-xs border border-slate-200 rounded-lg bg-white px-3 py-2 text-right outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-sm font-semibold" 
+                            placeholder="0.00" 
+                         />
+                       </div>
+                    </div>
+
+                    <div className="flex flex-col md:flex-row md:items-center justify-between py-[20px] gap-4">
+                       <div className="flex items-center gap-4 flex-1">
+                         <span className="w-2 h-2 rounded-full bg-rose-500"></span>
+                         <div>
+                           <label className="font-bold text-slate-600 text-[13px]">Pembangkit</label>
+                         </div>
+                       </div>
+                       <div className="relative flex-1 flex justify-end">
+                         <input 
+                            type="number" step="0.0001" 
+                            {...register('saidi_pembangkit')} 
+                            className="w-full max-w-xs border border-slate-200 rounded-lg bg-white px-3 py-2 text-right outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-sm font-semibold" 
+                            placeholder="0.00" 
+                         />
+                       </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
             </div>
             )}
 
@@ -398,43 +737,43 @@ function InputKinerjaGenericPage({ bidang, kpiFilter }) {
                                         <div className="bg-white border-t-4 border-t-indigo-600 border-x border-b border-slate-200/80 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden flex flex-col gap-4">
                                             <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 rounded-full blur-2xl -z-0"></div>
                                             <div className="flex items-center gap-3 relative z-10">
-                                                <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-sm">
-                                                    <Coins size={16} />
+                                                <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-inner flex-shrink-0">
+                                                    <Coins size={20} />
                                                 </div>
-                                                <span className="font-extrabold text-sm text-slate-700">Tunai PRR</span>
+                                                <div className="flex-1">
+                                                    <label className="block text-sm font-extrabold text-slate-800 line-clamp-1">Realisasi Tunai PRR</label>
+                                                    <p className="text-slate-400 text-3xs font-semibold uppercase mt-0.5">Satuan: Miliar Rp</p>
+                                                </div>
                                             </div>
-                                            <div className="flex border border-slate-200 rounded-xl overflow-hidden shadow-sm bg-white focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 transition-all relative z-10">
-                                                <div className="bg-slate-50 px-4 flex items-center justify-center border-r border-slate-200 text-xs font-bold text-slate-500 uppercase tracking-wider min-w-[50px]">
-                                                    Rp
-                                                </div>
+                                            <div className="relative z-10">
                                                 <input 
-                                                    type="number" step="0.0001" 
+                                                    type="number" step="0.01" 
                                                     {...register('tunai_prr')} 
-                                                    className="flex-1 px-4 py-3 bg-white outline-none text-slate-800 font-extrabold text-xl" 
-                                                    placeholder="0"
+                                                    className="w-full pl-5 pr-12 py-4 bg-slate-50 border-2 border-slate-100 rounded-xl outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white transition-all text-slate-800 shadow-inner font-extrabold text-xl hover:border-slate-200" 
+                                                    placeholder="0.00"
                                                 />
                                             </div>
                                             <p className="text-slate-400 text-2xs font-semibold">Masukkan nilai realisasi dalam satuan rupiah</p>
                                         </div>
 
                                         {/* Cicil Input Card */}
-                                        <div className="bg-white border-t-4 border-t-emerald-500 border-x border-b border-slate-200/80 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden flex flex-col gap-4">
+                                        <div className="bg-white border-t-4 border-t-emerald-600 border-x border-b border-slate-200/80 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden flex flex-col gap-4">
                                             <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl -z-0"></div>
                                             <div className="flex items-center gap-3 relative z-10">
-                                                <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-sm">
-                                                    <Calendar size={16} />
+                                                <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-inner flex-shrink-0">
+                                                    <TrendingDown size={20} />
                                                 </div>
-                                                <span className="font-extrabold text-sm text-slate-700">Cicil</span>
+                                                <div className="flex-1">
+                                                    <label className="block text-sm font-extrabold text-slate-800 line-clamp-1">Realisasi Cicilan</label>
+                                                    <p className="text-slate-400 text-3xs font-semibold uppercase mt-0.5">Satuan: Miliar Rp</p>
+                                                </div>
                                             </div>
-                                            <div className="flex border border-slate-200 rounded-xl overflow-hidden shadow-sm bg-white focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all relative z-10">
-                                                <div className="bg-slate-50 px-4 flex items-center justify-center border-r border-slate-200 text-xs font-bold text-slate-500 uppercase tracking-wider min-w-[50px]">
-                                                    Rp
-                                                </div>
+                                            <div className="relative z-10">
                                                 <input 
-                                                    type="number" step="0.0001" 
+                                                    type="number" step="0.01" 
                                                     {...register('cicil')} 
-                                                    className="flex-1 px-4 py-3 bg-white outline-none text-slate-800 font-extrabold text-xl" 
-                                                    placeholder="0"
+                                                    className="w-full pl-5 pr-12 py-4 bg-slate-50 border-2 border-slate-100 rounded-xl outline-none focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all text-slate-800 shadow-inner font-extrabold text-xl hover:border-slate-200" 
+                                                    placeholder="0.00"
                                                 />
                                             </div>
                                             <p className="text-slate-400 text-2xs font-semibold">Masukkan nilai realisasi dalam satuan rupiah</p>
@@ -443,44 +782,29 @@ function InputKinerjaGenericPage({ bidang, kpiFilter }) {
                                 );
                             }
 
-                            // Dynamic styled cards for other KPIs (including Niaga Penghapusan and LBKB)
-                            const isRp = t.satuan.toLowerCase().includes('rupiah') || t.satuan.toLowerCase().includes('rp');
-                            const prefixVal = isRp ? 'Rp' : t.satuan;
-                            const isPenghapusan = key === 'penghapusan_prr';
-                            const isLbkb = key === 'tindak_lanjut_lbkb';
-                            
-                            const accentColorClass = isPenghapusan 
-                              ? 'border-t-purple-500' 
-                              : isLbkb 
-                              ? 'border-t-cyan-500' 
-                              : 'border-t-blue-500';
-                            
-                            const iconBgClass = isPenghapusan 
-                              ? 'bg-purple-50 text-purple-600' 
-                              : isLbkb 
-                              ? 'bg-cyan-50 text-cyan-600' 
-                              : 'bg-blue-50 text-blue-600';
-
-                            const Icon = isPenghapusan ? TrendingDown : isLbkb ? Activity : Target;
-
+                            // Generic Input Card for other indicators
                             return (
-                                <div key={key} className={`bg-white border-t-4 ${accentColorClass} border-x border-b border-slate-200/80 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden flex flex-col gap-4`}>
-                                    <div className="absolute top-0 right-0 w-24 h-24 bg-slate-500/5 rounded-full blur-2xl -z-0"></div>
-                                    <div className="flex items-center gap-3 relative z-10">
-                                        <div className={`w-8 h-8 rounded-full ${iconBgClass} flex items-center justify-center shadow-sm`}>
-                                            <Icon size={16} />
+                                <div key={key} className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden flex flex-col gap-4">
+                                    <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 rounded-full blur-2xl -z-0"></div>
+                                    <div className="flex justify-between items-start relative z-10">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-inner">
+                                                <Target size={20} />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-extrabold text-slate-800 line-clamp-1" title={t.indikator}>
+                                                    {t.indikator}
+                                                </label>
+                                                <p className="text-slate-400 text-3xs font-semibold uppercase mt-0.5">Satuan: {t.satuan}</p>
+                                            </div>
                                         </div>
-                                        <span className="font-extrabold text-sm text-slate-700">{t.indikator}</span>
                                     </div>
-                                    <div className="flex border border-slate-200 rounded-xl overflow-hidden shadow-sm bg-white focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all relative z-10">
-                                        <div className="bg-slate-50 px-4 flex items-center justify-center border-r border-slate-200 text-xs font-bold text-slate-500 uppercase tracking-wider min-w-[50px]">
-                                            {prefixVal}
-                                        </div>
+                                    <div className="relative z-10">
                                         <input 
                                             type="number" step="0.0001" 
                                             {...register(key)} 
-                                            className="flex-1 px-4 py-3 bg-white outline-none text-slate-800 font-extrabold text-xl" 
-                                            placeholder="0"
+                                            className="w-full pl-5 pr-12 py-4 bg-slate-50 border-2 border-slate-100 rounded-xl outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white transition-all text-slate-800 shadow-inner font-extrabold text-xl hover:border-slate-200" 
+                                            placeholder="0.00"
                                         />
                                     </div>
                                     <p className="text-slate-400 text-2xs font-semibold">
@@ -495,8 +819,8 @@ function InputKinerjaGenericPage({ bidang, kpiFilter }) {
             )}
         </div>
 
-        {/* ── BOTTOM SECTION: Submit Action Banner ───────────────────────── */}
-        <div className="bg-blue-50/70 border border-blue-100 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+        {/* BOTTOM SECTION: Submit Button */}
+        <div className="mt-8 bg-white border border-slate-200 p-6 rounded-2xl shadow-sm w-full flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 flex-shrink-0">
                 <Info size={16} />
@@ -546,7 +870,7 @@ function InputKinerjaGenericPage({ bidang, kpiFilter }) {
               <h4 className="text-xs font-bold uppercase tracking-wider">Satuan</h4>
             </div>
             <p className="text-slate-500 text-xs font-medium leading-relaxed mt-1">
-              Seluruh nilai dalam satuan {bidang === 'niaga' && kpiFilter === 'lbkb' ? 'laporan (Lap)' : 'rupiah (Rp)'}.
+              Seluruh nilai dalam satuan {getSatuanText()}.
             </p>
           </div>
         </div>

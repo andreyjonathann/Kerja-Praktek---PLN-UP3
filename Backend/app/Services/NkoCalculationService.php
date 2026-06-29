@@ -47,13 +47,34 @@ class NkoCalculationService
     public static function calculateJaringan(KinerjaJaringan $kinerja)
     {
         // Auto-calculate CAIDI
-        $saidi_total = $kinerja->saidi_har + $kinerja->saidi_penyulang + $kinerja->saidi_gardu + $kinerja->saidi_jtr + $kinerja->saidi_sr_app + $kinerja->saidi_bencana_alam + $kinerja->saidi_sistem_transmisi;
-        $saifi_total = $kinerja->saifi_har + $kinerja->saifi_penyulang + $kinerja->saifi_gardu + $kinerja->saifi_jtr + $kinerja->saifi_sr_app + $kinerja->saifi_bencana_alam + $kinerja->saifi_sistem_transmisi;
+        $saidi_components = [
+            $kinerja->saidi_distribusi_padam_tidak_terencana,
+            $kinerja->saidi_distribusi_padam_terencana,
+            $kinerja->saidi_distribusi_bencana_alam,
+            $kinerja->saidi_transmisi,
+            $kinerja->saidi_pembangkit
+        ];
+        
+        $saifi_components = [
+            $kinerja->saifi_distribusi_padam_tidak_terencana,
+            $kinerja->saifi_distribusi_padam_terencana,
+            $kinerja->saifi_distribusi_bencana_alam,
+            $kinerja->saifi_transmisi,
+            $kinerja->saifi_pembangkit
+        ];
+        
+        $saidi_is_all_null = count(array_filter($saidi_components, fn($v) => !is_null($v))) === 0;
+        $saifi_is_all_null = count(array_filter($saifi_components, fn($v) => !is_null($v))) === 0;
+
+        $saidi_total = $saidi_is_all_null ? null : array_sum($saidi_components);
+        $saifi_total = $saifi_is_all_null ? null : array_sum($saifi_components);
         
         $kinerja->saidi_total = $saidi_total;
         $kinerja->saifi_total = $saifi_total;
         
-        if ($saifi_total > 0) {
+        if (is_null($saifi_total) && is_null($saidi_total)) {
+            $kinerja->caidi = null;
+        } elseif ($saifi_total > 0) {
             $kinerja->caidi = $saidi_total / $saifi_total;
         } else {
             $kinerja->caidi = 0;

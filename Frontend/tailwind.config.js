@@ -8,32 +8,45 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Map default blue to official PLN Mobile colors
+        blue: {
+          50:  '#e5f8fb',
+          100: '#c2edf4',
+          200: '#90ddec',
+          300: '#5bcbe4',
+          400: '#2ab4d4',
+          500: '#00A2B9',
+          600: '#00A2B9', // Light Teal (Primary Bright)
+          700: '#035B71', // Dark Teal (Primary Dark/Hover)
+          800: '#024d62',
+          900: '#013e51',
+        },
         // PLN Official Color Palette
         pln: {
-          blue:      '#003F7F',
-          'blue-mid':'#0070C0',
-          'blue-lt': '#CCE4F7',
+          blue:      '#035B71',
+          'blue-mid':'#00A2B9',
+          'blue-lt': '#90ddec',
           red:       '#CC0000',
           yellow:    '#FFD700',
           gold:      '#F5A623',
         },
         // Semantic colors
         brand: {
-          50:  '#EFF6FF',
-          100: '#DBEAFE',
-          200: '#BFDBFE',
-          300: '#93C5FD',
-          400: '#60A5FA',
-          500: '#3B82F6',
-          600: '#0070C0',
-          700: '#003F7F',
-          800: '#1E3A5F',
-          900: '#172554',
+          50:  '#f0fdfa',
+          100: '#ccfbf1',
+          200: '#99f6e4',
+          300: '#5eead4',
+          400: '#2dd4bf',
+          500: '#14b8a6',
+          600: '#0d9488',
+          700: '#0f766e',
+          800: '#115e59',
+          900: '#134e4a',
         },
         success:  { DEFAULT: '#16A34A', light: '#DCFCE7', dark: '#14532D' },
         warning:  { DEFAULT: '#D97706', light: '#FEF3C7', dark: '#78350F' },
         danger:   { DEFAULT: '#DC2626', light: '#FEE2E2', dark: '#7F1D1D' },
-        info:     { DEFAULT: '#0070C0', light: '#EFF6FF', dark: '#1E3A5F' },
+        info:     { DEFAULT: '#0d9488', light: '#f0fdfa', dark: '#115e59' },
         // Dark mode surface colors
         surface: {
           DEFAULT:   '#FFFFFF',
@@ -55,7 +68,7 @@ export default {
         'card':   '0 1px 3px 0 rgba(0,0,0,0.08), 0 1px 2px -1px rgba(0,0,0,0.06)',
         'card-md':'0 4px 6px -1px rgba(0,0,0,0.08), 0 2px 4px -2px rgba(0,0,0,0.06)',
         'card-lg':'0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.06)',
-        'glow-blue': '0 0 20px rgba(0,112,192,0.3)',
+        'glow-blue': '0 0 20px rgba(13,148,136,0.3)',
         'glow-red':  '0 0 20px rgba(204,0,0,0.25)',
       },
       animation: {
