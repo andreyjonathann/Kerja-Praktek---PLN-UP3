@@ -177,7 +177,7 @@ export default function TindakLanjutLbkbPage() {
             cursor: 'pointer'
           }}>
             <button
-              onClick={() => navigate('/input')}
+              onClick={() => navigate('/niaga/lbkb/input')}
               style={{
                 padding: '6px 16px',
                 borderRadius: 9,

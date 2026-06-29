@@ -76,9 +76,15 @@ class KinerjaController extends Controller
             $kinerja->save();
             NkoCalculationService::calculateJaringan($kinerja);
         } else {
-            // Generic JSON (Laravel automatically encodes array casted fields)
-            $kinerja->data_realisasi = $request->except(['periode_id', '_token', 'tahun']);
+            // Generic JSON - merge new data with existing to avoid overwriting other KPIs
+            $existing = $kinerja->data_realisasi ?? [];
+            if (is_string($existing)) {
+                $existing = json_decode($existing, true) ?? [];
+            }
+            $newData = $request->except(['periode_id', '_token', 'tahun']);
+            $kinerja->data_realisasi = array_merge($existing, $newData);
             $kinerja->save();
+            
             $humanBidangMap = [
                 'aset' => 'Aset',
                 'transaksi_energi' => 'Transaksi Energi',

@@ -177,7 +177,7 @@ export default function PelunasanPrrPage() {
             cursor: 'pointer'
           }}>
             <button
-              onClick={() => navigate('/input')}
+              onClick={() => navigate('/niaga/pelunasan/input')}
               style={{
                 padding: '6px 16px',
                 borderRadius: 9,

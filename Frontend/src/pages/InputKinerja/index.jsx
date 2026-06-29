@@ -16,7 +16,7 @@ const bidangMap = {
   'pic_keuangan': 'keuangan',
 };
 
-export default function InputKinerjaPage() {
+export default function InputKinerjaPage({ kpiFilter }) {
   const { user } = useAuth();
   
   const bidang = user ? bidangMap[user.role] : null;
@@ -25,10 +25,10 @@ export default function InputKinerjaPage() {
     return <InputKinerjaPermasaranPage />;
   }
 
-  return <InputKinerjaGenericPage bidang={bidang} />;
+  return <InputKinerjaGenericPage bidang={bidang} kpiFilter={kpiFilter} />;
 }
 
-function InputKinerjaGenericPage({ bidang }) {
+function InputKinerjaGenericPage({ bidang, kpiFilter }) {
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -55,6 +55,25 @@ function InputKinerjaGenericPage({ bidang }) {
     }
   };
 
+  if (bidang === 'niaga') {
+    if (kpiFilter === 'pelunasan') {
+      headerMap['niaga'] = {
+        title: 'Input Realisasi Pelunasan PRR & Piutang',
+        desc: 'Sistem penginputan data realisasi Pelunasan PRR & Piutang (Tunai PRR + Cicil). Seluruh perubahan pada halaman ini akan langsung berdampak pada kalkulasi NKO dan grafik dashboard utama.',
+      };
+    } else if (kpiFilter === 'penghapusan') {
+      headerMap['niaga'] = {
+        title: 'Input Realisasi Penghapusan PRR',
+        desc: 'Sistem penginputan data realisasi Penghapusan PRR. Seluruh perubahan pada halaman ini akan langsung berdampak pada kalkulasi NKO dan grafik dashboard utama.',
+      };
+    } else if (kpiFilter === 'lbkb') {
+      headerMap['niaga'] = {
+        title: 'Input Realisasi Tindak Lanjut LBKB',
+        desc: 'Sistem penginputan data realisasi Tindak Lanjut LBKB. Seluruh perubahan pada halaman ini akan langsung berdampak pada kalkulasi NKO dan grafik dashboard utama.',
+      };
+    }
+  }
+
   const headerInfo = headerMap[bidang] || headerMap['jaringan'];
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -76,14 +95,26 @@ function InputKinerjaGenericPage({ bidang }) {
             'niaga': 'Niaga', 'pemasaran': 'Pemasaran', 'keuangan': 'Keuangan'
         };
         api.get(`/targets?tahun=${selectedTahun}`).then(res => {
-            const myTargets = res.data.filter(t => t.bidang === humanBidangMap[bidang]);
+            let myTargets = res.data.filter(t => t.bidang === humanBidangMap[bidang]);
+            
+            // Filter by KPI if specified
+            if (bidang === 'niaga') {
+              if (kpiFilter === 'pelunasan') {
+                myTargets = myTargets.filter(t => t.indikator === 'Pelunasan PRR & Piutang');
+              } else if (kpiFilter === 'penghapusan') {
+                myTargets = myTargets.filter(t => t.indikator === 'Penghapusan PRR');
+              } else if (kpiFilter === 'lbkb') {
+                myTargets = myTargets.filter(t => t.indikator === 'Tindak Lanjut LBKB');
+              }
+            }
+            
             setTargets(myTargets);
         }).catch(err => {
             console.error("Error fetching targets:", err);
             setTargets([]);
         });
     }
-  }, [bidang, selectedTahun]);
+  }, [bidang, selectedTahun, kpiFilter]);
 
   const onSubmit = async (data) => {
     if (!bidang) {

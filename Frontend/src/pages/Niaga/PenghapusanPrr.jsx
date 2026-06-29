@@ -177,7 +177,7 @@ export default function PenghapusanPrrPage() {
             cursor: 'pointer'
           }}>
             <button
-              onClick={() => navigate('/input')}
+              onClick={() => navigate('/niaga/penghapusan/input')}
               style={{
                 padding: '6px 16px',
                 borderRadius: 9,

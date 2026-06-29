@@ -340,14 +340,29 @@ export default function App() {
                   <PelunasanPrrPage />
                 </ProtectedRoute>
               } />
+              <Route path="/niaga/pelunasan/input" element={
+                <ProtectedRoute>
+                  <InputKinerjaPage kpiFilter="pelunasan" />
+                </ProtectedRoute>
+              } />
               <Route path="/niaga/penghapusan" element={
                 <ProtectedRoute>
                   <PenghapusanPrrPage />
                 </ProtectedRoute>
               } />
+              <Route path="/niaga/penghapusan/input" element={
+                <ProtectedRoute>
+                  <InputKinerjaPage kpiFilter="penghapusan" />
+                </ProtectedRoute>
+              } />
               <Route path="/niaga/lbkb" element={
                 <ProtectedRoute>
                   <TindakLanjutLbkbPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/niaga/lbkb/input" element={
+                <ProtectedRoute>
+                  <InputKinerjaPage kpiFilter="lbkb" />
                 </ProtectedRoute>
               } />
               <Route path="/skki" element={
