@@ -20,9 +20,9 @@ import { getDashboardData } from '@/services/dashboardDataService'
 import { YEARS } from '@/utils/constants'
 
 const CHART_COLORS = {
-  saidi:       '#0F4CD7',
+  saidi:       '#14A2BA',
   saidi_tgt:   '#F59E0B',
-  saifi:       '#2F7BFF',
+  saifi:       '#14A2BA',
   saifi_tgt:   '#F59E0B',
 }
 
@@ -135,8 +135,8 @@ export default function OverviewPage() {
       <div className="space-y-5" style={{ marginBottom: 16 }}>
         <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-            <div className="rounded-xl icon-wrapper-interactive" style={{ width: 34, height: 34, background: 'linear-gradient(135deg, rgba(37,99,235,0.2), rgba(37,99,235,0.08))', border: '1px solid rgba(37,99,235,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 4, flexShrink: 0 }}>
-              <Sparkles size={16} style={{ color: '#2563EB' }} />
+            <div className="rounded-xl icon-wrapper-interactive" style={{ width: 34, height: 34, background: 'linear-gradient(135deg, rgba(20, 162, 186,0.2), rgba(20, 162, 186,0.08))', border: '1px solid rgba(20, 162, 186,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 4, flexShrink: 0 }}>
+              <Sparkles size={16} style={{ color: '#14A2BA' }} />
             </div>
             <div>
               <h1 className="page-heading" style={{ marginBottom: 4 }}>Executive Overview</h1>
@@ -233,10 +233,10 @@ export default function OverviewPage() {
               />
               <Tooltip content={<CustomTooltip />} />
               <Legend wrapperStyle={{ fontSize: 13, fontWeight: 600, paddingTop: 16 }} />
-              <Bar yAxisId="left" dataKey="saidi" name="SAIDI Real" fill="#0F4CD7" radius={[4,4,0,0]} fillOpacity={0.85} />
+              <Bar yAxisId="left" dataKey="saidi" name="SAIDI Real" fill="#14A2BA" radius={[4,4,0,0]} fillOpacity={0.85} />
               <Line yAxisId="left" type="monotone" dataKey="targetSaidi" name="SAIDI Target"
                 stroke="#EF4444" strokeWidth={2} strokeDasharray="4 4" dot={false} />
-              <Bar yAxisId="right" dataKey="saifi" name="SAIFI Real" fill="#2F7BFF" radius={[4,4,0,0]} fillOpacity={0.85} />
+              <Bar yAxisId="right" dataKey="saifi" name="SAIFI Real" fill="#14A2BA" radius={[4,4,0,0]} fillOpacity={0.85} />
               <Line yAxisId="right" type="monotone" dataKey="targetSaifi" name="SAIFI Target"
                 stroke="#10B981" strokeWidth={2} strokeDasharray="4 4" dot={false} />
             </ComposedChart>
@@ -256,7 +256,7 @@ export default function OverviewPage() {
             <span style={{
               fontSize: '0.6rem', fontWeight: 700, padding: '2px 8px',
               borderRadius: 99, background: 'var(--accent-soft)',
-              color: '#93C5FD', border: '1px solid rgba(37,99,235,0.3)', letterSpacing: '0.06em',
+              color: '#E7F6F9', border: '1px solid rgba(20, 162, 186,0.3)', letterSpacing: '0.06em',
             }}>YTD</span>
           </div>
           <div style={{ padding: '8px 0' }}>

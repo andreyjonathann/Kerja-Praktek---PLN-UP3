@@ -17,7 +17,7 @@ const Speedometer = ({ value }) => {
   const strokeDashoffset = circumference - fillPct * circumference
 
   // Determine text color based on score
-  const scoreColor = safeValue >= 100 ? '#10B981' : safeValue >= 80 ? '#0F4CD7' : '#EF4444'
+  const scoreColor = safeValue >= 100 ? '#10B981' : safeValue >= 80 ? '#14A2BA' : '#EF4444'
 
   return (
     <div className="flex flex-col items-center justify-center pt-6 pb-2 w-full relative">
@@ -175,8 +175,8 @@ export default function NkoPage() {
       {/* Header Section */}
       <div className="card" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', gap: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <div className="icon-wrapper-interactive" style={{ width: 48, height: 48, borderRadius: 12, background: 'linear-gradient(135deg, rgba(37,99,235,0.2), rgba(37,99,235,0.08))', border: '1px solid rgba(37,99,235,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <Bolt size={24} style={{ color: '#2563EB' }} />
+          <div className="icon-wrapper-interactive" style={{ width: 48, height: 48, borderRadius: 12, background: 'linear-gradient(135deg, rgba(20, 162, 186,0.2), rgba(20, 162, 186,0.08))', border: '1px solid rgba(20, 162, 186,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Bolt size={24} style={{ color: '#14A2BA' }} />
           </div>
           <div>
             <h1 className="page-heading" style={{ marginBottom: 4 }}>Nilai Kinerja Organisasi (NKO)</h1>

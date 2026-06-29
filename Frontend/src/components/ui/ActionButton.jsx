@@ -4,7 +4,7 @@ export default function ActionButton({
   icon: Icon, 
   label, 
   onClick, 
-  colorHex = '#2563EB', // default blue
+  colorHex = '#14A2BA', // default blue
   colorRgb = '37, 99, 235' // default blue RGB
 }) {
   const [isHovered, setIsHovered] = useState(false);

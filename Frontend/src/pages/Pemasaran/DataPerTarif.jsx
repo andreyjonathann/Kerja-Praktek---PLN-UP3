@@ -15,7 +15,7 @@ import { CHART_COLORS } from '@/utils/constants'
 
 const METRICS = [
   { key:'penjualan',  label:'Penjualan (kWh)', unit:'kWh',  color:'#16A34A' },
-  { key:'pelanggan',  label:'Pelanggan Baru',   unit:'plg',  color:'#0F4CD7' },
+  { key:'pelanggan',  label:'Pelanggan Baru',   unit:'plg',  color:'#14A2BA' },
   { key:'daya',       label:'Daya (kVA)',        unit:'kVA',  color:'#D97706' },
 ]
 
@@ -156,9 +156,9 @@ export default function DataPerTarifPage() {
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:12 }}>
           <div style={{ display:'flex', alignItems:'center', gap:10 }}>
             <div className="icon-wrapper-interactive" style={{ width:34, height:34, borderRadius:10,
-              background:'linear-gradient(135deg,rgba(15,76,215,0.2),rgba(15,76,215,0.08))',
-              border:'1px solid rgba(15,76,215,0.25)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-              <Table2 size={16} style={{ color:'#0F4CD7' }} />
+              background:'linear-gradient(135deg,rgba(20, 162, 186,0.2),rgba(20, 162, 186,0.08))',
+              border:'1px solid rgba(20, 162, 186,0.25)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <Table2 size={16} style={{ color:'#14A2BA' }} />
             </div>
             <h1 className="page-heading">DATA PER TARIF — Rekap Gabungan S, R, B, I, P, T, L, C</h1>
           </div>
@@ -176,12 +176,12 @@ export default function DataPerTarifPage() {
       <div style={{ display:'flex', flexWrap:'wrap', gap:16, alignItems:'center' }}>
         <div>
           <p style={{ fontSize:'0.7rem', fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:4 }}>Metrik</p>
-          <div style={{ display:'inline-flex', background:'rgba(15,76,215,0.05)', padding:3, borderRadius:10, border:'1px solid rgba(15,76,215,0.08)' }}>
+          <div style={{ display:'inline-flex', background:'rgba(20, 162, 186,0.05)', padding:3, borderRadius:10, border:'1px solid rgba(20, 162, 186,0.08)' }}>
             {METRICS.map(m => {
               const active = metrik === m.key
               return <button key={m.key} onClick={() => setMetrik(m.key)} style={{ padding:'5px 14px', borderRadius:8, fontSize:'0.82rem', fontWeight:700, transition:'all 0.2s', border:'none', cursor:'pointer',
                 background:active?'var(--bg-card)':'transparent', color:active?'var(--pln-blue)':'var(--text-muted)',
-                boxShadow:active?'0 2px 8px rgba(15,76,215,0.12)':'none' }}>{m.label}</button>
+                boxShadow:active?'0 2px 8px rgba(20, 162, 186,0.12)':'none' }}>{m.label}</button>
             })}
           </div>
         </div>
@@ -229,7 +229,7 @@ export default function DataPerTarifPage() {
               <YAxis tick={{ fontSize:11, fontWeight:650 }} />
               <Tooltip content={<TOOLTIP />} />
               <Legend wrapperStyle={{ fontSize:13, fontWeight:600 }} />
-              <Bar dataKey="realisasi" name="Realisasi" fill={met?.color || '#0F4CD7'} radius={[4,4,0,0]} />
+              <Bar dataKey="realisasi" name="Realisasi" fill={met?.color || '#14A2BA'} radius={[4,4,0,0]} />
               <Bar dataKey="target" name="Target" fill="rgba(239,68,68,0.2)" stroke="#EF4444" strokeWidth={1} radius={[4,4,0,0]} />
             </BarChart>
           </ResponsiveContainer>

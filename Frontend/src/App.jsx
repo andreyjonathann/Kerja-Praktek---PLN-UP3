@@ -39,7 +39,6 @@ import PenghapusanPrrPage from '@/pages/Niaga/PenghapusanPrr'
 import TindakLanjutLbkbPage from '@/pages/Niaga/TindakLanjutLbkb'
 
 // Pemasaran Pages (legacy)
-import OverviewPemasaranPage from '@/pages/Pemasaran/OverviewPemasaran'
 import JumlahPelangganPage from '@/pages/Pemasaran/JumlahPelanggan'
 import DayaTersambungPage from '@/pages/Pemasaran/DayaTersambung'
 import PenjualanTLPage from '@/pages/Pemasaran/PenjualanTL'
@@ -107,10 +106,10 @@ export default function App() {
               {/* Protected dashboard routes */}
               <Route path="/" element={<RoleBasedHome />} />
 
-              {/* Halaman Overview khusus PIC Pemasaran */}
+              {/* Halaman Overview khusus PIC Pemasaran - di-redirect ke penjualan */}
               <Route path="/pemasaran" element={
                 <ProtectedRoute>
-                  <OverviewPemasaranPage />
+                  <Navigate to="/pemasaran/penjualan" replace />
                 </ProtectedRoute>
               } />
 

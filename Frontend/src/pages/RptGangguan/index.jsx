@@ -219,7 +219,7 @@ export default function RptGangguanPage() {
             icon={Plus} 
             label="Input RPT Gangguan" 
             onClick={() => navigate('/jaringan/input-rpt-gangguan')}
-            colorHex="#2563EB"
+            colorHex="#14A2BA"
             colorRgb="37, 99, 235"
           />
         )}
@@ -235,7 +235,7 @@ export default function RptGangguanPage() {
                   <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} dx={-10} domain={[0, 'auto']} />
                   <Tooltip content={<CustomTooltip />} cursor={{fill: '#f8fafc'}} />
                   <Legend wrapperStyle={{ paddingTop: '20px' }} />
-                  <Line type="monotone" dataKey="Realisasi (Menit)" stroke="#2563eb" strokeWidth={3} dot={{r: 4, strokeWidth: 2}} activeDot={{r: 6}} />
+                  <Line type="monotone" dataKey="Realisasi (Menit)" stroke="#14A2BA" strokeWidth={3} dot={{r: 4, strokeWidth: 2}} activeDot={{r: 6}} />
                   <Line type="step" dataKey="Target" stroke="#ef4444" strokeWidth={2} strokeDasharray="5 5" dot={false} activeDot={false} />
                 </ComposedChart>
               </ResponsiveContainer>

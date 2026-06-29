@@ -142,12 +142,12 @@ function GangguanSwitchingContent() {
             <div
               style={{
                 width: 32, height: 32, borderRadius: 8,
-                background: 'rgba(37,99,235,0.1)',
-                border: '1px solid rgba(37,99,235,0.25)',
+                background: 'rgba(20, 162, 186,0.1)',
+                border: '1px solid rgba(20, 162, 186,0.25)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}
             >
-              <Activity size={18} color="#2563EB" />
+              <Activity size={18} color="#14A2BA" />
             </div>
             <h1 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.02em' }}>
               Gangguan Switching & Trafo Distribusi
@@ -190,10 +190,10 @@ function GangguanSwitchingContent() {
           {(user?.role === 'PIC' || user?.role === 'pic_jaringan') && (
             <div style={{
               display: 'inline-flex',
-              background: 'rgba(37, 99, 235, 0.05)',
+              background: 'rgba(20, 162, 186, 0.05)',
               padding: 4,
               borderRadius: 12,
-              border: '1px solid rgba(37, 99, 235, 0.15)',
+              border: '1px solid rgba(20, 162, 186, 0.15)',
             }}>
               <button
                 onClick={() => navigate('/jaringan/input-gangguan-switching')}
@@ -205,9 +205,9 @@ function GangguanSwitchingContent() {
                   transition: 'all 0.2s ease',
                   border: 'none',
                   cursor: 'pointer',
-                  background: '#2563EB',
+                  background: '#14A2BA',
                   color: '#FFFFFF',
-                  boxShadow: '0 2px 8px rgba(37, 99, 235, 0.25)',
+                  boxShadow: '0 2px 8px rgba(20, 162, 186, 0.25)',
                   display: 'flex', alignItems: 'center', gap: '8px'
                 }}
               >

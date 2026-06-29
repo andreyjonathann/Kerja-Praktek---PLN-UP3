@@ -39,46 +39,46 @@ export default function LoginPage() {
         {/* Top-left soft gradient */}
         <div style={{
           position: 'absolute', width: 550, height: 550, borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(15,76,215,0.08) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(20, 162, 186,0.08) 0%, transparent 70%)',
           top: -200, left: -150,
         }} />
         
         {/* Bottom-right soft gradient */}
         <div style={{
           position: 'absolute', width: 700, height: 700, borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(15,76,215,0.1) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(20, 162, 186,0.1) 0%, transparent 70%)',
           bottom: -250, right: -150,
         }} />
 
         {/* Curved Wave line overlay top-left */}
         <svg style={{ position: 'absolute', top: 0, left: 0, width: '40vw', height: 'auto', opacity: 0.15, fill: 'none' }} viewBox="0 0 500 500">
-          <path d="M-50,150 C150,100 250,300 450,200" stroke="#0F4CD7" strokeWidth="4" />
-          <path d="M-50,200 C150,150 250,350 450,250" stroke="#0F4CD7" strokeWidth="1.5" />
+          <path d="M-50,150 C150,100 250,300 450,200" stroke="#14A2BA" strokeWidth="4" />
+          <path d="M-50,200 C150,150 250,350 450,250" stroke="#14A2BA" strokeWidth="1.5" />
         </svg>
 
         {/* Curved Wave line overlay bottom-right */}
         <svg style={{ position: 'absolute', bottom: 0, right: 0, width: '45vw', height: 'auto', opacity: 0.18, fill: 'none' }} viewBox="0 0 500 500">
-          <path d="M50,350 C250,250 300,450 550,300" stroke="#0F4CD7" strokeWidth="4" />
-          <path d="M100,400 C300,300 350,500 600,350" stroke="#0F4CD7" strokeWidth="2" />
+          <path d="M50,350 C250,250 300,450 550,300" stroke="#14A2BA" strokeWidth="4" />
+          <path d="M100,400 C300,300 350,500 600,350" stroke="#14A2BA" strokeWidth="2" />
         </svg>
 
         {/* Dot pattern grids (left and right) */}
         <svg width="80" height="120" style={{ position: 'absolute', top: '25%', left: '8%', opacity: 0.25 }} viewBox="0 0 80 120">
           <pattern id="dot-pattern-login-1" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
-            <circle cx="3" cy="3" r="2.5" fill="#0F4CD7" />
+            <circle cx="3" cy="3" r="2.5" fill="#14A2BA" />
           </pattern>
           <rect width="80" height="120" fill="url(#dot-pattern-login-1)" />
         </svg>
 
         <svg width="80" height="120" style={{ position: 'absolute', top: '15%', right: '8%', opacity: 0.25 }} viewBox="0 0 80 120">
           <pattern id="dot-pattern-login-2" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
-            <circle cx="3" cy="3" r="2.5" fill="#0F4CD7" />
+            <circle cx="3" cy="3" r="2.5" fill="#14A2BA" />
           </pattern>
           <rect width="80" height="120" fill="url(#dot-pattern-login-2)" />
         </svg>
 
         {/* Transmission tower watermark bottom-right */}
-        <svg style={{ position: 'absolute', right: '4%', bottom: '5%', height: '50%', width: 'auto', opacity: 0.08 }} viewBox="0 0 400 800" fill="none" stroke="#0F4CD7" strokeWidth="4">
+        <svg style={{ position: 'absolute', right: '4%', bottom: '5%', height: '50%', width: 'auto', opacity: 0.08 }} viewBox="0 0 400 800" fill="none" stroke="#14A2BA" strokeWidth="4">
           <path d="M120 750 L280 750 M140 750 L180 500 L220 500 L260 750 M180 500 L190 300 L210 300 L220 500 M190 300 L195 100 L205 100 L210 300 M195 100 L200 20 L205 100" />
           <path d="M150 620 L250 620 M170 500 L230 500 M185 380 L215 380 M190 300 L210 300 M193 200 L207 200" />
           <path d="M80 380 L320 380 M100 300 L300 300 M120 200 L280 200" />
@@ -87,7 +87,7 @@ export default function LoginPage() {
         </svg>
 
         {/* City skyline transparent watermark at bottom-right */}
-        <svg style={{ position: 'absolute', right: 0, bottom: 0, width: '50vw', height: 'auto', opacity: 0.06 }} viewBox="0 0 800 200" fill="#0F4CD7">
+        <svg style={{ position: 'absolute', right: 0, bottom: 0, width: '50vw', height: 'auto', opacity: 0.06 }} viewBox="0 0 800 200" fill="#14A2BA">
           <path d="M0,200 L800,200 L800,160 L780,160 L780,180 L760,180 L760,150 L750,150 L750,180 L730,180 L730,130 L710,130 L710,180 L680,180 L680,140 L650,140 L650,180 L630,180 L630,120 L610,120 L610,180 L580,180 L580,150 L560,150 L560,180 L540,180 L540,110 L520,110 L520,180 L490,180 L490,135 L470,135 L470,180 L440,180 L440,160 L420,160 L420,180 L390,180 L390,120 L370,120 L370,180 L340,180 L340,145 L320,145 L320,180 L300,180 L300,100 L280,100 L280,180 L250,180 L250,130 L230,130 L230,180 L200,180 L200,150 L180,150 L180,180 L160,180 L160,115 L140,115 L140,180 L110,180 L110,140 L90,140 L90,180 L60,180 L60,130 L40,130 L40,180 L0,180 Z" />
         </svg>
       </div>
@@ -97,12 +97,12 @@ export default function LoginPage() {
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 28 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
             <PlnLogo size={52} showText={false} />
-            <span style={{ fontSize: '2.5rem', fontWeight: 950, color: '#0F4CD7', letterSpacing: '1px' }}>PLN</span>
+            <span style={{ fontSize: '2.5rem', fontWeight: 950, color: '#14A2BA', letterSpacing: '1px' }}>PLN</span>
           </div>
           <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0F172A', textAlign: 'center', letterSpacing: '-0.01em', lineHeight: 1.3 }}>
             Dashboard Monitoring Pekerjaan Harian
           </h2>
-          <p style={{ fontSize: '0.875rem', color: '#0F4CD7', fontWeight: 700, marginTop: 4 }}>
+          <p style={{ fontSize: '0.875rem', color: '#14A2BA', fontWeight: 700, marginTop: 4 }}>
             UP3 Kebon Jeruk
           </p>
         </div>
@@ -111,13 +111,13 @@ export default function LoginPage() {
         <div style={{
           background: '#FFFFFF',
           borderRadius: 24,
-          boxShadow: '0 20px 50px rgba(15, 76, 215, 0.06), 0 0 0 1px rgba(15, 76, 215, 0.04)',
+          boxShadow: '0 20px 50px rgba(20, 162, 186, 0.06), 0 0 0 1px rgba(20, 162, 186, 0.04)',
           overflow: 'hidden',
           width: '100%',
         }}>
           {/* Card Header with Blue PLN Gradient */}
           <div style={{
-            background: 'linear-gradient(135deg, #0F4CD7, #1E63F5, #2F7BFF)',
+            background: 'linear-gradient(135deg, #14A2BA, #14A2BA, #14A2BA)',
             padding: '26px 24px 28px',
             color: '#FFFFFF',
             position: 'relative',
@@ -168,7 +168,7 @@ export default function LoginPage() {
                   Username atau Email
                 </label>
                 <div style={{ position: 'relative' }}>
-                  <Mail size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#0F4CD7' }} />
+                  <Mail size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#14A2BA' }} />
                   <input
                     type="text"
                     style={{
@@ -185,8 +185,8 @@ export default function LoginPage() {
                       transition: 'all 0.15s',
                     }}
                     onFocus={e => {
-                      e.target.style.borderColor = '#0F4CD7';
-                      e.target.style.boxShadow = '0 0 0 3px rgba(15, 76, 215, 0.1)';
+                      e.target.style.borderColor = '#14A2BA';
+                      e.target.style.boxShadow = '0 0 0 3px rgba(20, 162, 186, 0.1)';
                     }}
                     onBlur={e => {
                       e.target.style.borderColor = '#CBD5E1';
@@ -206,7 +206,7 @@ export default function LoginPage() {
                   Kata Sandi
                 </label>
                 <div style={{ position: 'relative' }}>
-                  <Lock size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#0F4CD7' }} />
+                  <Lock size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#14A2BA' }} />
                   <input
                     type={showPw ? 'text' : 'password'}
                     style={{
@@ -223,8 +223,8 @@ export default function LoginPage() {
                       transition: 'all 0.15s',
                     }}
                     onFocus={e => {
-                      e.target.style.borderColor = '#0F4CD7';
-                      e.target.style.boxShadow = '0 0 0 3px rgba(15, 76, 215, 0.1)';
+                      e.target.style.borderColor = '#14A2BA';
+                      e.target.style.boxShadow = '0 0 0 3px rgba(20, 162, 186, 0.1)';
                     }}
                     onBlur={e => {
                       e.target.style.borderColor = '#CBD5E1';
@@ -260,7 +260,7 @@ export default function LoginPage() {
                   fontWeight: 700,
                   marginTop: 6,
                   borderRadius: 12,
-                  background: 'linear-gradient(135deg, #0F4CD7, #1E63F5)',
+                  background: 'linear-gradient(135deg, #14A2BA, #14A2BA)',
                   color: '#FFFFFF',
                   border: 'none',
                   cursor: 'pointer',
@@ -268,18 +268,18 @@ export default function LoginPage() {
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: 8,
-                  boxShadow: '0 8px 20px rgba(15, 76, 215, 0.2)',
+                  boxShadow: '0 8px 20px rgba(20, 162, 186, 0.2)',
                   transition: 'all 0.2s',
                 }}
                 onMouseEnter={e => {
                   e.currentTarget.style.opacity = '0.95';
                   e.currentTarget.style.transform = 'translateY(-1px)';
-                  e.currentTarget.style.boxShadow = '0 10px 24px rgba(15, 76, 215, 0.25)';
+                  e.currentTarget.style.boxShadow = '0 10px 24px rgba(20, 162, 186, 0.25)';
                 }}
                 onMouseLeave={e => {
                   e.currentTarget.style.opacity = '1';
                   e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 8px 20px rgba(15, 76, 215, 0.2)';
+                  e.currentTarget.style.boxShadow = '0 8px 20px rgba(20, 162, 186, 0.2)';
                 }}
               >
                 {loading ? (

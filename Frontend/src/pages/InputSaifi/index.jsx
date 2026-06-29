@@ -183,7 +183,7 @@ export default function InputSaifiPage() {
              </div>
              <div style={{
                display: 'inline-flex',
-               background: '#2563eb',
+               background: '#14A2BA',
                padding: 4,
                borderRadius: 12,
                border: 'none',
@@ -202,9 +202,9 @@ export default function InputSaifiPage() {
                     transition: 'all 0.2s ease',
                     border: 'none',
                     cursor: loading ? 'not-allowed' : 'pointer',
-                    background: loading ? '#93c5fd' : '#2563eb',
+                    background: loading ? '#E7F6F9' : '#14A2BA',
                     color: '#ffffff',
-                    boxShadow: loading ? 'none' : '0 4px 12px rgba(37, 99, 235, 0.3)',
+                    boxShadow: loading ? 'none' : '0 4px 12px rgba(20, 162, 186, 0.3)',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '8px'
@@ -216,7 +216,7 @@ export default function InputSaifiPage() {
                   }}
                   onMouseLeave={e => {
                      if(!loading) {
-                       e.currentTarget.style.background = '#2563eb'; e.currentTarget.style.color = '#ffffff';
+                       e.currentTarget.style.background = '#14A2BA'; e.currentTarget.style.color = '#ffffff';
                      }
                   }}
                >

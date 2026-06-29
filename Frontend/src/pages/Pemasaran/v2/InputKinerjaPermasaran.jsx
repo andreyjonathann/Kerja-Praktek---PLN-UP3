@@ -8,12 +8,13 @@
  * - Notifikasi sukses/gagal inline
  */
 import React, { useState, useEffect, useCallback } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { MONTHS } from '@/utils/constants'
 import {
   CheckCircle, AlertCircle, Activity, Save, Calendar,
   ShoppingCart, Users, Zap, Wallet, Plus, Trash2, RefreshCw,
-  Eye, Edit3,
+  Eye, Edit3, ArrowLeft,
 } from 'lucide-react'
 import {
   getMonthlyTarget, saveRealisasi, getRealisasi,
@@ -22,7 +23,7 @@ import {
 import { formatNumber } from '@/utils/formatters'
 
 // ─── Komponen UI helpers ──────────────────────────────────────────────────────
-function SectionCard({ icon: Icon, title, desc, color = 'indigo', children }) {
+function SectionCard({ icon: Icon, title, desc, color = 'indigo', hideHeader = false, children }) {
   const colorMap = {
     indigo: { bg: 'bg-indigo-100', text: 'text-indigo-600' },
     green:  { bg: 'bg-green-100',  text: 'text-green-600'  },
@@ -34,15 +35,17 @@ function SectionCard({ icon: Icon, title, desc, color = 'indigo', children }) {
   const c = colorMap[color]
   return (
     <div className="bg-white rounded-none shadow-sm border border-slate-200 overflow-hidden hover:shadow-xl transition-shadow duration-300">
-      <div className="bg-gradient-to-r from-slate-50 to-white border-b border-slate-100 p-5 lg:px-8 flex items-center gap-4">
-        <div className={`w-10 h-10 ${c.bg} ${c.text} rounded-none flex items-center justify-center shadow-inner flex-shrink-0`}>
-          <Icon size={20} />
+      {!hideHeader && (
+        <div className="bg-gradient-to-r from-slate-50 to-white border-b border-slate-100 p-5 lg:px-8 flex items-center gap-4">
+          <div className={`w-10 h-10 ${c.bg} ${c.text} rounded-none flex items-center justify-center shadow-inner flex-shrink-0`}>
+            <Icon size={20} />
+          </div>
+          <div>
+            <h2 className="font-extrabold text-xl text-slate-800 tracking-tight">{title}</h2>
+            {desc && <p className="text-slate-500 text-sm font-medium mt-0.5">{desc}</p>}
+          </div>
         </div>
-        <div>
-          <h2 className="font-extrabold text-xl text-slate-800 tracking-tight">{title}</h2>
-          {desc && <p className="text-slate-500 text-sm font-medium mt-0.5">{desc}</p>}
-        </div>
-      </div>
+      )}
       {children}
     </div>
   )
@@ -114,6 +117,9 @@ function MatriksTable({ title, columns, rows }) {
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function InputKinerjaPermasaranPage() {
   const { user } = useAuth()
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const typeParam = searchParams.get('type')
 
   // ── Periode ──
   const [bulan,  setBulan]  = useState(new Date().getMonth() + 1)
@@ -144,6 +150,38 @@ export default function InputKinerjaPermasaranPage() {
   const [saving,   setSaving]   = useState(false)
   const [toast,    setToast]    = useState(null) // { type: 'success'|'error', msg }
   const [prefilled, setPrefilled] = useState(false)
+  const [activeTab, setActiveTab] = useState('penjualan')
+
+  const tabs = [
+    { id: 'penjualan', label: 'Penjualan', icon: ShoppingCart, color: 'green' },
+    { id: 'pelanggan', label: 'Pelanggan', icon: Users, color: 'blue' },
+    { id: 'daya', label: 'Daya Tersambung', icon: Zap, color: 'orange' },
+    { id: 'pendapatan', label: 'Pendapatan BP', icon: Wallet, color: 'purple' },
+    { id: 'pln_mobile', label: 'PLN Mobile', icon: Activity, color: 'teal' },
+    { id: 'program', label: 'Program/Upaya', icon: Users, color: 'indigo' },
+  ]
+
+  // Set active tab from query parameter if present
+  useEffect(() => {
+    if (typeParam && ['penjualan', 'pelanggan', 'daya', 'pendapatan', 'pln_mobile', 'program'].includes(typeParam)) {
+      setActiveTab(typeParam)
+    }
+  }, [typeParam])
+
+  const getHeaderTitle = () => {
+    if (typeParam) {
+      const titleMap = {
+        penjualan: 'Matriks Penjualan (kWh)',
+        pelanggan: 'Matriks Jumlah Pelanggan',
+        daya: 'Matriks Daya Tersambung (kVA)',
+        pendapatan: 'Matriks Pendapatan BP',
+        pln_mobile: 'Matriks PLN Mobile',
+        program: 'Program / Upaya Penambahan Pelanggan',
+      }
+      return titleMap[activeTab] || 'Input KPI Pemasaran'
+    }
+    return 'Input KPI Pemasaran'
+  }
 
   // ─── Load target + prefill saat periode berubah ────────────────────────────
   useEffect(() => {
@@ -259,17 +297,28 @@ export default function InputKinerjaPermasaranPage() {
     <div className="p-4 md:p-6 lg:p-10 animate-fade-in w-full flex flex-col gap-8">
 
       {/* ── Header ─────────────────────────────────────────────────────── */}
-      <div>
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-green-50 text-green-700 rounded-none text-sm font-bold mb-4 border border-green-100 shadow-sm">
-          <Activity size={15} />
-          <span>Form Realisasi Bulanan — Pemasaran</span>
+      <div className="flex items-center gap-5">
+        <button 
+          type="button" 
+          onClick={() => navigate(-1)}
+          className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-all shadow-sm flex-shrink-0"
+        >
+          <ArrowLeft size={18} />
+        </button>
+        <div>
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-green-50 text-green-700 rounded-none text-sm font-bold mb-4 border border-green-100 shadow-sm">
+            <Activity size={15} />
+            <span>Form Realisasi Bulanan — Pemasaran</span>
+          </div>
+          <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight mb-2">
+            {typeParam ? getHeaderTitle() : (
+              <>Input KPI <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-emerald-600">Pemasaran</span></>
+            )}
+          </h1>
+          <p className="text-slate-500 text-base leading-relaxed max-w-3xl">
+            Masukkan realisasi KPI Pemasaran bulanan. Data langsung tercermin di semua halaman visualisasi.
+          </p>
         </div>
-        <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight mb-2">
-          Input KPI <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-emerald-600">Pemasaran</span>
-        </h1>
-        <p className="text-slate-500 text-base leading-relaxed max-w-3xl">
-          Masukkan realisasi KPI Pemasaran bulanan. Data langsung tercermin di semua halaman visualisasi.
-        </p>
       </div>
 
       {/* ── Toast ─────────────────────────────────────────────────────── */}
@@ -338,7 +387,7 @@ export default function InputKinerjaPermasaranPage() {
                 <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{label}</p>
                 <p className="text-xl font-extrabold text-slate-800">{formatNumber(real)}<span className="text-xs text-slate-400 ml-1">{unit}</span></p>
                 <div className="mt-2 h-1.5 bg-slate-100 rounded-none overflow-hidden">
-                  <div className="h-full rounded-none transition-all duration-500" style={{ width: `${Math.min(p, 100)}%`, background: p >= 100 ? '#10B981' : '#0F4CD7' }} />
+                  <div className="h-full rounded-none transition-all duration-500" style={{ width: `${Math.min(p, 100)}%`, background: p >= 100 ? '#10B981' : '#14A2BA' }} />
                 </div>
                 <p className="text-xs text-slate-400 mt-1">{p}% dari target {formatNumber(tgt)}</p>
               </div>
@@ -347,172 +396,217 @@ export default function InputKinerjaPermasaranPage() {
         </div>
       )}
 
-      {/* ── 2. Matriks Penjualan ─────────────────────────────────────────── */}
-      <SectionCard icon={ShoppingCart} color="green" title="A. Matriks Penjualan (kWh & Rupiah)" desc="Target read-only · Isi kolom Realisasi">
-        <MatriksTable
-          rows={penjualanRows}
-          columns={[
-            { key:'target_kwh',    label:'Target kWh',      readOnly: true, th:'text-blue-600 bg-blue-50/50' },
-            { key:'realisasi_kwh', label:'Realisasi kWh',   readOnly: false, onChange:(k,v) => setPenjualanKwh(p=>({...p,[k]:v})), th:'text-green-600' },
-            { key:'realisasi_rp',  label:'Realisasi Rp (jt)',readOnly: false, onChange:(k,v) => setPenjualanRp(p=>({...p,[k]:v})),  th:'text-purple-600' },
-          ]}
-        />
-        <div className="bg-slate-50 border-t border-slate-200 px-5 py-3 flex justify-between items-center">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Realisasi kWh</span>
-          <span className="font-extrabold text-slate-800 text-base">{formatNumber(totalPenjKwh)} kWh</span>
+      {/* ── Tab Navigation ────────────────────────────────────────────── */}
+      {!typeParam && (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 bg-slate-100/50 p-2 border border-slate-200">
+          {tabs.map(t => {
+            const Icon = t.icon
+            const isActive = activeTab === t.id
+            
+            const activeColors = {
+              green: 'bg-green-600 text-white border-green-700 hover:bg-green-700',
+              blue: 'bg-blue-600 text-white border-blue-700 hover:bg-blue-700',
+              orange: 'bg-orange-600 text-white border-orange-700 hover:bg-orange-700',
+              purple: 'bg-purple-600 text-white border-purple-700 hover:bg-purple-700',
+              teal: 'bg-teal-600 text-white border-teal-700 hover:bg-teal-700',
+              indigo: 'bg-indigo-600 text-white border-indigo-700 hover:bg-indigo-700'
+            }
+            
+            return (
+              <button
+                key={t.id}
+                onClick={() => setActiveTab(t.id)}
+                type="button"
+                className={`flex items-center justify-center gap-2 px-3 py-3 rounded-none font-bold text-xs border transition-all duration-150 cursor-pointer
+                  ${isActive 
+                    ? `${activeColors[t.color]} shadow-md` 
+                    : 'bg-white border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50'}`}
+              >
+                <Icon size={14} className="flex-shrink-0" />
+                <span>{t.label}</span>
+              </button>
+            )
+          })}
         </div>
-      </SectionCard>
+      )}
+
+      {/* ── 2. Matriks Penjualan ─────────────────────────────────────────── */}
+      {activeTab === 'penjualan' && (
+        <SectionCard icon={ShoppingCart} color="green" title="A. Matriks Penjualan (kWh)" desc="Target read-only · Isi kolom Realisasi" hideHeader={!!typeParam}>
+          <MatriksTable
+            rows={penjualanRows}
+            columns={[
+              { key:'target_kwh',    label:'Target kWh',      readOnly: true, th:'text-blue-600 bg-blue-50/50' },
+              { key:'realisasi_kwh', label:'Realisasi kWh',   readOnly: false, onChange:(k,v) => setPenjualanKwh(p=>({...p,[k]:v})), th:'text-green-600' },
+            ]}
+          />
+          <div className="bg-slate-50 border-t border-slate-200 px-5 py-3 flex justify-between items-center">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Realisasi kWh</span>
+            <span className="font-extrabold text-slate-800 text-base">{formatNumber(totalPenjKwh)} kWh</span>
+          </div>
+        </SectionCard>
+      )}
 
       {/* ── 3. Matriks Pelanggan ─────────────────────────────────────────── */}
-      <SectionCard icon={Users} color="blue" title="B. Matriks Jumlah Pelanggan" desc="Penambahan pelanggan baru per golongan tarif">
-        <MatriksTable
-          rows={pelangganRows}
-          columns={[
-            { key:'target_plg',    label:'Target Plg',      readOnly: true, th:'text-blue-600 bg-blue-50/50' },
-            { key:'realisasi_plg', label:'Realisasi Plg Baru', readOnly: false, onChange:(k,v) => setPelanggan(p=>({...p,[k]:v})), th:'text-green-600' },
-          ]}
-        />
-        <div className="bg-slate-50 border-t border-slate-200 px-5 py-3 flex justify-between items-center">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Realisasi Pelanggan</span>
-          <span className="font-extrabold text-slate-800 text-base">{formatNumber(totalPelanggan)} plg</span>
-        </div>
-      </SectionCard>
+      {activeTab === 'pelanggan' && (
+        <SectionCard icon={Users} color="blue" title="B. Matriks Jumlah Pelanggan" desc="Penambahan pelanggan baru per golongan tarif" hideHeader={!!typeParam}>
+          <MatriksTable
+            rows={pelangganRows}
+            columns={[
+              { key:'target_plg',    label:'Target Plg',      readOnly: true, th:'text-blue-600 bg-blue-50/50' },
+              { key:'realisasi_plg', label:'Realisasi Plg Baru', readOnly: false, onChange:(k,v) => setPelanggan(p=>({...p,[k]:v})), th:'text-green-600' },
+            ]}
+          />
+          <div className="bg-slate-50 border-t border-slate-200 px-5 py-3 flex justify-between items-center">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Realisasi Pelanggan</span>
+            <span className="font-extrabold text-slate-800 text-base">{formatNumber(totalPelanggan)} plg</span>
+          </div>
+        </SectionCard>
+      )}
 
       {/* ── 4. Matriks Daya Tersambung ─────────────────────────────────────── */}
-      <SectionCard icon={Zap} color="orange" title="C. Matriks Daya Tersambung (kVA)" desc="Penambahan daya tersambung per golongan tarif">
-        <MatriksTable
-          rows={dayaRows}
-          columns={[
-            { key:'target_va',    label:'Target VA',      readOnly: true, th:'text-blue-600 bg-blue-50/50' },
-            { key:'realisasi_va', label:'Realisasi VA',   readOnly: false, onChange:(k,v) => setDayaVa(p=>({...p,[k]:v})), th:'text-orange-600' },
-          ]}
-        />
-        <div className="bg-slate-50 border-t border-slate-200 px-5 py-3 flex justify-between items-center">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Realisasi Daya</span>
-          <span className="font-extrabold text-slate-800 text-base">{formatNumber(totalDaya)} kVA</span>
-        </div>
-      </SectionCard>
+      {activeTab === 'daya' && (
+        <SectionCard icon={Zap} color="orange" title="C. Matriks Daya Tersambung (kVA)" desc="Penambahan daya tersambung per golongan tarif" hideHeader={!!typeParam}>
+          <MatriksTable
+            rows={dayaRows}
+            columns={[
+              { key:'target_va',    label:'Target VA',      readOnly: true, th:'text-blue-600 bg-blue-50/50' },
+              { key:'realisasi_va', label:'Realisasi VA',   readOnly: false, onChange:(k,v) => setDayaVa(p=>({...p,[k]:v})), th:'text-orange-600' },
+            ]}
+          />
+          <div className="bg-slate-50 border-t border-slate-200 px-5 py-3 flex justify-between items-center">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Realisasi Daya</span>
+            <span className="font-extrabold text-slate-800 text-base">{formatNumber(totalDaya)} kVA</span>
+          </div>
+        </SectionCard>
+      )}
 
       {/* ── 5. Pendapatan TL ─────────────────────────────────────────────── */}
-      <SectionCard icon={Wallet} color="purple" title="D. Pendapatan TL (Biaya Pasang / Tambah Daya)" desc="Juta Rupiah">
-        <div className="p-6 lg:p-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Target read-only */}
-            <div className="bg-slate-50 border border-slate-200 rounded-none p-4">
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1"><Eye size={11}/>Target Rp (Miliar)</p>
-              <p className="text-2xl font-extrabold text-slate-700">{target ? formatNumber(target.pendapatan_rp) : '—'}</p>
-              <p className="text-xs text-slate-400 mt-1">Juta Rp</p>
+      {activeTab === 'pendapatan' && (
+        <SectionCard icon={Wallet} color="purple" title="D. Pendapatan TL (Biaya Pasang / Tambah Daya)" desc="Juta Rupiah" hideHeader={!!typeParam}>
+          <div className="p-6 lg:p-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Target read-only */}
+              <div className="bg-slate-50 border border-slate-200 rounded-none p-4">
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1"><Eye size={11}/>Target Rp (Miliar)</p>
+                <p className="text-2xl font-extrabold text-slate-700">{target ? formatNumber(target.pendapatan_rp) : '—'}</p>
+                <p className="text-xs text-slate-400 mt-1">Juta Rp</p>
+              </div>
+              {/* Input PB */}
+              <div>
+                <label className="block text-sm font-extrabold text-slate-700 mb-2 uppercase tracking-wider">Realisasi Biaya Pasang Baru</label>
+                <NumInput value={pendapatanPB} onChange={setPendapatanPB} placeholder="0.00" />
+                <p className="text-xs text-slate-400 mt-1">Juta Rp</p>
+              </div>
+              {/* Input TD */}
+              <div>
+                <label className="block text-sm font-extrabold text-slate-700 mb-2 uppercase tracking-wider">Realisasi Biaya Tambah Daya</label>
+                <NumInput value={pendapatanTD} onChange={setPendapatanTD} placeholder="0.00" />
+                <p className="text-xs text-slate-400 mt-1">Juta Rp</p>
+              </div>
             </div>
-            {/* Input PB */}
-            <div>
-              <label className="block text-sm font-extrabold text-slate-700 mb-2 uppercase tracking-wider">Realisasi Biaya Pasang Baru</label>
-              <NumInput value={pendapatanPB} onChange={setPendapatanPB} placeholder="0.00" />
-              <p className="text-xs text-slate-400 mt-1">Juta Rp</p>
-            </div>
-            {/* Input TD */}
-            <div>
-              <label className="block text-sm font-extrabold text-slate-700 mb-2 uppercase tracking-wider">Realisasi Biaya Tambah Daya</label>
-              <NumInput value={pendapatanTD} onChange={setPendapatanTD} placeholder="0.00" />
-              <p className="text-xs text-slate-400 mt-1">Juta Rp</p>
+            <div className="mt-4 bg-purple-50 border border-purple-100 rounded-none px-4 py-3 flex justify-between items-center">
+              <span className="text-sm font-bold text-purple-700">Total Pendapatan BP</span>
+              <span className="text-xl font-extrabold text-purple-700">Rp {formatNumber(totalPendapatan)} jt</span>
             </div>
           </div>
-          <div className="mt-4 bg-purple-50 border border-purple-100 rounded-none px-4 py-3 flex justify-between items-center">
-            <span className="text-sm font-bold text-purple-700">Total Pendapatan BP</span>
-            <span className="text-xl font-extrabold text-purple-700">Rp {formatNumber(totalPendapatan)} jt</span>
-          </div>
-        </div>
-      </SectionCard>
+        </SectionCard>
+      )}
 
       {/* ── 6. PLN Mobile ─────────────────────────────────────────────────── */}
-      <SectionCard icon={Activity} color="teal" title="E. PLN Mobile" desc="Transaksi digital — Jumlah pengguna, transaksi & nilai">
-        <div className="p-6 lg:p-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div>
-              <label className="block text-sm font-extrabold text-slate-700 mb-2 uppercase tracking-wider">Jumlah Pengguna Aktif</label>
-              <NumInput value={mobilePengguna} onChange={setMobilePengguna} placeholder="0" />
-              <p className="text-xs text-slate-400 mt-1">user</p>
-            </div>
-            {/* Target Transaksi read-only */}
-            <div className="bg-slate-50 border border-slate-200 rounded-none p-4">
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1"><Eye size={11}/>Target Transaksi</p>
-              <p className="text-2xl font-extrabold text-slate-700">{target ? formatNumber(target.pln_mobile_transaksi_target) : '—'}</p>
-              <p className="text-xs text-slate-400 mt-1">trx</p>
-            </div>
-            <div>
-              <label className="block text-sm font-extrabold text-slate-700 mb-2 uppercase tracking-wider">Realisasi Jumlah Transaksi</label>
-              <NumInput value={mobileTrx} onChange={setMobileTrx} placeholder="0" />
-              <p className="text-xs text-slate-400 mt-1">trx</p>
-            </div>
-            {/* Target Nilai read-only */}
-            <div className="bg-slate-50 border border-slate-200 rounded-none p-4">
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1"><Eye size={11}/>Target Nilai Trx</p>
-              <p className="text-2xl font-extrabold text-slate-700">{target ? formatNumber(target.pln_mobile_nilai_target) : '—'}</p>
-              <p className="text-xs text-slate-400 mt-1">Juta Rp</p>
-            </div>
-            <div>
-              <label className="block text-sm font-extrabold text-slate-700 mb-2 uppercase tracking-wider">Realisasi Nilai Transaksi</label>
-              <NumInput value={mobileNilai} onChange={setMobileNilai} placeholder="0.00" />
-              <p className="text-xs text-slate-400 mt-1">Juta Rp</p>
+      {activeTab === 'pln_mobile' && (
+        <SectionCard icon={Activity} color="teal" title="E. PLN Mobile" desc="Transaksi digital — Jumlah pengguna, transaksi & nilai" hideHeader={!!typeParam}>
+          <div className="p-6 lg:p-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div>
+                <label className="block text-sm font-extrabold text-slate-700 mb-2 uppercase tracking-wider">Jumlah Pengguna Aktif</label>
+                <NumInput value={mobilePengguna} onChange={setMobilePengguna} placeholder="0" />
+                <p className="text-xs text-slate-400 mt-1">user</p>
+              </div>
+              {/* Target Transaksi read-only */}
+              <div className="bg-slate-50 border border-slate-200 rounded-none p-4">
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1"><Eye size={11}/>Target Transaksi</p>
+                <p className="text-2xl font-extrabold text-slate-700">{target ? formatNumber(target.pln_mobile_transaksi_target) : '—'}</p>
+                <p className="text-xs text-slate-400 mt-1">trx</p>
+              </div>
+              <div>
+                <label className="block text-sm font-extrabold text-slate-700 mb-2 uppercase tracking-wider">Realisasi Jumlah Transaksi</label>
+                <NumInput value={mobileTrx} onChange={setMobileTrx} placeholder="0" />
+                <p className="text-xs text-slate-400 mt-1">trx</p>
+              </div>
+              {/* Target Nilai read-only */}
+              <div className="bg-slate-50 border border-slate-200 rounded-none p-4">
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1"><Eye size={11}/>Target Nilai Trx</p>
+                <p className="text-2xl font-extrabold text-slate-700">{target ? formatNumber(target.pln_mobile_nilai_target) : '—'}</p>
+                <p className="text-xs text-slate-400 mt-1">Juta Rp</p>
+              </div>
+              <div>
+                <label className="block text-sm font-extrabold text-slate-700 mb-2 uppercase tracking-wider">Realisasi Nilai Transaksi</label>
+                <NumInput value={mobileNilai} onChange={setMobileNilai} placeholder="0.00" />
+                <p className="text-xs text-slate-400 mt-1">Juta Rp</p>
+              </div>
             </div>
           </div>
-        </div>
-      </SectionCard>
+        </SectionCard>
+      )}
 
       {/* ── 7. Program / Upaya ─────────────────────────────────────────── */}
-      <SectionCard icon={Users} color="indigo" title="F. Program / Upaya Penambahan Pelanggan" desc="Tabel dinamis — tambah atau hapus baris">
-        <div className="p-6 lg:p-8">
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse min-w-[500px]">
-              <thead>
-                <tr className="bg-slate-50 border-b-2 border-slate-200">
-                  {['No','Nama Program / Upaya','Keterangan / Lokasi','Jumlah (Plg)',''].map(h => (
-                    <th key={h} className="py-3 px-4 text-xs font-extrabold text-slate-500 uppercase tracking-widest text-left">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {programs.map((row, i) => (
-                  <tr key={i} className="group hover:bg-indigo-50/20 transition-colors">
-                    <td className="py-3 px-4 text-sm font-bold text-slate-400 w-10">{i+1}</td>
-                    <td className="py-2 px-3">
-                      <input value={row.nama} onChange={e => setPrograms(p => p.map((r,idx)=>idx===i?{...r,nama:e.target.value}:r))}
-                        className="w-full pl-3 py-2.5 bg-slate-50 border border-slate-200 rounded-none outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-semibold text-slate-700 text-sm transition-all"
-                        placeholder="Nama program..." />
-                    </td>
-                    <td className="py-2 px-3">
-                      <input value={row.keterangan} onChange={e => setPrograms(p => p.map((r,idx)=>idx===i?{...r,keterangan:e.target.value}:r))}
-                        className="w-full pl-3 py-2.5 bg-slate-50 border border-slate-200 rounded-none outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-semibold text-slate-700 text-sm transition-all"
-                        placeholder="Lokasi / keterangan..." />
-                    </td>
-                    <td className="py-2 px-3 w-28">
-                      <input type="number" min="0" value={row.jumlah} onChange={e => setPrograms(p => p.map((r,idx)=>idx===i?{...r,jumlah:e.target.value}:r))}
-                        className="w-full pl-3 py-2.5 bg-slate-50 border border-slate-200 rounded-none outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-extrabold text-slate-700 text-center transition-all"
-                        placeholder="0" />
-                    </td>
-                    <td className="py-2 px-3 w-10">
-                      {programs.length > 1 && (
-                        <button onClick={() => setPrograms(p=>p.filter((_,idx)=>idx!==i))} type="button"
-                          className="w-8 h-8 flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-red-50 rounded-none transition-all opacity-0 group-hover:opacity-100">
-                          <Trash2 size={14}/>
-                        </button>
-                      )}
-                    </td>
+      {activeTab === 'program' && (
+        <SectionCard icon={Users} color="indigo" title="F. Program / Upaya Penambahan Pelanggan" desc="Tabel dinamis — tambah atau hapus baris" hideHeader={!!typeParam}>
+          <div className="p-6 lg:p-8">
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse min-w-[500px]">
+                <thead>
+                  <tr className="bg-slate-50 border-b-2 border-slate-200">
+                    {['No','Nama Program / Upaya','Keterangan / Lokasi','Jumlah (Plg)',''].map(h => (
+                      <th key={h} className="py-3 px-4 text-xs font-extrabold text-slate-500 uppercase tracking-widest text-left">{h}</th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {programs.map((row, i) => (
+                    <tr key={i} className="group hover:bg-indigo-50/20 transition-colors">
+                      <td className="py-3 px-4 text-sm font-bold text-slate-400 w-10">{i+1}</td>
+                      <td className="py-2 px-3">
+                        <input value={row.nama} onChange={e => setPrograms(p => p.map((r,idx)=>idx===i?{...r,nama:e.target.value}:r))}
+                          className="w-full pl-3 py-2.5 bg-slate-50 border border-slate-200 rounded-none outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-semibold text-slate-700 text-sm transition-all"
+                          placeholder="Nama program..." />
+                      </td>
+                      <td className="py-2 px-3">
+                        <input value={row.keterangan} onChange={e => setPrograms(p => p.map((r,idx)=>idx===i?{...r,keterangan:e.target.value}:r))}
+                          className="w-full pl-3 py-2.5 bg-slate-50 border border-slate-200 rounded-none outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-semibold text-slate-700 text-sm transition-all"
+                          placeholder="Lokasi / keterangan..." />
+                      </td>
+                      <td className="py-2 px-3 w-28">
+                        <input type="number" min="0" value={row.jumlah} onChange={e => setPrograms(p => p.map((r,idx)=>idx===i?{...r,jumlah:e.target.value}:r))}
+                          className="w-full pl-3 py-2.5 bg-slate-50 border border-slate-200 rounded-none outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-extrabold text-slate-700 text-center transition-all"
+                          placeholder="0" />
+                      </td>
+                      <td className="py-2 px-3 w-10">
+                        {programs.length > 1 && (
+                          <button onClick={() => setPrograms(p=>p.filter((_,idx)=>idx!==i))} type="button"
+                            className="w-8 h-8 flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-red-50 rounded-none transition-all opacity-0 group-hover:opacity-100">
+                            <Trash2 size={14}/>
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {/* Total + Tambah */}
+            <div className="mt-3 flex justify-between items-center px-4 py-2.5 bg-indigo-50 border border-indigo-100 rounded-none">
+              <span className="text-sm font-extrabold text-indigo-700 uppercase tracking-wider">Total Program</span>
+              <span className="text-lg font-extrabold text-indigo-700">{formatNumber(totalPrograms)} plg</span>
+            </div>
+            <button type="button" onClick={() => setPrograms(p=>[...p,{nama:'',keterangan:'',jumlah:''}])}
+              className="mt-3 flex items-center gap-2 px-4 py-2.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-none font-bold text-sm hover:bg-indigo-100 transition-colors">
+              <Plus size={15}/> Tambah Baris
+            </button>
           </div>
-          {/* Total + Tambah */}
-          <div className="mt-3 flex justify-between items-center px-4 py-2.5 bg-indigo-50 border border-indigo-100 rounded-none">
-            <span className="text-sm font-extrabold text-indigo-700 uppercase tracking-wider">Total Program</span>
-            <span className="text-lg font-extrabold text-indigo-700">{formatNumber(totalPrograms)} plg</span>
-          </div>
-          <button type="button" onClick={() => setPrograms(p=>[...p,{nama:'',keterangan:'',jumlah:''}])}
-            className="mt-3 flex items-center gap-2 px-4 py-2.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-none font-bold text-sm hover:bg-indigo-100 transition-colors">
-            <Plus size={15}/> Tambah Baris
-          </button>
-        </div>
-      </SectionCard>
+        </SectionCard>
+      )}
 
       {/* ── SIMPAN BUTTON ─────────────────────────────────────────────── */}
       <div className="pb-4">

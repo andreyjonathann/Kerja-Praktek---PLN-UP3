@@ -6,8 +6,8 @@ import { useTheme } from '@/context/ThemeContext'
 const getColors = (color, dark) => {
   const cfg = {
     blue:   dark 
-      ? { accent:'#2563EB', glow:'rgba(37,99,235,0.25)',  iconBg:'rgba(37,99,235,0.16)',  icon:'#60A5FA' }
-      : { accent:'#0F4CD7', glow:'rgba(15,76,215,0.1)',    iconBg:'rgba(15,76,215,0.08)',  icon:'#0F4CD7' },
+      ? { accent:'#14A2BA', glow:'rgba(20, 162, 186,0.25)',  iconBg:'rgba(20, 162, 186,0.16)',  icon:'#60A5FA' }
+      : { accent:'#14A2BA', glow:'rgba(20, 162, 186,0.1)',    iconBg:'rgba(20, 162, 186,0.08)',  icon:'#14A2BA' },
     green:  dark 
       ? { accent:'#10B981', glow:'rgba(16,185,129,0.25)', iconBg:'rgba(16,185,129,0.16)', icon:'#34D399' }
       : { accent:'#10B981', glow:'rgba(16,185,129,0.1)',   iconBg:'rgba(16,185,129,0.08)', icon:'#10B981' },

@@ -13,7 +13,7 @@ import ChartWrapper from '@/components/ui/ChartWrapper'
 import DataTable    from '@/components/ui/DataTable'
 import { getPemasaranData, TARIF_KEYS, TARIF_LABELS } from '@/services/pemasaranDataService'
 
-const TARIF_COLORS = ['#0F4CD7','#10B981','#F59E0B','#7C3AED','#EF4444','#0891B2','#BE185D','#059669']
+const TARIF_COLORS = ['#14A2BA','#10B981','#F59E0B','#7C3AED','#EF4444','#0891B2','#BE185D','#059669']
 
 const TOOLTIP = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
@@ -125,9 +125,9 @@ export default function JumlahPelangganPage() {
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:12 }}>
           <div style={{ display:'flex', alignItems:'center', gap:10 }}>
             <div className="icon-wrapper-interactive" style={{ width:34, height:34, borderRadius:10,
-              background:'linear-gradient(135deg,rgba(15,76,215,0.2),rgba(15,76,215,0.08))',
-              border:'1px solid rgba(15,76,215,0.25)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-              <Users size={16} style={{ color:'#0F4CD7' }} />
+              background:'linear-gradient(135deg,rgba(20, 162, 186,0.2),rgba(20, 162, 186,0.08))',
+              border:'1px solid rgba(20, 162, 186,0.25)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+              <Users size={16} style={{ color:'#14A2BA' }} />
             </div>
             <h1 className="page-heading">JUMLAH PELANGGAN — Penambahan Pelanggan Baru</h1>
           </div>
@@ -150,15 +150,15 @@ export default function JumlahPelangganPage() {
       </div>
 
       {/* Tab */}
-      <div style={{ display:'inline-flex', background:'rgba(15,76,215,0.05)', padding:4, borderRadius:12,
-        border:'1px solid rgba(15,76,215,0.08)', alignSelf:'flex-start', margin:'8px 0 12px' }}>
+      <div style={{ display:'inline-flex', background:'rgba(20, 162, 186,0.05)', padding:4, borderRadius:12,
+        border:'1px solid rgba(20, 162, 186,0.08)', alignSelf:'flex-start', margin:'8px 0 12px' }}>
         {['monthly','cumulative'].map(t => {
           const active = tab === t
           return <button key={t} onClick={() => setTab(t)} style={{ padding:'6px 16px', borderRadius:9, fontSize:'0.85rem', fontWeight:700,
             transition:'all 0.2s', border:'none', cursor:'pointer',
             background: active?'var(--bg-card)':'transparent',
             color: active?'var(--pln-blue)':'var(--text-muted)',
-            boxShadow: active?'0 2px 8px rgba(15,76,215,0.12)':'none' }}
+            boxShadow: active?'0 2px 8px rgba(20, 162, 186,0.12)':'none' }}
             onMouseEnter={e=>{if(!active)e.currentTarget.style.color='var(--text-primary)'}}
             onMouseLeave={e=>{if(!active)e.currentTarget.style.color='var(--text-muted)'}}>
             {t==='monthly'?'Bulanan':'Kumulatif'}
@@ -179,7 +179,7 @@ export default function JumlahPelangganPage() {
               <YAxis tick={{ fontSize:12.5, fontWeight:650 }} />
               <Tooltip content={<TOOLTIP />} />
               <Legend wrapperStyle={{ fontSize:13, fontWeight:600 }} />
-              <Bar  dataKey={chartKey} name="Realisasi" fill="#0F4CD7" radius={[4,4,0,0]} />
+              <Bar  dataKey={chartKey} name="Realisasi" fill="#14A2BA" radius={[4,4,0,0]} />
               <Line dataKey={tgtKey}   name="Target" stroke="#EF4444" strokeWidth={2} strokeDasharray="5 5" dot={{ r:4, fill:'#EF4444' }} />
             </ComposedChart>
           </ResponsiveContainer>

@@ -145,8 +145,8 @@ export default function PelunasanPrrPage() {
         margin: '12px 0 16px',
       }}>
         <div style={{
-          display: 'inline-flex', background: 'rgba(15,76,215,0.05)', padding: 4,
-          borderRadius: 12, border: '1px solid rgba(15,76,215,0.08)',
+          display: 'inline-flex', background: 'rgba(20, 162, 186,0.05)', padding: 4,
+          borderRadius: 12, border: '1px solid rgba(20, 162, 186,0.08)',
         }}>
           {['monthly', 'cumulative'].map(t => {
             const active = tab === t
@@ -156,7 +156,7 @@ export default function PelunasanPrrPage() {
                 transition: 'all 0.2s', border: 'none', cursor: 'pointer',
                 background: active ? 'var(--bg-card)' : 'transparent',
                 color: active ? 'var(--pln-blue)' : 'var(--text-muted)',
-                boxShadow: active ? '0 2px 8px rgba(15,76,215,0.12)' : 'none',
+                boxShadow: active ? '0 2px 8px rgba(20, 162, 186,0.12)' : 'none',
               }}
               onMouseEnter={e => { if (!active) e.currentTarget.style.color = 'var(--text-primary)' }}
               onMouseLeave={e => { if (!active) e.currentTarget.style.color = 'var(--text-muted)' }}

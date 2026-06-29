@@ -377,12 +377,12 @@ export default function GangguanTmPage() {
               className="icon-wrapper-interactive"
               style={{
                 width: 34, height: 34, borderRadius: 10,
-                background: 'linear-gradient(135deg, rgba(37,99,235,0.2), rgba(37,99,235,0.08))',
-                border: '1px solid rgba(37,99,235,0.25)',
+                background: 'linear-gradient(135deg, rgba(20, 162, 186,0.2), rgba(20, 162, 186,0.08))',
+                border: '1px solid rgba(20, 162, 186,0.25)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}
             >
-              <Activity size={18} color="#2563EB" />
+              <Activity size={18} color="#14A2BA" />
             </div>
             <h1 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.02em' }}>
               Dashboard Gangguan TM
@@ -397,10 +397,10 @@ export default function GangguanTmPage() {
         <div className="flex items-center gap-3">
           <div style={{
             display: 'inline-flex',
-            background: 'rgba(37, 99, 235, 0.05)',
+            background: 'rgba(20, 162, 186, 0.05)',
             padding: 4,
             borderRadius: 12,
-            border: '1px solid rgba(37, 99, 235, 0.15)',
+            border: '1px solid rgba(20, 162, 186, 0.15)',
             cursor: 'pointer'
           }}>
             <button
@@ -414,17 +414,17 @@ export default function GangguanTmPage() {
                 border: 'none',
                 cursor: 'pointer',
                 background: 'var(--bg-card)',
-                color: '#2563EB',
-                boxShadow: '0 2px 8px rgba(37, 99, 235, 0.15)',
+                color: '#14A2BA',
+                boxShadow: '0 2px 8px rgba(20, 162, 186, 0.15)',
                 display: 'flex', alignItems: 'center', gap: '8px'
               }}
               onMouseEnter={e => {
-                  e.currentTarget.style.background = '#2563EB';
+                  e.currentTarget.style.background = '#14A2BA';
                   e.currentTarget.style.color = '#FFFFFF';
               }}
               onMouseLeave={e => {
                   e.currentTarget.style.background = 'var(--bg-card)';
-                  e.currentTarget.style.color = '#2563EB';
+                  e.currentTarget.style.color = '#14A2BA';
               }}
             >
               <Plus size={16} /> Input Data

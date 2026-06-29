@@ -168,7 +168,7 @@ export default function MttrPage() {
             icon={Target} 
             label="Kelola Target" 
             onClick={() => navigate('/jaringan/mttr-siaga1/target')}
-            colorHex="#2563EB"
+            colorHex="#14A2BA"
             colorRgb="37, 99, 235"
           />
         )}
@@ -177,7 +177,7 @@ export default function MttrPage() {
             icon={Plus} 
             label="Input Realisasi" 
             onClick={() => navigate('/jaringan/input-mttr')}
-            colorHex="#2563EB"
+            colorHex="#14A2BA"
             colorRgb="37, 99, 235"
           />
         )}

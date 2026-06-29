@@ -100,7 +100,6 @@ export const NAV_ITEMS = [
         type: 'subgroup',
         group: 'PEMASARAN',
         items: [
-          { key: 'pemasaran-home',         label: 'DASHBOARD',        path: '/pemasaran',              icon: 'Home' },
           { key: 'pemasaran-penjualan',    label: 'PENJUALAN',        path: '/pemasaran/penjualan',    icon: 'ShoppingCart' },
           { key: 'pemasaran-pelanggan',    label: 'PELANGGAN',        path: '/pemasaran/pelanggan',    icon: 'Users' },
           { key: 'pemasaran-daya',         label: 'DAYA TERSAMBUNG',  path: '/pemasaran/daya',         icon: 'Zap' },

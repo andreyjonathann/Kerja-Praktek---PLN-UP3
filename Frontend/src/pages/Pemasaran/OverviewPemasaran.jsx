@@ -18,7 +18,7 @@ import { exportToExcel } from '@/utils/exportExcel'
 
 // ─── Warna tema Pemasaran ─────────────────────────────────────────────────────
 const C = {
-  pelanggan:  '#0F4CD7',
+  pelanggan:  '#14A2BA',
   daya:       '#F59E0B',
   penjualan:  '#10B981',
   pendapatan: '#7C3AED',
@@ -190,10 +190,10 @@ export default function OverviewPemasaranPage() {
 
       {/* ── Hero Header ────────────────────────────────────────────────────── */}
       <div style={{
-        background: 'linear-gradient(135deg, #0F4CD7 0%, #1E63F5 50%, #2F7BFF 100%)',
+        background: 'linear-gradient(135deg, #14A2BA 0%, #14A2BA 50%, #14A2BA 100%)',
         borderRadius: 20, padding: '28px 32px', color: '#fff',
         position: 'relative', overflow: 'hidden',
-        boxShadow: '0 8px 32px rgba(15,76,215,0.28)',
+        boxShadow: '0 8px 32px rgba(20, 162, 186,0.28)',
       }}>
         {/* Decorative circles */}
         <div style={{ position: 'absolute', right: -40, top: -40, width: 200, height: 200, borderRadius: '50%', background: 'rgba(255,255,255,0.07)' }} />
@@ -460,8 +460,8 @@ export default function OverviewPemasaranPage() {
                   <span style={{ display: 'inline-flex', padding: '2px 7px', borderRadius: 5, fontSize: '0.7rem', fontWeight: 700, background: p >= 100 ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', color: p >= 100 ? '#10B981' : '#EF4444', border: `1px solid ${p >= 100 ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}` }}>{p.toFixed(1)}%</span>
                 )
                 return (
-                  <tr key={row.bulan} onClick={() => setSelMonth(row.bulan)} style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: isActive ? 'rgba(15,76,215,0.06)' : 'transparent', transition: 'background 0.15s' }}>
-                    <td style={{ padding: '10px 14px', fontWeight: isActive ? 800 : 600, color: isActive ? '#0F4CD7' : 'var(--text-primary)' }}>
+                  <tr key={row.bulan} onClick={() => setSelMonth(row.bulan)} style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: isActive ? 'rgba(20, 162, 186,0.06)' : 'transparent', transition: 'background 0.15s' }}>
+                    <td style={{ padding: '10px 14px', fontWeight: isActive ? 800 : 600, color: isActive ? '#14A2BA' : 'var(--text-primary)' }}>
                       {MONTHS.find(m => m.value === row.bulan)?.label}
                     </td>
                     <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700 }}>{formatNumber(row.pelanggan)}</td>
