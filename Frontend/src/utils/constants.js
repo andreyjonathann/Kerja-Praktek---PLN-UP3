@@ -131,7 +131,9 @@ export const NAV_ITEMS = [
         type: 'subgroup',
         group: 'NIAGA',
         items: [
-          { key: 'niaga-dashboard', label: 'DASHBOARD', path: '/niaga', icon: 'Briefcase' },
+          { key: 'niaga-pelunasan',   label: 'PELUNASAN PRR',   path: '/niaga/pelunasan',   icon: 'Briefcase' },
+          { key: 'niaga-penghapusan',  label: 'PENGHAPUSAN PRR',  path: '/niaga/penghapusan',  icon: 'TrendingDown' },
+          { key: 'niaga-lbkb',        label: 'TINDAK LANJUT LBKB', path: '/niaga/lbkb',        icon: 'Activity' },
         ],
       },
       {

@@ -33,7 +33,9 @@ import TargetMvodPage from '@/pages/TargetMvod'
 import MttrPage from '@/pages/Mttr'
 import InputMttrPage from '@/pages/InputMttr'
 import TargetMttrPage from '@/pages/TargetMttr'
-import NiagaPage from '@/pages/Niaga'
+import PelunasanPrrPage from '@/pages/Niaga/PelunasanPrr'
+import PenghapusanPrrPage from '@/pages/Niaga/PenghapusanPrr'
+import TindakLanjutLbkbPage from '@/pages/Niaga/TindakLanjutLbkb'
 
 // Pemasaran Pages (legacy)
 import OverviewPemasaranPage from '@/pages/Pemasaran/OverviewPemasaran'
@@ -332,9 +334,20 @@ export default function App() {
                   <PlaceholderPage title="Ganti Meter Kwh" />
                 </ProtectedRoute>
               } />
-              <Route path="/niaga" element={
+              <Route path="/niaga" element={<Navigate to="/niaga/pelunasan" replace />} />
+              <Route path="/niaga/pelunasan" element={
                 <ProtectedRoute>
-                  <NiagaPage />
+                  <PelunasanPrrPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/niaga/penghapusan" element={
+                <ProtectedRoute>
+                  <PenghapusanPrrPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/niaga/lbkb" element={
+                <ProtectedRoute>
+                  <TindakLanjutLbkbPage />
                 </ProtectedRoute>
               } />
               <Route path="/skki" element={
