@@ -180,10 +180,10 @@ export default function PlnMobilePage() {
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
           <div style={{
             display: 'inline-flex',
-            background: 'rgba(22, 163, 74, 0.05)',
+            background: 'rgba(20, 162, 186, 0.05)',
             padding: 4,
             borderRadius: 12,
-            border: '1px solid rgba(22, 163, 74, 0.15)',
+            border: '1px solid rgba(20, 162, 186, 0.15)',
             cursor: 'pointer'
           }}>
             <button
@@ -197,19 +197,19 @@ export default function PlnMobilePage() {
                 border: 'none',
                 cursor: 'pointer',
                 background: 'var(--bg-card)',
-                color: '#16A34A',
-                boxShadow: '0 2px 8px rgba(22, 163, 74, 0.15)',
+                color: '#14A2BA',
+                boxShadow: '0 2px 8px rgba(20, 162, 186, 0.15)',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px'
               }}
               onMouseEnter={e => {
-                 e.currentTarget.style.background = '#16A34A';
+                 e.currentTarget.style.background = '#14A2BA';
                  e.currentTarget.style.color = '#FFFFFF';
               }}
               onMouseLeave={e => {
                  e.currentTarget.style.background = 'var(--bg-card)';
-                 e.currentTarget.style.color = '#16A34A';
+                 e.currentTarget.style.color = '#14A2BA';
               }}
             >
               <Plus size={14} /> Tambah PLN Mobile
