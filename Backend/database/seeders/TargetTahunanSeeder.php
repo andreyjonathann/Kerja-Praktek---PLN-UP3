@@ -52,6 +52,48 @@ class TargetTahunanSeeder extends Seeder
                 'polaritas' => 'MINIMIZE',
                 'bobot' => 20.00
             ],
+            'Gangguan TM' => [
+                'bidang' => 'Jaringan',
+                'indikator' => 'Gangguan TM',
+                'satuan' => 'Kali',
+                'polaritas' => 'MINIMIZE',
+                'bobot' => 10.00
+            ],
+            'Kerusakan Peralatan Distribusi' => [
+                'bidang' => 'Jaringan',
+                'indikator' => 'Gangguan Switching (Kubikel & Trafo)',
+                'satuan' => 'Kali',
+                'polaritas' => 'MINIMIZE',
+                'bobot' => 10.00
+            ],
+            'RPT Diluar CT' => [
+                'bidang' => 'Jaringan',
+                'indikator' => 'RPT G (Tanpa CT)',
+                'satuan' => 'Kali',
+                'polaritas' => 'MINIMIZE',
+                'bobot' => 10.00
+            ],
+            'MVOD' => [
+                'bidang' => 'Jaringan',
+                'indikator' => 'MVOD',
+                'satuan' => 'Menit',
+                'polaritas' => 'MINIMIZE',
+                'bobot' => 10.00
+            ],
+            'MTTR' => [
+                'bidang' => 'Jaringan',
+                'indikator' => 'MTTR Siaga 1',
+                'satuan' => 'Menit',
+                'polaritas' => 'MINIMIZE',
+                'bobot' => 10.00
+            ],
+            'Rating Negatif PLN Mobile' => [
+                'bidang' => 'Jaringan',
+                'indikator' => 'Rating Negatif PLN Mobile',
+                'satuan' => '%',
+                'polaritas' => 'MINIMIZE',
+                'bobot' => 10.00
+            ],
             'Penjualan TL (GWh)' => [
                 'bidang' => 'Pemasaran',
                 'indikator' => 'Penjualan TL',
@@ -212,5 +254,11 @@ class TargetTahunanSeeder extends Seeder
                 }
             }
         }
+
+        // Add defaults for those that might not be in the CSV at all (like SRDAG)
+        TargetTahunan::updateOrCreate(
+            ['bidang' => 'Jaringan', 'indikator' => 'SRDAG', 'tahun' => 2026],
+            ['satuan' => 'Kali', 'polaritas' => 'MINIMIZE', 'bobot' => 10.00, 'target' => 0]
+        );
     }
 }

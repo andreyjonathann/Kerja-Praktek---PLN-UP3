@@ -143,11 +143,11 @@ export default function SaifiPage() {
   }, [fetchData])
 
 
-  const filled     = data.filter(d => d.realisasi != null)
-  const lastMonth  = filled[filled.length - 1]
-  const totalReal  = lastMonth ? lastMonth.realisasi : 0
-  const totalTgt   = lastMonth ? lastMonth.target : 0
-  const achievement = totalTgt > 0 ? Math.min(150, (totalTgt / Math.max(0.001, totalReal)) * 100) : 0
+  const filled      = data.filter(d => d.realisasi != null)
+  const lastMonth   = filled[filled.length - 1]
+  const totalReal   = lastMonth ? (lastMonth.realisasi || 0) : 0
+  const totalTgt    = lastMonth ? lastMonth.target : null
+  const achievement = (totalTgt !== null && totalTgt > 0) ? Math.min(150, (totalTgt / Math.max(0.001, totalReal)) * 100) : 0
   
   const breakdownChartData = filled.map(d => {
     const takTerencana = d.distribusi_padam_tidak_terencana || 0
@@ -203,9 +203,9 @@ export default function SaifiPage() {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
         <KpiCard title="SAIFI YTD" value={Number(totalReal).toFixed(4)} unit="kali/plg" achievement={achievement} icon={Zap} color="blue" isInverse loading={loading} />
-        <KpiCard title="Target YTD" value={Number(totalTgt).toFixed(4)} unit="kali/plg" icon={Target} color="blue" loading={loading} />
+        <KpiCard title="Target YTD" value={totalTgt !== null ? Number(totalTgt).toFixed(4) : '-'} unit={totalTgt !== null ? "kali/plg" : ""} icon={Target} color="blue" loading={loading} />
         <KpiCard title="Bulan Terakhir" value={lastMonth?.realisasi != null ? Number(lastMonth.realisasi).toFixed(4) : '—'} unit="kali/plg" icon={Activity} color="blue" loading={loading} />
-        <KpiCard title="Pencapaian" value={Number(achievement).toFixed(1) + '%'} icon={TrendingDown} color={totalReal > totalTgt ? 'red' : 'green'} loading={loading} />
+        <KpiCard title="Pencapaian" value={totalTgt !== null ? Number(achievement).toFixed(1) + '%' : '-'} icon={TrendingDown} color={totalReal > (totalTgt || 0) ? 'red' : 'green'} loading={loading} />
       </div>
 
       <div style={{

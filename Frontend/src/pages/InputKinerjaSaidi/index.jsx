@@ -10,7 +10,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine
 } from 'recharts';
 
-export default function InputKinerjaPage() {
+export default function InputKinerjaSaidiPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   

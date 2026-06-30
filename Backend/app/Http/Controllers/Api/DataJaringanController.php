@@ -34,9 +34,9 @@ class DataJaringanController extends Controller
         $targetSaifi = TargetTahunan::whereRaw('LOWER(bidang) = ?', ['jaringan'])->whereRaw('LOWER(indikator) = ?', ['saifi'])->first();
         $targetEns = TargetTahunan::whereRaw('LOWER(bidang) = ?', ['jaringan'])->whereRaw('LOWER(indikator) = ?', ['ens'])->first();
         
-        $tgtSaidiVal = $targetSaidi ? $targetSaidi->target : 0;
-        $tgtSaifiVal = $targetSaifi ? $targetSaifi->target : 0;
-        $tgtEnsVal = $targetEns ? $targetEns->target : 0;
+        $tgtSaidiVal = $targetSaidi ? $targetSaidi->target : null;
+        $tgtSaifiVal = $targetSaifi ? $targetSaifi->target : null;
+        $tgtEnsVal = $targetEns ? $targetEns->target : null;
 
         $totalSaidi = 0;
         $totalSaifi = 0;
@@ -65,10 +65,10 @@ class DataJaringanController extends Controller
             $totalSaidi += $sd_real ?? 0;
             $result['saidi'][] = [
                 'id' => $i, 'bulan' => $i, 'label' => $bulanMap[$i-1],
-                'target' => $tgtSaidiVal / 12,
+                'target' => $tgtSaidiVal !== null ? $tgtSaidiVal / 12 : null,
                 'realisasi' => $sd_real,
                 'cumulativeReal' => $totalSaidi,
-                'cumulativeTgt' => ($tgtSaidiVal / 12) * $i,
+                'cumulativeTgt' => $tgtSaidiVal !== null ? ($tgtSaidiVal / 12) * $i : null,
                 'distribusi_padam_tidak_terencana' => $saidiData ? $saidiData->saidi_distribusi_padam_tidak_terencana : 0,
                 'distribusi_padam_terencana' => $saidiData ? $saidiData->saidi_distribusi_padam_terencana : 0,
                 'distribusi_bencana_alam' => $saidiData ? $saidiData->saidi_distribusi_bencana_alam : 0,
@@ -81,10 +81,10 @@ class DataJaringanController extends Controller
             $totalSaifi += $sf_real ?? 0;
             $result['saifi'][] = [
                 'id' => $i, 'bulan' => $i, 'label' => $bulanMap[$i-1],
-                'target' => $tgtSaifiVal / 12,
+                'target' => $tgtSaifiVal !== null ? $tgtSaifiVal / 12 : null,
                 'realisasi' => $sf_real,
                 'cumulativeReal' => $totalSaifi,
-                'cumulativeTgt' => ($tgtSaifiVal / 12) * $i,
+                'cumulativeTgt' => $tgtSaifiVal !== null ? ($tgtSaifiVal / 12) * $i : null,
                 'distribusi_padam_tidak_terencana' => $saidiData ? $saidiData->saifi_distribusi_padam_tidak_terencana : 0,
                 'distribusi_padam_terencana' => $saidiData ? $saidiData->saifi_distribusi_padam_terencana : 0,
                 'distribusi_bencana_alam' => $saidiData ? $saidiData->saifi_distribusi_bencana_alam : 0,

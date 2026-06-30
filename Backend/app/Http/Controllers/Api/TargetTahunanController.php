@@ -10,14 +10,6 @@ class TargetTahunanController extends Controller
 {
     public function index(Request $request)
     {
-        if (TargetTahunan::count() === 0) {
-            try {
-                $seeder = new \Database\Seeders\TargetTahunanSeeder();
-                $seeder->run();
-            } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error("Failed to auto-seed targets: " . $e->getMessage());
-            }
-        }
 
         $query = TargetTahunan::query();
         if ($request->tahun) $query->where('tahun', $request->tahun);

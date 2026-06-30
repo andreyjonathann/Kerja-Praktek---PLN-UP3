@@ -13,7 +13,7 @@ import SaifiPage from '@/pages/Saifi'
 import EnsPage from '@/pages/Ens'
 import NkoPage from '@/pages/Nko'
 import PlaceholderPage from '@/pages/Placeholder'
-import InputKinerjaPage from '@/pages/InputKinerja'
+import InputKinerjaSaidiPage from '@/pages/InputKinerjaSaidi'
 import InputSaifiPage from '@/pages/InputSaifi'
 import InputEnsPage from '@/pages/InputEns'
 import RatingNegatifPage from '@/pages/RatingNegatif'
@@ -38,8 +38,11 @@ import MttrPage from '@/pages/Mttr'
 import InputMttrPage from '@/pages/InputMttr'
 import TargetMttrPage from '@/pages/TargetMttr'
 import PelunasanPrrPage from '@/pages/Niaga/PelunasanPrr'
+import InputKinerjaPelunasanPage from '@/pages/Niaga/InputKinerjaPelunasan'
 import PenghapusanPrrPage from '@/pages/Niaga/PenghapusanPrr'
+import InputKinerjaPenghapusanPage from '@/pages/Niaga/InputKinerjaPenghapusan'
 import TindakLanjutLbkbPage from '@/pages/Niaga/TindakLanjutLbkb'
+import InputKinerjaLbkbPage from '@/pages/Niaga/InputKinerjaLbkb'
 
 // Pemasaran Pages (legacy)
 import JumlahPelangganPage from '@/pages/Pemasaran/JumlahPelanggan'
@@ -49,7 +52,7 @@ import PendapatanTLPage from '@/pages/Pemasaran/PendapatanTL'
 import DataPerTarifPage from '@/pages/Pemasaran/DataPerTarif'
 
 // Pemasaran Pages v2 (role-based, pola sama dengan Jaringan)
-import InputKinerjaPermasaranPage from '@/pages/Pemasaran/v2/InputKinerjaPermasaran'
+import InputKinerjaPemasaranPage from '@/pages/Pemasaran/v2/InputKinerjaPemasaran'
 import PenjualanPage     from '@/pages/Pemasaran/v2/Penjualan'
 import PelangganPage     from '@/pages/Pemasaran/v2/Pelanggan'
 import DayaTersambungV2Page  from '@/pages/Pemasaran/v2/DayaTersambung'
@@ -57,6 +60,9 @@ import PendapatanBPPage  from '@/pages/Pemasaran/v2/PendapatanBP'
 import PlnMobilePage     from '@/pages/Pemasaran/v2/PlnMobile'
 import EditKinerjaPage from '@/pages/EditKinerja'
 import EditEnsPage from '@/pages/EditEns'
+
+// Admin Pages
+import KelolaTargetPage from '@/pages/Admin/KelolaTarget'
 
 // Protected Route Wrapper
 function ProtectedRoute({ children }) {
@@ -120,7 +126,7 @@ export default function App() {
               {/* ── Routes Pemasaran v2 (pola sama dengan Jaringan) ── */}
               <Route path="/pemasaran/input" element={
                 <ProtectedRoute>
-                  <InputKinerjaPage />
+                  <InputKinerjaPemasaranPage />
                 </ProtectedRoute>
               } />
               <Route path="/pemasaran/penjualan" element={
@@ -149,21 +155,23 @@ export default function App() {
                 </ProtectedRoute>
               } />
 
-              <Route path="/input" element={
-                <ProtectedRoute>
-                  <InputKinerjaPage />
-                </ProtectedRoute>
-              } />
+              <Route path="/input" element={<Navigate to="/" replace />} />
 
               <Route path="/saidi/input" element={
                 <ProtectedRoute>
-                  <InputKinerjaPage />
+                  <InputKinerjaSaidiPage />
                 </ProtectedRoute>
               } />
 
               <Route path="/saifi/input" element={
                 <ProtectedRoute>
                   <InputSaifiPage />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/kelola-target" element={
+                <ProtectedRoute>
+                  <KelolaTargetPage />
                 </ProtectedRoute>
               } />
 
@@ -387,7 +395,7 @@ export default function App() {
               } />
               <Route path="/niaga/pelunasan/input" element={
                 <ProtectedRoute>
-                  <InputKinerjaPage kpiFilter="pelunasan" />
+                  <InputKinerjaPelunasanPage />
                 </ProtectedRoute>
               } />
               <Route path="/niaga/penghapusan" element={
@@ -397,7 +405,7 @@ export default function App() {
               } />
               <Route path="/niaga/penghapusan/input" element={
                 <ProtectedRoute>
-                  <InputKinerjaPage kpiFilter="penghapusan" />
+                  <InputKinerjaPenghapusanPage />
                 </ProtectedRoute>
               } />
               <Route path="/niaga/lbkb" element={
@@ -407,7 +415,7 @@ export default function App() {
               } />
               <Route path="/niaga/lbkb/input" element={
                 <ProtectedRoute>
-                  <InputKinerjaPage kpiFilter="lbkb" />
+                  <InputKinerjaLbkbPage />
                 </ProtectedRoute>
               } />
               <Route path="/skki" element={

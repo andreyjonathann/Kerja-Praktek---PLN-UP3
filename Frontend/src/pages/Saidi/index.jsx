@@ -140,9 +140,9 @@ export default function SaidiPage() {
   // ── Summary stats ─────────────────────────────────────────────────────────
   const filled      = data.filter(d => d.realisasi != null)
   const lastMonth   = filled[filled.length - 1]
-  const totalReal   = lastMonth ? lastMonth.realisasi : 0
-  const totalTgt    = lastMonth ? lastMonth.target    : 0
-  const achievement = totalTgt > 0 ? Math.min(150, (totalTgt / Math.max(0.001, totalReal)) * 100) : 0
+  const totalReal   = lastMonth ? (lastMonth.realisasi || 0) : 0
+  const totalTgt    = lastMonth ? lastMonth.target : null
+  const achievement = (totalTgt !== null && totalTgt > 0) ? Math.min(150, (totalTgt / Math.max(0.001, totalReal)) * 100) : 0
 
   // ── Breakdown chart: 3 bar (Distribusi, Transmisi, Pembangkit) ────────────
   // Logika: distribusi = jumlah 3 sub-komponen.
@@ -209,9 +209,9 @@ export default function SaidiPage() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
         <KpiCard title="SAIDI YTD" value={totalReal.toFixed(4)} unit="mnt/plg" achievement={achievement} icon={Clock} color="blue" isInverse loading={loading} />
-        <KpiCard title="Target YTD" value={totalTgt.toFixed(4)} unit="mnt/plg" icon={Target} color="blue" loading={loading} />
+        <KpiCard title="Target YTD" value={totalTgt !== null ? totalTgt.toFixed(4) : '-'} unit={totalTgt !== null ? "mnt/plg" : ""} icon={Target} color="blue" loading={loading} />
         <KpiCard title="Bulan Terakhir" value={lastMonth?.realisasi?.toFixed(4) ?? '—'} unit="mnt/plg" icon={Activity} color="blue" loading={loading} />
-        <KpiCard title="Pencapaian" value={achievement.toFixed(1) + '%'} icon={TrendingDown} color={totalReal > totalTgt ? 'red' : 'green'} loading={loading} />
+        <KpiCard title="Pencapaian" value={totalTgt !== null ? achievement.toFixed(1) + '%' : '-'} icon={TrendingDown} color={totalReal > (totalTgt || 0) ? 'red' : 'green'} loading={loading} />
       </div>
 
       {/* Tab + Aksi */}
@@ -241,7 +241,7 @@ export default function SaidiPage() {
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
           <div style={{ display: 'inline-flex', background: 'rgba(0, 162, 185,0.05)', padding: 4, borderRadius: 12, border: '1px solid rgba(0, 162, 185,0.15)' }}>
             <button
-              onClick={() => navigate('/input')}
+              onClick={() => navigate('/saidi/input')}
               style={{
                 padding: '6px 16px', borderRadius: 9, fontSize: '0.85rem', fontWeight: 700,
                 transition: 'all 0.2s ease', border: 'none', cursor: 'pointer',
