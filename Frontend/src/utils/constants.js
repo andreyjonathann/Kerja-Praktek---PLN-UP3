@@ -104,7 +104,6 @@ export const NAV_ITEMS = [
           { key: 'pemasaran-pelanggan',    label: 'PELANGGAN',        path: '/pemasaran/pelanggan',    icon: 'Users' },
           { key: 'pemasaran-daya',         label: 'DAYA TERSAMBUNG',  path: '/pemasaran/daya',         icon: 'Zap' },
           { key: 'pemasaran-pendapatan-bp',label: 'PENDAPATAN BP',    path: '/pemasaran/pendapatan-bp',icon: 'Wallet' },
-          { key: 'pemasaran-pln-mobile',   label: 'PLN MOBILE',       path: '/pemasaran/pln-mobile',   icon: 'Activity' },
         ],
       },
       {

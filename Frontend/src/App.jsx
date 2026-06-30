@@ -57,7 +57,6 @@ import PenjualanPage     from '@/pages/Pemasaran/v2/Penjualan'
 import PelangganPage     from '@/pages/Pemasaran/v2/Pelanggan'
 import DayaTersambungV2Page  from '@/pages/Pemasaran/v2/DayaTersambung'
 import PendapatanBPPage  from '@/pages/Pemasaran/v2/PendapatanBP'
-import PlnMobilePage     from '@/pages/Pemasaran/v2/PlnMobile'
 import EditKinerjaPage from '@/pages/EditKinerja'
 import EditEnsPage from '@/pages/EditEns'
 
@@ -126,7 +125,11 @@ export default function App() {
               {/* ── Routes Pemasaran v2 (pola sama dengan Jaringan) ── */}
               <Route path="/pemasaran/input" element={
                 <ProtectedRoute>
+<<<<<<< HEAD
                   <InputKinerjaPemasaranPage />
+=======
+                  <InputKinerjaPermasaranPage />
+>>>>>>> fd911d6f8d39f52f1e5b84ae49e622720da999fe
                 </ProtectedRoute>
               } />
               <Route path="/pemasaran/penjualan" element={
@@ -149,11 +152,7 @@ export default function App() {
                   <PendapatanBPPage />
                 </ProtectedRoute>
               } />
-              <Route path="/pemasaran/pln-mobile" element={
-                <ProtectedRoute>
-                  <PlnMobilePage />
-                </ProtectedRoute>
-              } />
+
 
               <Route path="/input" element={<Navigate to="/" replace />} />
 
