@@ -5,7 +5,7 @@ export default function TabToggle({
   activeTab, 
   onChange,
   colorHex = '#14A2BA',
-  colorRgb = '37, 99, 235'
+  colorRgb = '0, 162, 185'
 }) {
   return (
     <div style={{

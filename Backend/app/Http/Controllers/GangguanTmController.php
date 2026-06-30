@@ -98,22 +98,210 @@ class GangguanTmController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'periode_id' => 'required|exists:periode,id',
-            'ggn_tm_lebih_5_mnt' => 'required|integer|min:0',
-            'ggn_tm_kurang_5_mnt' => 'required|integer|min:0',
-            'ggn_switching' => 'required|integer|min:0',
+            'bulan' => 'required|integer|min:1|max:12',
+            'tahun' => 'required|integer|min:2000',
+            'ggn_tm_lebih_5_mnt' => 'nullable|integer|min:0',
+            'ggn_tm_kurang_5_mnt' => 'nullable|integer|min:0',
         ]);
 
-        $kinerja = KinerjaJaringan::firstOrNew(['periode_id' => $request->periode_id]);
-        $kinerja->ggn_tm_lebih_5_mnt = $request->ggn_tm_lebih_5_mnt;
-        $kinerja->ggn_tm_kurang_5_mnt = $request->ggn_tm_kurang_5_mnt;
-        $kinerja->ggn_switching = $request->ggn_switching;
+        $periode = \App\Models\Periode::firstOrCreate([
+            'bulan' => $request->bulan,
+            'tahun' => $request->tahun
+        ]);
+
+        $kinerja = KinerjaJaringan::firstOrNew(['periode_id' => $periode->id]);
+        
+        if ($request->has('ggn_tm_lebih_5_mnt') && $request->ggn_tm_lebih_5_mnt !== null) {
+            $kinerja->ggn_tm_lebih_5_mnt = $request->ggn_tm_lebih_5_mnt;
+        }
+        if ($request->has('ggn_tm_kurang_5_mnt') && $request->ggn_tm_kurang_5_mnt !== null) {
+            $kinerja->ggn_tm_kurang_5_mnt = $request->ggn_tm_kurang_5_mnt;
+        }
+        
+        // Don't overwrite existing ggn_switching if not provided
+        if ($request->has('ggn_switching')) {
+            $kinerja->ggn_switching = $request->ggn_switching;
+        }
+
         $kinerja->save();
 
         return response()->json([
             'message' => 'Data Gangguan TM berhasil disimpan',
             'data' => $kinerja
         ]);
+    }
+
+    public function storeKurang5Mnt(Request $request)
+    {
+        $request->validate([
+            'bulan' => 'required|integer|min:1|max:12',
+            'tahun' => 'required|integer|min:2000',
+            'ggn_tm_kurang_5_mnt' => 'required|integer|min:0',
+        ]);
+
+        $periode = \App\Models\Periode::firstOrCreate([
+            'bulan' => $request->bulan,
+            'tahun' => $request->tahun
+        ]);
+
+        $kinerja = KinerjaJaringan::firstOrNew(['periode_id' => $periode->id]);
+        $kinerja->ggn_tm_kurang_5_mnt = $request->ggn_tm_kurang_5_mnt;
+        $kinerja->save();
+
+        return response()->json([
+            'message' => 'Data Gangguan TM < 5 Menit berhasil disimpan',
+            'data' => $kinerja
+        ]);
+    }
+
+    public function storeLebih5Mnt(Request $request)
+    {
+        $request->validate([
+            'bulan' => 'required|integer|min:1|max:12',
+            'tahun' => 'required|integer|min:2000',
+            'kejadian' => 'required|array',
+            'kejadian.*.jumlah' => 'required|integer|min:1',
+            'kejadian.*.penyebab' => 'nullable|string',
+            'kejadian.*.penyulang' => 'nullable|string',
+        ]);
+
+        $periode = \App\Models\Periode::firstOrCreate([
+            'bulan' => $request->bulan,
+            'tahun' => $request->tahun
+        ]);
+
+        $up3 = $request->user() ? $request->user()->up3 : 'Semua UP3';
+
+        // Check if data already exists for this period
+        $existing = \App\Models\DetailGangguanTmLebih5Mnt::where('bulan', $request->bulan)
+            ->where('tahun', $request->tahun)
+            ->where('up3', $up3)
+            ->exists();
+
+        if ($existing) {
+            return response()->json([
+                'message' => 'Data untuk periode ini sudah diinput. Silakan gunakan menu Rincian untuk mengedit.'
+            ], 422);
+        }
+
+        $totalGangguan = 0;
+
+        foreach ($request->kejadian as $k) {
+            \App\Models\DetailGangguanTmLebih5Mnt::create([
+                'up3' => $up3,
+                'bulan' => $request->bulan,
+                'tahun' => $request->tahun,
+                'jumlah_gangguan' => $k['jumlah'],
+                'penyebab' => $k['penyebab'] ?? null,
+                'nama_penyulang' => $k['penyulang'] ?? null,
+            ]);
+            $totalGangguan += $k['jumlah'];
+        }
+
+        $kinerja = KinerjaJaringan::firstOrNew(['periode_id' => $periode->id]);
+        $kinerja->ggn_tm_lebih_5_mnt = $totalGangguan;
+        $kinerja->save();
+
+        return response()->json([
+            'message' => 'Data Gangguan TM > 5 Menit berhasil disimpan',
+            'data' => $kinerja
+        ]);
+    }
+
+    public function detailLebih5Mnt(Request $request)
+    {
+        $tahun = $request->query('tahun');
+        $bulan = $request->query('bulan');
+
+        $query = \App\Models\DetailGangguanTmLebih5Mnt::query();
+        
+        if ($tahun) {
+            $query->where('tahun', $tahun);
+        }
+        if ($bulan) {
+            $query->where('bulan', $bulan);
+        }
+
+        // Only UP3 logic if user is UP3, or show all for admin/pic
+        $user = $request->user();
+        if ($user && $user->role === 'up3' && $user->up3) {
+            $query->where('up3', $user->up3);
+        }
+
+        $details = $query->orderBy('created_at', 'desc')->get();
+
+        return response()->json([
+            'data' => $details
+        ]);
+    }
+
+    public function updateDetailLebih5Mnt(Request $request, $id)
+    {
+        $request->validate([
+            'jumlah' => 'required|integer|min:1',
+            'penyebab' => 'nullable|string',
+            'penyulang' => 'nullable|string',
+        ]);
+
+        $detail = \App\Models\DetailGangguanTmLebih5Mnt::findOrFail($id);
+        
+        // Authorization check
+        $user = $request->user();
+        if ($user && $user->role === 'up3' && $user->up3 !== $detail->up3) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $detail->jumlah_gangguan = $request->jumlah;
+        $detail->penyebab = $request->penyebab;
+        $detail->nama_penyulang = $request->penyulang;
+        $detail->save();
+
+        // Recalculate total for that month
+        $this->recalculateTotalLebih5Mnt($detail->bulan, $detail->tahun);
+
+        return response()->json([
+            'message' => 'Detail berhasil diupdate',
+            'data' => $detail
+        ]);
+    }
+
+    public function deleteDetailLebih5Mnt(Request $request, $id)
+    {
+        $detail = \App\Models\DetailGangguanTmLebih5Mnt::findOrFail($id);
+        
+        // Authorization check
+        $user = $request->user();
+        if ($user && $user->role === 'up3' && $user->up3 !== $detail->up3) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $bulan = $detail->bulan;
+        $tahun = $detail->tahun;
+        
+        $detail->delete();
+
+        // Recalculate total for that month
+        $this->recalculateTotalLebih5Mnt($bulan, $tahun);
+
+        return response()->json([
+            'message' => 'Detail berhasil dihapus'
+        ]);
+    }
+
+    private function recalculateTotalLebih5Mnt($bulan, $tahun)
+    {
+        $total = \App\Models\DetailGangguanTmLebih5Mnt::where('bulan', $bulan)
+            ->where('tahun', $tahun)
+            ->sum('jumlah_gangguan');
+
+        $periode = \App\Models\Periode::firstOrCreate([
+            'bulan' => $bulan,
+            'tahun' => $tahun
+        ]);
+
+        $kinerja = KinerjaJaringan::firstOrNew(['periode_id' => $periode->id]);
+        $kinerja->ggn_tm_lebih_5_mnt = $total > 0 ? $total : 0; // If 0, it means all deleted, set to 0. 
+        $kinerja->save();
     }
 
     /**

@@ -168,14 +168,12 @@ export default function GangguanTmPage() {
       wsData.push([`REKAPITULASI GANGGUAN TM ${title}`]);
       wsData.push([`TAHUN ${year}`]);
       wsData.push([]);
-      wsData.push(['Bulan', 'Realisasi Bulanan', 'Realisasi Kumulatif', 'Target Kumulatif', 'Sisa', '% Pencapaian']);
+      wsData.push(['Bulan', 'Realisasi Bulanan', 'Sisa', '% Pencapaian']);
       
       chartData.forEach(row => {
         const rowData = [
           MONTHS_FULL[row.bulan - 1],
           row.realisasi !== null ? row.realisasi : '-',
-          row.kumulatifReal !== null ? row.kumulatifReal : '-',
-          row.targetKumulatif !== null ? row.targetKumulatif.toFixed(2) : '-',
           (row.targetKumulatif !== null && row.kumulatifReal !== null) ? (row.targetKumulatif - row.kumulatifReal).toFixed(2) : '-',
           (row.targetKumulatif && row.kumulatifReal !== null) ? ((row.kumulatifReal / row.targetKumulatif) * 100).toFixed(2) + '%' : '-'
         ];
@@ -218,7 +216,16 @@ export default function GangguanTmPage() {
       <ChartWrapper
         key={tipe}
         title={title}
-        subtitle={`Grafik bulanan vs kumulatif tahun ${filters.year || new Date().getFullYear()}`}
+        subtitle={
+          <div className="flex items-center gap-2">
+            <span>Grafik bulanan vs kumulatif tahun {filters.year || new Date().getFullYear()}</span>
+            {tipe === 'lebih_5_mnt' && (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 font-medium border border-blue-100">
+                Klik batang grafik untuk melihat rincian
+              </span>
+            )}
+          </div>
+        }
         empty={!cData || cData.length === 0}
         height={320}
       >
@@ -230,7 +237,21 @@ export default function GangguanTmPage() {
             <Tooltip content={<CustomTooltip />} cursor={{fill: 'rgba(0,0,0,0.05)'}} />
             <Legend iconType="circle" wrapperStyle={{paddingTop: '20px', fontSize: '12px'}} />
             
-            <Bar yAxisId="left" dataKey="realisasi" name="Realisasi Bulanan" fill={COLORS.realisasi} radius={[4, 4, 0, 0]} maxBarSize={40} />
+            <Bar 
+              yAxisId="left" 
+              dataKey="realisasi" 
+              name="Realisasi Bulanan" 
+              fill={COLORS.realisasi} 
+              radius={[4, 4, 0, 0]} 
+              maxBarSize={40}
+              onClick={(data) => {
+                if (tipe === 'lebih_5_mnt' && data && data.bulan) {
+                  const tahun = filters.year || new Date().getFullYear();
+                  navigate(`/jaringan/gangguan-tm/lebih-5-menit/detail/${tahun}/${data.bulan}`);
+                }
+              }}
+              style={{ cursor: tipe === 'lebih_5_mnt' ? 'pointer' : 'default' }}
+            />
             <Line yAxisId="left" type="monotone" dataKey="kumulatifReal" name="Realisasi Kumulatif" stroke={COLORS.kumulatif} strokeWidth={3} dot={{r:4, fill:COLORS.kumulatif}} />
             <Line yAxisId="left" type="stepAfter" strokeDasharray="5 5" dataKey="targetKumulatif" name="Target Kumulatif" stroke={COLORS.target} strokeWidth={2} dot={false} />
           </ComposedChart>
@@ -260,37 +281,28 @@ export default function GangguanTmPage() {
         <div style={{
           padding: '18px 22px 14px',
           borderBottom: '1px solid var(--border)',
-          display: 'flex', alignItems: 'center'
+          display: 'flex', alignItems: 'center', justifyContent: 'center'
         }}>
           <h3 style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
             Rekapitulasi Per Bulan ({TABS.find(t => t.id === tipe)?.label})
           </h3>
         </div>
         <DataTable
+          searchable={false}
+          onRowClick={tipe === 'lebih_5_mnt' ? (row) => {
+            if (!row.isTotal) {
+              const tahun = filters.year || new Date().getFullYear();
+              navigate(`/jaringan/gangguan-tm/lebih-5-menit/detail/${tahun}/${row.bulan}`);
+            }
+          } : undefined}
           columns={[
             { 
-              key: 'label', label: 'Bulan', align: 'left',
-              render: (v, item) => <span className={`font-semibold ${item.isTotal ? 'text-blue-700 uppercase' : 'text-slate-800'}`}>{item.isTotal ? 'TOTAL' : MONTHS_FULL[item.bulan-1]}</span>
+              key: 'label', label: <span className="pl-6 block">Bulan</span>, align: 'left',
+              render: (v, item) => <span className={`pl-6 block font-semibold ${item.isTotal ? 'text-blue-700 uppercase' : 'text-slate-800'}`}>{item.isTotal ? 'TOTAL' : MONTHS_FULL[item.bulan-1]}</span>
             },
             { 
               key: 'realisasi', label: 'Realisasi Bulanan', align: 'center',
               render: (v, item) => <span className={item.isTotal ? 'font-bold text-blue-700' : 'text-slate-600'}>{v !== null ? Number(v).toLocaleString('id-ID') : '-'}</span>
-            },
-            { 
-              key: 'kumulatifReal', label: 'Realisasi Kumulatif', align: 'center',
-              render: (v, item) => {
-                const target = item.targetKumulatif;
-                const isOver = target !== null && v > target;
-                return (
-                  <span className={`font-bold ${isOver ? 'text-red-600' : (item.isTotal ? 'text-blue-700' : 'text-green-600')}`}>
-                    {v !== null ? Number(v).toLocaleString('id-ID') : '-'}
-                  </span>
-                )
-              }
-            },
-            { 
-              key: 'targetKumulatif', label: 'Target Kumulatif', align: 'center',
-              render: (v) => <span className="font-bold text-red-600">{v !== null ? Number(v).toLocaleString('id-ID', {maximumFractionDigits:2}) : '-'}</span>
             },
             { 
               key: 'sisa', label: 'Sisa Kuota', align: 'center',
@@ -376,36 +388,38 @@ export default function GangguanTmPage() {
               className="icon-wrapper-interactive"
               style={{
                 width: 34, height: 34, borderRadius: 10,
-                background: 'linear-gradient(135deg, rgba(20, 162, 186,0.2), rgba(20, 162, 186,0.08))',
-                border: '1px solid rgba(20, 162, 186,0.25)',
+                background: 'linear-gradient(135deg, rgba(0, 162, 185,0.2), rgba(0, 162, 185,0.08))',
+                border: '1px solid rgba(0, 162, 185,0.25)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
               }}
             >
-              <Activity size={18} color="#14A2BA" />
+              <Activity size={16} style={{ color: '#00A2B9' }} />
             </div>
-            <h1 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.02em' }}>
+            <h1 className="page-heading">
               Dashboard Gangguan TM
             </h1>
           </div>
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0, paddingLeft: 44, lineHeight: 1.4 }}>
-            Sistem Pemantauan Gangguan Tegangan Menengah & Switching.
-          </p>
+            <p className="page-description">
+              Sistem Pemantauan Gangguan Tegangan Menengah & Switching.
+            </p>
         </div>
 
         {/* Action Buttons */}
         <div className="flex items-center gap-3">
           <div style={{
             display: 'inline-flex',
-            background: 'rgba(20, 162, 186, 0.05)',
+            background: 'rgba(0, 162, 185, 0.05)',
             padding: 4,
             borderRadius: 12,
-            border: '1px solid rgba(20, 162, 186, 0.15)',
-            cursor: 'pointer'
+            border: '1px solid rgba(0, 162, 185, 0.15)',
+            gap: 8,
+            cursor: 'default'
           }}>
             <button
-              onClick={() => navigate('/jaringan/gangguan-tm/input')}
+              onClick={() => navigate('/jaringan/gangguan-tm/input-kurang-5-menit')}
               style={{
-                padding: '6px 16px',
+                padding: '6px 12px',
                 borderRadius: 9,
                 fontSize: '0.85rem',
                 fontWeight: 700,
@@ -413,20 +427,46 @@ export default function GangguanTmPage() {
                 border: 'none',
                 cursor: 'pointer',
                 background: 'var(--bg-card)',
-                color: '#14A2BA',
-                boxShadow: '0 2px 8px rgba(20, 162, 186, 0.15)',
-                display: 'flex', alignItems: 'center', gap: '8px'
+                color: '#00A2B9',
+                boxShadow: '0 2px 8px rgba(0, 162, 185, 0.15)',
+                display: 'flex', alignItems: 'center', gap: '6px'
               }}
               onMouseEnter={e => {
-                  e.currentTarget.style.background = '#14A2BA';
+                  e.currentTarget.style.background = '#00A2B9';
                   e.currentTarget.style.color = '#FFFFFF';
               }}
               onMouseLeave={e => {
                   e.currentTarget.style.background = 'var(--bg-card)';
-                  e.currentTarget.style.color = '#14A2BA';
+                  e.currentTarget.style.color = '#00A2B9';
               }}
             >
-              <Plus size={16} /> Input Data
+              <Plus size={16} /> Input &lt; 5 Menit
+            </button>
+            <button
+              onClick={() => navigate('/jaringan/gangguan-tm/input-lebih-5-menit')}
+              style={{
+                padding: '6px 12px',
+                borderRadius: 9,
+                fontSize: '0.85rem',
+                fontWeight: 700,
+                transition: 'all 0.2s ease',
+                border: 'none',
+                cursor: 'pointer',
+                background: 'var(--bg-card)',
+                color: '#00A2B9',
+                boxShadow: '0 2px 8px rgba(0, 162, 185, 0.15)',
+                display: 'flex', alignItems: 'center', gap: '6px'
+              }}
+              onMouseEnter={e => {
+                  e.currentTarget.style.background = '#00A2B9';
+                  e.currentTarget.style.color = '#FFFFFF';
+              }}
+              onMouseLeave={e => {
+                  e.currentTarget.style.background = 'var(--bg-card)';
+                  e.currentTarget.style.color = '#00A2B9';
+              }}
+            >
+              <Plus size={16} /> Input &gt; 5 Menit
             </button>
           </div>
           
@@ -535,7 +575,7 @@ export default function GangguanTmPage() {
           </div>
         </div>
       ) : (
-        <div className="mt-4">
+        <div className="mt-4 flex flex-col gap-6">
           {renderChart(activeTab, `Tren Bulanan: ${TABS.find(t => t.id === activeTab)?.label}`)}
           {renderRekapTable(activeTab)}
           {renderUp3Table(activeTab)}

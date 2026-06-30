@@ -164,8 +164,8 @@ export default function SrdagPage() {
             icon={Target} 
             label="Kelola Target" 
             onClick={() => navigate('/jaringan/srdag/target')}
-            colorHex="#14A2BA"
-            colorRgb="37, 99, 235"
+            colorHex="#00A2B9"
+            colorRgb="0, 162, 185"
           />
         )}
         {(user?.role === 'pic_jaringan' || user?.role === 'admin') && (
@@ -173,8 +173,8 @@ export default function SrdagPage() {
             icon={Plus} 
             label="Input SRDAG" 
             onClick={() => navigate('/jaringan/input-srdag')}
-            colorHex="#14A2BA"
-            colorRgb="37, 99, 235"
+            colorHex="#00A2B9"
+            colorRgb="0, 162, 185"
           />
         )}
       </div>

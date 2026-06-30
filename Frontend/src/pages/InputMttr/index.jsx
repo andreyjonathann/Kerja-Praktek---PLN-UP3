@@ -199,7 +199,7 @@ export default function InputMttrPage() {
                         <select 
                             {...register('bulan')} 
                              
-                            className="w-full pl-5 pr-12 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-700 font-bold cursor-pointer appearance-none"
+                            className="w-full px-4 py-2 pr-12 bg-white border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-sm cursor-pointer appearance-none shadow-sm text-gray-400 font-normal"
                         >
                             <option value="">-- PILIH BULAN --</option>
                             {MONTHS.map((m) => (

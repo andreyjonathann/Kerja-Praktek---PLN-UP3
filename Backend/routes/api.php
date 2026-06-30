@@ -93,7 +93,10 @@ Route::middleware('api')->group(function () {
     
     // Gangguan TM
     Route::get('/jaringan/gangguan-tm', [\App\Http\Controllers\GangguanTmController::class, 'index']);
-    Route::post('/jaringan/gangguan-tm', [\App\Http\Controllers\GangguanTmController::class, 'store']);
+    Route::post('/jaringan/gangguan-tm', [\App\Http\Controllers\GangguanTmController::class, 'store']); // Legacy
+    Route::post('/jaringan/gangguan-tm/kurang-5', [\App\Http\Controllers\GangguanTmController::class, 'storeKurang5Mnt']);
+    Route::post('/jaringan/gangguan-tm/lebih-5', [\App\Http\Controllers\GangguanTmController::class, 'storeLebih5Mnt']);
+    Route::get('/jaringan/gangguan-tm/lebih-5/detail', [\App\Http\Controllers\GangguanTmController::class, 'detailLebih5Mnt']);
     Route::get('/jaringan/gangguan-tm/rekap', [\App\Http\Controllers\GangguanTmController::class, 'rekap']);
     Route::get('/jaringan/gangguan-tm/semua-up3', [\App\Http\Controllers\GangguanTmController::class, 'semuaUp3']);
     

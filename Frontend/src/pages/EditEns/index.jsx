@@ -219,10 +219,10 @@ export default function EditEnsPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <div style={{
                   width: 28, height: 28, borderRadius: 7,
-                  background: '#2563EB18', border: '1px solid #2563EB30',
+                  background: '#00A2B918', border: '1px solid #00A2B930',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
-                  <RadioTower size={13} style={{ color: '#2563EB' }} />
+                  <RadioTower size={13} style={{ color: '#00A2B9' }} />
                 </div>
                 <span style={{ fontWeight: 700, fontSize: '0.87rem', letterSpacing: '0.03em' }}>
                   DISTRIBUSI

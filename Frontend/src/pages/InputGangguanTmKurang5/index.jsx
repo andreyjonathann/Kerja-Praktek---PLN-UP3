@@ -7,15 +7,16 @@ import { MONTHS } from '@/utils/constants';
 import { CheckCircle, AlertCircle, Activity, Save, ChevronDown } from 'lucide-react';
 import TargetWarning from '@/components/ui/TargetWarning';
 
-export default function InputGangguanTmPage() {
+export default function InputGangguanTmKurang5Page() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [hasTarget, setHasTarget] = useState(true);
   const [dashboardData, setDashboardData] = useState(null);
+  const [existingData, setExistingData] = useState({ kurang: false });
 
-  const { register, handleSubmit, formState: { errors }, reset, control } = useForm({
+  const { register, handleSubmit, formState: { errors }, setValue, control } = useForm({
       defaultValues: {
           tahun: '',
       }
@@ -36,7 +37,7 @@ export default function InputGangguanTmPage() {
         }
         setHasTarget(isTargetSet);
       } catch (err) {
-        setHasTarget(true); // Default to true on error to avoid unnecessary panic
+        setHasTarget(true); 
       }
     };
     const fetchData = async () => {
@@ -53,41 +54,21 @@ export default function InputGangguanTmPage() {
 
   const isDuplicate = React.useMemo(() => {
     if (!dashboardData || !selectedMonth) return false;
-    const ggnLebih = dashboardData['lebih_5_mnt']?.monthly[parseInt(selectedMonth)];
     const ggnKurang = dashboardData['kurang_5_mnt']?.monthly[parseInt(selectedMonth)];
-    
-    const isLebihFilled = ggnLebih !== null && ggnLebih !== undefined;
-    const isKurangFilled = ggnKurang !== null && ggnKurang !== undefined;
-
-    if (isLebihFilled && isKurangFilled) {
-      return true;
-    }
-    return false;
-  }, [dashboardData, selectedMonth]);
-
-  const existingData = React.useMemo(() => {
-    if (!dashboardData || !selectedMonth) return { lebih: false, kurang: false };
-    const ggnLebih = dashboardData['lebih_5_mnt']?.monthly[parseInt(selectedMonth)];
-    const ggnKurang = dashboardData['kurang_5_mnt']?.monthly[parseInt(selectedMonth)];
-    return {
-      lebih: ggnLebih !== null && ggnLebih !== undefined,
-      kurang: ggnKurang !== null && ggnKurang !== undefined
-    };
+    return ggnKurang !== null && ggnKurang !== undefined;
   }, [dashboardData, selectedMonth]);
 
   useEffect(() => {
     if (selectedMonth && dashboardData) {
-      const ggnLebih = dashboardData['lebih_5_mnt']?.monthly[parseInt(selectedMonth)];
       const ggnKurang = dashboardData['kurang_5_mnt']?.monthly[parseInt(selectedMonth)];
       
-      reset({
-        tahun: selectedYear,
-        bulan: selectedMonth,
-        ggn_tm_lebih_5_mnt: ggnLebih !== null && ggnLebih !== undefined ? ggnLebih : '',
-        ggn_tm_kurang_5_mnt: ggnKurang !== null && ggnKurang !== undefined ? ggnKurang : ''
+      setExistingData({
+        kurang: ggnKurang !== null && ggnKurang !== undefined
       });
+      
+      setValue('ggn_tm_kurang_5_mnt', (ggnKurang !== null && ggnKurang !== undefined) ? ggnKurang.toString() : '');
     }
-  }, [selectedMonth, dashboardData, reset, selectedYear]);
+  }, [selectedMonth, dashboardData, setValue]);
 
   const onSubmit = async (data) => {
     setLoading(true);
@@ -96,15 +77,15 @@ export default function InputGangguanTmPage() {
       await api.post('/jaringan/gangguan-tm', {
           bulan: parseInt(data.bulan),
           tahun: parseInt(data.tahun),
-          ggn_tm_lebih_5_mnt: data.ggn_tm_lebih_5_mnt === '' ? null : parseInt(data.ggn_tm_lebih_5_mnt),
-          ggn_tm_kurang_5_mnt: data.ggn_tm_kurang_5_mnt === '' ? null : parseInt(data.ggn_tm_kurang_5_mnt),
+          ggn_tm_kurang_5_mnt: data.ggn_tm_kurang_5_mnt !== '' ? parseInt(data.ggn_tm_kurang_5_mnt) : 0,
       });
 
       setSuccess(true);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
       setTimeout(() => {
-        setSuccess(false);
         navigate('/jaringan/gangguan-tm');
-      }, 1000);
+      }, 2000);
     } catch (err) {
       alert("Error: " + (err.response?.data?.message || err.message));
     } finally {
@@ -118,7 +99,7 @@ export default function InputGangguanTmPage() {
               <div className="w-24 h-24 bg-slate-100 rounded-none flex items-center justify-center mb-8 shadow-inner">
                  <AlertCircle size={48} className="text-slate-400" />
               </div>
-              <h2 className="text-3xl font-extrabold text-slate-800 mb-4 tracking-tight">Akses Dibatasi</h2>
+              <h1 className="text-2xl font-black text-slate-800 tracking-tight">Tambah Gangguan TM &lt; 5 Menit</h1>
               <p className="text-slate-500 max-w-lg text-lg leading-relaxed">Admin tidak menginput data kinerja. Silakan gunakan akun PIC Bidang untuk memasukkan realisasi KPI bulanan.</p>
           </div>
       );
@@ -127,7 +108,6 @@ export default function InputGangguanTmPage() {
   return (
     <div className="bg-slate-50 min-h-screen w-full flex flex-col gap-6 animate-fade-in relative">
       
-      {/* Sticky Header */}
       <div className="sticky top-0 z-50 bg-white border-b border-slate-200 py-4 px-4 md:px-8 shadow-sm">
         <div className="w-full flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -136,7 +116,7 @@ export default function InputGangguanTmPage() {
              </div>
              <div>
                <h1 className="text-xl md:text-2xl font-bold text-slate-800">
-                 Tambah Gangguan TM
+                 Tambah Gangguan TM &lt; 5 Menit
                </h1>
              </div>
           </div>
@@ -180,7 +160,7 @@ export default function InputGangguanTmPage() {
              </div>
              <div style={{
                display: 'inline-flex',
-               background: (loading || isDuplicate) ? '#93c5fd' : '#00A2B9',
+               background: '#00A2B9',
                padding: 4,
                borderRadius: 12,
                border: 'none',
@@ -207,12 +187,12 @@ export default function InputGangguanTmPage() {
                     gap: '8px'
                   }}
                   onMouseEnter={e => {
-                     if(!loading) {
+                     if(!loading && !isDuplicate) {
                        e.currentTarget.style.background = '#035B71'; e.currentTarget.style.color = '#ffffff';
                      }
                   }}
                   onMouseLeave={e => {
-                     if(!loading) {
+                     if(!loading && !isDuplicate) {
                        e.currentTarget.style.background = '#00A2B9'; e.currentTarget.style.color = '#ffffff';
                      }
                   }}
@@ -274,47 +254,12 @@ export default function InputGangguanTmPage() {
               </div>
               {isDuplicate && (
                 <p className="text-red-500 text-sm mt-3 font-semibold">
-                  Data untuk periode ini sudah diinput. Silakan pilih bulan/tahun lain.
+                  Data untuk periode ini sudah diinput.
                 </p>
               )}
-              {!isDuplicate && (existingData.lebih || existingData.kurang) && (
-                <p className="text-amber-600 text-sm mt-3 font-semibold">
-                  Beberapa data untuk periode ini sudah diinput dan tidak dapat diubah. Silakan lengkapi data yang tersisa.
-                </p>
-              )}
-              {(errors.bulan || errors.tahun) && (
-                <p className="text-red-500 text-sm mt-3 font-semibold">
-                  Wajib pilih bulan dan tahun!
-                </p>
-              )}
-            </div>
-
-            <div className="mb-6 mt-10">
-              <h2 className="text-xl font-extrabold text-slate-800 flex items-center gap-2">
-                <Activity size={24} className="text-blue-500" />
-                Detail Input Gangguan TM
-              </h2>
             </div>
 
             <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden mb-8">
-              
-              <div className="flex flex-col md:flex-row md:items-center justify-between py-[20px] px-4 border-b border-[#f3f4f6] gap-4 hover:bg-slate-100/50 transition">
-                 <div className="flex items-center gap-4 flex-1">
-                   <div>
-                     <label className="font-bold text-slate-600 text-[13px]">Gangguan &gt; 5 Menit (Kali)</label>
-                   </div>
-                 </div>
-                 <div className="relative flex-1 flex justify-end">
-                   <input 
-                      type="number" min="0" 
-                      {...register('ggn_tm_lebih_5_mnt')} 
-                      readOnly={existingData.lebih}
-                      className={`w-full max-w-xs border ${errors.ggn_tm_lebih_5_mnt ? 'border-red-400' : 'border-gray-300'} rounded-md px-3 py-2 shadow-sm text-right outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 ${existingData.lebih ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'bg-white'}`}
-                      placeholder="Contoh: 2"
-                   />
-                 </div>
-              </div>
-
               <div className="flex flex-col md:flex-row md:items-center justify-between py-[20px] px-4 border-b border-[#f3f4f6] gap-4 hover:bg-slate-100/50 transition">
                  <div className="flex items-center gap-4 flex-1">
                    <div>

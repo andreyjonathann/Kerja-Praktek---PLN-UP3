@@ -300,7 +300,7 @@ export default function EnsPage() {
   }
 
   return (
-    <div className="p-4 md:p-6 w-full animate-fade-in space-y-8">
+    <div className="p-4 md:p-6 w-full animate-fade-in flex flex-col gap-8">
       
       {/* Modal Detail Distribusi */}
       {showModal && selectedDistribusi && (
@@ -324,7 +324,7 @@ export default function EnsPage() {
                 <span style={{ fontWeight: 'bold', color: '#0f172a' }}>{selectedDistribusi[modalType === 'bulanan' ? 'b_distribusi_bencana_alam' : 'k_distribusi_bencana_alam']?.toFixed(3) || '0.000'}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', background: '#eff6ff', borderRadius: '8px', marginTop: '4px', border: '1px solid #bfdbfe' }}>
-                <span style={{ fontWeight: 700, color: '#1d4ed8' }}>Total Distribusi</span>
+                <span style={{ fontWeight: 700, color: '#035B71' }}>Total Distribusi</span>
                 <span style={{ fontWeight: 800, color: '#1e40af' }}>{selectedDistribusi[modalType === 'bulanan' ? 'b_distribusi_total' : 'k_distribusi_total']?.toFixed(3) || '0.000'}</span>
               </div>
             </div>
@@ -348,13 +348,15 @@ export default function EnsPage() {
           </div>
         </div>
 
-        {/* Action Button */}
+        {/* Action Buttons */}
+        <div className="flex items-center gap-3">
+          <EnsExportModal />
           <div style={{
             display: 'inline-flex',
-            background: 'rgba(20, 162, 186, 0.05)',
+            background: 'rgba(0, 162, 185, 0.05)',
             padding: 4,
             borderRadius: 12,
-            border: '1px solid rgba(20, 162, 186, 0.15)',
+            border: '1px solid rgba(0, 162, 185, 0.15)',
             cursor: 'pointer'
           }}>
             <button
@@ -368,36 +370,28 @@ export default function EnsPage() {
                 border: 'none',
                 cursor: 'pointer',
                 background: 'var(--bg-card)',
-                color: '#14A2BA',
-                boxShadow: '0 2px 8px rgba(20, 162, 186, 0.15)',
+                color: '#00A2B9',
+                boxShadow: '0 2px 8px rgba(0, 162, 185, 0.15)',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px'
               }}
               onMouseEnter={e => {
-                 e.currentTarget.style.background = '#14A2BA';
+                 e.currentTarget.style.background = '#00A2B9';
                  e.currentTarget.style.color = '#FFFFFF';
               }}
               onMouseLeave={e => {
                  e.currentTarget.style.background = 'var(--bg-card)';
-                 e.currentTarget.style.color = '#14A2BA';
+                 e.currentTarget.style.color = '#00A2B9';
               }}
             >
               <Plus size={16} /> Tambah ENS
             </button>
           </div>
-      </div>
-
-      {/* Filter and Export Actions */}
-      <div className="card p-5">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <h2 className="text-lg font-bold text-slate-800">Export Data ENS</h2>
-          
-          <div className="flex items-center gap-3">
-            <EnsExportModal />
-          </div>
         </div>
       </div>
+
+
 
       {/* Charts Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">

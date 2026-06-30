@@ -20,6 +20,9 @@ import RatingNegatifPage from '@/pages/RatingNegatif'
 import InputRatingNegatifPage from '@/pages/InputRatingNegatif'
 import GangguanTmPage from '@/pages/GangguanTm'
 import InputGangguanTmPage from '@/pages/InputGangguanTm'
+import InputGangguanTmKurang5Page from '@/pages/InputGangguanTmKurang5'
+import InputGangguanTmLebih5Page from '@/pages/InputGangguanTmLebih5'
+import DetailGangguanTmLebih5Page from '@/pages/DetailGangguanTmLebih5'
 import GangguanSwitchingPage from '@/pages/GangguanSwitching'
 import InputGangguanSwitchingPage from '@/pages/InputGangguanSwitching'
 import TargetGangguanSwitchingPage from '@/pages/TargetGangguanSwitching'
@@ -213,7 +216,25 @@ export default function App() {
 
               <Route path="/jaringan/gangguan-tm/input" element={
                 <ProtectedRoute>
-                  <InputGangguanTmPage />
+                  <Navigate to="/jaringan/gangguan-tm" replace />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/jaringan/gangguan-tm/input-kurang-5-menit" element={
+                <ProtectedRoute>
+                  <InputGangguanTmKurang5Page />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/jaringan/gangguan-tm/input-lebih-5-menit" element={
+                <ProtectedRoute>
+                  <InputGangguanTmLebih5Page />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/jaringan/gangguan-tm/lebih-5-menit/detail/:tahun/:bulan" element={
+                <ProtectedRoute>
+                  <DetailGangguanTmLebih5Page />
                 </ProtectedRoute>
               } />
 

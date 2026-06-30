@@ -264,7 +264,7 @@ export default function InputEnsPage() {
 
              <div style={{
                display: 'inline-flex',
-               background: 'rgba(37, 99, 235, 0.05)',
+               background: 'rgba(0, 162, 185, 0.05)',
                padding: 4,
                borderRadius: 12,
                border: 'none',
@@ -283,21 +283,21 @@ export default function InputEnsPage() {
                     transition: 'all 0.2s ease',
                     border: 'none',
                     cursor: loading ? 'not-allowed' : 'pointer',
-                    background: loading ? '#E7F6F9' : '#14A2BA',
+                    background: loading ? '#93c5fd' : '#00A2B9',
                     color: '#ffffff',
-                    boxShadow: loading ? 'none' : '0 4px 12px rgba(20, 162, 186, 0.3)',
+                    boxShadow: loading ? 'none' : '0 4px 12px rgba(0, 162, 185, 0.3)',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '8px'
                   }}
                   onMouseEnter={e => {
                      if(!loading) {
-                       e.currentTarget.style.background = '#1d4ed8'; e.currentTarget.style.color = '#ffffff';
+                       e.currentTarget.style.background = '#035B71'; e.currentTarget.style.color = '#ffffff';
                      }
                   }}
                   onMouseLeave={e => {
                      if(!loading) {
-                       e.currentTarget.style.background = '#2563eb'; e.currentTarget.style.color = '#ffffff';
+                       e.currentTarget.style.background = '#00A2B9'; e.currentTarget.style.color = '#ffffff';
                      }
                   }}
                >
@@ -333,7 +333,7 @@ export default function InputEnsPage() {
               <div className="relative w-1/2">
                   <select 
                       {...register('periode_id', { required: true })} 
-                      className={`w-full px-4 py-2 pr-12 bg-white border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-bold cursor-pointer appearance-none shadow-sm ${!selectedMonth ? 'text-gray-400' : 'text-slate-700'}`}
+                      className="w-full px-4 py-2 pr-12 bg-white border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-sm cursor-pointer appearance-none shadow-sm text-gray-400 font-normal"
                   >
                       <option value="" className="text-gray-400">Bulan</option>
                       {MONTHS.map(m => (
@@ -350,7 +350,7 @@ export default function InputEnsPage() {
                       type="number"
                       {...register('tahun', { required: true })} 
                       placeholder="Tahun"
-                      className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-slate-700 font-bold shadow-sm placeholder-gray-300"
+                      className="w-full border border-slate-200 rounded-xl px-4 py-2 text-sm text-gray-400 font-normal shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500"
                   />
               </div>
             </div>

@@ -14,7 +14,7 @@ const CONFIG = {
     label: 'SAIDI',
     unit: 'Menit/Pelanggan',
     icon: Clock,
-    color: '#14A2BA',
+    color: '#00A2B9',
     apiKey: 'saidi',
     prefix: 'saidi_',
     distribusiKeys: ['distribusi_padam_tidak_terencana', 'distribusi_padam_terencana', 'distribusi_bencana_alam'],
@@ -258,10 +258,10 @@ export default function EditKinerjaPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <div style={{
                   width: 28, height: 28, borderRadius: 7,
-                  background: '#14A2BA18', border: '1px solid #14A2BA30',
+                  background: '#00A2B918', border: '1px solid #00A2B930',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
-                  <RadioTower size={13} style={{ color: '#14A2BA' }} />
+                  <RadioTower size={13} style={{ color: '#00A2B9' }} />
                 </div>
                 <span style={{ fontWeight: 700, fontSize: '0.87rem', letterSpacing: '0.03em' }}>
                   DISTRIBUSI
@@ -338,7 +338,7 @@ export default function EditKinerjaPage() {
             disabled={saving}
             style={{
               padding: '13px 0', borderRadius: 12, border: 'none',
-              background: saving ? '#E7F6F9' : cfg.color,
+              background: saving ? '#93c5fd' : cfg.color,
               color: '#fff', fontWeight: 700, fontSize: '0.95rem',
               cursor: saving ? 'not-allowed' : 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,

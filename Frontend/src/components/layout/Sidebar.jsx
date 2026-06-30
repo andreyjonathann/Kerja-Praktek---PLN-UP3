@@ -184,7 +184,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
                           paddingTop: '10px',
                           paddingBottom: '10px',
                           paddingRight: '16px',
-                          color: isChildActive ? '#3B82F6' : 'rgba(255,255,255,0.65)'
+                          color: isChildActive ? '#FFFFFF' : 'rgba(255,255,255,0.65)'
                         }}
                       >
                         <ChevronDown

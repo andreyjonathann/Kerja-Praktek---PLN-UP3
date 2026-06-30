@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import api from '@/services/api'
 import { useFilter } from '@/context/FilterContext'
 import { useAuth } from '@/context/AuthContext'
-import { Activity, ArrowLeft, Target, AlertTriangle, Save, Loader2, Info } from 'lucide-react'
+import { Activity, ArrowLeft, Target, AlertTriangle, Save, Loader2, Info, Calendar, FileText } from 'lucide-react'
 import TargetWarning from '@/components/ui/TargetWarning'
 
 const MONTHS_FULL = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
@@ -26,14 +26,14 @@ export default function InputGangguanSwitchingPage() {
   
   const [switchingForm, setSwitchingForm] = useState({
     tahun: '',
-    bulan: currentMonthIndex + 1,
+    bulan: '',
     jumlah_gangguan: '',
     existingId: null
   })
   
   const [trafoForm, setTrafoForm] = useState({
     tahun: '',
-    bulan: currentMonthIndex + 1,
+    bulan: '',
     jumlah_gangguan: '',
     existingId: null
   })
@@ -104,7 +104,7 @@ export default function InputGangguanSwitchingPage() {
   };
 
   const submitSwitching = async (e) => {
-    e.preventDefault();
+    e?.preventDefault();
     setSaving(true);
     if (!switchingForm.tahun) {
       showNotification('error', 'Tahun wajib diisi');
@@ -125,7 +125,9 @@ export default function InputGangguanSwitchingPage() {
         await api.post(`/v1/gangguan-switching`, payload);
       }
       showNotification('success', 'Data Switching berhasil disimpan.');
-      fetchTargetAndData();
+      setTimeout(() => {
+        navigate('/jaringan/gangguan-switching');
+      }, 1000);
     } catch (err) {
       console.error(err);
       showNotification('error', 'Gagal menyimpan data.');
@@ -135,7 +137,7 @@ export default function InputGangguanSwitchingPage() {
   };
 
   const submitTrafo = async (e) => {
-    e.preventDefault();
+    e?.preventDefault();
     setSaving(true);
     if (!trafoForm.tahun) {
       showNotification('error', 'Tahun wajib diisi');
@@ -156,7 +158,9 @@ export default function InputGangguanSwitchingPage() {
         await api.post(`/v1/gangguan-trafo`, payload);
       }
       showNotification('success', 'Data Trafo berhasil disimpan.');
-      fetchTargetAndData();
+      setTimeout(() => {
+        navigate('/jaringan/gangguan-switching');
+      }, 1000);
     } catch (err) {
       console.error(err);
       showNotification('error', 'Gagal menyimpan data.');
@@ -165,190 +169,230 @@ export default function InputGangguanSwitchingPage() {
     }
   };
 
+  const handleSaveAll = (e) => {
+    if (activeTab === 'switching') {
+      submitSwitching(e);
+    } else {
+      submitTrafo(e);
+    }
+  };
+  const isDuplicate = activeTab === 'switching' ? !!switchingForm.existingId : !!trafoForm.existingId;
+
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <button 
-          onClick={() => navigate('/jaringan/gangguan-switching')}
-          className="p-2 hover:bg-slate-100 rounded-full transition-colors"
-        >
-          <ArrowLeft size={20} className="text-slate-600" />
-        </button>
-        <div>
-          <h1 className="page-title flex items-center gap-2">
-            <Activity className="text-blue-600" size={24} />
-            Input Gangguan Switching & Trafo
-          </h1>
-          <p className="page-subtitle">Form pengisian realisasi bulanan untuk UP3 {up3} ({year})</p>
+    <div className="min-h-screen bg-slate-50/50 flex flex-col animate-fade-in">
+      {/* HEADER BAR (Identik dgn referensi SAIDI) */}
+      <div className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div className="w-full px-[32px] py-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+             {/* Left Header */}
+             <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100/50 flex items-center justify-center text-blue-600 border border-blue-100/50 shadow-inner">
+                  <Activity size={24} />
+                </div>
+                <div>
+                  <h1 className="text-xl font-extrabold text-slate-800 tracking-tight">Input Gangguan Switching & Trafo</h1>
+                  <p className="text-slate-500 text-sm font-medium mt-0.5">Form pengisian realisasi bulanan untuk UP3 {up3} ({year})</p>
+                </div>
+             </div>
+
+             {/* Right Actions */}
+             <div className="flex items-center gap-3">
+               <div style={{
+                 display: 'inline-flex',
+                 background: 'transparent',
+                 padding: 4,
+                 borderRadius: 12,
+                 border: '1px solid #e2e8f0',
+                 cursor: 'pointer'
+               }}>
+                 <button 
+                    type="button"
+                    onClick={() => navigate('/jaringan/gangguan-switching')}
+                    style={{
+                      padding: '6px 16px',
+                      borderRadius: 9,
+                      fontSize: '0.85rem',
+                      fontWeight: 700,
+                      transition: 'all 0.2s ease',
+                      border: 'none',
+                      cursor: 'pointer',
+                      background: 'transparent',
+                      color: '#64748b',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}
+                    onMouseEnter={e => {
+                         e.currentTarget.style.background = '#f1f5f9';
+                         e.currentTarget.style.color = '#334155';
+                    }}
+                    onMouseLeave={e => {
+                         e.currentTarget.style.background = 'transparent';
+                         e.currentTarget.style.color = '#64748b';
+                    }}
+                 >
+                    Batal
+                 </button>
+               </div>
+               <div style={{
+                 display: 'inline-flex',
+                 background: (saving || isDuplicate) ? '#93c5fd' : '#00A2B9',
+                 padding: 4,
+                 borderRadius: 12,
+                 border: 'none',
+                 cursor: (saving || isDuplicate) ? 'not-allowed' : 'pointer',
+                 opacity: (saving || isDuplicate) ? 0.6 : 1
+               }}>
+                 <button 
+                    type="button"
+                    onClick={handleSaveAll}
+                    disabled={saving || isDuplicate}
+                    style={{
+                      padding: '6px 16px',
+                      borderRadius: 9,
+                      fontSize: '0.85rem',
+                      fontWeight: 700,
+                      transition: 'all 0.2s ease',
+                      border: 'none',
+                      cursor: (saving || isDuplicate) ? 'not-allowed' : 'pointer',
+                      background: (saving || isDuplicate) ? '#93c5fd' : '#00A2B9',
+                      color: '#ffffff',
+                      boxShadow: (saving || isDuplicate) ? 'none' : '0 4px 12px rgba(0, 162, 185, 0.3)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}
+                    onMouseEnter={e => {
+                       if(!saving && !isDuplicate) {
+                         e.currentTarget.style.background = '#035B71'; e.currentTarget.style.color = '#ffffff';
+                       }
+                    }}
+                    onMouseLeave={e => {
+                       if(!saving && !isDuplicate) {
+                         e.currentTarget.style.background = '#00A2B9'; e.currentTarget.style.color = '#ffffff';
+                       }
+                    }}
+                 >
+                    {saving ? <div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" /> : <Save size={16} />}
+                    Simpan Realisasi
+                 </button>
+               </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      {notification && (
-        <div className={`p-4 rounded-lg flex items-center gap-3 ${notification.type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'}`}>
-          <Info size={20} />
-          <p className="font-medium">{notification.message}</p>
-        </div>
-      )}
-
-      {/* Target Warning */}
-      <TargetWarning up3={up3} year={year} isVisible={!loading && !target} />
-
-      {/* Tabs */}
-      <div className="bg-white shadow-sm border border-slate-200 rounded-xl overflow-hidden">
-        <div className="flex border-b border-slate-200">
-          <button
-            className={`flex-1 py-4 px-6 text-center font-semibold text-sm transition-colors ${activeTab === 'switching' ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-600' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'}`}
-            onClick={() => setActiveTab('switching')}
-          >
-            Gangguan Switching (Kubikel/PHBTM)
-          </button>
-          <button
-            className={`flex-1 py-4 px-6 text-center font-semibold text-sm transition-colors ${activeTab === 'trafo' ? 'bg-orange-50 text-orange-700 border-b-2 border-orange-600' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'}`}
-            onClick={() => setActiveTab('trafo')}
-          >
-            Gangguan Trafo Distribusi
-          </button>
-        </div>
-
-        <div className="p-6 md:p-8">
-          {activeTab === 'switching' && (
-            <form onSubmit={submitSwitching} className="space-y-6">
-              <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="bg-blue-100 p-2 rounded-lg">
-                    <Target className="text-blue-600" size={20} />
-                  </div>
-                  <div>
-                    <p className="text-sm text-slate-500">Target Tahunan (ditetapkan Admin)</p>
-                    <p className="text-lg font-bold text-slate-800">{target?.target_switching_tahunan ?? '—'} <span className="text-sm font-normal text-slate-500">Kali</span></p>
-                  </div>
+      <div className="w-full px-[32px] py-4 md:py-8">
+        <div className="flex flex-col gap-6 pt-[28px] mb-[36px]">
+          
+          {notification && (
+            <div className={`px-5 py-4 border rounded-xl flex items-center gap-3 shadow-sm animate-fade-in ${notification.type === 'error' ? 'bg-red-50 border-red-200 text-red-700' : 'bg-emerald-50 border-emerald-200 text-emerald-700'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${notification.type === 'error' ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}`}>
+                    <Activity size={20} />
                 </div>
-                {switchingForm.existingId && (
-                  <span className="px-3 py-1 bg-yellow-100 text-yellow-800 text-xs font-bold rounded-full border border-yellow-200">
-                    MODE EDIT
-                  </span>
-                )}
-              </div>
+                <div>
+                    <h4 className="text-sm font-bold">{notification.type === 'error' ? 'Gagal' : 'Berhasil'}</h4>
+                    <p className="text-xs font-medium">{notification.message}</p>
+                </div>
+            </div>
+          )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700">UP3</label>
-                  <input type="text" value={up3} disabled className="w-full px-4 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-600 cursor-not-allowed" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700">Tahun <span className="text-red-500">*</span></label>
-                  <input type="number" name="tahun" value={switchingForm.tahun} onChange={handleSwitchingChange} required placeholder="Contoh: 2026" className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700">Bulan <span className="text-red-500">*</span></label>
-                  <select 
-                    name="bulan" 
-                    value={switchingForm.bulan} 
-                    onChange={handleSwitchingChange}
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+          <TargetWarning up3={up3} year={year} isVisible={!loading && !target} />
+
+          {/* PERIODE SETTINGS (Identik dgn SAIDI) */}
+          <div className="mb-8 py-6">
+            <h3 className="text-xs font-bold text-slate-500 mb-3 uppercase tracking-wider mt-6">Pilih Periode</h3>
+            <div className="flex gap-4">
+               <div className="relative w-1/2">
+                  <select
+                    name="bulan"
+                    value={activeTab === 'switching' ? switchingForm.bulan : trafoForm.bulan}
+                    onChange={activeTab === 'switching' ? handleSwitchingChange : handleTrafoChange}
+                    className="w-full px-4 py-2 pr-12 bg-white border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-sm cursor-pointer appearance-none shadow-sm text-gray-400 font-normal"
                   >
+                    <option value="" disabled className="text-gray-400">Bulan</option>
                     {MONTHS_FULL.map((m, i) => (
                       <option key={i+1} value={i+1}>{m}</option>
                     ))}
                   </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700">Jumlah Gangguan (Kali) <span className="text-red-500">*</span></label>
-                  <input 
-                    type="number" 
-                    min="0"
-                    name="jumlah_gangguan"
-                    value={switchingForm.jumlah_gangguan}
-                    onChange={handleSwitchingChange}
-                    required
-                    placeholder="Contoh: 2"
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                  />
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-slate-100 flex justify-end">
-                <button 
-                  type="submit" 
-                  disabled={saving || loading}
-                  className="btn-primary flex items-center gap-2"
-                >
-                  {saving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
-                  {switchingForm.existingId ? 'Update Data' : 'Simpan Data'}
-                </button>
-              </div>
-            </form>
-          )}
-
-          {activeTab === 'trafo' && (
-            <form onSubmit={submitTrafo} className="space-y-6">
-              <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="bg-orange-100 p-2 rounded-lg">
-                    <Target className="text-orange-600" size={20} />
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                    <Calendar size={16} />
                   </div>
-                  <div>
-                    <p className="text-sm text-slate-500">Target Tahunan (ditetapkan Admin)</p>
-                    <p className="text-lg font-bold text-slate-800">{target?.target_trafo_tahunan ?? '—'} <span className="text-sm font-normal text-slate-500">Kali</span></p>
-                  </div>
-                </div>
-                {trafoForm.existingId && (
-                  <span className="px-3 py-1 bg-yellow-100 text-yellow-800 text-xs font-bold rounded-full border border-yellow-200">
-                    MODE EDIT
-                  </span>
-                )}
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700">UP3</label>
-                  <input type="text" value={up3} disabled className="w-full px-4 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-600 cursor-not-allowed" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700">Tahun <span className="text-red-500">*</span></label>
-                  <input type="number" name="tahun" value={trafoForm.tahun} onChange={handleTrafoChange} required placeholder="Contoh: 2026" className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700">Bulan <span className="text-red-500">*</span></label>
-                  <select 
-                    name="bulan" 
-                    value={trafoForm.bulan} 
-                    onChange={handleTrafoChange}
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
-                  >
-                    {MONTHS_FULL.map((m, i) => (
-                      <option key={i+1} value={i+1}>{m}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700">Jumlah Gangguan Trafo (Kali) <span className="text-red-500">*</span></label>
-                  <input 
-                    type="number" 
-                    min="0"
-                    name="jumlah_gangguan"
-                    value={trafoForm.jumlah_gangguan}
-                    onChange={handleTrafoChange}
-                    required
-                    placeholder="Contoh: 1"
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+               </div>
+               
+               <div className="relative w-1/2">
+                  <input
+                    type="number"
+                    name="tahun"
+                    value={activeTab === 'switching' ? switchingForm.tahun : trafoForm.tahun}
+                    onChange={activeTab === 'switching' ? handleSwitchingChange : handleTrafoChange}
+                    placeholder="Tahun"
+                    className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-sm placeholder:text-gray-400 text-gray-400 shadow-sm font-normal"
                   />
-                </div>
-              </div>
+               </div>
+            </div>
+            {isDuplicate && (
+              <p className="text-red-500 text-sm mt-3 font-semibold">
+                Data untuk periode ini sudah diinput. Silakan pilih bulan/tahun lain.
+              </p>
+            )}
+          </div>
 
-              <div className="pt-4 border-t border-slate-100 flex justify-end">
-                <button 
-                  type="submit" 
-                  disabled={saving || loading}
-                  className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded-lg font-semibold transition-all shadow-sm hover:shadow flex items-center gap-2"
-                >
-                  {saving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
-                  {trafoForm.existingId ? 'Update Data' : 'Simpan Data'}
-                </button>
-              </div>
-            </form>
-          )}
+          {/* TABS & RINCIAN GANGGUAN (Identik dgn SAIDI Layout) */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mt-2">
+            <div className="flex border-b border-slate-200">
+              <button
+                className={`flex-1 py-4 px-6 text-center font-bold text-sm transition-colors ${activeTab === 'switching' ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-600' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'}`}
+                onClick={() => setActiveTab('switching')}
+              >
+                Gangguan Switching (Kubikel/PHBTM)
+              </button>
+              <button
+                className={`flex-1 py-4 px-6 text-center font-bold text-sm transition-colors ${activeTab === 'trafo' ? 'bg-orange-50 text-orange-700 border-b-2 border-orange-600' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'}`}
+                onClick={() => setActiveTab('trafo')}
+              >
+                Gangguan Trafo Distribusi
+              </button>
+            </div>
+            
+            <div className="p-0">
+               <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-lg ${activeTab === 'switching' ? 'bg-blue-100 text-blue-600' : 'bg-orange-100 text-orange-600'} flex items-center justify-center`}>
+                      <FileText size={18} />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-800">RINCIAN DATA GANGGUAN</h3>
+                      <p className="text-xs text-slate-500 font-medium">Masukkan jumlah kali gangguan {activeTab === 'switching' ? 'switching' : 'trafo'}</p>
+                    </div>
+                  </div>
+
+               </div>
+
+               <div className="p-6 space-y-4">
+                  {/* Field: Jumlah Gangguan */}
+                  <div className="flex justify-between items-center bg-slate-50 border border-slate-200 px-5 py-4 rounded-xl hover:border-blue-300 transition-colors">
+                    <div>
+                        <label className="text-sm font-bold text-slate-700 block">
+                           Jumlah Gangguan {activeTab === 'switching' ? 'Switching' : 'Trafo'} <span className="text-red-500">*</span>
+                        </label>
+                        <p className="text-xs text-slate-500 mt-1">Total realisasi (kali) pada bulan terpilih.</p>
+                    </div>
+                    <div className="w-[280px]">
+                      <input 
+                        type="number" 
+                        min="0"
+                        name="jumlah_gangguan"
+                        value={activeTab === 'switching' ? switchingForm.jumlah_gangguan : trafoForm.jumlah_gangguan}
+                        onChange={activeTab === 'switching' ? handleSwitchingChange : handleTrafoChange}
+                        placeholder="Contoh: 2"
+                        className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-sm placeholder:text-gray-400 text-gray-400 shadow-sm font-normal"
+                      />
+                    </div>
+                  </div>
+               </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

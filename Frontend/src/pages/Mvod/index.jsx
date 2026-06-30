@@ -131,8 +131,8 @@ export default function MvodPage() {
             icon={Target} 
             label="Kelola Target SLA" 
             onClick={() => navigate('/jaringan/mvod/target')}
-            colorHex="#14A2BA"
-            colorRgb="37, 99, 235"
+            colorHex="#00A2B9"
+            colorRgb="0, 162, 185"
           />
         )}
         {(user?.role === 'pic_jaringan' || user?.role === 'admin') && (
@@ -140,8 +140,8 @@ export default function MvodPage() {
             icon={Plus} 
             label="Input Realisasi MVOD" 
             onClick={() => navigate('/jaringan/input-mvod')}
-            colorHex="#14A2BA"
-            colorRgb="37, 99, 235"
+            colorHex="#00A2B9"
+            colorRgb="0, 162, 185"
           />
         )}
       </div>
