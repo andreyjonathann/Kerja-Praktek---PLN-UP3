@@ -193,13 +193,13 @@ export default function RatingNegatifPage() {
               className="icon-wrapper-interactive"
               style={{
                 width: 34, height: 34, borderRadius: 10,
-                background: 'linear-gradient(135deg, rgba(37,99,235,0.2), rgba(37,99,235,0.08))',
-                border: '1px solid rgba(37,99,235,0.25)',
+                background: 'linear-gradient(135deg, rgba(20, 162, 186,0.2), rgba(20, 162, 186,0.08))',
+                border: '1px solid rgba(20, 162, 186,0.25)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 flexShrink: 0,
               }}
             >
-              <Activity size={16} style={{ color: '#2563EB' }} />
+              <Activity size={16} style={{ color: '#14A2BA' }} />
             </div>
             <h1 className="page-heading">
               Rating Negatif PLN Mobile
@@ -214,10 +214,10 @@ export default function RatingNegatifPage() {
         <div className="flex items-center gap-3">
           <div style={{
             display: 'inline-flex',
-            background: 'rgba(37, 99, 235, 0.05)',
+            background: 'rgba(20, 162, 186, 0.05)',
             padding: 4,
             borderRadius: 12,
-            border: '1px solid rgba(37, 99, 235, 0.15)',
+            border: '1px solid rgba(20, 162, 186, 0.15)',
             cursor: 'pointer'
           }}>
             <button
@@ -231,19 +231,19 @@ export default function RatingNegatifPage() {
                 border: 'none',
                 cursor: 'pointer',
                 background: 'var(--bg-card)',
-                color: '#2563EB',
-                boxShadow: '0 2px 8px rgba(37, 99, 235, 0.15)',
+                color: '#14A2BA',
+                boxShadow: '0 2px 8px rgba(20, 162, 186, 0.15)',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px'
               }}
               onMouseEnter={e => {
-                  e.currentTarget.style.background = '#2563EB';
+                  e.currentTarget.style.background = '#14A2BA';
                   e.currentTarget.style.color = '#FFFFFF';
               }}
               onMouseLeave={e => {
                   e.currentTarget.style.background = 'var(--bg-card)';
-                  e.currentTarget.style.color = '#2563EB';
+                  e.currentTarget.style.color = '#14A2BA';
               }}
             >
               <Plus size={16} /> Input Data
@@ -341,10 +341,10 @@ export default function RatingNegatifPage() {
           actions={
             <div style={{
               display: 'inline-flex',
-              background: 'rgba(37, 99, 235, 0.05)',
+              background: 'rgba(20, 162, 186, 0.05)',
               padding: 4,
               borderRadius: 12,
-              border: '1px solid rgba(37, 99, 235, 0.15)',
+              border: '1px solid rgba(20, 162, 186, 0.15)',
             }}>
               <select
                 value={filters.year || new Date().getFullYear()}
@@ -358,7 +358,7 @@ export default function RatingNegatifPage() {
                   border: 'none',
                   cursor: 'default',
                   background: 'transparent',
-                  color: '#2563EB',
+                  color: '#14A2BA',
                   outline: 'none',
                   appearance: 'none'
                 }}
@@ -395,10 +395,10 @@ export default function RatingNegatifPage() {
           actions={
             <div style={{
               display: 'inline-flex',
-              background: 'rgba(37, 99, 235, 0.05)',
+              background: 'rgba(20, 162, 186, 0.05)',
               padding: 4,
               borderRadius: 12,
-              border: '1px solid rgba(37, 99, 235, 0.15)',
+              border: '1px solid rgba(20, 162, 186, 0.15)',
             }}>
               <select
                 value={filters.year || new Date().getFullYear()}
@@ -412,7 +412,7 @@ export default function RatingNegatifPage() {
                   border: 'none',
                   cursor: 'default',
                   background: 'transparent',
-                  color: '#2563EB',
+                  color: '#14A2BA',
                   outline: 'none',
                   appearance: 'none'
                 }}

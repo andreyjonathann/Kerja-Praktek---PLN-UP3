@@ -100,12 +100,11 @@ export const NAV_ITEMS = [
         type: 'subgroup',
         group: 'PEMASARAN',
         items: [
-          { key: 'input-kpi-pemasaran', label: 'INPUT KPI', path: '/input' },
-          { key: 'jml-pelanggan', label: 'JUMLAH PELANGGAN', path: '/jml-pelanggan' },
-          { key: 'daya-tersambung', label: 'DAYA TERSAMBUNG', path: '/daya-tersambung' },
-          { key: 'penjualan-tl', label: 'PENJUALAN TL (GWH)', path: '/penjualan-tl' },
-          { key: 'pendapatan-tl', label: 'PENDAPATAN TL (RP...)', path: '/pendapatan-tl' },
-          { key: 'data-tarif', label: 'DATA PER TARIF', path: '/data-tarif' },
+          { key: 'pemasaran-penjualan',    label: 'PENJUALAN',        path: '/pemasaran/penjualan',    icon: 'ShoppingCart' },
+          { key: 'pemasaran-pelanggan',    label: 'PELANGGAN',        path: '/pemasaran/pelanggan',    icon: 'Users' },
+          { key: 'pemasaran-daya',         label: 'DAYA TERSAMBUNG',  path: '/pemasaran/daya',         icon: 'Zap' },
+          { key: 'pemasaran-pendapatan-bp',label: 'PENDAPATAN BP',    path: '/pemasaran/pendapatan-bp',icon: 'Wallet' },
+          { key: 'pemasaran-pln-mobile',   label: 'PLN MOBILE',       path: '/pemasaran/pln-mobile',   icon: 'Activity' },
         ],
       },
       {
@@ -131,7 +130,9 @@ export const NAV_ITEMS = [
         type: 'subgroup',
         group: 'NIAGA',
         items: [
-          { key: 'input-kpi-niaga', label: 'INPUT KPI', path: '/input' },
+          { key: 'niaga-pelunasan',   label: 'PELUNASAN PRR',   path: '/niaga/pelunasan',   icon: 'Briefcase' },
+          { key: 'niaga-penghapusan',  label: 'PENGHAPUSAN PRR',  path: '/niaga/penghapusan',  icon: 'TrendingDown' },
+          { key: 'niaga-lbkb',        label: 'TINDAK LANJUT LBKB', path: '/niaga/lbkb',        icon: 'Activity' },
         ],
       },
       {

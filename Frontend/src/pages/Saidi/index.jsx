@@ -183,13 +183,13 @@ export default function SaidiPage() {
             className="icon-wrapper-interactive"
             style={{
               width: 34, height: 34, borderRadius: 10,
-              background: 'linear-gradient(135deg, rgba(37,99,235,0.2), rgba(37,99,235,0.08))',
-              border: '1px solid rgba(37,99,235,0.25)',
+              background: 'linear-gradient(135deg, rgba(20, 162, 186,0.2), rgba(20, 162, 186,0.08))',
+              border: '1px solid rgba(20, 162, 186,0.25)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               flexShrink: 0,
             }}
           >
-            <Clock size={16} style={{ color: '#2563EB' }} />
+            <Clock size={16} style={{ color: '#14A2BA' }} />
           </div>
           <h1 className="page-heading">
             SAIDI — System Average Interruption Duration Index
@@ -216,7 +216,7 @@ export default function SaidiPage() {
 
       {/* Tab + Aksi */}
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '16px', margin: '12px 0 16px' }}>
-        <div style={{ display: 'inline-flex', background: 'rgba(15,76,215,0.05)', padding: 4, borderRadius: 12, border: '1px solid rgba(15,76,215,0.08)' }}>
+        <div style={{ display: 'inline-flex', background: 'rgba(20, 162, 186,0.05)', padding: 4, borderRadius: 12, border: '1px solid rgba(20, 162, 186,0.08)' }}>
           {['monthly', 'cumulative'].map(t => {
             const isActive = tab === t
             return (
@@ -228,7 +228,7 @@ export default function SaidiPage() {
                   transition: 'all 0.2s ease', border: 'none', cursor: 'pointer',
                   background: isActive ? 'var(--bg-card)' : 'transparent',
                   color: isActive ? 'var(--pln-blue)' : 'var(--text-muted)',
-                  boxShadow: isActive ? '0 2px 8px rgba(15,76,215,0.12)' : 'none',
+                  boxShadow: isActive ? '0 2px 8px rgba(20, 162, 186,0.12)' : 'none',
                 }}
                 onMouseEnter={e => { if (!isActive) e.currentTarget.style.color = 'var(--text-primary)' }}
                 onMouseLeave={e => { if (!isActive) e.currentTarget.style.color = 'var(--text-muted)' }}
@@ -239,18 +239,18 @@ export default function SaidiPage() {
           })}
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
-          <div style={{ display: 'inline-flex', background: 'rgba(37,99,235,0.05)', padding: 4, borderRadius: 12, border: '1px solid rgba(37,99,235,0.15)' }}>
+          <div style={{ display: 'inline-flex', background: 'rgba(20, 162, 186,0.05)', padding: 4, borderRadius: 12, border: '1px solid rgba(20, 162, 186,0.15)' }}>
             <button
               onClick={() => navigate('/input')}
               style={{
                 padding: '6px 16px', borderRadius: 9, fontSize: '0.85rem', fontWeight: 700,
                 transition: 'all 0.2s ease', border: 'none', cursor: 'pointer',
-                background: 'var(--bg-card)', color: '#2563EB',
-                boxShadow: '0 2px 8px rgba(37,99,235,0.15)',
+                background: 'var(--bg-card)', color: '#14A2BA',
+                boxShadow: '0 2px 8px rgba(20, 162, 186,0.15)',
                 display: 'flex', alignItems: 'center', gap: '8px',
               }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#2563EB'; e.currentTarget.style.color = '#FFFFFF' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-card)'; e.currentTarget.style.color = '#2563EB' }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#14A2BA'; e.currentTarget.style.color = '#FFFFFF' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-card)'; e.currentTarget.style.color = '#14A2BA' }}
             >
               <Plus size={16} /> Tambah SAIDI
             </button>
@@ -274,7 +274,7 @@ export default function SaidiPage() {
               <YAxis tick={{ fontSize: 12.5, fontWeight: 650 }} />
               <Tooltip content={<CUSTOM_TOOLTIP />} />
               <Legend wrapperStyle={{ fontSize: 13, fontWeight: 600 }} />
-              <Bar dataKey={tab === 'monthly' ? 'realisasi' : 'cumulativeReal'} name="Realisasi" fill="#0F4CD7" radius={[4,4,0,0]} />
+              <Bar dataKey={tab === 'monthly' ? 'realisasi' : 'cumulativeReal'} name="Realisasi" fill="#14A2BA" radius={[4,4,0,0]} />
               <Line
                 dataKey={tab === 'monthly' ? 'target' : 'cumulativeTgt'}
                 name="Target" stroke="#EF4444" strokeWidth={2}
@@ -297,7 +297,7 @@ export default function SaidiPage() {
               <YAxis tick={{ fontSize: 12.5, fontWeight: 650 }} />
               <Tooltip content={<BREAKDOWN_TOOLTIP />} />
               <Legend wrapperStyle={{ fontSize: 13, fontWeight: 600 }} />
-              <Bar dataKey="distribusi" name="Distribusi" fill="#0F4CD7" radius={[4,4,0,0]} />
+              <Bar dataKey="distribusi" name="Distribusi" fill="#14A2BA" radius={[4,4,0,0]} />
               <Bar dataKey="transmisi"  name="Transmisi"  fill="#EF4444" radius={[4,4,0,0]} />
               <Bar dataKey="pembangkit" name="Pembangkit" fill="#F59E0B" radius={[4,4,0,0]} />
             </BarChart>

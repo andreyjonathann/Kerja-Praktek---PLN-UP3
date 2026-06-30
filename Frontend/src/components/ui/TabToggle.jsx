@@ -4,7 +4,7 @@ export default function TabToggle({
   tabs, // array of { id, label }
   activeTab, 
   onChange,
-  colorHex = '#2563EB',
+  colorHex = '#14A2BA',
   colorRgb = '37, 99, 235'
 }) {
   return (

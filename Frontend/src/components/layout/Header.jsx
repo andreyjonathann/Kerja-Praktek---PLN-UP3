@@ -191,7 +191,7 @@ export default function Header({ onMenuToggle, onRefresh, refreshing }) {
                           padding: '10px 14px',
                           borderBottom: '1px solid var(--border)',
                           background: n.read ? 'transparent' : 'var(--accent-soft)',
-                          borderLeft: `3px solid ${n.type === 'critical' ? '#EF4444' : n.type === 'warning' ? '#F59E0B' : '#2563EB'}`,
+                          borderLeft: `3px solid ${n.type === 'critical' ? '#EF4444' : n.type === 'warning' ? '#F59E0B' : '#14A2BA'}`,
                           display: 'flex',
                           flexDirection: 'column',
                           gap: 3,

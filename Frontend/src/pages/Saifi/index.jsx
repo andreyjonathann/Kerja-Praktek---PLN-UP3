@@ -183,8 +183,8 @@ export default function SaifiPage() {
             className="icon-wrapper-interactive"
             style={{
               width: 34, height: 34, borderRadius: 10,
-              background: 'linear-gradient(135deg, rgba(37,99,235,0.2), rgba(37,99,235,0.08))',
-              border: '1px solid rgba(37,99,235,0.25)',
+              background: 'linear-gradient(135deg, rgba(20, 162, 186,0.2), rgba(20, 162, 186,0.08))',
+              border: '1px solid rgba(20, 162, 186,0.25)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               flexShrink: 0,
             }}
@@ -218,10 +218,10 @@ export default function SaifiPage() {
       }}>
         <div style={{
           display: 'inline-flex',
-          background: 'rgba(15, 76, 215, 0.05)',
+          background: 'rgba(20, 162, 186, 0.05)',
           padding: 4,
           borderRadius: 12,
-          border: '1px solid rgba(15, 76, 215, 0.08)',
+          border: '1px solid rgba(20, 162, 186, 0.08)',
         }}>
         {['monthly','cumulative'].map(t => {
           const isActive = tab === t
@@ -239,7 +239,7 @@ export default function SaifiPage() {
                 cursor: 'pointer',
                 background: isActive ? 'var(--bg-card)' : 'transparent',
                 color: isActive ? 'var(--pln-blue)' : 'var(--text-muted)',
-                boxShadow: isActive ? '0 2px 8px rgba(15, 76, 215, 0.12)' : 'none',
+                boxShadow: isActive ? '0 2px 8px rgba(20, 162, 186, 0.12)' : 'none',
               }}
               onMouseEnter={e => {
                 if (!isActive) e.currentTarget.style.color = 'var(--text-primary)'
@@ -256,10 +256,10 @@ export default function SaifiPage() {
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
           <div style={{
             display: 'inline-flex',
-            background: 'rgba(37, 99, 235, 0.05)',
+            background: 'rgba(20, 162, 186, 0.05)',
             padding: 4,
             borderRadius: 12,
-            border: '1px solid rgba(37, 99, 235, 0.15)',
+            border: '1px solid rgba(20, 162, 186, 0.15)',
             cursor: 'pointer'
           }}>
             <button
@@ -273,19 +273,19 @@ export default function SaifiPage() {
                 border: 'none',
                 cursor: 'pointer',
                 background: 'var(--bg-card)',
-                color: '#2563EB',
-                boxShadow: '0 2px 8px rgba(37, 99, 235, 0.15)',
+                color: '#14A2BA',
+                boxShadow: '0 2px 8px rgba(20, 162, 186, 0.15)',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px'
               }}
               onMouseEnter={e => {
-                 e.currentTarget.style.background = '#2563EB';
+                 e.currentTarget.style.background = '#14A2BA';
                  e.currentTarget.style.color = '#FFFFFF';
               }}
               onMouseLeave={e => {
                  e.currentTarget.style.background = 'var(--bg-card)';
-                 e.currentTarget.style.color = '#2563EB';
+                 e.currentTarget.style.color = '#14A2BA';
               }}
             >
               <Plus size={16} /> Tambah SAIFI
@@ -312,7 +312,7 @@ export default function SaifiPage() {
               <YAxis tick={{ fontSize: 12.5, fontWeight: 650 }} />
               <Tooltip content={<CUSTOM_TOOLTIP />} />
               <Legend wrapperStyle={{ fontSize: 13, fontWeight: 600 }} />
-              <Bar dataKey={tab === 'monthly' ? 'realisasi' : 'cumulativeReal'} name="Realisasi" fill="#2F7BFF" radius={[4,4,0,0]} />
+              <Bar dataKey={tab === 'monthly' ? 'realisasi' : 'cumulativeReal'} name="Realisasi" fill="#14A2BA" radius={[4,4,0,0]} />
               <Line
                 dataKey={tab === 'monthly' ? 'target' : 'cumulativeTgt'}
                 name="Target"

@@ -179,7 +179,7 @@ export default function InputSaifiPage() {
              </div>
              <div style={{
                display: 'inline-flex',
-               background: '#2563eb',
+               background: '#14A2BA',
                padding: 4,
                borderRadius: 12,
                border: 'none',
