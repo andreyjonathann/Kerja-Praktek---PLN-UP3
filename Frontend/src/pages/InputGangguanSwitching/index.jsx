@@ -25,12 +25,14 @@ export default function InputGangguanSwitchingPage() {
   const [target, setTarget] = useState(null)
   
   const [switchingForm, setSwitchingForm] = useState({
+    tahun: '',
     bulan: currentMonthIndex + 1,
     jumlah_gangguan: '',
     existingId: null
   })
   
   const [trafoForm, setTrafoForm] = useState({
+    tahun: '',
     bulan: currentMonthIndex + 1,
     jumlah_gangguan: '',
     existingId: null
@@ -104,10 +106,15 @@ export default function InputGangguanSwitchingPage() {
   const submitSwitching = async (e) => {
     e.preventDefault();
     setSaving(true);
+    if (!switchingForm.tahun) {
+      showNotification('error', 'Tahun wajib diisi');
+      setSaving(false);
+      return;
+    }
     try {
       const payload = {
         up3,
-        tahun: year,
+        tahun: Number(switchingForm.tahun),
         bulan: Number(switchingForm.bulan),
         jumlah_gangguan: Number(switchingForm.jumlah_gangguan)
       };
@@ -130,10 +137,15 @@ export default function InputGangguanSwitchingPage() {
   const submitTrafo = async (e) => {
     e.preventDefault();
     setSaving(true);
+    if (!trafoForm.tahun) {
+      showNotification('error', 'Tahun wajib diisi');
+      setSaving(false);
+      return;
+    }
     try {
       const payload = {
         up3,
-        tahun: year,
+        tahun: Number(trafoForm.tahun),
         bulan: Number(trafoForm.bulan),
         jumlah_gangguan: Number(trafoForm.jumlah_gangguan)
       };
@@ -225,8 +237,8 @@ export default function InputGangguanSwitchingPage() {
                   <input type="text" value={up3} disabled className="w-full px-4 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-600 cursor-not-allowed" />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700">Tahun</label>
-                  <input type="text" value={year} disabled className="w-full px-4 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-600 cursor-not-allowed" />
+                  <label className="text-sm font-semibold text-slate-700">Tahun <span className="text-red-500">*</span></label>
+                  <input type="number" name="tahun" value={switchingForm.tahun} onChange={handleSwitchingChange} required placeholder="Contoh: 2026" className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all" />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-slate-700">Bulan <span className="text-red-500">*</span></label>
@@ -294,8 +306,8 @@ export default function InputGangguanSwitchingPage() {
                   <input type="text" value={up3} disabled className="w-full px-4 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-600 cursor-not-allowed" />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700">Tahun</label>
-                  <input type="text" value={year} disabled className="w-full px-4 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-600 cursor-not-allowed" />
+                  <label className="text-sm font-semibold text-slate-700">Tahun <span className="text-red-500">*</span></label>
+                  <input type="number" name="tahun" value={trafoForm.tahun} onChange={handleTrafoChange} required placeholder="Contoh: 2026" className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all" />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-slate-700">Bulan <span className="text-red-500">*</span></label>

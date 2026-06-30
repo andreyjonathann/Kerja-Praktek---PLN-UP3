@@ -18,7 +18,7 @@ export default function InputRatingNegatifPage() {
 
   const { register, handleSubmit, watch, formState: { errors }, reset, setValue, control } = useForm({
       defaultValues: {
-          tahun: new Date().getFullYear(),
+          tahun: '',
       }
   });
 

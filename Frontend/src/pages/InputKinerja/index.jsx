@@ -1,3 +1,4 @@
+// TEST CHANGE - v2
 import React, { useState, useEffect, useMemo } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
@@ -76,6 +77,8 @@ export default function InputKinerjaPage() {
   const target = currentMonthData ? currentMonthData.target : 0;
   const percentage = target > 0 ? (liveTotal / target) * 100 : 0;
   const isOverTarget = liveTotal > target;
+  
+  const isDuplicate = selectedMonth && currentMonthData && currentMonthData.realisasi != null;
 
   const prevMonthData = saidiData.find(d => parseInt(d.bulan) === parseInt(selectedMonth) - 1);
   const getPrevMonthValue = (key) => {
@@ -187,13 +190,13 @@ export default function InputKinerjaPage() {
                padding: 4,
                borderRadius: 12,
                border: 'none',
-               cursor: loading ? 'not-allowed' : 'pointer',
-               opacity: loading ? 0.6 : 1
+               cursor: (loading || isDuplicate) ? 'not-allowed' : 'pointer',
+               opacity: (loading || isDuplicate) ? 0.6 : 1
              }}>
                <button 
                   type="button"
                   onClick={handleSubmit(onSubmit)}
-                  disabled={loading}
+                  disabled={loading || isDuplicate}
                   style={{
                     padding: '6px 16px',
                     borderRadius: 9,
@@ -201,21 +204,21 @@ export default function InputKinerjaPage() {
                     fontWeight: 700,
                     transition: 'all 0.2s ease',
                     border: 'none',
-                    cursor: loading ? 'not-allowed' : 'pointer',
-                    background: loading ? '#93c5fd' : '#2563eb',
+                    cursor: (loading || isDuplicate) ? 'not-allowed' : 'pointer',
+                    background: (loading || isDuplicate) ? '#93c5fd' : '#2563eb',
                     color: '#ffffff',
-                    boxShadow: loading ? 'none' : '0 4px 12px rgba(37, 99, 235, 0.3)',
+                    boxShadow: (loading || isDuplicate) ? 'none' : '0 4px 12px rgba(37, 99, 235, 0.3)',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '8px'
                   }}
                   onMouseEnter={e => {
-                     if(!loading) {
+                     if(!loading && !isDuplicate) {
                        e.currentTarget.style.background = '#1d4ed8'; e.currentTarget.style.color = '#ffffff';
                      }
                   }}
                   onMouseLeave={e => {
-                     if(!loading) {
+                     if(!loading && !isDuplicate) {
                        e.currentTarget.style.background = '#2563eb'; e.currentTarget.style.color = '#ffffff';
                      }
                   }}
@@ -251,9 +254,9 @@ export default function InputKinerjaPage() {
               <div className="relative w-1/2">
                   <select 
                       {...register('periode_id', { required: true })} 
-                      className="w-full pl-5 pr-12 py-3.5 bg-white border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-slate-700 font-bold cursor-pointer appearance-none shadow-sm"
+                      className={`w-full px-4 py-2 pr-12 bg-white border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-bold cursor-pointer appearance-none shadow-sm ${!selectedMonth ? 'text-gray-400' : 'text-slate-700'}`}
                   >
-                      <option value="">-- Bulan --</option>
+                      <option value="" className="text-gray-400">Bulan</option>
                       {MONTHS.map(m => (
                       <option key={m.value} value={m.value}>{m.label}</option>
                       ))}
@@ -268,10 +271,15 @@ export default function InputKinerjaPage() {
                       type="number"
                       {...register('tahun', { required: true })} 
                       placeholder="Tahun"
-                      className="w-full px-5 py-3.5 bg-white border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-slate-700 font-bold shadow-sm"
+                      className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-slate-700 font-bold shadow-sm placeholder-gray-300"
                   />
               </div>
             </div>
+            {isDuplicate && (
+              <p className="text-red-500 text-sm mt-3 font-semibold">
+                Data untuk periode ini sudah diinput. Silakan pilih bulan/tahun lain.
+              </p>
+            )}
           </div>
 
           <div className="mb-6 mt-10">

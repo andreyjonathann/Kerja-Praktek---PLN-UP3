@@ -24,7 +24,7 @@ export default function InputMvodPage() {
 
   const { register, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm({
       defaultValues: {
-          tahun: currentYear,
+          tahun: '',
           bulan: currentMonth,
           total_lama_padam_jam: '',
           kali_padam: ''

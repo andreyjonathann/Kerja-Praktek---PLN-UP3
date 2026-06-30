@@ -35,6 +35,7 @@ import MttrPage from '@/pages/Mttr'
 import InputMttrPage from '@/pages/InputMttr'
 import TargetMttrPage from '@/pages/TargetMttr'
 import EditKinerjaPage from '@/pages/EditKinerja'
+import EditEnsPage from '@/pages/EditEns'
 
 // Protected Route Wrapper
 function ProtectedRoute({ children }) {
@@ -101,6 +102,12 @@ export default function App() {
                   <EditKinerjaPage />
                 </ProtectedRoute>
               } />
+              <Route path="/ens/edit/:bulan/:tahun" element={
+                <ProtectedRoute>
+                  <EditEnsPage />
+                </ProtectedRoute>
+              } />
+
               <Route path="/ens/input" element={
                 <ProtectedRoute>
                   <InputEnsPage />

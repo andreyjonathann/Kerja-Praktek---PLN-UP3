@@ -113,8 +113,16 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
               const renderItem = (navItem, depth = 0) => {
                 if (navItem.type === 'item' || (!navItem.type && navItem.path)) {
                   const IconComp = ICON_MAP[navItem.icon] || LayoutDashboard
-                  const isActive = location.pathname === navItem.path ||
-                    (navItem.path !== '/' && location.pathname.startsWith(navItem.path + '/'))
+                  let isActive = location.pathname === navItem.path ||
+                    (navItem.path !== '/' && location.pathname.startsWith(navItem.path + '/'));
+                    
+                  if (navItem.path === '/saidi' && (location.pathname === '/input' || location.pathname.includes('/saidi'))) {
+                    isActive = true;
+                  } else if (navItem.path === '/saifi' && location.pathname.includes('/saifi')) {
+                    isActive = true;
+                  } else if (navItem.path === '/ens' && location.pathname.includes('/ens')) {
+                    isActive = true;
+                  }
                   
                   return (
                     <li key={navItem.key}>
@@ -144,10 +152,19 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
                   const isCollapsed = collapsed[navItem.group]
                   const IconComp = navItem.icon ? ICON_MAP[navItem.icon] : null
 
-                  const isChildActive = navItem.items && navItem.items.some(child => 
-                    location.pathname === child.path ||
-                    (child.path !== '/' && location.pathname.startsWith(child.path + '/'))
-                  );
+                  const isChildActive = navItem.items && navItem.items.some(child => {
+                    let active = location.pathname === child.path ||
+                      (child.path !== '/' && location.pathname.startsWith(child.path + '/'));
+                      
+                    if (child.path === '/saidi' && (location.pathname === '/input' || location.pathname.includes('/saidi'))) {
+                      active = true;
+                    } else if (child.path === '/saifi' && location.pathname.includes('/saifi')) {
+                      active = true;
+                    } else if (child.path === '/ens' && location.pathname.includes('/ens')) {
+                      active = true;
+                    }
+                    return active;
+                  });
 
                   return (
                     <div key={navItem.group}>

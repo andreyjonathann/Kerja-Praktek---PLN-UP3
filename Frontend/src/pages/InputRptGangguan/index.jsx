@@ -17,7 +17,7 @@ export default function InputRptGangguanPage() {
 
   const { register, handleSubmit, control, watch, formState: { errors }, reset } = useForm({
       defaultValues: {
-          tahun: new Date().getFullYear(),
+          tahun: '',
           bulan: '',
           total_durasi_menit: '',
           jumlah_gangguan: ''

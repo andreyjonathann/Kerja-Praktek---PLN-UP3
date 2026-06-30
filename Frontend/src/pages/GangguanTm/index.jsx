@@ -31,8 +31,7 @@ const COLORS = {
 const TABS = [
   { id: 'semua', label: 'Semua' },
   { id: 'lebih_5_mnt', label: '> 5 Menit' },
-  { id: 'kurang_5_mnt', label: '< 5 Menit' },
-  { id: 'switching', label: 'Switching' }
+  { id: 'kurang_5_mnt', label: '< 5 Menit' }
 ]
 
 const MONTHS_FULL = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
@@ -132,7 +131,7 @@ export default function GangguanTmPage() {
     let target = null;
 
     if (tipe === 'semua') {
-      ['lebih_5_mnt', 'kurang_5_mnt', 'switching'].forEach(t => {
+      ['lebih_5_mnt', 'kurang_5_mnt'].forEach(t => {
         if (dataRekap[t]) {
           ytd += dataRekap[t].realisasi_ytd || 0;
           if (dataRekap[t].target_tahunan) {
@@ -158,7 +157,7 @@ export default function GangguanTmPage() {
     const year = filters.year || new Date().getFullYear();
     const wb = XLSX.utils.book_new();
 
-    ['lebih_5_mnt', 'kurang_5_mnt', 'switching'].forEach((tipe, i) => {
+    ['lebih_5_mnt', 'kurang_5_mnt'].forEach((tipe, i) => {
       const tipeData = dataRekap[tipe];
       if (!tipeData) return;
       
@@ -527,15 +526,12 @@ export default function GangguanTmPage() {
 
       {/* Charts & Tables */}
       {activeTab === 'semua' ? (
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mt-4">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mt-4">
           <div className="xl:col-span-1">
             {renderChart('lebih_5_mnt', 'Gangguan > 5 Menit')}
           </div>
           <div className="xl:col-span-1">
             {renderChart('kurang_5_mnt', 'Gangguan < 5 Menit')}
-          </div>
-          <div className="xl:col-span-1">
-            {renderChart('switching', 'Gangguan Switching')}
           </div>
         </div>
       ) : (

@@ -38,6 +38,68 @@ const CUSTOM_TOOLTIP = ({ active, payload, label }) => {
   )
 }
 
+// Tooltip khusus breakdown: Distribusi + detail sub-komponen saat hover
+const BREAKDOWN_TOOLTIP = ({ active, payload, label }) => {
+  if (!active || !payload?.length) return null
+  const d = payload[0]?.payload
+
+  const fmt = (v) => v != null ? Number(v).toFixed(4) : '—'
+
+  return (
+    <div style={{
+      background: 'var(--bg-elevated)',
+      border: '1px solid var(--border-strong)',
+      borderRadius: 10, padding: '12px 16px',
+      boxShadow: 'var(--shadow-lg)', minWidth: 210,
+    }}>
+      <p style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: 8 }}>{label}</p>
+
+      {payload.map((p, i) => (
+        <div key={i} style={{ marginBottom: 6 }}>
+          {/* Baris utama: nama + nilai */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.83rem', marginBottom: p.name === 'Distribusi' ? 5 : 0 }}>
+            <span style={{ width: 10, height: 10, borderRadius: 3, background: p.fill, display: 'inline-block', flexShrink: 0 }} />
+            <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>{p.name}:</span>
+            <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{fmt(p.value)}</span>
+          </div>
+
+          {/* Sub-detail distribusi */}
+          {p.name === 'Distribusi' && (
+            <div style={{
+              paddingLeft: 16,
+              borderLeft: '2px solid #e2e8f0',
+              marginLeft: 5,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 3,
+              marginBottom: 2,
+            }}>
+              {d._hasDetail ? (
+                <>
+                  {[
+                    { label: 'Tak Terencana', val: d._takTerencana },
+                    { label: 'Terencana',     val: d._terencana },
+                    { label: 'Bencana Alam',  val: d._bencana },
+                  ].map(({ label: lbl, val }) => (
+                    <div key={lbl} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, fontSize: '0.78rem' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>{lbl}</span>
+                      <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>{fmt(val)}</span>
+                    </div>
+                  ))}
+                </>
+              ) : (
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                  Detail sub-komponen tidak tersedia
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
 
 export default function SaifiPage() {
   const navigate = useNavigate()
@@ -86,6 +148,32 @@ export default function SaifiPage() {
   const totalReal  = lastMonth ? lastMonth.realisasi : 0
   const totalTgt   = lastMonth ? lastMonth.target : 0
   const achievement = totalTgt > 0 ? Math.min(150, (totalTgt / Math.max(0.001, totalReal)) * 100) : 0
+  
+  const breakdownChartData = filled.map(d => {
+    const takTerencana = d.distribusi_padam_tidak_terencana || 0
+    const terencana    = d.distribusi_padam_terencana       || 0
+    const bencana      = d.distribusi_bencana_alam          || 0
+    const transmisi    = d.transmisi  || 0
+    const pembangkit   = d.pembangkit || 0
+    const subTotal     = takTerencana + terencana + bencana
+
+    const hasDetail  = subTotal > 0
+    const distribusi = hasDetail
+      ? subTotal
+      : Math.max(0, (d.realisasi || 0) - transmisi - pembangkit)
+
+    return {
+      label: d.label,
+      distribusi,
+      transmisi,
+      pembangkit,
+      
+      _hasDetail: hasDetail,
+      _takTerencana: takTerencana,
+      _terencana: terencana,
+      _bencana: bencana
+    }
+  })
   
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }} className="animate-fade-in">
@@ -237,27 +325,36 @@ export default function SaifiPage() {
           </ResponsiveContainer>
         </ChartWrapper>
 
-        <ChartWrapper title="Breakdown Penyebab SAIFI" subtitle="Komposisi frekuensi per kategori" loading={loading} empty={filled.length === 0} height={280}>
+        <ChartWrapper title="Breakdown Penyebab SAIFI" subtitle="Komposisi frekuensi per kategori" loading={loading} empty={breakdownChartData.length === 0} height={280}>
           <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={filled}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+            <BarChart data={breakdownChartData} barCategoryGap="30%">
+              <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
               <XAxis dataKey="label" tick={{ fontSize: 12.5, fontWeight: 650 }} />
               <YAxis tick={{ fontSize: 12.5, fontWeight: 650 }} />
-              <Tooltip content={<CUSTOM_TOOLTIP />} />
+              <Tooltip content={<BREAKDOWN_TOOLTIP />} />
               <Legend wrapperStyle={{ fontSize: 13, fontWeight: 600 }} />
-              {['penyulang','gardu','jtr','srapp','pemeliharaan','bencana_alam','transmisi'].map((key, i) => (
-                <Bar key={key} dataKey={key} name={SAIFI_CAUSES[i]} stackId="a" fill={CHART_COLORS[i]} />
-              ))}
+              <Bar dataKey="distribusi" name="Distribusi" fill="#0F4CD7" radius={[4,4,0,0]} />
+              <Bar dataKey="transmisi"  name="Transmisi"  fill="#EF4444" radius={[4,4,0,0]} />
+              <Bar dataKey="pembangkit" name="Pembangkit" fill="#F59E0B" radius={[4,4,0,0]} />
             </BarChart>
           </ResponsiveContainer>
         </ChartWrapper>
       </div>
 
       <div className="card p-5">
-        <h3 className="section-title mb-4">Detail Data SAIFI {tab === 'monthly' ? 'Bulanan' : 'Kumulatif'}</h3>
+        <h3 style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.01em', marginBottom: '1rem', textAlign: 'center', paddingTop: '1rem' }}>
+          Detail Data SAIFI {tab === 'monthly' ? 'Bulanan' : 'Kumulatif'}
+        </h3>
         <DataTable
           columns={[
-            { key: 'label', label: 'Bulan', width: '80px', align: 'center' },
+            { 
+              key: 'label', label: 'Bulan', width: '100px', align: 'center',
+              render: v => ({
+                'Jan': 'Januari', 'Feb': 'Februari', 'Mar': 'Maret', 'Apr': 'April',
+                'Mei': 'Mei', 'Jun': 'Juni', 'Jul': 'Juli', 'Agu': 'Agustus',
+                'Sep': 'September', 'Okt': 'Oktober', 'Nov': 'November', 'Des': 'Desember'
+              })[v] || v
+            },
             { key: tab === 'monthly' ? 'target' : 'cumulativeTgt', label: 'Target', align: 'center', render: v => v != null ? Number(v).toFixed(4) : '-' },
             { key: tab === 'monthly' ? 'realisasi' : 'cumulativeReal', label: 'Realisasi', align: 'center', render: (v, row) => v != null ? <span className={`font-bold ${v > (tab === 'monthly' ? row.target : row.cumulativeTgt) ? 'text-red-500' : 'text-emerald-500'}`}>{Number(v).toFixed(4)}</span> : <span className="text-slate-400 text-xs font-bold">-</span> },
           ]}

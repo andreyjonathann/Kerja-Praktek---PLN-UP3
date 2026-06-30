@@ -11,10 +11,14 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  LabelList
+  LabelList,
+  PieChart,
+  Pie,
+  Cell
 } from 'recharts'
 import { getDashboardData } from '@/services/dashboardDataService'
 import { useFilter } from '@/context/FilterContext'
+import { MONTHS } from '@/utils/constants'
 import * as XLSX from 'xlsx'
 import { Activity, AlertTriangle, Plus } from 'lucide-react'
 import EnsExportModal from './EnsExportModal'
@@ -31,18 +35,42 @@ const ENS_CAUSES_MAIN = ['Distribusi', 'Transmisi', 'Pembangkit']
 // Custom Tooltip for Breakdown Charts
 const CustomBreakdownTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
+    const data = payload[0].payload;
     return (
       <div className="bg-white p-3 rounded-lg shadow-lg border border-slate-100 text-sm">
-        <p className="font-bold text-slate-800 mb-2 pb-2 border-b border-slate-100">{label}</p>
-        {payload.map((entry, index) => (
-          <div key={`item-${index}`} className="flex items-center gap-2 mb-1">
-            <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: entry.color }} />
-            <span className="text-slate-600 capitalize">{entry.name}:</span>
-            <span className="font-bold text-slate-900 ml-auto">
-              {Number(entry.value).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </span>
-          </div>
-        ))}
+        <p className="font-bold text-slate-800 mb-2 pb-2 border-b border-slate-100">{label || data.label}</p>
+        {payload.map((entry, index) => {
+          const isDistribusi = entry.name === 'Distribusi';
+          const prefix = data.prefix || (entry.dataKey && entry.dataKey.startsWith('k_') ? 'k_' : 'b_');
+          
+          return (
+            <React.Fragment key={`item-${index}`}>
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: entry.color }} />
+                <span className="text-slate-600 capitalize">{entry.name}:</span>
+                <span className="font-bold text-slate-900 ml-auto">
+                  {Number(entry.value).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}
+                </span>
+              </div>
+              {isDistribusi && data && (
+                <div className="ml-5 mb-2 text-xs text-slate-500 flex flex-col gap-1">
+                  <div className="flex justify-between">
+                    <span>• Tidak Terencana:</span>
+                    <span className="font-medium ml-3">{Number(data[`${prefix}distribusi_padam_tidak_terencana`] || 0).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>• Terencana:</span>
+                    <span className="font-medium ml-3">{Number(data[`${prefix}distribusi_padam_terencana`] || 0).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>• Bencana Alam:</span>
+                    <span className="font-medium ml-3">{Number(data[`${prefix}distribusi_bencana_alam`] || 0).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}</span>
+                  </div>
+                </div>
+              )}
+            </React.Fragment>
+          );
+        })}
       </div>
     );
   }
@@ -52,24 +80,62 @@ const CustomBreakdownTooltip = ({ active, payload, label }) => {
 // Custom Tooltip for ENS Charts
 const CustomEnsTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
+    const data = payload[0].payload;
     return (
-      <div className="bg-white p-3 rounded-lg shadow-lg border border-slate-100 text-sm min-w-[150px]">
+      <div className="bg-white p-3 rounded-lg shadow-lg border border-slate-100 text-sm min-w-[240px] whitespace-nowrap">
         <p className="font-bold text-slate-800 mb-2 pb-2 border-b border-slate-100">{label}</p>
-        {payload.map((entry, index) => (
-          <div key={`item-${index}`} className="flex items-center gap-2 mb-1">
-            {entry.name === 'target' ? (
-               <div className="w-3 h-1 bg-red-500 rounded-full" />
-            ) : (
-               <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: entry.color }} />
-            )}
-            <span className="text-slate-600 capitalize">
-              {entry.name === 'target' ? 'Target' : entry.name}:
-            </span>
-            <span className="font-bold text-slate-900 ml-auto">
-              {Number(entry.value).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </span>
-          </div>
-        ))}
+        {payload.map((entry, index) => {
+          const isTarget = entry.name === 'target';
+          const isMainBar = !isTarget && entry.dataKey;
+          const prefix = isMainBar ? (entry.dataKey.startsWith('b_') ? 'b_' : 'k_') : null;
+          const hasDetails = isMainBar && data[`${prefix}distribusi_total`] !== undefined;
+
+          return (
+            <div key={`item-${index}`} className="mb-2">
+              <div className="flex items-center gap-2 mb-1">
+                {isTarget ? (
+                  <div className="w-3 h-1 bg-red-500 rounded-full" />
+                ) : (
+                  <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: entry.color }} />
+                )}
+                <span className="text-slate-600 capitalize">
+                  {isTarget ? 'Target' : entry.name}:
+                </span>
+                <span className="font-bold text-slate-900 ml-auto">
+                  {Number(entry.value).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}
+                </span>
+              </div>
+              {hasDetails && (
+                <div className="ml-5 mt-1 text-xs text-slate-500 flex flex-col gap-1">
+                  <div className="flex justify-between">
+                    <span>Distribusi:</span>
+                    <span className="font-medium ml-3">{Number(data[`${prefix}distribusi_total`] || 0).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-400">
+                    <span className="ml-2">• Tidak Terencana:</span>
+                    <span className="font-medium ml-3">{Number(data[`${prefix}distribusi_padam_tidak_terencana`] || 0).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-400">
+                    <span className="ml-2">• Terencana:</span>
+                    <span className="font-medium ml-3">{Number(data[`${prefix}distribusi_padam_terencana`] || 0).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-400">
+                    <span className="ml-2">• Bencana Alam:</span>
+                    <span className="font-medium ml-3">{Number(data[`${prefix}distribusi_bencana_alam`] || 0).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}</span>
+                  </div>
+                  <div className="flex justify-between mt-1">
+                    <span>Transmisi:</span>
+                    <span className="font-medium ml-3">{Number(data[`${prefix}transmisi`] || 0).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Pembangkit:</span>
+                    <span className="font-medium ml-3">{Number(data[`${prefix}pembangkit`] || 0).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     );
   }
@@ -81,7 +147,7 @@ const renderCustomBarLabel = ({ x, y, width, value }) => {
   if (value == null || value === 0) return null;
   return (
     <text x={x + width / 2} y={y - 5} fill="#64748b" textAnchor="middle" fontSize={10} className=" font-medium">
-      {Number(value).toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+      {Number(value).toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 4 })}
     </text>
   );
 };
@@ -98,6 +164,7 @@ export default function EnsPage() {
   const [showModal, setShowModal] = useState(false)
   const [selectedDistribusi, setSelectedDistribusi] = useState(null)
   const [modalType, setModalType] = useState('bulanan') // 'bulanan' or 'kumulatif'
+  const [selectedBulanBreakdown, setSelectedBulanBreakdown] = useState('')
 
   const fetchData = useCallback(async (isBackground = false) => {
     if (!isBackground) setLoading(true)
@@ -132,15 +199,16 @@ export default function EnsPage() {
         const b_transmisi = d.bulanan.transmisi || 0
         const b_pembangkit = d.bulanan.pembangkit || 0
 
-        const k_terencana = d.kumulatif.padam_terencana || 0
-        const k_tidak = d.kumulatif.tidak_terencana || 0
-        const k_bencana = d.kumulatif.bencana_alam || 0
-        const k_transmisi = d.kumulatif.transmisi || 0 // Assuming cumulative transmisi is computed somewhere, but DataJaringanController gave dummy for ENS cumulative causes.
-        // Wait, for now we map them directly.
-        const k_pembangkit = d.kumulatif.pembangkit || 0
+        const hasKumulatif = d.kumulatif[filters.year] !== null && d.kumulatif[filters.year] !== undefined
+        const k_terencana = hasKumulatif ? (d.kumulatif.padam_terencana || 0) : 0
+        const k_tidak = hasKumulatif ? (d.kumulatif.tidak_terencana || 0) : 0
+        const k_bencana = hasKumulatif ? (d.kumulatif.bencana_alam || 0) : 0
+        const k_transmisi = hasKumulatif ? (d.kumulatif.transmisi || 0) : 0
+        const k_pembangkit = hasKumulatif ? (d.kumulatif.pembangkit || 0) : 0
 
         const row = {
           label: d.label,
+          bulan: d.bulan,
           b_target: d.bulanan.target,
           k_target: d.kumulatif.target,
 
@@ -182,9 +250,20 @@ export default function EnsPage() {
     fetchData()
     const interval = setInterval(() => {
       fetchData(true)
-    }, 5000)
+    }, 60000)
     return () => clearInterval(interval)
   }, [fetchData])
+
+  useEffect(() => {
+    if (data.length > 0 && !selectedBulanBreakdown) {
+      const validData = data.filter(d => d.b_distribusi_total > 0 || d.b_transmisi > 0 || d.b_pembangkit > 0);
+      if (validData.length > 0) {
+        setSelectedBulanBreakdown(validData[validData.length - 1].bulan.toString());
+      } else {
+        setSelectedBulanBreakdown(data[0].bulan.toString());
+      }
+    }
+  }, [data, selectedBulanBreakdown]);
 
   useEffect(() => {
     const handler = () => fetchData()
@@ -337,7 +416,7 @@ export default function EnsPage() {
                 
                 {availableYears.map((year, i) => (
                   showYears[year] && (
-                    <Bar key={`b_${year}`} dataKey={`b_${year}`} name={year} fill={DYNAMIC_YEAR_COLORS[i % DYNAMIC_YEAR_COLORS.length]} radius={[4, 4, 0, 0]} maxBarSize={40}>
+                    <Bar key={`b_${year}`} dataKey={`b_${year}`} name={year} fill={DYNAMIC_YEAR_COLORS[i % DYNAMIC_YEAR_COLORS.length]} radius={[4, 4, 0, 0]} maxBarSize={40} cursor="pointer" onClick={(entry) => navigate(`/ens/edit/${entry.bulan}/${year}`)}>
                       <LabelList content={renderCustomBarLabel} />
                     </Bar>
                   )
@@ -363,7 +442,7 @@ export default function EnsPage() {
                 
                 {availableYears.map((year, i) => (
                   showYears[year] && (
-                    <Bar key={`k_${year}`} dataKey={`k_${year}`} name={year} fill={DYNAMIC_YEAR_COLORS[i % DYNAMIC_YEAR_COLORS.length]} radius={[4, 4, 0, 0]} maxBarSize={40}>
+                    <Bar key={`k_${year}`} dataKey={`k_${year}`} name={year} fill={DYNAMIC_YEAR_COLORS[i % DYNAMIC_YEAR_COLORS.length]} radius={[4, 4, 0, 0]} maxBarSize={40} cursor="pointer" onClick={(entry) => navigate(`/ens/edit/${entry.bulan}/${year}`)}>
                       <LabelList content={renderCustomBarLabel} />
                     </Bar>
                   )
@@ -377,31 +456,64 @@ export default function EnsPage() {
 
         {/* Breakdown Bulanan */}
         <div className="card p-5 flex flex-col h-[400px]">
-          <h2 className="text-lg font-bold text-slate-800 mb-1 text-center">Breakdown ENS Bulanan</h2>
-          <p className="text-center text-xs text-slate-500 mb-4">Klik batang Distribusi untuk melihat detail</p>
-          <div className="flex-1 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data.filter(d => d.b_distribusi_total > 0 || d.b_transmisi > 0 || d.b_pembangkit > 0)} margin={{ top: 20, right: 20, bottom: 0, left: -10 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} />
-                <Tooltip content={<CustomBreakdownTooltip />} cursor={{fill: 'rgba(0,0,0,0.05)'}} />
-                <Legend iconType="circle" wrapperStyle={{paddingTop: '20px', fontSize: '12px'}} />
-                
-                {['b_distribusi_total', 'b_transmisi', 'b_pembangkit'].map((key, i) => (
-                  <Bar 
-                    key={key} 
-                    dataKey={key} 
-                    name={ENS_CAUSES_MAIN[i]} 
-                    stackId="a"
-                    fill={CHART_COLORS_MAIN[i]} 
-                    onClick={(entry) => handleBarClick(entry, key, 'bulanan')}
-                    cursor={key === 'b_distribusi_total' ? 'pointer' : 'default'}
-                    maxBarSize={40}
-                  />
-                ))}
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-lg font-bold text-slate-800 mb-1">Breakdown ENS Bulanan</h2>
+              <p className="text-xs text-slate-500">Klik bagian Distribusi untuk melihat detail</p>
+            </div>
+            <select 
+              value={selectedBulanBreakdown} 
+              onChange={e => setSelectedBulanBreakdown(e.target.value)}
+              className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm text-slate-600 bg-white shadow-sm outline-none focus:ring-2 focus:ring-blue-500/20 font-bold"
+            >
+              <option value="" disabled>Pilih Bulan</option>
+              {data.filter(d => d.b_distribusi_total > 0 || d.b_transmisi > 0 || d.b_pembangkit > 0).map(b => (
+                <option key={b.bulan} value={b.bulan.toString()}>
+                  {MONTHS.find(m => m.value === parseInt(b.bulan))?.label || b.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex-1 w-full flex items-center justify-center">
+            {data.find(d => d.bulan.toString() === selectedBulanBreakdown) ? (() => {
+              const activeRow = data.find(d => d.bulan.toString() === selectedBulanBreakdown);
+              const pieData = [
+                { name: 'Distribusi', value: activeRow.b_distribusi_total || 0, key: 'b_distribusi_total', prefix: 'b_', ...activeRow },
+                { name: 'Transmisi', value: activeRow.b_transmisi || 0, key: 'b_transmisi', prefix: 'b_', ...activeRow },
+                { name: 'Pembangkit', value: activeRow.b_pembangkit || 0, key: 'b_pembangkit', prefix: 'b_', ...activeRow }
+              ].filter(item => item.value > 0);
+
+              if (pieData.length === 0) return <p className="text-slate-400">Tidak ada data breakdown</p>;
+
+              return (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Tooltip content={<CustomBreakdownTooltip />} />
+                    <Legend iconType="circle" wrapperStyle={{fontSize: '12px', paddingTop: '10px'}} />
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="45%"
+                      innerRadius={55}
+                      outerRadius={100}
+                      paddingAngle={2}
+                      dataKey="value"
+                      onClick={(entry) => handleBarClick(entry, entry.key, 'bulanan')}
+                    >
+                      {pieData.map((entry, index) => (
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={CHART_COLORS_MAIN[ENS_CAUSES_MAIN.indexOf(entry.name)]} 
+                          style={{ cursor: entry.name === 'Distribusi' ? 'pointer' : 'default', outline: 'none' }}
+                        />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+              );
+            })() : (
+              <p className="text-slate-400">Silakan pilih bulan</p>
+            )}
           </div>
         </div>
 

@@ -21,6 +21,8 @@ export default function InputSaifiPage() {
 
   const { register, handleSubmit, formState: { errors }, reset, control } = useForm({
     defaultValues: {
+      tahun: '',
+      periode_id: '',
       saifi_distribusi_padam_tidak_terencana: '',
       saifi_distribusi_padam_terencana: '',
       saifi_distribusi_bencana_alam: '',
@@ -76,14 +78,8 @@ export default function InputSaifiPage() {
   const target = currentMonthData ? currentMonthData.target : 0;
   const percentage = target > 0 ? (liveTotal / target) * 100 : 0;
   const isOverTarget = liveTotal > target;
-
-  const prevMonthData = saifiData.find(d => parseInt(d.bulan) === parseInt(selectedMonth) - 1);
-  const getPrevMonthValue = (key) => {
-    if (!prevMonthData) return '—';
-    const val = prevMonthData[key];
-    if (val === null || val === undefined) return '—';
-    return Number(val).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  };
+  
+  const isDuplicate = selectedMonth && currentMonthData && currentMonthData.realisasi != null;
 
   const trendData = useMemo(() => {
     if (!selectedMonth || !dashboardData) return [];
@@ -187,13 +183,13 @@ export default function InputSaifiPage() {
                padding: 4,
                borderRadius: 12,
                border: 'none',
-               cursor: loading ? 'not-allowed' : 'pointer',
-               opacity: loading ? 0.6 : 1
+               cursor: (loading || isDuplicate) ? 'not-allowed' : 'pointer',
+               opacity: (loading || isDuplicate) ? 0.6 : 1
              }}>
                <button 
                   type="button"
                   onClick={handleSubmit(onSubmit)}
-                  disabled={loading}
+                  disabled={loading || isDuplicate}
                   style={{
                     padding: '6px 16px',
                     borderRadius: 9,
@@ -201,21 +197,21 @@ export default function InputSaifiPage() {
                     fontWeight: 700,
                     transition: 'all 0.2s ease',
                     border: 'none',
-                    cursor: loading ? 'not-allowed' : 'pointer',
-                    background: loading ? '#93c5fd' : '#2563eb',
+                    cursor: (loading || isDuplicate) ? 'not-allowed' : 'pointer',
+                    background: (loading || isDuplicate) ? '#93c5fd' : '#2563eb',
                     color: '#ffffff',
-                    boxShadow: loading ? 'none' : '0 4px 12px rgba(37, 99, 235, 0.3)',
+                    boxShadow: (loading || isDuplicate) ? 'none' : '0 4px 12px rgba(37, 99, 235, 0.3)',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '8px'
                   }}
                   onMouseEnter={e => {
-                     if(!loading) {
+                     if(!loading && !isDuplicate) {
                        e.currentTarget.style.background = '#1d4ed8'; e.currentTarget.style.color = '#ffffff';
                      }
                   }}
                   onMouseLeave={e => {
-                     if(!loading) {
+                     if(!loading && !isDuplicate) {
                        e.currentTarget.style.background = '#2563eb'; e.currentTarget.style.color = '#ffffff';
                      }
                   }}
@@ -251,9 +247,9 @@ export default function InputSaifiPage() {
               <div className="relative w-1/2">
                   <select 
                       {...register('periode_id', { required: true })} 
-                      className="w-full pl-5 pr-12 py-3.5 bg-white border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-slate-700 font-bold cursor-pointer appearance-none shadow-sm"
+                      className={`w-full px-4 py-2 pr-12 bg-white border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-bold cursor-pointer appearance-none shadow-sm ${!selectedMonth ? 'text-gray-400' : 'text-slate-700'}`}
                   >
-                      <option value="">-- Bulan --</option>
+                      <option value="" className="text-gray-400">Bulan</option>
                       {MONTHS.map(m => (
                       <option key={m.value} value={m.value}>{m.label}</option>
                       ))}
@@ -268,10 +264,15 @@ export default function InputSaifiPage() {
                       type="number"
                       {...register('tahun', { required: true })} 
                       placeholder="Tahun"
-                      className="w-full px-5 py-3.5 bg-white border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-slate-700 font-bold shadow-sm"
+                      className="w-full border-2 border-gray-300 rounded-lg bg-white px-4 py-2 text-sm text-gray-700 shadow-sm focus:outline-none focus:border-blue-400 placeholder-gray-300"
                   />
               </div>
             </div>
+            {isDuplicate && (
+              <p className="text-red-500 text-sm mt-3 font-semibold">
+                Data untuk periode ini sudah diinput. Silakan pilih bulan/tahun lain.
+              </p>
+            )}
           </div>
 
           <div className="mb-6 mt-10">
@@ -310,14 +311,13 @@ export default function InputSaifiPage() {
                    <div className="flex items-center gap-4 flex-1">
                      <div>
                        <label className="font-bold text-slate-600 text-[13px]">Padam Tidak Terencana</label>
-                       <p className="text-xs text-slate-400 font-medium mt-[6px]">Bulan lalu: {getPrevMonthValue('distribusi_padam_tidak_terencana')}</p>
                      </div>
                    </div>
-                   <div className="relative w-full md:w-56">
+                   <div className="relative flex-1 flex justify-end">
                      <input 
                         type="number" step="0.0001" 
                         {...register('saifi_distribusi_padam_tidak_terencana')} 
-                        className="w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-slate-800 font-bold text-right transition placeholder:text-slate-300" 
+                        className="w-full max-w-xs border border-gray-300 rounded-md bg-white px-3 py-2 shadow-sm text-right outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" 
                         placeholder="-" 
                      />
                    </div>
@@ -328,14 +328,13 @@ export default function InputSaifiPage() {
                    <div className="flex items-center gap-4 flex-1">
                      <div>
                        <label className="font-bold text-slate-600 text-[13px]">Padam Terencana</label>
-                       <p className="text-xs text-slate-400 font-medium mt-[6px]">Bulan lalu: {getPrevMonthValue('distribusi_padam_terencana')}</p>
                      </div>
                    </div>
-                   <div className="relative w-full md:w-56">
+                   <div className="relative flex-1 flex justify-end">
                      <input 
                         type="number" step="0.0001" 
                         {...register('saifi_distribusi_padam_terencana')} 
-                        className="w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-slate-800 font-bold text-right transition placeholder:text-slate-300" 
+                        className="w-full max-w-xs border border-gray-300 rounded-md bg-white px-3 py-2 shadow-sm text-right outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" 
                         placeholder="-" 
                      />
                    </div>
@@ -346,14 +345,13 @@ export default function InputSaifiPage() {
                    <div className="flex items-center gap-4 flex-1">
                      <div>
                        <label className="font-bold text-slate-600 text-[13px]">Bencana Alam</label>
-                       <p className="text-xs text-slate-400 font-medium mt-[6px]">Bulan lalu: {getPrevMonthValue('distribusi_bencana_alam')}</p>
                      </div>
                    </div>
-                   <div className="relative w-full md:w-56">
+                   <div className="relative flex-1 flex justify-end">
                      <input 
                         type="number" step="0.0001" 
                         {...register('saifi_distribusi_bencana_alam')} 
-                        className="w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-slate-800 font-bold text-right transition placeholder:text-slate-300" 
+                        className="w-full max-w-xs border border-gray-300 rounded-md bg-white px-3 py-2 shadow-sm text-right outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" 
                         placeholder="-" 
                      />
                    </div>
@@ -369,14 +367,13 @@ export default function InputSaifiPage() {
                  </div>
                  <div>
                    <label className="font-bold text-slate-800 text-[15px]">Transmisi</label>
-                   <p className="text-xs text-slate-400 font-medium mt-[6px]">Bulan lalu: {getPrevMonthValue('transmisi')}</p>
                  </div>
                </div>
-               <div className="relative w-full md:w-64">
+               <div className="relative flex-1 flex justify-end">
                  <input 
                     type="number" step="0.0001" 
                     {...register('saifi_transmisi')} 
-                    className="w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-slate-800 font-bold text-right transition placeholder:text-slate-300" 
+                    className="w-full max-w-xs border border-gray-300 rounded-md bg-white px-3 py-2 shadow-sm text-right outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" 
                     placeholder="-" 
                  />
                </div>
@@ -390,14 +387,13 @@ export default function InputSaifiPage() {
                  </div>
                  <div>
                    <label className="font-bold text-slate-800 text-[15px]">Pembangkit</label>
-                   <p className="text-xs text-slate-400 font-medium mt-[6px]">Bulan lalu: {getPrevMonthValue('pembangkit')}</p>
                  </div>
                </div>
-               <div className="relative w-full md:w-64">
+               <div className="relative flex-1 flex justify-end">
                  <input 
                     type="number" step="0.0001" 
                     {...register('saifi_pembangkit')} 
-                    className="w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-slate-800 font-bold text-right transition placeholder:text-slate-300" 
+                    className="w-full max-w-xs border border-gray-300 rounded-md bg-white px-3 py-2 shadow-sm text-right outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" 
                     placeholder="-" 
                  />
                </div>

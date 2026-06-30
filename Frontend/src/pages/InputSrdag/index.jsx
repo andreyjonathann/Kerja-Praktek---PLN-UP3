@@ -23,7 +23,7 @@ export default function InputSrdagPage() {
 
   const { register, handleSubmit, control, watch, setValue, formState: { errors } } = useForm({
       defaultValues: {
-          tahun: currentYear,
+          tahun: '',
           bulan: currentMonth,
           jumlah_dispatch_berhasil: '',
           jumlah_total_gangguan: ''

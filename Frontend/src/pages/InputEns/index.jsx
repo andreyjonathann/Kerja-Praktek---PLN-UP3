@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import api from '@/services/api';
 import { MONTHS } from '@/utils/constants';
 import { CheckCircle, AlertCircle, Save, Zap, CloudLightning, RadioTower, Factory, Activity, ChevronDown, ChevronRight } from 'lucide-react';
@@ -18,6 +18,7 @@ import {
 
 export default function InputEnsPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
@@ -28,8 +29,13 @@ export default function InputEnsPage() {
 
   const { register, handleSubmit, formState: { errors }, reset, control } = useForm({
     defaultValues: {
-      tahun: new Date().getFullYear(),
-      periode_id: ''
+      tahun: '',
+      periode_id: location.state?.bulan?.toString() || '',
+      distribusi_padam_tidak_terencana: '',
+      distribusi_padam_terencana: '',
+      distribusi_bencana_alam: '',
+      transmisi: '',
+      pembangkit: ''
     }
   });
 
@@ -69,13 +75,7 @@ export default function InputEnsPage() {
       await api.post('/jaringan/ens', data);
       setSuccess(true);
       reset();
-      setTimeout(() => setSuccess(false), 5000);
-      
-      // Refetch data to update trends
-      if (selectedYear) {
-        const res = await api.get(`/jaringan/dashboard?tahun=${selectedYear}`);
-        setDashboardData(res.data);
-      }
+      navigate('/ens');
     } catch (err) {
       alert("Error: " + err.message);
     } finally {
@@ -85,16 +85,49 @@ export default function InputEnsPage() {
 
   const ensData = dashboardData?.ensPageData || [];
   const currentMonthData = ensData.find(d => parseInt(d.bulan) === parseInt(selectedMonth));
-  const target = currentMonthData ? currentMonthData.bulanan.target : 0;
-  const percentage = target > 0 ? (liveTotal / target) * 100 : 0;
-  const isOverTarget = liveTotal > target;
 
-  const prevMonthData = ensData.find(d => parseInt(d.bulan) === parseInt(selectedMonth) - 1);
-  const getPrevMonthValue = (key) => {
-    if (!prevMonthData) return '—';
-    const val = prevMonthData.bulanan[key];
-    if (val === null || val === undefined) return '—';
-    return Number(val).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' MWh';
+  
+  const isDuplicate = selectedMonth && currentMonthData && currentMonthData.bulanan && currentMonthData.bulanan[selectedYear] != null;
+
+  useEffect(() => {
+    if (selectedMonth && currentMonthData) {
+      if (currentMonthData.bulanan && currentMonthData.bulanan[selectedYear] != null) {
+        reset({
+          tahun: selectedYear,
+          periode_id: selectedMonth,
+          distribusi_padam_tidak_terencana: currentMonthData.bulanan.padam_tidak_terencana || '',
+          distribusi_padam_terencana: currentMonthData.bulanan.padam_terencana || '',
+          distribusi_bencana_alam: currentMonthData.bulanan.bencana_alam || '',
+          transmisi: currentMonthData.bulanan.transmisi || '',
+          pembangkit: currentMonthData.bulanan.pembangkit || ''
+        });
+      } else {
+        reset({
+          tahun: selectedYear,
+          periode_id: selectedMonth,
+          distribusi_padam_tidak_terencana: '',
+          distribusi_padam_terencana: '',
+          distribusi_bencana_alam: '',
+          transmisi: '',
+          pembangkit: ''
+        });
+      }
+    }
+  }, [selectedMonth, selectedYear, dashboardData]);
+
+  const handleDelete = async () => {
+    if (window.confirm('Yakin ingin menghapus data ENS bulan ini?')) {
+      setLoading(true);
+      try {
+        await api.delete('/jaringan/ens', { data: { bulan: selectedMonth, tahun: selectedYear } });
+        reset();
+        navigate('/ens');
+      } catch (err) {
+        alert("Error: " + err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
   };
 
   const trendData = useMemo(() => {
@@ -150,8 +183,8 @@ export default function InputEnsPage() {
                <Activity size={26} />
              </div>
              <div>
-               <h1 className="text-xl md:text-2xl font-bold text-slate-800">
-                 Tambah ENS
+              <h1 className="text-xl md:text-2xl font-bold text-slate-800">
+                 {isDuplicate ? 'Edit ENS' : 'Tambah ENS'}
                </h1>
              </div>
           </div>
@@ -193,9 +226,45 @@ export default function InputEnsPage() {
                   Batal
                </button>
              </div>
+             {isDuplicate && (
+               <div style={{
+                 display: 'inline-flex',
+                 background: 'rgba(239, 68, 68, 0.05)',
+                 padding: 4,
+                 borderRadius: 12,
+                 border: 'none',
+                 cursor: loading ? 'not-allowed' : 'pointer',
+                 opacity: loading ? 0.6 : 1
+               }}>
+                 <button 
+                    type="button"
+                    onClick={handleDelete}
+                    disabled={loading}
+                    style={{
+                      padding: '6px 16px',
+                      borderRadius: 9,
+                      fontSize: '0.85rem',
+                      fontWeight: 700,
+                      transition: 'all 0.2s ease',
+                      border: 'none',
+                      cursor: loading ? 'not-allowed' : 'pointer',
+                      background: '#ef4444',
+                      color: '#ffffff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}
+                    onMouseEnter={e => { if(!loading) e.currentTarget.style.background = '#dc2626'; }}
+                    onMouseLeave={e => { if(!loading) e.currentTarget.style.background = '#ef4444'; }}
+                 >
+                    Hapus
+                 </button>
+               </div>
+             )}
+
              <div style={{
                display: 'inline-flex',
-               background: '#2563eb',
+               background: 'rgba(37, 99, 235, 0.05)',
                padding: 4,
                borderRadius: 12,
                border: 'none',
@@ -223,114 +292,75 @@ export default function InputEnsPage() {
                   }}
                   onMouseEnter={e => {
                      if(!loading) {
-                       e.currentTarget.style.background = '#1d4ed8';
-                       e.currentTarget.style.color = '#ffffff';
+                       e.currentTarget.style.background = '#1d4ed8'; e.currentTarget.style.color = '#ffffff';
                      }
                   }}
                   onMouseLeave={e => {
                      if(!loading) {
-                       e.currentTarget.style.background = '#2563eb';
-                       e.currentTarget.style.color = '#ffffff';
+                       e.currentTarget.style.background = '#2563eb'; e.currentTarget.style.color = '#ffffff';
                      }
                   }}
                >
-                  {loading ? <div className="w-4 h-4 border-2 border-slate-400 border-t-slate-700 rounded-full animate-spin" /> : <Save size={16} />}
-                  Simpan Realisasi
+                  {loading ? <div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" /> : <Save size={16} />}
+                  {isDuplicate ? 'Simpan Perubahan' : 'Simpan Realisasi'}
                </button>
              </div>
           </div>
         </div>
       </div>
 
-      {success && (
-        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 px-5 py-3 bg-white border border-emerald-200 rounded-lg flex items-center gap-3 shadow-xl animate-bounce-in transition-all">
-            <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0 text-emerald-600">
-                <CheckCircle size={20} />
-            </div>
-            <div>
-                <h4 className="text-sm font-bold text-emerald-900">Data Berhasil Disimpan!</h4>
-                <p className="text-xs text-emerald-700 font-medium">Realisasi bulan ini telah direkam dengan sukses.</p>
-            </div>
-        </div>
-      )}
+
 
       <div className="w-full px-[32px] py-4 md:py-8">
         
-        {/* Settings & Summary */}
         <div className="flex flex-col gap-6 pt-[28px] mb-[36px]">
+          
+          {success && (
+            <div className="mb-6 px-5 py-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-3 shadow-sm animate-fade-in">
+                <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0 text-emerald-600">
+                    <Activity size={20} />
+                </div>
+                <div>
+                    <h4 className="text-sm font-bold text-emerald-900">Data ENS Berhasil Disimpan!</h4>
+                    <p className="text-xs text-emerald-700 font-medium">Realisasi bulan ini telah direkam dengan sukses.</p>
+                </div>
+            </div>
+          )}
           {/* PERIODE SETTINGS */}
-          <div className="card p-5 py-6 bg-white">
+          <div className="mb-8 py-6">
             <h3 className="text-xs font-bold text-slate-500 mb-3 uppercase tracking-wider mt-6">Pilih Periode</h3>
-            <div className="grid grid-cols-2 gap-4 md:gap-6">
-              <div className="relative">
+            <div className="flex gap-4">
+              <div className="relative w-1/2">
                   <select 
                       {...register('periode_id', { required: true })} 
-                      className="w-full pl-5 pr-12 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-700 font-bold cursor-pointer appearance-none"
+                      className={`w-full px-4 py-2 pr-12 bg-white border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-bold cursor-pointer appearance-none shadow-sm ${!selectedMonth ? 'text-gray-400' : 'text-slate-700'}`}
                   >
-                      <option value="">-- Bulan --</option>
+                      <option value="" className="text-gray-400">Bulan</option>
                       {MONTHS.map(m => (
                       <option key={m.value} value={m.value}>{m.label}</option>
                       ))}
                   </select>
                   <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                      <ChevronDownIcon />
+                      <ChevronDown size={20} />
                   </div>
               </div>
-              <input 
-                  type="number"
-                  {...register('tahun', { required: true })} 
-                  placeholder="Tahun"
-                  className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-700 font-bold"
-              />
+              
+              <div className="relative w-1/2">
+                  <input 
+                      type="number"
+                      {...register('tahun', { required: true })} 
+                      placeholder="Tahun"
+                      className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-slate-700 font-bold shadow-sm placeholder-gray-300"
+                  />
+              </div>
             </div>
             {(errors.periode_id || errors.tahun) && <p className="text-red-500 text-xs font-bold flex items-center gap-1 mt-3"><AlertCircle size={12}/> Wajib isi periode</p>}
+            {isDuplicate && (
+              <p className="text-red-500 text-sm mt-3 font-semibold">
+                Data untuk periode ini sudah diinput. Silakan pilih bulan/tahun lain.
+              </p>
+            )}
           </div>
-
-          {/* SUMMARY CARD */}
-          {selectedMonth && (
-            <div className="card p-6 bg-white flex flex-col justify-center relative overflow-hidden">
-               {/* Decorative background element based on status */}
-               <div className={`absolute top-0 right-0 w-32 h-32 blur-3xl opacity-20 -translate-y-1/2 translate-x-1/4 rounded-full ${isOverTarget ? 'bg-red-500' : 'bg-emerald-500'}`}></div>
-               
-               <h3 className="text-sm font-bold text-slate-500 mb-2 uppercase tracking-wider relative z-10">Total ENS Bulan Ini</h3>
-               
-               <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 relative z-10">
-                 <div className="flex items-baseline gap-2">
-                   <span className={`text-4xl md:text-5xl font-black ${isOverTarget ? 'text-red-600' : 'text-emerald-600'}`}>
-                     {liveTotal.toFixed(3)}
-                   </span>
-                   <span className="text-slate-500 font-bold">MWh</span>
-                 </div>
-                 
-                 <div className="flex gap-6 pb-1">
-                   <div>
-                     <p className="text-xs text-slate-400 font-semibold mb-1">Target</p>
-                     <p className="text-lg font-bold text-slate-800">{target.toFixed(3)}</p>
-                   </div>
-                   <div>
-                     <p className="text-xs text-slate-400 font-semibold mb-1">Capaian</p>
-                     <p className={`text-lg font-bold ${isOverTarget ? 'text-red-600' : 'text-emerald-600'}`}>
-                       {percentage.toFixed(1)}%
-                     </p>
-                   </div>
-                 </div>
-               </div>
-               
-               {/* Progress bar */}
-               <div className="w-full h-2 bg-slate-100 rounded-full mt-5 relative z-10 overflow-hidden">
-                 <div 
-                   className={`h-full rounded-full transition-all duration-500 ${isOverTarget ? 'bg-red-500' : 'bg-emerald-500'}`}
-                   style={{ width: `${Math.min(percentage, 100)}%` }}
-                 ></div>
-                 {percentage > 100 && (
-                   <div 
-                     className="absolute top-0 right-0 h-full bg-red-600 opacity-50 rounded-r-full"
-                     style={{ width: `${Math.min(percentage - 100, 100)}%` }}
-                   ></div>
-                 )}
-               </div>
-            </div>
-          )}
         </div>
 
                         {/* FORM INPUTS */}
@@ -370,14 +400,13 @@ export default function InputEnsPage() {
                    <div className="flex items-center gap-4 flex-1">
                      <div>
                        <label className="font-bold text-slate-600 text-[13px]">Padam Tidak Terencana</label>
-                       <p className="text-xs text-slate-400 font-medium mt-[6px]">Bulan lalu: {getPrevMonthValue('tidak_terencana')}</p>
                      </div>
                    </div>
-                   <div className="relative w-full md:w-56">
+                   <div className="relative flex-1 flex justify-end">
                      <input 
                         type="number" step="0.0001" 
                         {...register('distribusi_padam_tidak_terencana')} 
-                        className="w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-slate-800 font-bold text-right transition placeholder:text-slate-300" 
+                        className="w-full max-w-xs border border-gray-300 rounded-md bg-white px-3 py-2 shadow-sm text-right outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" 
                         placeholder="-" 
                      />
                    </div>
@@ -388,14 +417,13 @@ export default function InputEnsPage() {
                    <div className="flex items-center gap-4 flex-1">
                      <div>
                        <label className="font-bold text-slate-600 text-[13px]">Padam Terencana</label>
-                       <p className="text-xs text-slate-400 font-medium mt-[6px]">Bulan lalu: {getPrevMonthValue('padam_terencana')}</p>
                      </div>
                    </div>
-                   <div className="relative w-full md:w-56">
+                   <div className="relative flex-1 flex justify-end">
                      <input 
                         type="number" step="0.0001" 
                         {...register('distribusi_padam_terencana')} 
-                        className="w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-slate-800 font-bold text-right transition placeholder:text-slate-300" 
+                        className="w-full max-w-xs border border-gray-300 rounded-md bg-white px-3 py-2 shadow-sm text-right outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" 
                         placeholder="-" 
                      />
                    </div>
@@ -406,14 +434,13 @@ export default function InputEnsPage() {
                    <div className="flex items-center gap-4 flex-1">
                      <div>
                        <label className="font-bold text-slate-600 text-[13px]">Bencana Alam</label>
-                       <p className="text-xs text-slate-400 font-medium mt-[6px]">Bulan lalu: {getPrevMonthValue('bencana_alam')}</p>
                      </div>
                    </div>
-                   <div className="relative w-full md:w-56">
+                   <div className="relative flex-1 flex justify-end">
                      <input 
                         type="number" step="0.0001" 
                         {...register('distribusi_bencana_alam')} 
-                        className="w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-slate-800 font-bold text-right transition placeholder:text-slate-300" 
+                        className="w-full max-w-xs border border-gray-300 rounded-md bg-white px-3 py-2 shadow-sm text-right outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" 
                         placeholder="-" 
                      />
                    </div>
@@ -429,14 +456,13 @@ export default function InputEnsPage() {
                  </div>
                  <div>
                    <label className="font-bold text-slate-800 text-[15px]">Transmisi</label>
-                   <p className="text-xs text-slate-400 font-medium mt-[6px]">Bulan lalu: {getPrevMonthValue('transmisi')}</p>
                  </div>
                </div>
-               <div className="relative w-full md:w-64">
+               <div className="relative flex-1 flex justify-end">
                  <input 
                     type="number" step="0.0001" 
                     {...register('transmisi')} 
-                    className="w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-slate-800 font-bold text-right transition placeholder:text-slate-300" 
+                    className="w-full max-w-xs border border-gray-300 rounded-md bg-white px-3 py-2 shadow-sm text-right outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" 
                     placeholder="-" 
                  />
                </div>
@@ -450,19 +476,17 @@ export default function InputEnsPage() {
                  </div>
                  <div>
                    <label className="font-bold text-slate-800 text-[15px]">Pembangkit</label>
-                   <p className="text-xs text-slate-400 font-medium mt-[6px]">Bulan lalu: {getPrevMonthValue('pembangkit')}</p>
                  </div>
                </div>
-               <div className="relative w-full md:w-64">
+               <div className="relative flex-1 flex justify-end">
                  <input 
                     type="number" step="0.0001" 
                     {...register('pembangkit')} 
-                    className="w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-slate-800 font-bold text-right transition placeholder:text-slate-300" 
+                    className="w-full max-w-xs border border-gray-300 rounded-md bg-white px-3 py-2 shadow-sm text-right outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" 
                     placeholder="-" 
                  />
                </div>
             </div>
-
           </div>
         </div>
       </div>

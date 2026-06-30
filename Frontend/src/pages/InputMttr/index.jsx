@@ -31,7 +31,7 @@ export default function InputMttrPage() {
 
   const { register, handleSubmit, watch, setValue, control, formState: { errors } } = useForm({
       defaultValues: {
-          tahun: currentYear,
+          tahun: '',
           bulan: currentMonth,
           aset: ASET_TYPES.map(a => ({ jenis_aset: a.id, terpenuhi: '', total: '' }))
       }

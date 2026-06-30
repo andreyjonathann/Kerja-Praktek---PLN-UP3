@@ -41,8 +41,12 @@ class DataJaringanController extends Controller
         $totalSaidi = 0;
         $totalSaifi = 0;
         $totalEns = 0;
-
-
+        
+        $cumEnsTerencana = 0;
+        $cumEnsTidakTerencana = 0;
+        $cumEnsBencana = 0;
+        $cumEnsTransmisi = 0;
+        $cumEnsPembangkit = 0;
         for ($i = 1; $i <= 12; $i++) {
             $p = $periodes->firstWhere('bulan', $i);
             
@@ -89,14 +93,22 @@ class DataJaringanController extends Controller
             ];
 
             // ENS
-            $ensBulananReal = $ensData ? (
-                $ensData->distribusi_padam_terencana +
-                $ensData->distribusi_padam_tidak_terencana +
-                $ensData->distribusi_bencana_alam +
-                $ensData->transmisi +
-                $ensData->pembangkit
-            ) : 0;
+            $ensBulananReal = 0;
+            if ($ensData) {
+                $ensBulananReal = $ensData->distribusi_padam_terencana +
+                                  $ensData->distribusi_padam_tidak_terencana +
+                                  $ensData->distribusi_bencana_alam +
+                                  $ensData->transmisi +
+                                  $ensData->pembangkit;
+                
+                $cumEnsTerencana += $ensData->distribusi_padam_terencana;
+                $cumEnsTidakTerencana += $ensData->distribusi_padam_tidak_terencana;
+                $cumEnsBencana += $ensData->distribusi_bencana_alam;
+                $cumEnsTransmisi += $ensData->transmisi;
+                $cumEnsPembangkit += $ensData->pembangkit;
+            }
             $totalEns += $ensBulananReal;
+            
             $result['ensPageData'][] = [
                 'bulan' => $i, 'label' => $bulanMap[$i-1],
                 'bulanan' => [
@@ -110,9 +122,11 @@ class DataJaringanController extends Controller
                 ],
                 'kumulatif' => [
                     'target' => ($tgtEnsVal / 12) * $i,
-                    'padam_terencana' => $totalEns * 0.35, // dummy approx for cumulative
-                    'tidak_terencana' => $totalEns * 0.50,
-                    'bencana_alam' => $totalEns * 0.15,
+                    'padam_terencana' => $cumEnsTerencana,
+                    'tidak_terencana' => $cumEnsTidakTerencana,
+                    'bencana_alam' => $cumEnsBencana,
+                    'transmisi' => $cumEnsTransmisi,
+                    'pembangkit' => $cumEnsPembangkit,
                     $tahun => $ensData ? $totalEns : null,
                 ]
             ];
@@ -162,6 +176,24 @@ class DataJaringanController extends Controller
         $ens->fill($data);
         $ens->save();
         return response()->json(['message' => 'Data ENS tersimpan']);
+    }
+
+    public function deleteEns(Request $request)
+    {
+        $request->validate([
+            'bulan' => 'required',
+            'tahun' => 'required'
+        ]);
+
+        $periode = Periode::where('bulan', $request->bulan)->where('tahun', $request->tahun)->first();
+        if ($periode) {
+            $ens = EnsBulanan::where('periode_id', $periode->id)->first();
+            if ($ens) {
+                $ens->delete();
+                return response()->json(['message' => 'Data ENS dihapus']);
+            }
+        }
+        return response()->json(['message' => 'Data tidak ditemukan'], 404);
     }
 
     public function saveGangguan(Request $request)

@@ -79,6 +79,7 @@ Route::middleware('api')->group(function () {
 
     // Jaringan CRUD
     Route::post('/jaringan/ens', [DataJaringanController::class, 'saveEns']);
+    Route::delete('/jaringan/ens', [DataJaringanController::class, 'deleteEns']);
     Route::post('/jaringan/gangguan', [DataJaringanController::class, 'saveGangguan']);
     Route::post('/jaringan/gangguan-list', [DataJaringanController::class, 'saveGangguanList']);
     Route::get('/jaringan/gangguan-list', [DataJaringanController::class, 'getGangguanList']);

@@ -64,7 +64,7 @@ function FieldInput({ name, label, register, errors }) {
           border: `1px solid ${errors[name] ? '#EF4444' : 'var(--border)'}`,
           background: 'var(--bg-elevated)', color: 'var(--text-primary)',
           fontSize: '0.92rem', fontWeight: 600, outline: 'none',
-          fontFamily: 'monospace', boxSizing: 'border-box',
+          boxSizing: 'border-box',
         }}
       />
       {errors[name] && (
@@ -235,7 +235,7 @@ export default function EditKinerjaPage() {
             <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)' }}>
               Total {cfg.label} (preview)
             </span>
-            <span style={{ fontSize: '1.18rem', fontWeight: 800, color: cfg.color, fontFamily: 'monospace' }}>
+            <span style={{ fontSize: '1.18rem', fontWeight: 800, color: cfg.color }}>
               {liveTotal.toFixed(4)}
               <span style={{ fontSize: '0.73rem', color: 'var(--text-muted)', marginLeft: 6, fontWeight: 600 }}>
                 {cfg.unit}
@@ -319,7 +319,7 @@ export default function EditKinerjaPage() {
                       border: `1px solid ${errors[cfg.prefix + k] ? '#EF4444' : 'var(--border)'}`,
                       background: 'var(--bg-elevated)', color: 'var(--text-primary)',
                       fontSize: '0.92rem', fontWeight: 600, outline: 'none',
-                      fontFamily: 'monospace', boxSizing: 'border-box',
+                      boxSizing: 'border-box',
                     }}
                   />
                   {errors[cfg.prefix + k] && (
