@@ -54,7 +54,6 @@ import PenjualanPage     from '@/pages/Pemasaran/v2/Penjualan'
 import PelangganPage     from '@/pages/Pemasaran/v2/Pelanggan'
 import DayaTersambungV2Page  from '@/pages/Pemasaran/v2/DayaTersambung'
 import PendapatanBPPage  from '@/pages/Pemasaran/v2/PendapatanBP'
-import PlnMobilePage     from '@/pages/Pemasaran/v2/PlnMobile'
 import EditKinerjaPage from '@/pages/EditKinerja'
 import EditEnsPage from '@/pages/EditEns'
 
@@ -143,11 +142,7 @@ export default function App() {
                   <PendapatanBPPage />
                 </ProtectedRoute>
               } />
-              <Route path="/pemasaran/pln-mobile" element={
-                <ProtectedRoute>
-                  <PlnMobilePage />
-                </ProtectedRoute>
-              } />
+
 
               <Route path="/input" element={
                 <ProtectedRoute>

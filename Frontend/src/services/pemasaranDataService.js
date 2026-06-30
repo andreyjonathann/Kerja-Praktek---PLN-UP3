@@ -24,10 +24,26 @@ const ANNUAL_TARGET_2026 = {
 // Target per bulan (dibagi rata, sedikit weighted ke Q3/Q4)
 const MONTH_WEIGHTS = [0.077,0.074,0.082,0.080,0.083,0.081,0.086,0.088,0.085,0.084,0.083,0.077]
 
+let targetCache = {}
+
 // Fetch targets from backend and scale them dynamically based on Google Sheet targets
 export async function getMonthlyTarget(year, month) {
   const w = MONTH_WEIGHTS[month - 1];
   const yearScale = year === 2026 ? 1 : year === 2025 ? 0.97 : year === 2027 ? 1.03 : 1;
+
+  let dbTargets = [];
+
+  if (targetCache[year]) {
+    dbTargets = targetCache[year];
+  } else {
+    try {
+      const targetsRes = await api.get(`/targets?tahun=${year}`);
+      dbTargets = targetsRes.data || [];
+      targetCache[year] = dbTargets;
+    } catch (e) {
+      console.warn("Failed to fetch targets from backend, using default mapping", e);
+    }
+  }
 
   let dbPenjualanTgt = 59.0;
   let dbPelangganTgt = 10158.0;
@@ -36,30 +52,23 @@ export async function getMonthlyTarget(year, month) {
   let dbMobileTrxTgt = 1704000;
   let dbMobileNilaiTgt = 105;
 
-  try {
-    const targetsRes = await api.get(`/targets?tahun=${year}`);
-    const dbTargets = targetsRes.data || [];
-    
-    const pen = dbTargets.find(t => t.indikator === 'Penjualan TL');
-    if (pen) dbPenjualanTgt = parseFloat(pen.target);
+  const pen = dbTargets.find(t => t.indikator === 'Penjualan TL');
+  if (pen) dbPenjualanTgt = parseFloat(pen.target);
 
-    const pel = dbTargets.find(t => t.indikator === 'Jumlah Pelanggan');
-    if (pel) dbPelangganTgt = parseFloat(pel.target);
+  const pel = dbTargets.find(t => t.indikator === 'Jumlah Pelanggan');
+  if (pel) dbPelangganTgt = parseFloat(pel.target);
 
-    const day = dbTargets.find(t => t.indikator === 'Daya Tersambung');
-    if (day) dbDayaTgt = parseFloat(day.target);
+  const day = dbTargets.find(t => t.indikator === 'Daya Tersambung');
+  if (day) dbDayaTgt = parseFloat(day.target);
 
-    const penBp = dbTargets.find(t => t.indikator === 'Pendapatan BP');
-    if (penBp) dbPendapatanTgt = parseFloat(penBp.target);
+  const penBp = dbTargets.find(t => t.indikator === 'Pendapatan BP');
+  if (penBp) dbPendapatanTgt = parseFloat(penBp.target);
 
-    const mobTr = dbTargets.find(t => t.indikator === 'PLN Mobile Transaksi');
-    if (mobTr) dbMobileTrxTgt = parseFloat(mobTr.target);
+  const mobTr = dbTargets.find(t => t.indikator === 'PLN Mobile Transaksi');
+  if (mobTr) dbMobileTrxTgt = parseFloat(mobTr.target);
 
-    const mobNi = dbTargets.find(t => t.indikator === 'PLN Mobile Nilai');
-    if (mobNi) dbMobileNilaiTgt = parseFloat(mobNi.target);
-  } catch (e) {
-    console.warn("Failed to fetch targets from backend, using default mapping", e);
-  }
+  const mobNi = dbTargets.find(t => t.indikator === 'PLN Mobile Nilai');
+  if (mobNi) dbMobileNilaiTgt = parseFloat(mobNi.target);
 
   // Convert targets to form units
   // Penjualan: GWh -> kWh (1 GWh = 1,000,000 kWh)
@@ -294,4 +303,22 @@ export async function getPemasaranData(year = 2026) {
   ]
 
   return { monthly: rows, programs, tarif_keys: TARIF_KEYS, tarif_labels: TARIF_LABELS }
+}
+
+export async function deleteRealisasi(year, month) {
+  try {
+    await api.delete('/kinerja/pemasaran', {
+      data: {
+        bulan: month,
+        tahun: year
+      }
+    })
+    // mirror to localStorage
+    localStorage.removeItem(LS_KEY(year, month))
+    window.dispatchEvent(new CustomEvent('pemasaran:dataUpdated', { detail: { year, month } }))
+    return true
+  } catch (e) {
+    console.error('Failed to delete realisasi:', e)
+    throw e
+  }
 }
