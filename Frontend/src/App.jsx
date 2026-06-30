@@ -119,7 +119,7 @@ export default function App() {
               {/* ── Routes Pemasaran v2 (pola sama dengan Jaringan) ── */}
               <Route path="/pemasaran/input" element={
                 <ProtectedRoute>
-                  <InputKinerjaPage />
+                  <InputKinerjaPermasaranPage />
                 </ProtectedRoute>
               } />
               <Route path="/pemasaran/penjualan" element={
