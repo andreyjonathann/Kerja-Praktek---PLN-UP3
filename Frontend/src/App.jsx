@@ -125,11 +125,7 @@ export default function App() {
               {/* ── Routes Pemasaran v2 (pola sama dengan Jaringan) ── */}
               <Route path="/pemasaran/input" element={
                 <ProtectedRoute>
-<<<<<<< HEAD
                   <InputKinerjaPemasaranPage />
-=======
-                  <InputKinerjaPermasaranPage />
->>>>>>> fd911d6f8d39f52f1e5b84ae49e622720da999fe
                 </ProtectedRoute>
               } />
               <Route path="/pemasaran/penjualan" element={
