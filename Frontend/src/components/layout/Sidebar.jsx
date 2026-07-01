@@ -41,9 +41,8 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
       // Keep HOME
       if (item.key === 'home') return [item];
       
-      // Keep NKO group but remove kelola-target
       if (item.group === 'NKO') {
-         const filteredItems = item.items.filter(i => i.key !== 'kelola-target');
+         const filteredItems = item.items.filter(i => i.group !== 'KELOLA TARGET');
          return [{ ...item, items: filteredItems }];
       }
       
@@ -113,8 +112,20 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
               const renderItem = (navItem, depth = 0) => {
                 if (navItem.type === 'item' || (!navItem.type && navItem.path)) {
                   const IconComp = ICON_MAP[navItem.icon] || LayoutDashboard
-                  let isActive = location.pathname === navItem.path ||
-                    (navItem.path !== '/' && location.pathname.startsWith(navItem.path + '/'));
+                  
+                  const itemPath = navItem.path.split('?')[0];
+                  const itemSearch = navItem.path.includes('?') ? '?' + navItem.path.split('?')[1] : '';
+                  
+                  let isActive = false;
+                  if (itemSearch) {
+                      isActive = location.pathname === itemPath && location.search === itemSearch;
+                  } else {
+                      if (itemPath === '/kelola-target') {
+                          isActive = location.pathname === itemPath && location.search === '';
+                      } else {
+                          isActive = location.pathname === itemPath || (itemPath !== '/' && location.pathname.startsWith(itemPath + '/'));
+                      }
+                  }
                     
                   if (navItem.path === '/saidi' && (location.pathname === '/input' || location.pathname.includes('/saidi'))) {
                     isActive = true;
@@ -153,8 +164,21 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
                   const IconComp = navItem.icon ? ICON_MAP[navItem.icon] : null
 
                   const isChildActive = navItem.items && navItem.items.some(child => {
-                    let active = location.pathname === child.path ||
-                      (child.path !== '/' && location.pathname.startsWith(child.path + '/'));
+                    if (!child.path) return false;
+                    
+                    const childPath = child.path.split('?')[0];
+                    const childSearch = child.path.includes('?') ? '?' + child.path.split('?')[1] : '';
+
+                    let active = false;
+                    if (childSearch) {
+                        active = location.pathname === childPath && location.search === childSearch;
+                    } else {
+                        if (childPath === '/kelola-target') {
+                            active = location.pathname === childPath && location.search === '';
+                        } else {
+                            active = location.pathname === childPath || (childPath !== '/' && location.pathname.startsWith(childPath + '/'));
+                        }
+                    }
                       
                     if (child.path === '/saidi' && (location.pathname === '/input' || location.pathname.includes('/saidi'))) {
                       active = true;

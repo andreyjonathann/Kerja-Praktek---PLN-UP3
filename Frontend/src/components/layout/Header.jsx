@@ -1,11 +1,14 @@
-import React, { useState } from 'react'
-import { useLocation } from 'react-router-dom'
+import React, { useState, useEffect } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { Moon, Sun, RefreshCw, Menu, Bell, User, ChevronDown, LogOut, Shield } from 'lucide-react'
 import { useTheme } from '@/context/ThemeContext'
 import { useAuth, ROLES } from '@/context/AuthContext'
 import { useFilter } from '@/context/FilterContext'
 import { MONTHS, YEARS } from '@/utils/constants'
 import { NAV_ITEMS } from '@/utils/constants'
+import api from '@/services/api'
+import { formatDistanceToNow } from 'date-fns'
+import { id } from 'date-fns/locale'
 
 export default function Header({ onMenuToggle, onRefresh, refreshing }) {
   const { dark, toggle }              = useTheme()
@@ -13,45 +16,49 @@ export default function Header({ onMenuToggle, onRefresh, refreshing }) {
   const { filters, updateFilter }     = useFilter()
   const [userMenu, setUserMenu]       = useState(false)
   const [notifMenu, setNotifMenu]     = useState(false)
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      type: 'critical',
-      title: 'Gangguan Penyulang Semeru',
-      message: 'Trip di Gardu CK09 (Cengkareng Timur). Beban padam 1.45 MW, pelanggan padam 2,450.',
-      time: '10 menit yang lalu',
-      read: false,
-    },
-    {
-      id: 2,
-      type: 'warning',
-      title: 'Target SAIDI Mendekati Batas',
-      message: 'Realisasi SAIDI YTD Mei 8.88 mnt/plg mendekati target tahunan 9.50 mnt/plg.',
-      time: '1 jam yang lalu',
-      read: false,
-    },
-    {
-      id: 3,
-      type: 'info',
-      title: 'Sinkronisasi Data Selesai',
-      message: 'Laporan bulanan Mei 2026 telah disinkronisasikan oleh Admin.',
-      time: '3 jam yang lalu',
-      read: true,
-    },
-  ])
+  const [notifications, setNotifications] = useState([])
+  const navigate = useNavigate()
 
-  const unreadCount = notifications.filter(n => !n.read).length
-
-  const markAllAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })))
+  const fetchNotifications = async () => {
+    try {
+      const res = await api.get('/notifications')
+      setNotifications(res.data)
+    } catch (err) {
+      console.error('Failed to fetch notifications:', err)
+    }
   }
 
-  const markAsRead = (id) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))
+  useEffect(() => {
+    fetchNotifications()
+    // Poll every 30 seconds
+    const interval = setInterval(fetchNotifications, 30000)
+    return () => clearInterval(interval)
+  }, [])
+
+  // Auto refresh when dropdown is opened
+  useEffect(() => {
+    if (notifMenu) fetchNotifications()
+  }, [notifMenu])
+
+  const unreadCount = notifications.filter(n => !n.is_read).length
+
+  const markAllAsRead = async () => {
+    try {
+      await api.patch('/notifications/read-all')
+      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })))
+    } catch (err) {
+      console.error('Failed to mark all as read:', err)
+    }
   }
 
-  const clearNotifications = () => {
-    setNotifications([])
+  const markAsRead = async (notifId, url) => {
+    try {
+      await api.patch(`/notifications/${notifId}/read`)
+      setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, is_read: true } : n))
+      if (url) navigate(url)
+    } catch (err) {
+      console.error('Failed to mark as read:', err)
+    }
   }
 
   const location                      = useLocation()
@@ -190,17 +197,22 @@ export default function Header({ onMenuToggle, onRefresh, refreshing }) {
                         style={{
                           padding: '10px 14px',
                           borderBottom: '1px solid var(--border)',
-                          background: n.read ? 'transparent' : 'var(--accent-soft)',
-                          borderLeft: `3px solid ${n.type === 'critical' ? '#EF4444' : n.type === 'warning' ? '#F59E0B' : '#14A2BA'}`,
+                          background: n.is_read ? 'transparent' : 'var(--accent-soft)',
+                          borderLeft: `3px solid ${n.tipe === 'TARGET_DIUBAH' ? '#F59E0B' : n.tipe === 'TARGET_BARU' ? '#14A2BA' : '#10B981'}`,
                           display: 'flex',
                           flexDirection: 'column',
                           gap: 3,
                           position: 'relative',
+                          cursor: 'pointer'
+                        }}
+                        onClick={() => {
+                          setNotifMenu(false)
+                          markAsRead(n.id, n.url_tujuan)
                         }}
                       >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)', paddingRight: 10 }}>{n.title}</span>
-                          {!n.read && (
+                          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)', paddingRight: 10 }}>{n.judul}</span>
+                          {!n.is_read && (
                             <span style={{
                               width: 6, height: 6, borderRadius: '50%', background: '#EF4444',
                               boxShadow:'0 0 4px rgba(239,68,68,0.7)',
@@ -208,10 +220,12 @@ export default function Header({ onMenuToggle, onRefresh, refreshing }) {
                             }} />
                           )}
                         </div>
-                        <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.35, whiteSpace:'normal', textAlign:'left' }}>{n.message}</span>
+                        <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.35, whiteSpace:'normal', textAlign:'left' }}>{n.pesan}</span>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
-                          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{n.time}</span>
-                          {!n.read && (
+                          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                            {formatDistanceToNow(new Date(n.created_at), { addSuffix: true, locale: id })}
+                          </span>
+                          {!n.is_read && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation()

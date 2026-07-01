@@ -16,9 +16,15 @@ use App\Http\Controllers\Api\AuthController;
 
 Route::post('/auth/login', [AuthController::class, 'login']);
 
+use App\Http\Controllers\NotificationController;
+
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/auth/me', [AuthController::class, 'me']);
+    
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::patch('/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
+    Route::patch('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
 });
 
 Route::middleware('api')->group(function () {

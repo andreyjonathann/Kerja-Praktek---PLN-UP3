@@ -84,6 +84,15 @@ class KinerjaController extends Controller
             $kinerja->save();
             $kinerja->refresh();
             NkoCalculationService::calculateJaringan($kinerja);
+            
+            // Trigger Notification
+            app(\App\Services\NotificationService::class)->notifyAdminRealisasiBaru(
+                'Jaringan', 
+                'SAIDI & SAIFI', 
+                $bulan, 
+                $tahun, 
+                'Diperbarui'
+            );
         } else {
             // Generic JSON - merge new data with existing to avoid overwriting other KPIs
             $existing = $kinerja->data_realisasi ?? [];
@@ -102,6 +111,18 @@ class KinerjaController extends Controller
                 'keuangan' => 'Keuangan'
             ];
             NkoCalculationService::calculateGeneric($kinerja, $humanBidangMap[strtolower($bidang)]);
+            
+            // Trigger Notification for each updated KPI
+            $humanBidang = $humanBidangMap[strtolower($bidang)] ?? $bidang;
+            foreach ($newData as $indikator => $val) {
+                app(\App\Services\NotificationService::class)->notifyAdminRealisasiBaru(
+                    $humanBidang, 
+                    str_replace('_', ' ', strtoupper($indikator)), 
+                    $bulan, 
+                    $tahun, 
+                    $val
+                );
+            }
         }
 
         return response()->json([

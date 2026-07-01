@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import api from '@/services/api';
 import { Target, Save, Edit2, X, ChevronDown, CheckCircle } from 'lucide-react';
 
 export default function KelolaTargetPage() {
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const bidangQuery = searchParams.get('bidang');
+  
+  const navigate = useNavigate();
   const { user, isAdmin, loading: authLoading } = useAuth();
   
   const [tahun, setTahun] = useState(new Date().getFullYear());
@@ -14,6 +19,7 @@ export default function KelolaTargetPage() {
   const [editValue, setEditValue] = useState('');
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
+  const [activeBidang, setActiveBidang] = useState(null);
 
   // Fetch data
   useEffect(() => {
@@ -89,6 +95,19 @@ export default function KelolaTargetPage() {
     }
   };
 
+  // Determine activeBidang from URL
+  useEffect(() => {
+    if (bidangQuery) {
+      setActiveBidang(bidangQuery.replace('-', ' ').toUpperCase());
+    } else {
+      setActiveBidang(null); // Tampilkan semua
+    }
+  }, [bidangQuery]);
+
+  const bidangToRender = activeBidang 
+    ? (groupedTargets[activeBidang] ? [activeBidang] : []) 
+    : Object.keys(groupedTargets).sort();
+
   return (
     <div className="bg-slate-50 min-h-screen w-full flex flex-col gap-6 animate-fade-in relative pb-20">
       
@@ -99,7 +118,9 @@ export default function KelolaTargetPage() {
             <Target size={26} />
           </div>
           <div>
-            <h1 className="text-xl md:text-2xl font-bold text-slate-800">Kelola Target</h1>
+            <h1 className="text-xl md:text-2xl font-bold text-slate-800">
+              Kelola Target {activeBidang && `— Bidang ${activeBidang}`}
+            </h1>
             <p className="text-slate-500 text-sm">Manajemen target tahunan untuk seluruh bidang</p>
           </div>
         </div>
@@ -138,100 +159,107 @@ export default function KelolaTargetPage() {
             Tidak ada target yang ditemukan untuk tahun {tahun}. Silakan pastikan Database Seeder sudah berjalan.
           </div>
         ) : (
-          <div className="space-y-8 pb-10">
-            {Object.keys(groupedTargets).sort().map((bidang) => (
-              <div key={bidang} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                <div className="bg-slate-800 px-6 py-4 border-b border-slate-700">
-                  <h2 className="font-bold text-lg text-white uppercase">{bidang}</h2>
-                </div>
-                
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="bg-slate-50 border-b border-slate-200">
-                        <th className="p-4 font-bold text-sm text-slate-600">Indikator</th>
-                        <th className="p-4 font-bold text-sm text-slate-600 text-center">Polaritas</th>
-                        <th className="p-4 font-bold text-sm text-slate-600 text-center">Satuan</th>
-                        <th className="p-4 font-bold text-sm text-slate-800 text-right w-48">Target</th>
-                        <th className="p-4 font-bold text-sm text-slate-600 text-center w-32">Aksi</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {groupedTargets[bidang].map((item, idx) => (
-                        <tr key={item.id} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
-                          <td className="p-4 text-sm font-semibold text-slate-800">{item.indikator}</td>
-                          <td className="p-4 text-sm text-slate-600 text-center">
-                            <span className={`px-2 py-1 rounded-md text-xs font-bold ${
-                              item.polaritas === 'MAXIMIZE' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
-                            }`}>
-                              {item.polaritas}
-                            </span>
-                          </td>
-                          <td className="p-4 text-sm text-slate-600 text-center">{item.satuan}</td>
-                          
-                          {/* Target Column */}
-                          <td className="p-4 text-right">
-                            {editingId === item.id ? (
-                              <input
-                                type="number"
-                                step="any"
-                                value={editValue ?? ''}
-                                onChange={(e) => setEditValue(e.target.value)}
-                                className="w-full p-2 border border-slate-300 rounded-lg text-right font-bold text-slate-800 focus:ring-2 focus:ring-slate-500/20 focus:border-slate-500 outline-none"
-                                autoFocus
-                              />
-                            ) : (
-                              <div className="flex flex-col items-end gap-1">
-                                <span className="font-bold text-lg text-slate-800">
-                                  {item.target === null ? '-' : Number(item.target).toLocaleString('id-ID', { maximumFractionDigits: 4 })}
-                                </span>
-                                {item.target === null && (
-                                  <span className="bg-red-100 text-red-600 text-[10px] px-2 py-0.5 rounded-full font-bold animate-pulse">
-                                    BELUM DIISI
-                                  </span>
-                                )}
-                              </div>
-                            )}
-                          </td>
-
-                          {/* Action Column */}
-                          <td className="p-4 text-center">
-                            {editingId === item.id ? (
-                              <div className="flex items-center justify-center gap-2">
-                                <button
-                                  onClick={() => handleSaveEdit(item)}
-                                  disabled={saving}
-                                  className="p-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors disabled:opacity-50"
-                                  title="Simpan"
-                                >
-                                  <Save size={16} />
-                                </button>
-                                <button
-                                  onClick={handleCancelEdit}
-                                  disabled={saving}
-                                  className="p-2 bg-slate-200 text-slate-600 rounded-lg hover:bg-slate-300 transition-colors disabled:opacity-50"
-                                  title="Batal"
-                                >
-                                  <X size={16} />
-                                </button>
-                              </div>
-                            ) : (
-                              <button
-                                onClick={() => handleEditClick(item)}
-                                className="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 hover:text-slate-800 transition-colors"
-                                title="Edit Target"
-                              >
-                                <Edit2 size={16} />
-                              </button>
-                            )}
-                          </td>
+          <div className="flex flex-col gap-8 pb-10 items-start">
+            
+            {/* Konten Kanan: Tabel Target */}
+            <div className="flex-1 min-w-0 w-full space-y-8">
+              {bidangToRender.map((bidang) => (
+                <div key={bidang} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-fade-in">
+                  <div className="bg-slate-800 px-6 py-4 border-b border-slate-700 flex justify-between items-center">
+                    <h2 className="font-bold text-lg text-white uppercase">{bidang}</h2>
+                    <span className="bg-slate-700 text-slate-200 text-xs px-2 py-1 rounded-md font-semibold">
+                      {groupedTargets[bidang].length} Indikator
+                    </span>
+                  </div>
+                  
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50 border-b border-slate-200">
+                          <th className="p-4 font-bold text-sm text-slate-600">Indikator</th>
+                          <th className="p-4 font-bold text-sm text-slate-600 text-center">Polaritas</th>
+                          <th className="p-4 font-bold text-sm text-slate-600 text-center">Satuan</th>
+                          <th className="p-4 font-bold text-sm text-slate-800 text-right w-48">Target</th>
+                          <th className="p-4 font-bold text-sm text-slate-600 text-center w-32">Aksi</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {groupedTargets[bidang].map((item, idx) => (
+                          <tr key={item.id} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+                            <td className="p-4 text-sm font-semibold text-slate-800">{item.indikator}</td>
+                            <td className="p-4 text-sm text-slate-600 text-center">
+                              <span className={`px-2 py-1 rounded-md text-xs font-bold ${
+                                item.polaritas === 'MAXIMIZE' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
+                              }`}>
+                                {item.polaritas}
+                              </span>
+                            </td>
+                            <td className="p-4 text-sm text-slate-600 text-center">{item.satuan}</td>
+                            
+                            {/* Target Column */}
+                            <td className="p-4 text-right">
+                              {editingId === item.id ? (
+                                <input
+                                  type="number"
+                                  step="any"
+                                  value={editValue ?? ''}
+                                  onChange={(e) => setEditValue(e.target.value)}
+                                  className="w-full p-2 border border-slate-300 rounded-lg text-right font-bold text-slate-800 focus:ring-2 focus:ring-slate-500/20 focus:border-slate-500 outline-none"
+                                  autoFocus
+                                />
+                              ) : (
+                                <div className="flex flex-col items-end gap-1">
+                                  <span className="font-bold text-lg text-slate-800">
+                                    {item.target === null ? '-' : Number(item.target).toLocaleString('id-ID', { maximumFractionDigits: 4 })}
+                                  </span>
+                                  {item.target === null && (
+                                    <span className="bg-red-100 text-red-600 text-[10px] px-2 py-0.5 rounded-full font-bold animate-pulse">
+                                      BELUM DIISI
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </td>
+
+                            {/* Action Column */}
+                            <td className="p-4 text-center">
+                              {editingId === item.id ? (
+                                <div className="flex items-center justify-center gap-2">
+                                  <button
+                                    onClick={() => handleSaveEdit(item)}
+                                    disabled={saving}
+                                    className="p-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors disabled:opacity-50"
+                                    title="Simpan"
+                                  >
+                                    <Save size={16} />
+                                  </button>
+                                  <button
+                                    onClick={handleCancelEdit}
+                                    disabled={saving}
+                                    className="p-2 bg-slate-200 text-slate-600 rounded-lg hover:bg-slate-300 transition-colors disabled:opacity-50"
+                                    title="Batal"
+                                  >
+                                    <X size={16} />
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => handleEditClick(item)}
+                                  className="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 hover:text-slate-800 transition-colors"
+                                  title="Edit Target"
+                                >
+                                  <Edit2 size={16} />
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         )}
       </div>

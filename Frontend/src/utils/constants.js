@@ -56,7 +56,19 @@ export const NAV_ITEMS = [
     items: [
       { key: 'nko-sub', label: 'NKO', path: '/nko' },
       { key: 'trend-nko', label: 'TREND NKO', path: '/trend-nko' },
-      { key: 'kelola-target', label: 'KELOLA TARGET', path: '/kelola-target' },
+      {
+        type: 'subgroup',
+        group: 'KELOLA TARGET',
+        items: [
+          { key: 'kt-semua', label: 'SEMUA DIVISI', path: '/kelola-target' },
+          { key: 'kt-jaringan', label: 'JARINGAN', path: '/kelola-target?bidang=jaringan' },
+          { key: 'kt-pemasaran', label: 'PEMASARAN', path: '/kelola-target?bidang=pemasaran' },
+          { key: 'kt-transaksi-energi', label: 'TRANSAKSI ENERGI', path: '/kelola-target?bidang=transaksi-energi' },
+          { key: 'kt-aset', label: 'ASET', path: '/kelola-target?bidang=aset' },
+          { key: 'kt-niaga', label: 'NIAGA', path: '/kelola-target?bidang=niaga' },
+          { key: 'kt-keuangan', label: 'KEUANGAN', path: '/kelola-target?bidang=keuangan' },
+        ]
+      },
     ],
   },
   {

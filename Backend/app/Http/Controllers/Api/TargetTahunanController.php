@@ -30,10 +30,27 @@ class TargetTahunanController extends Controller
             'tahun' => 'required|integer'
         ]);
 
+        $existing = TargetTahunan::where('bidang', $request->bidang)
+            ->where('indikator', $request->indikator)
+            ->where('tahun', $request->tahun)
+            ->first();
+
+        $targetLama = $existing ? $existing->target : null;
+
         $target = TargetTahunan::updateOrCreate(
             ['bidang' => $request->bidang, 'indikator' => $request->indikator, 'tahun' => $request->tahun],
             $validated
         );
+
+        if ($target->wasRecentlyCreated || $target->wasChanged('target')) {
+            app(\App\Services\NotificationService::class)->notifyTargetUpdated(
+                $request->bidang,
+                $request->indikator,
+                $targetLama,
+                $request->target,
+                $request->tahun
+            );
+        }
 
         return response()->json(['message' => 'Target berhasil disimpan', 'data' => $target]);
     }
