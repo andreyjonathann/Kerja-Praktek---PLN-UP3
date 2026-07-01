@@ -20,4 +20,9 @@ class GangguanTrafo extends Model
     {
         return $this->belongsTo(User::class, 'created_by');
     }
+
+    public function details()
+    {
+        return $this->hasMany(GangguanTrafoDetail::class, 'gangguan_trafo_id');
+    }
 }

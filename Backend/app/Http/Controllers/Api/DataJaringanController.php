@@ -30,17 +30,37 @@ class DataJaringanController extends Controller
         $periodes = Periode::where('tahun', $tahun)->orderBy('bulan')->get();
         $bulanMap = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
 
-        $targetSaidi = TargetTahunan::whereRaw('LOWER(bidang) = ?', ['jaringan'])->whereRaw('LOWER(indikator) = ?', ['saidi'])->first();
-        $targetSaifi = TargetTahunan::whereRaw('LOWER(bidang) = ?', ['jaringan'])->whereRaw('LOWER(indikator) = ?', ['saifi'])->first();
-        $targetEns = TargetTahunan::whereRaw('LOWER(bidang) = ?', ['jaringan'])->whereRaw('LOWER(indikator) = ?', ['ens'])->first();
+        $targetSaidi = TargetTahunan::whereRaw('LOWER(bidang) = ?', ['jaringan'])->whereRaw('LOWER(indikator) = ?', ['saidi'])->where('tahun', $tahun)->first();
+        $targetSaifi = TargetTahunan::whereRaw('LOWER(bidang) = ?', ['jaringan'])->whereRaw('LOWER(indikator) = ?', ['saifi'])->where('tahun', $tahun)->first();
+        $targetEns = TargetTahunan::whereRaw('LOWER(bidang) = ?', ['jaringan'])->whereRaw('LOWER(indikator) = ?', ['ens'])->where('tahun', $tahun)->first();
         
         $tgtSaidiVal = $targetSaidi ? $targetSaidi->target : null;
         $tgtSaifiVal = $targetSaifi ? $targetSaifi->target : null;
         $tgtEnsVal = $targetEns ? $targetEns->target : null;
 
+        $saidiTargets = [
+            1 => $targetSaidi ? $targetSaidi->target_jan : null,
+            2 => $targetSaidi ? $targetSaidi->target_feb : null,
+            3 => $targetSaidi ? $targetSaidi->target_mar : null,
+            4 => $targetSaidi ? $targetSaidi->target_apr : null,
+            5 => $targetSaidi ? $targetSaidi->target_mei : null,
+            6 => $targetSaidi ? $targetSaidi->target_jun : null,
+            7 => $targetSaidi ? $targetSaidi->target_jul : null,
+            8 => $targetSaidi ? $targetSaidi->target_agu : null,
+            9 => $targetSaidi ? $targetSaidi->target_sep : null,
+            10 => $targetSaidi ? $targetSaidi->target_okt : null,
+            11 => $targetSaidi ? $targetSaidi->target_nov : null,
+            12 => $targetSaidi ? $targetSaidi->target_des : null,
+        ];
+
         $totalSaidi = 0;
         $totalSaifi = 0;
         $totalEns = 0;
+
+        $runningCumulativeTgtSaidi = 0;
+        $anySaidiTargetFilled = false;
+        $ytdTgtSaidiForOverview = 0;
+        $hasRealisasiSaidiOverall = false;
         
         $cumEnsTerencana = 0;
         $cumEnsTidakTerencana = 0;
@@ -63,12 +83,24 @@ class DataJaringanController extends Controller
             // SAIDI
             $sd_real = $saidiData ? $saidiData->saidi_total : null;
             $totalSaidi += $sd_real ?? 0;
+            
+            $targetBulananSaidi = $saidiTargets[$i];
+            if ($targetBulananSaidi !== null) {
+                $runningCumulativeTgtSaidi += $targetBulananSaidi;
+                $anySaidiTargetFilled = true;
+            }
+            
+            if ($sd_real !== null) {
+                $hasRealisasiSaidiOverall = true;
+                $ytdTgtSaidiForOverview = $anySaidiTargetFilled ? $runningCumulativeTgtSaidi : null;
+            }
+
             $result['saidi'][] = [
                 'id' => $i, 'bulan' => $i, 'label' => $bulanMap[$i-1],
-                'target' => $tgtSaidiVal !== null ? $tgtSaidiVal / 12 : null,
+                'target' => $targetBulananSaidi,
                 'realisasi' => $sd_real,
                 'cumulativeReal' => $totalSaidi,
-                'cumulativeTgt' => $tgtSaidiVal !== null ? ($tgtSaidiVal / 12) * $i : null,
+                'cumulativeTgt' => $anySaidiTargetFilled ? $runningCumulativeTgtSaidi : null,
                 'distribusi_padam_tidak_terencana' => $saidiData ? $saidiData->saidi_distribusi_padam_tidak_terencana : 0,
                 'distribusi_padam_terencana' => $saidiData ? $saidiData->saidi_distribusi_padam_terencana : 0,
                 'distribusi_bencana_alam' => $saidiData ? $saidiData->saidi_distribusi_bencana_alam : 0,
@@ -133,9 +165,14 @@ class DataJaringanController extends Controller
 
         }
 
+        // If there's no realisasi overall but targets exist, use the full running sum
+        if (!$hasRealisasiSaidiOverall && $anySaidiTargetFilled) {
+            $ytdTgtSaidiForOverview = $runningCumulativeTgtSaidi;
+        }
+
         $result['overview'] = [
             'kpis' => [
-                'saidi' => ['val' => $totalSaidi, 'target' => $tgtSaidiVal, 'isInverse' => true, 'unit' => 'mnt/plg'],
+                'saidi' => ['val' => $totalSaidi, 'target' => $anySaidiTargetFilled ? $ytdTgtSaidiForOverview : null, 'isInverse' => true, 'unit' => 'mnt/plg'],
                 'saifi' => ['val' => $totalSaifi, 'target' => $tgtSaifiVal, 'isInverse' => true, 'unit' => 'kali/plg'],
                 'ens'   => ['val' => $totalEns, 'target' => $tgtEnsVal, 'isInverse' => true, 'unit' => 'MWh'],
 

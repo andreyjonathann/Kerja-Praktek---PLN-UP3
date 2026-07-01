@@ -13,7 +13,7 @@ class GangguanSwitchingController extends Controller
     // --- GANGGUAN SWITCHING ---
     public function indexSwitching(Request $request)
     {
-        $query = GangguanSwitching::query();
+        $query = GangguanSwitching::with('details');
         if ($request->has('up3')) {
             $query->where('up3', $request->up3);
         }
@@ -37,19 +37,30 @@ class GangguanSwitchingController extends Controller
             'up3' => 'required|string',
             'tahun' => 'required|integer',
             'bulan' => 'required|integer|min:1|max:12',
-            'jumlah_gangguan' => 'required|integer|min:0',
+            'details' => 'array',
+            'details.*.merek' => 'nullable|string',
+            'details.*.tahun_alat' => 'nullable|string',
+            'details.*.nomor_seri' => 'nullable|string',
         ]);
 
         if ($user->up3 && $user->up3 !== $validated['up3']) {
             return response()->json(['success' => false, 'message' => 'Unauthorized UP3.'], 403);
         }
 
+        $details = $request->input('details', []);
+        $jumlahGangguan = count($details);
+
         $record = GangguanSwitching::updateOrCreate(
             ['up3' => $validated['up3'], 'tahun' => $validated['tahun'], 'bulan' => $validated['bulan']],
-            ['jumlah_gangguan' => $validated['jumlah_gangguan'], 'created_by' => $user->id]
+            ['jumlah_gangguan' => $jumlahGangguan, 'created_by' => $user->id]
         );
 
-        return response()->json(['success' => true, 'data' => $record, 'message' => 'Data Switching berhasil disimpan.']);
+        $record->details()->delete();
+        if ($jumlahGangguan > 0) {
+            $record->details()->createMany($details);
+        }
+
+        return response()->json(['success' => true, 'data' => $record->load('details'), 'message' => 'Data Switching berhasil disimpan.']);
     }
 
     public function updateSwitching(Request $request, $id)
@@ -66,19 +77,30 @@ class GangguanSwitchingController extends Controller
         }
 
         $validated = $request->validate([
-            'jumlah_gangguan' => 'required|integer|min:0',
+            'details' => 'array',
+            'details.*.merek' => 'nullable|string',
+            'details.*.tahun_alat' => 'nullable|string',
+            'details.*.nomor_seri' => 'nullable|string',
         ]);
 
-        $record->update(['jumlah_gangguan' => $validated['jumlah_gangguan']]);
+        $details = $request->input('details', []);
+        $jumlahGangguan = count($details);
 
-        return response()->json(['success' => true, 'data' => $record, 'message' => 'Data Switching berhasil diupdate.']);
+        $record->update(['jumlah_gangguan' => $jumlahGangguan]);
+        
+        $record->details()->delete();
+        if ($jumlahGangguan > 0) {
+            $record->details()->createMany($details);
+        }
+
+        return response()->json(['success' => true, 'data' => $record->load('details'), 'message' => 'Data Switching berhasil diupdate.']);
     }
 
 
     // --- GANGGUAN TRAFO ---
     public function indexTrafo(Request $request)
     {
-        $query = GangguanTrafo::query();
+        $query = GangguanTrafo::with('details');
         if ($request->has('up3')) {
             $query->where('up3', $request->up3);
         }
@@ -114,6 +136,8 @@ class GangguanSwitchingController extends Controller
             ['jumlah_gangguan' => $validated['jumlah_gangguan'], 'created_by' => $user->id]
         );
 
+        $record->details()->delete();
+
         return response()->json(['success' => true, 'data' => $record, 'message' => 'Data Trafo berhasil disimpan.']);
     }
 
@@ -135,6 +159,7 @@ class GangguanSwitchingController extends Controller
         ]);
 
         $record->update(['jumlah_gangguan' => $validated['jumlah_gangguan']]);
+        $record->details()->delete();
 
         return response()->json(['success' => true, 'data' => $record, 'message' => 'Data Trafo berhasil diupdate.']);
     }
@@ -210,6 +235,13 @@ class GangguanSwitchingController extends Controller
         $targetTrafo = (clone $qTarget)->sum('target_trafo_tahunan');
         $targetGabungan = $targetSwitching + $targetTrafo;
 
+        // Fetch TargetTahunan Master
+        $targetMaster = \App\Models\TargetTahunan::where('bidang', 'Jaringan')
+            ->where('indikator', 'Gangguan Switching (Kubikel & Trafo)')
+            ->where('tahun', $tahun)
+            ->first();
+        $targetTahunan = $targetMaster ? (int)$targetMaster->target : null;
+
         $persenVsTarget = $targetGabungan > 0 ? ($ytdGabungan / $targetGabungan) * 100 : 0;
         $status = $ytdGabungan <= $targetGabungan ? 'AMAN' : 'MELEBIHI_TARGET';
 
@@ -221,7 +253,8 @@ class GangguanSwitchingController extends Controller
             'target_trafo' => (int) $targetTrafo,
             'target_gabungan' => (int) $targetGabungan,
             'persen_vs_target' => (float) $persenVsTarget,
-            'status' => $status
+            'status' => $status,
+            'target_tahunan' => $targetTahunan
         ];
 
         // Trend Bulanan
@@ -253,6 +286,8 @@ class GangguanSwitchingController extends Controller
 
             $trend_bulanan[] = [
                 'bulan' => $m,
+                'switching_bulanan' => (int) $sw,
+                'trafo_bulanan' => (int) $tr,
                 'switching' => $accSwitching,
                 'trafo' => $accTrafo,
                 'gabungan' => $accSwitching + $accTrafo,
@@ -295,5 +330,128 @@ class GangguanSwitchingController extends Controller
                 'per_up3' => $up3Data
             ]
         ]);
+    }
+
+    // --- RIWAYAT GABUNGAN (SWITCHING & TRAFO DETAILS) ---
+    public function indexGabungan(Request $request)
+    {
+        $tahun = $request->input('tahun', date('Y'));
+        $up3 = $request->input('up3');
+
+        $swQuery = GangguanSwitching::with('details')->where('tahun', $tahun);
+
+        if ($up3) {
+            $swQuery->where('up3', $up3);
+        }
+
+        $switchings = $swQuery->get();
+
+        $gabungan = [];
+
+        foreach ($switchings as $sw) {
+            foreach ($sw->details as $det) {
+                $gabungan[] = [
+                    'id' => $det->id,
+                    'parent_id' => $sw->id,
+                    'jenis' => 'switching',
+                    'bulan' => $sw->bulan,
+                    'tahun' => $sw->tahun,
+                    'merek' => $det->merek,
+                    'tahun_alat' => $det->tahun_alat,
+                    'nomor_seri' => $det->nomor_seri,
+                    'created_at' => $det->created_at
+                ];
+            }
+        }
+
+        // Trafo removed from gabungan because it doesn't have details
+
+        usort($gabungan, function($a, $b) {
+            if ($a['bulan'] == $b['bulan']) {
+                return $b['id'] <=> $a['id'];
+            }
+            return $b['bulan'] <=> $a['bulan'];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => $gabungan
+        ]);
+    }
+
+    public function updateKejadianSwitching(Request $request, $id)
+    {
+        $user = $request->user();
+        if ($user->role !== 'PIC' && $user->role !== 'pic_jaringan') {
+            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        }
+
+        $detail = \App\Models\GangguanSwitchingDetail::findOrFail($id);
+        
+        $validated = $request->validate([
+            'merek' => 'nullable|string',
+            'tahun_alat' => 'nullable|string',
+            'nomor_seri' => 'nullable|string',
+        ]);
+
+        $detail->update($validated);
+
+        return response()->json(['success' => true, 'data' => $detail, 'message' => 'Data Kejadian Switching berhasil diupdate.']);
+    }
+
+    public function destroyKejadianSwitching(Request $request, $id)
+    {
+        $user = $request->user();
+        if ($user->role !== 'PIC' && $user->role !== 'pic_jaringan') {
+            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        }
+
+        $detail = \App\Models\GangguanSwitchingDetail::findOrFail($id);
+        $parent = $detail->gangguanSwitching;
+        $detail->delete();
+
+        if ($parent) {
+            $parent->update(['jumlah_gangguan' => $parent->details()->count()]);
+        }
+
+        return response()->json(['success' => true, 'message' => 'Data berhasil dihapus']);
+    }
+
+    public function updateKejadianTrafo(Request $request, $id)
+    {
+        $user = $request->user();
+        if ($user->role !== 'PIC' && $user->role !== 'pic_jaringan') {
+            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        }
+
+        $detail = \App\Models\GangguanTrafoDetail::findOrFail($id);
+        
+        $validated = $request->validate([
+            'merek' => 'nullable|string',
+            'tahun_alat' => 'nullable|string',
+            'nomor_seri' => 'nullable|string',
+        ]);
+
+        $detail->update($validated);
+
+        return response()->json(['success' => true, 'data' => $detail, 'message' => 'Data Kejadian Trafo berhasil diupdate.']);
+    }
+
+    public function destroyKejadianTrafo(Request $request, $id)
+    {
+        $user = $request->user();
+        if ($user->role !== 'PIC' && $user->role !== 'pic_jaringan') {
+            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        }
+
+        $detail = \App\Models\GangguanTrafoDetail::findOrFail($id);
+        $parent = $detail->gangguanTrafo;
+        $detail->delete();
+
+        if ($parent) {
+            $parent->update(['jumlah_gangguan' => $parent->details()->count()]);
+        }
+
+        return response()->json(['success' => true, 'message' => 'Data berhasil dihapus']);
     }
 }

@@ -25,6 +25,7 @@ import InputGangguanTmLebih5Page from '@/pages/InputGangguanTmLebih5'
 import DetailGangguanTmLebih5Page from '@/pages/DetailGangguanTmLebih5'
 import GangguanSwitchingPage from '@/pages/GangguanSwitching'
 import InputGangguanSwitchingPage from '@/pages/InputGangguanSwitching'
+import InputGangguanTrafoPage from '@/pages/InputGangguanTrafo'
 import TargetGangguanSwitchingPage from '@/pages/TargetGangguanSwitching'
 import RptGangguanPage from '@/pages/RptGangguan'
 import InputRptGangguanPage from '@/pages/InputRptGangguan'
@@ -62,6 +63,7 @@ import EditEnsPage from '@/pages/EditEns'
 
 // Admin Pages
 import KelolaTargetPage from '@/pages/Admin/KelolaTarget'
+import KelolaTargetBulananPage from '@/pages/Admin/KelolaTargetBulanan'
 
 // Protected Route Wrapper
 function ProtectedRoute({ children }) {
@@ -169,6 +171,12 @@ export default function App() {
                   <KelolaTargetPage />
                 </ProtectedRoute>
               } />
+              
+              <Route path="/kelola-target/:bidang/:indikator" element={
+                <ProtectedRoute>
+                  <KelolaTargetBulananPage />
+                </ProtectedRoute>
+              } />
 
               <Route path="/:type/edit/:bulan/:tahun" element={
                 <ProtectedRoute>
@@ -250,6 +258,12 @@ export default function App() {
               <Route path="/jaringan/input-gangguan-switching" element={
                 <ProtectedRoute>
                   <InputGangguanSwitchingPage />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/jaringan/input-gangguan-trafo" element={
+                <ProtectedRoute>
+                  <InputGangguanTrafoPage />
                 </ProtectedRoute>
               } />
 

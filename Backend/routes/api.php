@@ -38,6 +38,13 @@ Route::middleware('api')->group(function () {
         Route::post('/gangguan-trafo', [\App\Http\Controllers\Api\GangguanSwitchingController::class, 'storeTrafo']);
         Route::put('/gangguan-trafo/{id}', [\App\Http\Controllers\Api\GangguanSwitchingController::class, 'updateTrafo']);
 
+        Route::get('/gangguan-switching-trafo', [\App\Http\Controllers\Api\GangguanSwitchingController::class, 'indexGabungan']);
+        Route::put('/gangguan-switching/detail/{id}', [\App\Http\Controllers\Api\GangguanSwitchingController::class, 'updateKejadianSwitching']);
+        Route::delete('/gangguan-switching/detail/{id}', [\App\Http\Controllers\Api\GangguanSwitchingController::class, 'destroyKejadianSwitching']);
+        Route::put('/gangguan-trafo/detail/{id}', [\App\Http\Controllers\Api\GangguanSwitchingController::class, 'updateKejadianTrafo']);
+        Route::delete('/gangguan-trafo/detail/{id}', [\App\Http\Controllers\Api\GangguanSwitchingController::class, 'destroyKejadianTrafo']);
+
+
         Route::get('/gangguan-switching/targets', [\App\Http\Controllers\Api\GangguanSwitchingController::class, 'indexTargets']);
         Route::post('/gangguan-switching/targets', [\App\Http\Controllers\Api\GangguanSwitchingController::class, 'storeTargets']);
 
@@ -109,6 +116,8 @@ Route::middleware('api')->group(function () {
     // Target Tahunan
     Route::get('/targets', [TargetTahunanController::class, 'index']);
     Route::post('/targets', [TargetTahunanController::class, 'store']);
+    Route::get('/target/{bidang}/{indikator}', [TargetTahunanController::class, 'getMonthlyTarget']);
+    Route::put('/target/{bidang}/{indikator}/{tahun}', [TargetTahunanController::class, 'updateMonthlyTarget']);
     
     // Kinerja endpoints
     Route::get('/kinerja/{bidang}', [KinerjaController::class, 'index']);

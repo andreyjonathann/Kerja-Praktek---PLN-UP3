@@ -22,10 +22,10 @@ export default function InputGangguanSwitchingPage() {
   
   const [target, setTarget] = useState(null)
   
-  const [switchingForm, setSwitchingForm] = useState({
+  const [trafoForm, setTrafoForm] = useState({
     tahun: '',
     bulan: '',
-    details: [],
+    jumlah_gangguan: '',
     existingId: null
   })
   
@@ -43,16 +43,16 @@ export default function InputGangguanSwitchingPage() {
       }
 
       // 2. Fetch Existing Data for selected month
-      const resSw = await api.get(`/v1/gangguan-switching?tahun=${year}&up3=${up3}`);
+      const resTr = await api.get(`/v1/gangguan-trafo?tahun=${year}&up3=${up3}`);
       
-      const swData = resSw.data?.data || [];
+      const trData = resTr.data?.data || [];
       
-      // Look for switching record for current selected month
-      const currentSw = swData.find(item => item.bulan === Number(switchingForm.bulan));
-      if (currentSw) {
-        setSwitchingForm(prev => ({ ...prev, details: currentSw.details || [], existingId: currentSw.id }));
+      // Look for trafo record for current selected month
+      const currentTr = trData.find(item => item.bulan === Number(trafoForm.bulan));
+      if (currentTr) {
+        setTrafoForm(prev => ({ ...prev, jumlah_gangguan: currentTr.jumlah_gangguan, existingId: currentTr.id }));
       } else {
-        setSwitchingForm(prev => ({ ...prev, details: [], existingId: null }));
+        setTrafoForm(prev => ({ ...prev, jumlah_gangguan: '', existingId: null }));
       }
 
     } catch (error) {
@@ -61,7 +61,7 @@ export default function InputGangguanSwitchingPage() {
     } finally {
       setLoading(false);
     }
-  }, [year, up3, switchingForm.bulan]);
+  }, [year, up3, trafoForm.bulan]);
 
   useEffect(() => {
     fetchTargetAndData();
@@ -72,32 +72,15 @@ export default function InputGangguanSwitchingPage() {
     setTimeout(() => setNotification(null), 3000);
   };
 
-  const handleSwitchingChange = (e) => {
+  const handleTrafoChange = (e) => {
     const { name, value } = e.target;
-    setSwitchingForm(prev => ({ ...prev, [name]: value }));
+    setTrafoForm(prev => ({ ...prev, [name]: value }));
   };
 
-  const addDetail = () => {
-    setSwitchingForm(prev => ({ ...prev, details: [...prev.details, { merek: '', tahun_alat: '', nomor_seri: '' }] }));
-  };
-
-  const removeDetail = (index) => {
-    setSwitchingForm(prev => ({
-      ...prev,
-      details: prev.details.filter((_, i) => i !== index)
-    }));
-  };
-
-  const handleDetailChange = (index, field, value) => {
-    const newDetails = [...switchingForm.details];
-    newDetails[index][field] = value;
-    setSwitchingForm(prev => ({ ...prev, details: newDetails }));
-  };
-
-  const submitSwitching = async (e) => {
+  const submitTrafo = async (e) => {
     e?.preventDefault();
     setSaving(true);
-    if (!switchingForm.tahun) {
+    if (!trafoForm.tahun) {
       showNotification('error', 'Tahun wajib diisi');
       setSaving(false);
       return;
@@ -105,17 +88,17 @@ export default function InputGangguanSwitchingPage() {
     try {
       const payload = {
         up3,
-        tahun: Number(switchingForm.tahun),
-        bulan: Number(switchingForm.bulan),
-        details: switchingForm.details
+        tahun: Number(trafoForm.tahun),
+        bulan: Number(trafoForm.bulan),
+        jumlah_gangguan: Number(trafoForm.jumlah_gangguan)
       };
       
-      if (switchingForm.existingId) {
-        await api.put(`/v1/gangguan-switching/${switchingForm.existingId}`, payload);
+      if (trafoForm.existingId) {
+        await api.put(`/v1/gangguan-trafo/${trafoForm.existingId}`, payload);
       } else {
-        await api.post(`/v1/gangguan-switching`, payload);
+        await api.post(`/v1/gangguan-trafo`, payload);
       }
-      showNotification('success', 'Data Switching berhasil disimpan.');
+      showNotification('success', 'Data Trafo berhasil disimpan.');
       setTimeout(() => {
         navigate('/jaringan/gangguan-switching');
       }, 1000);
@@ -127,7 +110,7 @@ export default function InputGangguanSwitchingPage() {
     }
   };
 
-  const isDuplicate = !!switchingForm.existingId;
+  const isDuplicate = !!trafoForm.existingId;
 
   return (
     <div className="min-h-screen bg-slate-50/50 flex flex-col animate-fade-in">
@@ -137,11 +120,12 @@ export default function InputGangguanSwitchingPage() {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
              {/* Left Header */}
              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-[#00A2B9] rounded-2xl flex items-center justify-center text-white shadow-lg shadow-teal-500/20">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100/50 flex items-center justify-center text-blue-600 border border-blue-100/50 shadow-inner">
                   <Activity size={24} />
                 </div>
                 <div>
-                  <h1 className="text-xl font-extrabold text-slate-800 tracking-tight">Tambah Gangguan Switching</h1>
+                  <h1 className="text-xl font-extrabold text-slate-800 tracking-tight">Input Gangguan Trafo</h1>
+                  <p className="text-slate-500 text-sm font-medium mt-0.5">Form pengisian realisasi bulanan untuk UP3 {up3} ({year})</p>
                 </div>
              </div>
 
@@ -190,13 +174,13 @@ export default function InputGangguanSwitchingPage() {
                  padding: 4,
                  borderRadius: 12,
                  border: 'none',
-                 cursor: (saving || isDuplicate) ? 'not-allowed' : 'pointer',
-                 opacity: (saving || isDuplicate) ? 0.6 : 1
+                 cursor: saving ? 'not-allowed' : 'pointer',
+                 opacity: saving ? 0.6 : 1
                }}>
                  <button 
                     type="button"
-                    onClick={submitSwitching}
-                    disabled={saving || isDuplicate}
+                    onClick={submitTrafo}
+                    disabled={saving}
                     style={{
                       padding: '6px 16px',
                       borderRadius: 9,
@@ -204,10 +188,10 @@ export default function InputGangguanSwitchingPage() {
                       fontWeight: 700,
                       transition: 'all 0.2s ease',
                       border: 'none',
-                      cursor: (saving || isDuplicate) ? 'not-allowed' : 'pointer',
-                      background: (saving || isDuplicate) ? '#93c5fd' : '#00A2B9',
+                      cursor: saving ? 'not-allowed' : 'pointer',
+                      background: saving ? '#93c5fd' : '#00A2B9',
                       color: '#ffffff',
-                      boxShadow: (saving || isDuplicate) ? 'none' : '0 4px 12px rgba(0, 162, 185, 0.3)',
+                      boxShadow: saving ? 'none' : '0 4px 12px rgba(0, 162, 185, 0.3)',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '8px'
@@ -237,14 +221,16 @@ export default function InputGangguanSwitchingPage() {
             </div>
           )}
 
+          <TargetWarning up3={up3} year={year} isVisible={!loading && !target} />
+
           <div className="mb-8 py-6">
             <h3 className="text-xs font-bold text-slate-500 mb-3 uppercase tracking-wider mt-6">Pilih Periode</h3>
             <div className="flex gap-4">
                <div className="relative w-1/2">
                   <select
                     name="bulan"
-                    value={switchingForm.bulan}
-                    onChange={handleSwitchingChange}
+                    value={trafoForm.bulan}
+                    onChange={handleTrafoChange}
                     className="w-full px-4 py-2 pr-12 bg-white border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-sm cursor-pointer appearance-none shadow-sm text-gray-400 font-normal"
                   >
                     <option value="" disabled className="text-gray-400">Bulan</option>
@@ -252,97 +238,61 @@ export default function InputGangguanSwitchingPage() {
                       <option key={i+1} value={i+1}>{m}</option>
                     ))}
                   </select>
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                    <Calendar size={16} />
+                  </div>
                </div>
                
                <div className="relative w-1/2">
                   <input
                     type="number"
                     name="tahun"
-                    value={switchingForm.tahun}
-                    onChange={handleSwitchingChange}
+                    value={trafoForm.tahun}
+                    onChange={handleTrafoChange}
                     placeholder="Tahun"
                     className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-sm placeholder:text-gray-400 text-gray-400 shadow-sm font-normal"
                   />
                </div>
             </div>
-            {isDuplicate && (
-              <p className="text-red-500 text-sm mt-3 font-semibold">
-                Data untuk periode ini sudah diinput. Silakan pilih bulan/tahun lain.
-              </p>
-            )}
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden mb-8 p-6">
-               <h3 className="text-lg font-bold text-slate-800 mb-4">Daftar Alat yang Mengalami Gangguan</h3>
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mt-2">
+            <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center">
+                  <FileText size={18} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-800">RINCIAN DATA GANGGUAN</h3>
+                  <p className="text-xs text-slate-500 font-medium">Masukkan jumlah kali gangguan trafo</p>
+                </div>
+              </div>
+            </div>
 
-               <div className="flex flex-col mb-4">
-                 <p className="text-sm text-slate-500 mb-4">Total Gangguan: <span className="font-bold text-blue-600">{switchingForm.details.length} Kali</span></p>
-               </div>
-
-               <div className="space-y-4">
-                   {switchingForm.details.map((detail, index) => (
-                      <div key={index} className="p-4 border border-slate-200 rounded-xl bg-white shadow-sm flex items-start gap-4">
-                         <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
-                           <div>
-                             <label className="block text-sm font-bold text-slate-600 mb-2">Merek</label>
-                             <input
-                               type="text"
-                               placeholder="Cth: Schneider"
-                               value={detail.merek}
-                               onChange={(e) => handleDetailChange(index, 'merek', e.target.value)}
-                               className="w-full px-4 py-3 border border-slate-200 rounded-xl outline-none focus:border-blue-500 text-sm"
-                             />
-                           </div>
-                           <div>
-                             <label className="block text-sm font-bold text-slate-600 mb-2">Tahun Alat</label>
-                             <input
-                               type="text"
-                               placeholder="Cth: 2015"
-                               value={detail.tahun_alat}
-                               onChange={(e) => handleDetailChange(index, 'tahun_alat', e.target.value)}
-                               className="w-full px-4 py-3 border border-slate-200 rounded-xl outline-none focus:border-blue-500 text-sm"
-                             />
-                           </div>
-                           <div>
-                             <label className="block text-sm font-bold text-slate-600 mb-2">Nomor Seri</label>
-                             <input
-                               type="text"
-                               placeholder="Cth: SN-123456"
-                               value={detail.nomor_seri}
-                               onChange={(e) => handleDetailChange(index, 'nomor_seri', e.target.value)}
-                               className="w-full px-4 py-3 border border-slate-200 rounded-xl outline-none focus:border-blue-500 text-sm"
-                             />
-                           </div>
-                         </div>
-                         <button
-                           type="button"
-                           onClick={() => removeDetail(index)}
-                           className="p-3 text-slate-400 hover:bg-red-50 hover:text-red-500 rounded-xl transition-colors mt-8"
-                           title="Hapus baris ini"
-                         >
-                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                         </button>
-                      </div>
-                   ))}
-
-                   {switchingForm.details.length === 0 && (
-                     <div className="text-center py-10 bg-slate-50 border border-slate-200 border-dashed rounded-xl">
-                       <p className="text-base font-medium text-slate-500 mb-2">Belum ada data gangguan.</p>
-                       <p className="text-sm text-slate-400">Klik "Tambah Data" untuk menginput merek, tahun, dan nomor seri alat.</p>
+            <div className="p-6 space-y-4">
+              <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden mb-8">
+                <div className="flex flex-col md:flex-row md:items-center justify-between py-[20px] px-4 border-b border-[#f3f4f6] gap-4 hover:bg-slate-100/50 transition">
+                   <div className="flex items-center gap-4 flex-1">
+                     <div>
+                       <label className="font-bold text-slate-600 text-[13px]">Gangguan Trafo (Kali)</label>
                      </div>
-                   )}
-                   
-                   <button
-                     type="button"
-                     onClick={addDetail}
-                     className="w-full py-4 mt-2 bg-blue-50 text-blue-600 rounded-xl text-sm font-bold hover:bg-blue-100 transition-colors flex items-center justify-center gap-2 border border-blue-100 shadow-sm"
-                   >
-                     + Tambah Kejadian
-                   </button>
-                 </div>
-               </div>
+                   </div>
+                   <div className="relative flex-1 flex justify-end">
+                     <input 
+                        type="number" min="0" 
+                        name="jumlah_gangguan"
+                        value={trafoForm.jumlah_gangguan}
+                        onChange={handleTrafoChange}
+                        className="w-full max-w-xs border border-gray-300 rounded-md px-3 py-2 shadow-sm text-right outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white"
+                        placeholder="Contoh: 2"
+                     />
+                   </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
+      </div>
+    </div>
   )
 }
