@@ -248,23 +248,6 @@ export default function Header({ onMenuToggle, onRefresh, refreshing }) {
                   )}
                 </div>
 
-                {/* Footer */}
-                {notifications.length > 0 && (
-                  <div style={{ padding:'8px 14px', borderTop:'1px solid var(--border)', display:'flex', justifyContent:'center', background:'var(--bg-table-head)' }}>
-                    <button
-                      onClick={clearNotifications}
-                      style={{
-                        background:'none', border:'none', padding:0,
-                        fontSize:'0.75rem', fontWeight:700, color:'#EF4444',
-                        cursor:'pointer',
-                      }}
-                      onMouseEnter={e => e.currentTarget.style.textDecoration='underline'}
-                      onMouseLeave={e => e.currentTarget.style.textDecoration='none'}
-                    >
-                      Hapus Semua
-                    </button>
-                  </div>
-                )}
               </div>
             </>
           )}

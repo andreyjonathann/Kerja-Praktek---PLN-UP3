@@ -140,8 +140,8 @@ export default function SaidiPage() {
   // ── Summary stats ─────────────────────────────────────────────────────────
   const filled      = data.filter(d => d.realisasi != null)
   const lastMonth   = filled[filled.length - 1]
-  const totalReal   = lastMonth ? (lastMonth.realisasi || 0) : 0
-  const totalTgt    = lastMonth ? lastMonth.target : null
+  const totalReal   = lastMonth ? (lastMonth.cumulativeReal || 0) : 0
+  const totalTgt    = lastMonth ? lastMonth.cumulativeTgt : null
   const achievement = (totalTgt !== null && totalTgt > 0) ? Math.min(150, (totalTgt / Math.max(0.001, totalReal)) * 100) : 0
 
   // ── Breakdown chart: 3 bar (Distribusi, Transmisi, Pembangkit) ────────────

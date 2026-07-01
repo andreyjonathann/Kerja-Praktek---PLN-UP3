@@ -48,8 +48,9 @@ export default function KelolaTargetPage() {
 
   // Grouping targets by Bidang
   const groupedTargets = targets.reduce((acc, curr) => {
-    if (!acc[curr.bidang]) acc[curr.bidang] = [];
-    acc[curr.bidang].push(curr);
+    const b = (curr.bidang || '').toUpperCase();
+    if (!acc[b]) acc[b] = [];
+    acc[b].push(curr);
     return acc;
   }, {});
 
@@ -142,7 +143,7 @@ export default function KelolaTargetPage() {
         </div>
       </div>
 
-      <div className="w-full px-4 md:px-8 mt-2 max-w-7xl mx-auto">
+      <div className="w-full px-4 md:px-8 mt-2 mx-auto">
         {successMsg && (
           <div className="mb-6 bg-emerald-50 border border-emerald-200 text-emerald-700 px-6 py-4 rounded-xl flex items-center gap-3 animate-fade-in shadow-sm">
             <CheckCircle className="text-emerald-500 shrink-0" size={24} />
@@ -176,28 +177,28 @@ export default function KelolaTargetPage() {
                     <table className="w-full text-left border-collapse">
                       <thead>
                         <tr className="bg-slate-50 border-b border-slate-200">
-                          <th className="p-4 font-bold text-sm text-slate-600">Indikator</th>
-                          <th className="p-4 font-bold text-sm text-slate-600 text-center">Polaritas</th>
-                          <th className="p-4 font-bold text-sm text-slate-600 text-center">Satuan</th>
-                          <th className="p-4 font-bold text-sm text-slate-800 text-right w-48">Target</th>
-                          <th className="p-4 font-bold text-sm text-slate-600 text-center w-32">Aksi</th>
+                          <th className="py-3 px-4 font-bold text-sm text-slate-600 w-auto">Indikator</th>
+                          <th className="py-3 px-4 font-bold text-sm text-slate-600 text-center w-32">Polaritas</th>
+                          <th className="py-3 px-4 font-bold text-sm text-slate-600 text-center w-32">Satuan</th>
+                          <th className="py-3 px-4 font-bold text-sm text-slate-800 text-right w-40">Target</th>
+                          <th className="py-3 px-4 font-bold text-sm text-slate-600 text-center w-24">Aksi</th>
                         </tr>
                       </thead>
                       <tbody>
                         {groupedTargets[bidang].map((item, idx) => (
                           <tr key={item.id} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
-                            <td className="p-4 text-sm font-semibold text-slate-800">{item.indikator}</td>
-                            <td className="p-4 text-sm text-slate-600 text-center">
+                            <td className="py-3 px-4 text-sm font-semibold text-slate-800 align-middle">{item.indikator}</td>
+                            <td className="py-3 px-4 text-sm text-slate-600 text-center align-middle">
                               <span className={`px-2 py-1 rounded-md text-xs font-bold ${
                                 item.polaritas === 'MAXIMIZE' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
                               }`}>
                                 {item.polaritas}
                               </span>
                             </td>
-                            <td className="p-4 text-sm text-slate-600 text-center">{item.satuan}</td>
+                            <td className="py-3 px-4 text-sm text-slate-600 text-center align-middle">{item.satuan}</td>
                             
                             {/* Target Column */}
-                            <td className="p-4 text-right">
+                            <td className="py-3 px-4 text-right align-middle">
                               {editingId === item.id ? (
                                 <input
                                   type="number"
@@ -208,13 +209,12 @@ export default function KelolaTargetPage() {
                                   autoFocus
                                 />
                               ) : (
-                                <div className="flex flex-col items-end gap-1">
-                                  <span className="font-bold text-lg text-slate-800">
-                                    {item.target === null ? '-' : Number(item.target).toLocaleString('id-ID', { maximumFractionDigits: 4 })}
-                                  </span>
-                                  {item.target === null && (
-                                    <span className="bg-red-100 text-red-600 text-[10px] px-2 py-0.5 rounded-full font-bold animate-pulse">
-                                      BELUM DIISI
+                                <div className="flex justify-end items-center h-full">
+                                  {item.target === null ? (
+                                    <span title="Belum diisi" className="font-bold text-xl text-slate-400 cursor-help">-</span>
+                                  ) : (
+                                    <span className="font-bold text-lg text-slate-800">
+                                      {Number(item.target).toLocaleString('id-ID', { maximumFractionDigits: 4 })}
                                     </span>
                                   )}
                                 </div>
@@ -222,7 +222,7 @@ export default function KelolaTargetPage() {
                             </td>
 
                             {/* Action Column */}
-                            <td className="p-4 text-center">
+                            <td className="py-3 px-4 text-center align-middle">
                               {editingId === item.id ? (
                                 <div className="flex items-center justify-center gap-2">
                                   <button
@@ -243,13 +243,15 @@ export default function KelolaTargetPage() {
                                   </button>
                                 </div>
                               ) : (
-                                <button
-                                  onClick={() => handleEditClick(item)}
-                                  className="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 hover:text-slate-800 transition-colors"
-                                  title="Edit Target"
-                                >
-                                  <Edit2 size={16} />
-                                </button>
+                                <div className="flex items-center justify-center h-full">
+                                  <button
+                                    onClick={() => handleEditClick(item)}
+                                    className="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 hover:text-slate-800 transition-colors flex-shrink-0"
+                                    title="Edit Target"
+                                  >
+                                    <Edit2 size={16} />
+                                  </button>
+                                </div>
                               )}
                             </td>
                           </tr>

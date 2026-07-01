@@ -238,27 +238,40 @@ class TargetTahunanSeeder extends Seeder
                     $map = $mapping[$kpiName];
                     $nilai = floatval(str_replace(',', '.', $nilaiStr));
 
-                    TargetTahunan::updateOrCreate(
-                        [
-                            'bidang' => $map['bidang'],
-                            'indikator' => $map['indikator'],
-                            'tahun' => 2026
-                        ],
-                        [
-                            'satuan' => $map['satuan'],
-                            'polaritas' => $map['polaritas'],
-                            'bobot' => $map['bobot'],
-                            'target' => $nilai
-                        ]
-                    );
+                    $targetModel = TargetTahunan::firstOrNew([
+                        'bidang' => $map['bidang'],
+                        'indikator' => $map['indikator'],
+                        'tahun' => 2026
+                    ]);
+                    
+                    $targetModel->satuan = $map['satuan'];
+                    $targetModel->polaritas = $map['polaritas'];
+                    $targetModel->bobot = $map['bobot'];
+                    
+                    if (!$targetModel->exists) {
+                        $targetModel->target = null;
+                    }
+                    
+                    $targetModel->save();
                 }
             }
         }
 
         // Add defaults for those that might not be in the CSV at all (like SRDAG)
-        TargetTahunan::updateOrCreate(
-            ['bidang' => 'Jaringan', 'indikator' => 'SRDAG', 'tahun' => 2026],
-            ['satuan' => 'Kali', 'polaritas' => 'MINIMIZE', 'bobot' => 10.00, 'target' => 0]
-        );
+        $srdagModel = TargetTahunan::firstOrNew([
+            'bidang' => 'Jaringan', 
+            'indikator' => 'SRDAG', 
+            'tahun' => 2026
+        ]);
+        
+        $srdagModel->satuan = 'Kali';
+        $srdagModel->polaritas = 'MINIMIZE';
+        $srdagModel->bobot = 10.00;
+        
+        if (!$srdagModel->exists) {
+            $srdagModel->target = null;
+        }
+        
+        $srdagModel->save();
     }
 }

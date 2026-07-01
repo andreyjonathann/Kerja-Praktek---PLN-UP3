@@ -157,7 +157,7 @@ export default function InputKinerjaPenghapusanPage() {
       </div>
 
       <div className="w-full px-4 md:px-8 mt-2">
-        <form id="penghapusanForm" onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-4xl mx-auto pb-10">
+        <form id="penghapusanForm" onSubmit={handleSubmit(onSubmit)} className="space-y-6 w-full mx-auto pb-10">
           
           {success && (
             <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-6 py-4 rounded-xl flex items-center gap-3 animate-fade-in shadow-sm">

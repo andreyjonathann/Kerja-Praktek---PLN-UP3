@@ -79,7 +79,7 @@ export default function TargetSrdagPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto py-6 animate-fade-in">
+    <div className="w-full mx-auto py-6 animate-fade-in">
       <PageHeader 
         title="Kelola Target SRDAG"
         description="Penetapan batas minimum SRDAG (dalam persentase) per UP3"

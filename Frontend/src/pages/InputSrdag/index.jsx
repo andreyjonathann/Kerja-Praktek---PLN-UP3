@@ -107,7 +107,7 @@ export default function InputSrdagPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto py-6 animate-fade-in">
+    <div className="w-full mx-auto py-6 animate-fade-in">
       <PageHeader 
         title="Input Realisasi SRDAG"
         description="Formulir pengisian Success Rate Autodispatch Gangguan (khusus di luar waktu CT)"

@@ -91,7 +91,7 @@ export default function InputRptGangguanPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto pb-12 animate-fade-in">
+    <div className="w-full mx-auto pb-12 animate-fade-in">
       
       <div className="flex items-center justify-between mb-8">
         <div>

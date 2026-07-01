@@ -114,17 +114,19 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
                   const IconComp = ICON_MAP[navItem.icon] || LayoutDashboard
                   
                   const itemPath = navItem.path.split('?')[0];
-                  const itemSearch = navItem.path.includes('?') ? '?' + navItem.path.split('?')[1] : '';
+                  const searchParams = new URLSearchParams(location.search);
+                  const bidangParam = searchParams.get('bidang');
+                  const itemBidang = navItem.path.includes('bidang=') 
+                    ? new URLSearchParams(navItem.path.split('?')[1]).get('bidang') 
+                    : null;
                   
                   let isActive = false;
-                  if (itemSearch) {
-                      isActive = location.pathname === itemPath && location.search === itemSearch;
+                  if (itemPath === '/kelola-target' && itemBidang) {
+                      isActive = location.pathname === itemPath && bidangParam === itemBidang;
+                  } else if (itemPath === '/kelola-target' && !itemBidang) {
+                      isActive = location.pathname === itemPath && !bidangParam;
                   } else {
-                      if (itemPath === '/kelola-target') {
-                          isActive = location.pathname === itemPath && location.search === '';
-                      } else {
-                          isActive = location.pathname === itemPath || (itemPath !== '/' && location.pathname.startsWith(itemPath + '/'));
-                      }
+                      isActive = location.pathname === itemPath || (itemPath !== '/' && location.pathname.startsWith(itemPath + '/'));
                   }
                     
                   if (navItem.path === '/saidi' && (location.pathname === '/input' || location.pathname.includes('/saidi'))) {
@@ -140,7 +142,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
                       <NavLink
                         to={navItem.path}
                         onClick={onMobileClose}
-                        className={`sidebar-nav-item ${isActive ? 'active' : ''}`}
+                        className={() => `sidebar-nav-item ${isActive ? 'active' : ''}`}
                         style={{ paddingLeft: 16 + (depth * 24) }}
                       >
                         {depth === 0 ? (

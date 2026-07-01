@@ -60,7 +60,7 @@ export const NAV_ITEMS = [
         type: 'subgroup',
         group: 'KELOLA TARGET',
         items: [
-          { key: 'kt-semua', label: 'SEMUA DIVISI', path: '/kelola-target' },
+
           { key: 'kt-jaringan', label: 'JARINGAN', path: '/kelola-target?bidang=jaringan' },
           { key: 'kt-pemasaran', label: 'PEMASARAN', path: '/kelola-target?bidang=pemasaran' },
           { key: 'kt-transaksi-energi', label: 'TRANSAKSI ENERGI', path: '/kelola-target?bidang=transaksi-energi' },

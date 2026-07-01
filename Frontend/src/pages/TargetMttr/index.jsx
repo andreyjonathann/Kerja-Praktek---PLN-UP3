@@ -97,7 +97,7 @@ export default function TargetMttrPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto py-6 animate-fade-in">
+    <div className="w-full mx-auto py-6 animate-fade-in">
       <PageHeader 
         title="Kelola Target MTTR Siaga 1"
         description="Penetapan batas minimum persentase (%) dan jumlah penyulang per UP3"

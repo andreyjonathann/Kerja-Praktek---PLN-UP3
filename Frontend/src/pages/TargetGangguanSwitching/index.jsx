@@ -107,7 +107,7 @@ export default function TargetGangguanSwitchingPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="w-full mx-auto space-y-6">
       <div className="flex items-center gap-4">
         <button 
           onClick={() => navigate('/jaringan/gangguan-switching')}

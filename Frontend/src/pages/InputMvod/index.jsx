@@ -125,7 +125,7 @@ export default function InputMvodPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto py-6 animate-fade-in">
+    <div className="w-full mx-auto py-6 animate-fade-in">
       <PageHeader 
         title="Input Realisasi MVOD"
         description="Formulir pengisian Mean Value of Outage Duration per tipe aset"

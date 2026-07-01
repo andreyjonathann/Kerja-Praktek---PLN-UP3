@@ -154,7 +154,7 @@ export default function InputMttrPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto py-6 animate-fade-in">
+    <div className="w-full mx-auto py-6 animate-fade-in">
       <PageHeader 
         title="Input Realisasi MTTR Siaga 1"
         description="Formulir pengisian pemulihan gangguan siaga 1 per tipe aset (Bobot PLN)"
