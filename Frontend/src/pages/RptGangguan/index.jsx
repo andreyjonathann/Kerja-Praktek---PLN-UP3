@@ -214,7 +214,7 @@ export default function RptGangguanPage() {
           colorRgb="5, 150, 105"
           variant="secondary"
         />
-        {(user?.role === 'pic_jaringan' || user?.role === 'admin') && (
+        {user?.role === 'pic_jaringan' && (
           <ActionButton 
             icon={Plus} 
             label="Input RPT Gangguan" 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '@/context/AuthContext'
 import {
   ComposedChart,
   BarChart,
@@ -153,6 +154,7 @@ const renderCustomBarLabel = ({ x, y, width, value }) => {
 };
 
 export default function EnsPage() {
+  const { user } = useAuth()
   const navigate = useNavigate()
   const { filters } = useFilter()
   const [data, setData] = useState([])
@@ -351,43 +353,45 @@ export default function EnsPage() {
         {/* Action Buttons */}
         <div className="flex items-center gap-3">
           <EnsExportModal />
-          <div style={{
-            display: 'inline-flex',
-            background: 'rgba(0, 162, 185, 0.05)',
-            padding: 4,
-            borderRadius: 12,
-            border: '1px solid rgba(0, 162, 185, 0.15)',
-            cursor: 'pointer'
-          }}>
-            <button
-              onClick={() => navigate('/ens/input')}
-              style={{
-                padding: '6px 16px',
-                borderRadius: 9,
-                fontSize: '0.85rem',
-                fontWeight: 700,
-                transition: 'all 0.2s ease',
-                border: 'none',
-                cursor: 'pointer',
-                background: 'var(--bg-card)',
-                color: '#00A2B9',
-                boxShadow: '0 2px 8px rgba(0, 162, 185, 0.15)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
-              onMouseEnter={e => {
-                 e.currentTarget.style.background = '#00A2B9';
-                 e.currentTarget.style.color = '#FFFFFF';
-              }}
-              onMouseLeave={e => {
-                 e.currentTarget.style.background = 'var(--bg-card)';
-                 e.currentTarget.style.color = '#00A2B9';
-              }}
-            >
-              <Plus size={16} /> Tambah ENS
-            </button>
-          </div>
+          {user?.role === 'pic_jaringan' && (
+            <div style={{
+              display: 'inline-flex',
+              background: 'rgba(0, 162, 185, 0.05)',
+              padding: 4,
+              borderRadius: 12,
+              border: '1px solid rgba(0, 162, 185, 0.15)',
+              cursor: 'pointer'
+            }}>
+              <button
+                onClick={() => navigate('/ens/input')}
+                style={{
+                  padding: '6px 16px',
+                  borderRadius: 9,
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  transition: 'all 0.2s ease',
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: 'var(--bg-card)',
+                  color: '#00A2B9',
+                  boxShadow: '0 2px 8px rgba(0, 162, 185, 0.15)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+                onMouseEnter={e => {
+                   e.currentTarget.style.background = '#00A2B9';
+                   e.currentTarget.style.color = '#FFFFFF';
+                }}
+                onMouseLeave={e => {
+                   e.currentTarget.style.background = 'var(--bg-card)';
+                   e.currentTarget.style.color = '#00A2B9';
+                }}
+              >
+                <Plus size={16} /> Tambah ENS
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

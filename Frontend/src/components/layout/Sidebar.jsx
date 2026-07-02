@@ -35,6 +35,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
       'pic_keuangan': 'KEUANGAN'
     };
     
+    const isPerencanaan = user?.role === 'perencanaan';
     const userGroup = user ? roleMap[user.role] : null;
     
     return NAV_ITEMS.flatMap(item => {
@@ -42,12 +43,16 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
       if (item.key === 'home') return [item];
       
       if (item.group === 'NKO') {
-         const filteredItems = item.items.filter(i => i.group !== 'KELOLA TARGET');
+         const filteredItems = item.items.filter(i => i.key === 'nko-sub');
          return [{ ...item, items: filteredItems }];
       }
       
       // Flatten the specific KINERJA subgroup into top-level items
       if (item.group === 'KINERJA') {
+         if (isPerencanaan) {
+            return [item]; // Keep KINERJA nested subgroups just like Admin
+         }
+         
          if (!userGroup) return [];
          const matchingSubgroup = item.items.find(sub => sub.group === userGroup);
          if (!matchingSubgroup) return [];

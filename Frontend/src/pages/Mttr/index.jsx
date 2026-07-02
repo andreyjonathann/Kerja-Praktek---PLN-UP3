@@ -172,7 +172,7 @@ export default function MttrPage() {
             colorRgb="0, 162, 185"
           />
         )}
-        {(user?.role === 'pic_jaringan' || user?.role === 'admin') && (
+        {user?.role === 'pic_jaringan' && (
           <ActionButton 
             icon={Plus} 
             label="Input Realisasi" 

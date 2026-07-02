@@ -93,6 +93,35 @@ function ProtectedRoute({ children }) {
   return <Layout>{children}</Layout>
 }
 
+// Input Protected Route Wrapper: Redirect Perencanaan role to home
+function InputProtectedRoute({ children }) {
+  const { user, loading } = useAuth()
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center dark:bg-slate-900 bg-slate-50">
+        <div className="flex flex-col items-center gap-3">
+          <svg className="animate-spin h-8 w-8 text-pln-blue-mid" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+          </svg>
+          <span className="text-xs text-slate-500 font-semibold animate-pulse">Menghubungkan ke SIGAP...</span>
+        </div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />
+  }
+
+  if (user.role === 'perencanaan') {
+    return <Navigate to="/" replace />
+  }
+
+  return <Layout>{children}</Layout>
+}
+
 // Role-based home: pic_pemasaran → /pemasaran, lainnya → Overview biasa
 function RoleBasedHome() {
   const { user, loading } = useAuth()
@@ -129,14 +158,14 @@ export default function App() {
 
               {/* ── Routes Pemasaran v2 (pola sama dengan Jaringan) ── */}
               <Route path="/pemasaran/input" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <InputKinerjaPemasaranPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
               <Route path="/pemasaran/edit/:type/:bulan/:tahun" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <EditKinerjaPermasaranPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
 
               <Route path="/pemasaran/penjualan" element={
@@ -169,44 +198,44 @@ export default function App() {
               <Route path="/input" element={<Navigate to="/" replace />} />
 
               <Route path="/saidi/input" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <InputKinerjaSaidiPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
 
               <Route path="/saifi/input" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <InputSaifiPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
 
               <Route path="/kelola-target" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <KelolaTargetPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
               
               <Route path="/kelola-target/:bidang/:indikator" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <KelolaTargetBulananPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
 
               <Route path="/:type/edit/:bulan/:tahun" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <EditKinerjaPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
               <Route path="/ens/edit/:bulan/:tahun" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <EditEnsPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
 
               <Route path="/ens/input" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <InputEnsPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
 
               <Route path="/saidi" element={
@@ -228,9 +257,9 @@ export default function App() {
               } />
 
               <Route path="/jaringan/rating-negatif/input" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <InputRatingNegatifPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
 
               <Route path="/jaringan/gangguan-tm" element={
@@ -246,15 +275,15 @@ export default function App() {
               } />
 
               <Route path="/jaringan/gangguan-tm/input-kurang-5-menit" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <InputGangguanTmKurang5Page />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
 
               <Route path="/jaringan/gangguan-tm/input-lebih-5-menit" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <InputGangguanTmLebih5Page />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
 
               <Route path="/jaringan/gangguan-tm/lebih-5-menit/detail/:tahun/:bulan" element={
@@ -270,15 +299,15 @@ export default function App() {
               } />
 
               <Route path="/jaringan/input-gangguan-switching" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <InputGangguanSwitchingPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
 
               <Route path="/jaringan/input-gangguan-trafo" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <InputGangguanTrafoPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
 
               <Route path="/jaringan/rpt-gangguan" element={
@@ -288,9 +317,9 @@ export default function App() {
               } />
 
               <Route path="/jaringan/input-rpt-gangguan" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <InputRptGangguanPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
 
               <Route path="/jaringan/gangguan-switching/target" element={
@@ -306,9 +335,9 @@ export default function App() {
               } />
 
               <Route path="/jaringan/input-srdag" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <InputSrdagPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
 
               <Route path="/jaringan/srdag/target" element={
@@ -324,9 +353,9 @@ export default function App() {
               } />
 
               <Route path="/jaringan/input-mvod" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <InputMvodPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
 
               <Route path="/jaringan/mvod/target" element={
@@ -342,9 +371,9 @@ export default function App() {
               } />
 
               <Route path="/jaringan/input-mttr" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <InputMttrPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
 
               <Route path="/jaringan/mttr-siaga1/target" element={
@@ -422,9 +451,9 @@ export default function App() {
                 </ProtectedRoute>
               } />
               <Route path="/niaga/pelunasan/input" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <InputKinerjaPelunasanPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
               <Route path="/niaga/penghapusan" element={
                 <ProtectedRoute>
@@ -432,9 +461,9 @@ export default function App() {
                 </ProtectedRoute>
               } />
               <Route path="/niaga/penghapusan/input" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <InputKinerjaPenghapusanPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
               <Route path="/niaga/lbkb" element={
                 <ProtectedRoute>
@@ -442,9 +471,9 @@ export default function App() {
                 </ProtectedRoute>
               } />
               <Route path="/niaga/lbkb/input" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <InputKinerjaLbkbPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
               <Route path="/skki" element={
                 <ProtectedRoute>

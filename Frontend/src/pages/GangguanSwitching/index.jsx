@@ -257,7 +257,7 @@ function GangguanSwitchingContent() {
               </button>
             </div>
           )}
-          {(user?.role === 'PIC' || user?.role === 'pic_jaringan') && (
+          {user?.role === 'pic_jaringan' && (
             <div style={{
               display: 'inline-flex',
               background: 'rgba(0, 162, 185, 0.05)',

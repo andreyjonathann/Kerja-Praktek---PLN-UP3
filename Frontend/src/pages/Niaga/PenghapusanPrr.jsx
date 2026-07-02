@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '@/context/AuthContext'
 import {
   Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, ComposedChart
@@ -32,6 +33,7 @@ const TOOLTIP = ({ active, payload, label }) => {
 }
 
 export default function PenghapusanPrrPage() {
+  const { user } = useAuth()
   const navigate = useNavigate()
   const { filters } = useFilter()
   const [tab, setTab] = useState('monthly')
@@ -168,43 +170,45 @@ export default function PenghapusanPrrPage() {
         </div>
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
-          <div style={{
-            display: 'inline-flex',
-            background: 'rgba(139, 92, 246, 0.05)',
-            padding: 4,
-            borderRadius: 12,
-            border: '1px solid rgba(139, 92, 246, 0.15)',
-            cursor: 'pointer'
-          }}>
-            <button
-              onClick={() => navigate('/niaga/penghapusan/input')}
-              style={{
-                padding: '6px 16px',
-                borderRadius: 9,
-                fontSize: '0.85rem',
-                fontWeight: 700,
-                transition: 'all 0.2s ease',
-                border: 'none',
-                cursor: 'pointer',
-                background: 'var(--bg-card)',
-                color: '#8B5CF6',
-                boxShadow: '0 2px 8px rgba(139, 92, 246, 0.15)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
-              onMouseEnter={e => {
-                 e.currentTarget.style.background = '#8B5CF6';
-                 e.currentTarget.style.color = '#FFFFFF';
-              }}
-              onMouseLeave={e => {
-                 e.currentTarget.style.background = 'var(--bg-card)';
-                 e.currentTarget.style.color = '#8B5CF6';
-              }}
-            >
-              <Plus size={14} /> Input Data
-            </button>
-          </div>
+          {user?.role === 'pic_niaga' && (
+            <div style={{
+              display: 'inline-flex',
+              background: 'rgba(139, 92, 246, 0.05)',
+              padding: 4,
+              borderRadius: 12,
+              border: '1px solid rgba(139, 92, 246, 0.15)',
+              cursor: 'pointer'
+            }}>
+              <button
+                onClick={() => navigate('/niaga/penghapusan/input')}
+                style={{
+                  padding: '6px 16px',
+                  borderRadius: 9,
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  transition: 'all 0.2s ease',
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: 'var(--bg-card)',
+                  color: '#8B5CF6',
+                  boxShadow: '0 2px 8px rgba(139, 92, 246, 0.15)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+                onMouseEnter={e => {
+                   e.currentTarget.style.background = '#8B5CF6';
+                   e.currentTarget.style.color = '#FFFFFF';
+                }}
+                onMouseLeave={e => {
+                   e.currentTarget.style.background = 'var(--bg-card)';
+                   e.currentTarget.style.color = '#8B5CF6';
+                }}
+              >
+                <Plus size={14} /> Input Data
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

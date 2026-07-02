@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { X, Edit2, Trash2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { MONTHS_ID } from '@/utils/formatters'
+import { useAuth } from '@/context/AuthContext'
 import { deleteRealisasi } from '@/services/pemasaranDataService'
 
 const MONTH_MAP = {
@@ -30,6 +31,7 @@ export default function PemasaranDetailModal({
   year,
   onDeleteSuccess,
 }) {
+  const { user } = useAuth()
   const navigate = useNavigate()
   const [showConfirm, setShowConfirm] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -275,76 +277,78 @@ export default function PemasaranDetailModal({
         </div>
 
         {/* FOOTER */}
-        {showConfirm ? (
-          <div
-            style={{
-              background: '#fef2f2',
-              border: '1px solid #fecaca',
-              borderRadius: 8,
-              padding: 16,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 12,
-            }}
-          >
-            <p style={{ margin: 0, fontSize: 13, color: '#991b1b', fontWeight: 500, lineHeight: 1.4 }}>
-              Apakah Anda yakin ingin menghapus data realisasi ini? Tindakan ini tidak dapat dibatalkan.
-            </p>
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+        {user?.role === 'pic_pemasaran' && (
+          showConfirm ? (
+            <div
+              style={{
+                background: '#fef2f2',
+                border: '1px solid #fecaca',
+                borderRadius: 8,
+                padding: 16,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 12,
+              }}
+            >
+              <p style={{ margin: 0, fontSize: 13, color: '#991b1b', fontWeight: 500, lineHeight: 1.4 }}>
+                Apakah Anda yakin ingin menghapus data realisasi ini? Tindakan ini tidak dapat dibatalkan.
+              </p>
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                <button
+                  onClick={() => setShowConfirm(false)}
+                  disabled={isDeleting}
+                  style={{
+                    padding: '6px 12px', borderRadius: 6, border: '1px solid #cbd5e1',
+                    background: '#ffffff', color: '#334155', fontSize: 12.5, fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  style={{
+                    padding: '6px 12px', borderRadius: 6, border: 'none',
+                    background: '#dc2626', color: '#ffffff', fontSize: 12.5, fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', gap: 6
+                  }}
+                >
+                  {isDeleting ? 'Menghapus...' : 'Ya, Hapus'}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', borderTop: '1px solid #f1f5f9', paddingTop: 20 }}>
               <button
-                onClick={() => setShowConfirm(false)}
-                disabled={isDeleting}
+                onClick={handleEdit}
                 style={{
-                  padding: '6px 12px', borderRadius: 6, border: '1px solid #cbd5e1',
-                  background: '#ffffff', color: '#334155', fontSize: 12.5, fontWeight: 600,
-                  cursor: 'pointer',
+                  padding: '8px 16px', borderRadius: 8, border: '1px solid #00A2B9',
+                  background: '#ffffff', color: '#00A2B9', fontSize: 13, fontWeight: 700,
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
+                  transition: 'all 0.15s'
                 }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#f0fdfa' }}
+                onMouseLeave={e => { e.currentTarget.style.background = '#ffffff' }}
               >
-                Batal
+                <Edit2 size={14} /> Edit Data
               </button>
               <button
-                onClick={handleDelete}
-                disabled={isDeleting}
+                onClick={() => setShowConfirm(true)}
                 style={{
-                  padding: '6px 12px', borderRadius: 6, border: 'none',
-                  background: '#dc2626', color: '#ffffff', fontSize: 12.5, fontWeight: 600,
-                  cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', gap: 6
+                  padding: '8px 16px', borderRadius: 8, border: '1px solid #dc2626',
+                  background: '#ffffff', color: '#dc2626', fontSize: 13, fontWeight: 700,
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
+                  transition: 'all 0.15s'
                 }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#fef2f2' }}
+                onMouseLeave={e => { e.currentTarget.style.background = '#ffffff' }}
               >
-                {isDeleting ? 'Menghapus...' : 'Ya, Hapus'}
+                <Trash2 size={14} /> Hapus
               </button>
             </div>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', borderTop: '1px solid #f1f5f9', paddingTop: 20 }}>
-            <button
-              onClick={handleEdit}
-              style={{
-                padding: '8px 16px', borderRadius: 8, border: '1px solid #00A2B9',
-                background: '#ffffff', color: '#00A2B9', fontSize: 13, fontWeight: 700,
-                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
-                transition: 'all 0.15s'
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#f0fdfa' }}
-              onMouseLeave={e => { e.currentTarget.style.background = '#ffffff' }}
-            >
-              <Edit2 size={14} /> Edit Data
-            </button>
-            <button
-              onClick={() => setShowConfirm(true)}
-              style={{
-                padding: '8px 16px', borderRadius: 8, border: '1px solid #dc2626',
-                background: '#ffffff', color: '#dc2626', fontSize: 13, fontWeight: 700,
-                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
-                transition: 'all 0.15s'
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#fef2f2' }}
-              onMouseLeave={e => { e.currentTarget.style.background = '#ffffff' }}
-            >
-              <Trash2 size={14} /> Hapus
-            </button>
-          </div>
+          )
         )}
       </div>
     </div>,

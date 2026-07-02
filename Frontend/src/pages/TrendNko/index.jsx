@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
+import { Navigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { useFilter } from '@/context/FilterContext'
 import { MONTHS } from '@/utils/constants'
@@ -41,7 +42,7 @@ const SATUAN_OPTIONS = [
 ]
 
 export default function TrendNkoPage() {
-  const { user, isAdmin } = useAuth()
+  const { user, isAdmin, loading: authLoading } = useAuth()
   const { filters } = useFilter()
   
   const [activeTab, setActiveTab] = useState('input') // 'input' or 'parameter'
@@ -87,6 +88,13 @@ export default function TrendNkoPage() {
 
   // Soft Delete Warning Modal
   const [deleteConfirm, setDeleteConfirm] = useState({ show: false, id: null, hasHistory: false, message: '' })
+
+  // Render check
+  if (authLoading) return null
+
+  if (!isAdmin) {
+    return <Navigate to="/" replace />
+  }
 
   // Fetch initial parameters and realizations summary
   const fetchData = useCallback(async (yearOverride) => {
