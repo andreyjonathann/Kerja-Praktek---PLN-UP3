@@ -9,6 +9,7 @@ import { Activity, Target, Zap, RadioTower, Factory, ChevronDown, ChevronRight, 
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine
 } from 'recharts';
+import InputRow from '@/components/ui/InputRow';
 
 export default function InputKinerjaSaidiPage() {
   const navigate = useNavigate();
@@ -313,56 +314,27 @@ export default function InputKinerjaSaidiPage() {
             {/* CHILD ROWS (Only shown if isDistribusiOpen) */}
             {isDistribusiOpen && (
               <div className="bg-slate-50/70 border-b border-slate-200 shadow-inner">
-                {/* Input Row 1 */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between py-[20px] px-4 pl-[48px] border-b border-[#f3f4f6] gap-4 hover:bg-slate-100/50 transition">
-                   <div className="flex items-center gap-4 flex-1">
-                     <div>
-                       <label className="font-bold text-slate-600 text-[13px]">Padam Tidak Terencana</label>
-                     </div>
-                   </div>
-                   <div className="relative flex-1 flex justify-end">
-                     <input 
-                        type="number" step="0.0001" 
-                        {...register('saidi_distribusi_padam_tidak_terencana')} 
-                        className="w-full max-w-xs border border-gray-300 rounded-md bg-white px-3 py-2 shadow-sm text-right outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" 
-                        placeholder="-" 
-                     />
-                   </div>
-                </div>
-
-                {/* Input Row 2 */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between py-[20px] px-4 pl-[48px] border-b border-[#f3f4f6] gap-4 hover:bg-slate-100/50 transition">
-                   <div className="flex items-center gap-4 flex-1">
-                     <div>
-                       <label className="font-bold text-slate-600 text-[13px]">Padam Terencana</label>
-                     </div>
-                   </div>
-                   <div className="relative flex-1 flex justify-end">
-                     <input 
-                        type="number" step="0.0001" 
-                        {...register('saidi_distribusi_padam_terencana')} 
-                        className="w-full max-w-xs border border-gray-300 rounded-md bg-white px-3 py-2 shadow-sm text-right outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" 
-                        placeholder="-" 
-                     />
-                   </div>
-                </div>
-
-                {/* Input Row 3 */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between py-[20px] px-4 pl-[48px] border-b border-[#f3f4f6] gap-4 hover:bg-slate-100/50 transition">
-                   <div className="flex items-center gap-4 flex-1">
-                     <div>
-                       <label className="font-bold text-slate-600 text-[13px]">Bencana Alam</label>
-                     </div>
-                   </div>
-                   <div className="relative flex-1 flex justify-end">
-                     <input 
-                        type="number" step="0.0001" 
-                        {...register('saidi_distribusi_bencana_alam')} 
-                        className="w-full max-w-xs border border-gray-300 rounded-md bg-white px-3 py-2 shadow-sm text-right outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" 
-                        placeholder="-" 
-                     />
-                   </div>
-                </div>
+                <InputRow 
+                  label="Padam Tidak Terencana" 
+                  register={register} 
+                  name="saidi_distribusi_padam_tidak_terencana" 
+                  step="0.0001" 
+                  plClass="pl-[48px]" 
+                />
+                <InputRow 
+                  label="Padam Terencana" 
+                  register={register} 
+                  name="saidi_distribusi_padam_terencana" 
+                  step="0.0001" 
+                  plClass="pl-[48px]" 
+                />
+                <InputRow 
+                  label="Bencana Alam" 
+                  register={register} 
+                  name="saidi_distribusi_bencana_alam" 
+                  step="0.0001" 
+                  plClass="pl-[48px]" 
+                />
               </div>
             )}
 

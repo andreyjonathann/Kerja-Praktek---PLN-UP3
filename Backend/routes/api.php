@@ -25,6 +25,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/notifications', [NotificationController::class, 'index']);
     Route::patch('/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
     Route::patch('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+
+    // Custom NKO Parameters CRUD
+    Route::get('/nko-parameters', [\App\Http\Controllers\Api\NkoParameterController::class, 'index']);
+    Route::post('/nko-parameters', [\App\Http\Controllers\Api\NkoParameterController::class, 'store']);
+    Route::put('/nko-parameters/{id}', [\App\Http\Controllers\Api\NkoParameterController::class, 'update']);
+    Route::delete('/nko-parameters/{id}', [\App\Http\Controllers\Api\NkoParameterController::class, 'destroy']);
+
+    // Custom NKO Realizations CRUD
+    Route::get('/nko-realizations', [\App\Http\Controllers\Api\NkoRealizationController::class, 'index']);
+    Route::post('/nko-realizations', [\App\Http\Controllers\Api\NkoRealizationController::class, 'store']);
+    Route::delete('/nko-realizations/{id}', [\App\Http\Controllers\Api\NkoRealizationController::class, 'destroy']);
 });
 
 Route::middleware('api')->group(function () {

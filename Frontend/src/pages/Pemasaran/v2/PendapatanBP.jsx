@@ -9,6 +9,7 @@ import KpiCard      from '@/components/ui/KpiCard'
 import ExportModal from '@/components/ui/ExportModal'
 import ChartWrapper from '@/components/ui/ChartWrapper'
 import DataTable    from '@/components/ui/DataTable'
+import PemasaranDetailModal from '@/components/ui/PemasaranDetailModal'
 import { useFilter } from '@/context/FilterContext'
 import { CHART_COLORS } from '@/utils/constants'
 import { getPemasaranData } from '@/services/pemasaranDataService'
@@ -39,6 +40,8 @@ export default function PendapatanBPPage() {
   const [data, setData]      = useState([])
   const [loading, setLoading]= useState(true)
   const [error, setError]    = useState(null)
+  const [selectedRow, setSelectedRow] = useState(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   const fetchData = useCallback(async (bg = false) => {
     if (!bg) setLoading(true)
@@ -78,27 +81,18 @@ export default function PendapatanBPPage() {
   ] : []
 
   const tableColumns = [
-    { key:'label',       label:'Bulan',         width:'72px', align:'center' },
-    { key:tgtKey,        label:'Target (Jt)',    align:'right', render: v => v != null ? 'Rp ' + formatNumber(v) : '—' },
-    { key:chartKey,      label:'Realisasi (Jt)', align:'right', render: (v, row) => v != null
-      ? <span className={`font-bold ${v < row[tgtKey] ? 'text-red-500' : 'text-emerald-500'}`}>Rp {formatNumber(v)}</span>
-      : <span className="text-slate-400 text-xs font-bold">—</span>
+    { 
+      key:'label',       label:'Bulan',         width:'100px', align:'center',
+      render: v => ({
+        'Jan': 'Januari', 'Feb': 'Februari', 'Mar': 'Maret', 'Apr': 'April',
+        'Mei': 'Mei', 'Jun': 'Juni', 'Jul': 'Juli', 'Agu': 'Agustus', 'Ags': 'Agustus',
+        'Sep': 'September', 'Okt': 'Oktober', 'Nov': 'November', 'Des': 'Desember'
+      })[v] || v
     },
-    { key:'pendapatan_pb', label:'Pasang Baru', align:'right',
-      render: v => v != null ? <span style={{ background:'var(--bg-elevated)', border:'1px solid var(--border)', color:'var(--text-secondary)', padding:'2px 8px', borderRadius:6, fontWeight:600, fontSize:'0.75rem' }}>Rp {formatNumber(v)}</span> : '—' },
-    { key:'pendapatan_td', label:'Tambah Daya', align:'right',
-      render: v => v != null ? <span style={{ background:'var(--bg-elevated)', border:'1px solid var(--border)', color:'var(--text-secondary)', padding:'2px 8px', borderRadius:6, fontWeight:600, fontSize:'0.75rem' }}>Rp {formatNumber(v)}</span> : '—' },
-    { key:'pendapatan_target', label:'% Capai', align:'center',
-      render: (_, row) => {
-        const p = row.pendapatan_target > 0 ? (row.pendapatan_total / row.pendapatan_target * 100) : 0
-        return (
-          <span style={{ display:'inline-flex', padding:'2px 10px', borderRadius:99, fontSize:'0.78rem', fontWeight:750,
-            background: p >= 100 ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)',
-            color: p >= 100 ? '#10B981' : '#EF4444',
-            border: `1px solid ${p >= 100 ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)'}`,
-          }}>{p.toFixed(1)}%</span>
-        )
-      }
+    { key:tgtKey,        label:'Target (Jt)',    align:'center', render: v => v != null ? 'Rp ' + formatNumber(v) : '-' },
+    { key:chartKey,      label:'Realisasi (Jt)', align:'center', render: (v, row) => v != null
+      ? <span className={`font-bold ${v < row[tgtKey] ? 'text-red-500' : 'text-emerald-500'}`}>Rp {formatNumber(v)}</span>
+      : <span className="text-slate-400 text-xs font-bold">-</span>
     },
   ]
 
@@ -249,8 +243,24 @@ export default function PendapatanBPPage() {
         <h3 className="section-title mb-4">
           Detail Data Pendapatan BP {tab === 'monthly' ? 'Bulanan' : 'Kumulatif'} (Juta Rp)
         </h3>
-        <DataTable columns={tableColumns} data={data} paginated={false} searchable={false} />
+        <DataTable 
+          columns={tableColumns} 
+          data={data} 
+          paginated={false} 
+          searchable={false} 
+          onRowClick={row => { setSelectedRow(row); setIsModalOpen(true) }}
+        />
       </div>
+
+      <PemasaranDetailModal
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        rowData={selectedRow}
+        type="pendapatan"
+        isCumulative={tab === 'cumulative'}
+        year={filters.year}
+        onDeleteSuccess={fetchData}
+      />
     </div>
   )
 }

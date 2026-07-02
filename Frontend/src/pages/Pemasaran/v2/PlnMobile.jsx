@@ -9,6 +9,7 @@ import KpiCard      from '@/components/ui/KpiCard'
 import ExportModal from '@/components/ui/ExportModal'
 import ChartWrapper from '@/components/ui/ChartWrapper'
 import DataTable    from '@/components/ui/DataTable'
+import PemasaranDetailModal from '@/components/ui/PemasaranDetailModal'
 import { useFilter } from '@/context/FilterContext'
 import { getPemasaranData } from '@/services/pemasaranDataService'
 import { formatNumber } from '@/utils/formatters'
@@ -52,6 +53,8 @@ export default function PlnMobilePage() {
   const [data, setData]      = useState([])
   const [loading, setLoading]= useState(true)
   const [error, setError]    = useState(null)
+  const [selectedRow, setSelectedRow] = useState(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   const fetchData = useCallback(async (bg = false) => {
     if (!bg) setLoading(true)
@@ -85,7 +88,14 @@ export default function PlnMobilePage() {
   const nilaiTgtKey = tab === 'monthly' ? 'pln_mobile_nilai_target' : 'c_pln_mobile_nilai_target'
 
   const tableColumns = [
-    { key:'label',                    label:'Bulan',           width:'72px', align:'center' },
+    { 
+      key:'label',                    label:'Bulan',           width:'100px', align:'center',
+      render: v => ({
+        'Jan': 'Januari', 'Feb': 'Februari', 'Mar': 'Maret', 'Apr': 'April',
+        'Mei': 'Mei', 'Jun': 'Juni', 'Jul': 'Juli', 'Agu': 'Agustus', 'Ags': 'Agustus',
+        'Sep': 'September', 'Okt': 'Oktober', 'Nov': 'November', 'Des': 'Desember'
+      })[v] || v
+    },
     { key:'pln_mobile_pengguna',      label:'Pengguna',        align:'right', render: v => v != null ? formatNumber(v) : '—' },
     { key:trxTgtKey,                  label:'Target Trx',      align:'right', render: v => v != null ? formatNumber(v) : '—' },
     { key:trxKey,                     label:'Realisasi Trx',   align:'right', render: (v, row) => v != null
@@ -265,8 +275,23 @@ export default function PlnMobilePage() {
         <h3 className="section-title mb-4">
           Detail Data PLN Mobile {tab === 'monthly' ? 'Bulanan' : 'Kumulatif'}
         </h3>
-        <DataTable columns={tableColumns} data={data} paginated={false} searchable={false} />
+        <DataTable
+          columns={tableColumns}
+          data={data}
+          paginated={false}
+          searchable={false}
+          onRowClick={row => { setSelectedRow(row); setIsModalOpen(true) }}
+        />
       </div>
+
+      <PemasaranDetailModal
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        rowData={selectedRow}
+        type="pln_mobile"
+        year={filters.year}
+        onDeleteSuccess={fetchData}
+      />
     </div>
   )
 }

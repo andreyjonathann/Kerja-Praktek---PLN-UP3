@@ -9,6 +9,7 @@ import KpiCard      from '@/components/ui/KpiCard'
 import ExportModal from '@/components/ui/ExportModal'
 import ChartWrapper from '@/components/ui/ChartWrapper'
 import DataTable    from '@/components/ui/DataTable'
+import PemasaranDetailModal from '@/components/ui/PemasaranDetailModal'
 import { useFilter } from '@/context/FilterContext'
 import { CHART_COLORS } from '@/utils/constants'
 import { getPemasaranData } from '@/services/pemasaranDataService'
@@ -40,6 +41,8 @@ export default function DayaTersambungV2Page() {
   const [data, setData]      = useState([])
   const [loading, setLoading]= useState(true)
   const [error, setError]    = useState(null)
+  const [selectedRow, setSelectedRow] = useState(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   const fetchData = useCallback(async (bg = false) => {
     if (!bg) setLoading(true)
@@ -73,16 +76,19 @@ export default function DayaTersambungV2Page() {
     : null
 
   const tableColumns = [
-    { key:'label', label:'Bulan', width:'72px', align:'center' },
-    { key:tgtKey,  label:'Target', align:'right', render: v => v != null ? formatNumber(v) : '—' },
-    { key:chartKey,label:'Realisasi', align:'right', render: (v, row) => v != null
-      ? <span className={`font-bold ${v < row[tgtKey] ? 'text-red-500' : 'text-emerald-500'}`}>{formatNumber(v)}</span>
-      : <span className="text-slate-400 text-xs font-bold">—</span>
+    { 
+      key:'label', label:'Bulan', width:'100px', align:'center',
+      render: v => ({
+        'Jan': 'Januari', 'Feb': 'Februari', 'Mar': 'Maret', 'Apr': 'April',
+        'Mei': 'Mei', 'Jun': 'Juni', 'Jul': 'Juli', 'Agu': 'Agustus', 'Ags': 'Agustus',
+        'Sep': 'September', 'Okt': 'Oktober', 'Nov': 'November', 'Des': 'Desember'
+      })[v] || v
     },
-    ...TARIF_KEYS.map(k => ({
-      key:`daya_${k}`, label:k.toUpperCase(), align:'right',
-      render: v => v != null ? <span style={{ background:'var(--bg-elevated)', border:'1px solid var(--border)', color:'var(--text-secondary)', padding:'2px 8px', borderRadius:6, fontWeight:600, fontSize:'0.75rem' }}>{formatNumber(v)}</span> : '—'
-    })),
+    { key:tgtKey,  label:'Target', align:'center', render: v => v != null ? formatNumber(v) : '-' },
+    { key:chartKey,label:'Realisasi', align:'center', render: (v, row) => v != null
+      ? <span className={`font-bold ${v < row[tgtKey] ? 'text-red-500' : 'text-emerald-500'}`}>{formatNumber(v)}</span>
+      : <span className="text-slate-400 text-xs font-bold">-</span>
+    },
   ]
 
   return (
@@ -232,8 +238,24 @@ export default function DayaTersambungV2Page() {
         <h3 className="section-title mb-4">
           Detail Data Daya Tersambung {tab === 'monthly' ? 'Bulanan' : 'Kumulatif'} (kVA)
         </h3>
-        <DataTable columns={tableColumns} data={data} paginated={false} searchable={false} />
+        <DataTable 
+          columns={tableColumns} 
+          data={data} 
+          paginated={false} 
+          searchable={false} 
+          onRowClick={row => { setSelectedRow(row); setIsModalOpen(true) }}
+        />
       </div>
+
+      <PemasaranDetailModal
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        rowData={selectedRow}
+        type="daya"
+        isCumulative={tab === 'cumulative'}
+        year={filters.year}
+        onDeleteSuccess={fetchData}
+      />
     </div>
   )
 }
