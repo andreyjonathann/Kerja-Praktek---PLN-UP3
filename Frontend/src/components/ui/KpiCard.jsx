@@ -50,6 +50,7 @@ const getAchColors = (achKey, dark) => {
  */
 export default function KpiCard({
   title, value, unit = '', achievement, target, trend,
+  statusText, statusColor,
   icon: Icon, color = 'blue', isInverse = false, loading = false, onClick,
 }) {
   const { dark } = useTheme()
@@ -156,6 +157,18 @@ export default function KpiCard({
               background:ach.bg, color:ach.color, border:`1px solid ${ach.border}`,
             }}>
               {formatPercent(achievement, 1)} vs Target
+            </span>
+          )}
+          {statusText != null && (
+            <span style={{
+              display:'inline-flex', alignItems:'center', gap:4,
+              padding:'3px 10px', borderRadius:99,
+              fontSize:'0.78rem', fontWeight:750,
+              background: getAchColors(statusColor === 'blue' ? 'good' : (statusColor === 'green' ? 'good' : (statusColor === 'red' ? 'bad' : 'warn')), dark).bg, 
+              color: getAchColors(statusColor === 'blue' ? 'good' : (statusColor === 'green' ? 'good' : (statusColor === 'red' ? 'bad' : 'warn')), dark).color, 
+              border:`1px solid ${getAchColors(statusColor === 'blue' ? 'good' : (statusColor === 'green' ? 'good' : (statusColor === 'red' ? 'bad' : 'warn')), dark).border}`,
+            }}>
+              {statusText}
             </span>
           )}
           {TrendIco && (

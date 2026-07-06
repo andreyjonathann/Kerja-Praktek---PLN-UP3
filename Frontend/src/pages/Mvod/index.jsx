@@ -14,7 +14,7 @@ import PageHeader from '@/components/ui/PageHeader';
 import ActionButton from '@/components/ui/ActionButton';
 import { useFilter } from '@/context/FilterContext'
 import { useAuth } from '@/context/AuthContext'
-import { MONTHS_SHORT } from '@/utils/formatters'
+import { MONTHS_ID } from '@/utils/formatters'
 import api from '@/services/api'
 
 export default function MvodPage() {
@@ -24,7 +24,7 @@ export default function MvodPage() {
   const [data, setData] = useState({
     summary: {},
     trend_bulanan: { GI: [], JTM: [], GD: [] },
-    per_up3: []
+    per_bulan: []
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -53,10 +53,10 @@ export default function MvodPage() {
     fetchData()
   }, [fetchData])
 
-  const { summary, trend_bulanan, per_up3 } = data
+  const { summary, trend_bulanan, per_bulan } = data
 
   const currentChartData = (trend_bulanan?.[chartTab] || []).map(t => ({
-    name: MONTHS_SHORT[t.bulan],
+    name: MONTHS_ID[t.bulan],
     'Realisasi (Menit)': t.rata_rct,
     'SLA (Menit)': t.sla,
     'Persen Pencapaian': t.persen
@@ -79,23 +79,48 @@ export default function MvodPage() {
     return null;
   };
 
+  const StatusBadge = ({ status }) => (
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${status === 'AMAN' ? 'bg-emerald-100 text-emerald-700' : (status === '-' ? 'bg-slate-100 text-slate-500' : 'bg-rose-100 text-rose-700')}`}>
+      {status}
+    </span>
+  );
+
   const columns = [
-    { header: 'UP3', accessor: 'up3' },
+    { label: 'Bulan', key: 'bulan', render: (v) => <span className="font-semibold">{MONTHS_ID[v]}</span> },
     { 
-      header: 'RCT GI', 
-      accessor: (row) => row.gi_rct != null ? <span className={row.gi_status === 'AMAN' ? 'text-emerald-600 font-semibold' : 'text-rose-600 font-bold'}>{row.gi_rct} mnt</span> : '—'
+      label: 'RCT GI', 
+      key: 'gi_rct',
+      render: (v) => v != null ? <span className="font-semibold">{v} mnt</span> : '—'
     },
     { 
-      header: 'RCT JTM', 
-      accessor: (row) => row.jtm_rct != null ? <span className={row.jtm_status === 'AMAN' ? 'text-emerald-600 font-semibold' : 'text-rose-600 font-bold'}>{row.jtm_rct} mnt</span> : '—'
+      label: 'Status GI', 
+      key: 'gi_status',
+      render: (v) => <StatusBadge status={v} />
     },
     { 
-      header: 'RCT GD', 
-      accessor: (row) => row.gd_rct != null ? <span className={row.gd_status === 'AMAN' ? 'text-emerald-600 font-semibold' : 'text-rose-600 font-bold'}>{row.gd_rct} mnt</span> : '—'
+      label: 'RCT JTM', 
+      key: 'jtm_rct',
+      render: (v) => v != null ? <span className="font-semibold">{v} mnt</span> : '—'
     },
     { 
-      header: 'MVOD Gabungan', 
-      accessor: (row) => row.mvod_gabungan != null ? <span className="font-black text-slate-800">{row.mvod_gabungan}%</span> : '—'
+      label: 'Status JTM', 
+      key: 'jtm_status',
+      render: (v) => <StatusBadge status={v} />
+    },
+    { 
+      label: 'RCT GD', 
+      key: 'gd_rct',
+      render: (v) => v != null ? <span className="font-semibold">{v} mnt</span> : '—'
+    },
+    { 
+      label: 'Status GD', 
+      key: 'gd_status',
+      render: (v) => <StatusBadge status={v} />
+    },
+    { 
+      label: 'MVOD Gabungan', 
+      key: 'mvod_gabungan',
+      render: (v) => v != null ? <span className="font-black text-slate-800">{v}%</span> : '—'
     }
   ];
 
@@ -153,7 +178,7 @@ export default function MvodPage() {
           return (
             <KpiCard 
               key={tipe}
-              title={`RCT ${tipe.toUpperCase()} (SLA: ${s?.sla || '-'} MNT)`} 
+              title={`RCT ${tipe.toUpperCase()}`} 
               value={s?.rata_rct != null ? s.rata_rct.toFixed(2) : '—'} 
               unit="mnt" 
               icon={Clock} 
@@ -185,7 +210,7 @@ export default function MvodPage() {
             <button
               key={t}
               onClick={() => setChartTab(t)}
-              className={`px-4 py-1.5 text-sm font-bold rounded-lg transition-colors \${chartTab === t ? 'bg-blue-100 text-blue-700' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
+              className={`px-4 py-1.5 text-sm font-bold rounded-lg transition-colors ${chartTab === t ? 'bg-blue-100 text-blue-700' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
             >
               RCT {t}
             </button>
@@ -199,18 +224,26 @@ export default function MvodPage() {
             <Tooltip content={<CustomTooltip />} />
             <Legend wrapperStyle={{ paddingTop: '20px' }} iconType="circle" />
             <Line name="Batas SLA Maksimum" type="step" dataKey="SLA (Menit)" stroke="#F43F5E" strokeWidth={2} strokeDasharray="5 5" dot={false} />
+
             <Line name="Rata-rata Realisasi" type="monotone" dataKey="Realisasi (Menit)" stroke="#3B82F6" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
           </ComposedChart>
         </ResponsiveContainer>
       </ChartWrapper>
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mt-2">
-        <div className="p-5 border-b border-slate-200">
-          <h2 className="text-lg font-bold text-slate-800">Perbandingan Performa UP3 (YTD)</h2>
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="p-5 border-b border-slate-100 bg-slate-50/50 text-center">
+            <h3 className="font-bold text-slate-800">Perbandingan Antar Bulan (YTD)</h3>
+            <p className="text-sm text-slate-500 mt-1">Rekapitulasi performa {filters.up3 === 'Semua UP3' ? 'semua unit' : filters.up3} per bulan</p>
+          </div>
+          <DataTable 
+            columns={columns}
+            data={per_bulan || []}
+            keyField="bulan"
+            striped={true}
+            searchable={false}
+            paginated={false}
+          />
         </div>
-        <DataTable columns={columns} data={per_up3 || []} loading={loading} />
-      </div>
-
     </div>
   )
 }

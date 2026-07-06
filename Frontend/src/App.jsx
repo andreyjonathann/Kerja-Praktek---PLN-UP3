@@ -22,10 +22,13 @@ import GangguanTmPage from '@/pages/GangguanTm'
 import InputGangguanTmPage from '@/pages/InputGangguanTm'
 import InputGangguanTmKurang5Page from '@/pages/InputGangguanTmKurang5'
 import InputGangguanTmLebih5Page from '@/pages/InputGangguanTmLebih5'
-import DetailGangguanTmLebih5Page from '@/pages/DetailGangguanTmLebih5'
+import EditGangguanTmLebih5Page from '@/pages/EditGangguanTmLebih5'
+
 import GangguanSwitchingPage from '@/pages/GangguanSwitching'
 import InputGangguanSwitchingPage from '@/pages/InputGangguanSwitching'
 import InputGangguanTrafoPage from '@/pages/InputGangguanTrafo'
+import EditGangguanSwitchingPage from '@/pages/EditGangguanSwitching'
+import EditGangguanTrafoPage from '@/pages/EditGangguanTrafo'
 import TargetGangguanSwitchingPage from '@/pages/TargetGangguanSwitching'
 import RptGangguanPage from '@/pages/RptGangguan'
 import InputRptGangguanPage from '@/pages/InputRptGangguan'
@@ -243,11 +246,12 @@ export default function App() {
                 </ProtectedRoute>
               } />
 
-              <Route path="/jaringan/gangguan-tm/lebih-5-menit/detail/:tahun/:bulan" element={
+              <Route path="/jaringan/gangguan-tm/edit-lebih-5-menit" element={
                 <ProtectedRoute>
-                  <DetailGangguanTmLebih5Page />
+                  <EditGangguanTmLebih5Page />
                 </ProtectedRoute>
               } />
+
 
               <Route path="/jaringan/gangguan-switching" element={
                 <ProtectedRoute>
@@ -261,9 +265,21 @@ export default function App() {
                 </ProtectedRoute>
               } />
 
+              <Route path="/jaringan/edit-gangguan-switching" element={
+                <ProtectedRoute>
+                  <EditGangguanSwitchingPage />
+                </ProtectedRoute>
+              } />
+
               <Route path="/jaringan/input-gangguan-trafo" element={
                 <ProtectedRoute>
                   <InputGangguanTrafoPage />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/jaringan/edit-gangguan-trafo" element={
+                <ProtectedRoute>
+                  <EditGangguanTrafoPage />
                 </ProtectedRoute>
               } />
 

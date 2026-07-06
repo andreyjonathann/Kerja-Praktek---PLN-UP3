@@ -139,27 +139,26 @@ class MvodController extends Controller
         $tahun = $request->tahun ?: date('Y');
         $up3 = $request->up3; // optional
 
-        $up3List = [
-            'Bandengan', 'Bintaro', 'Bulungan', 'Cempaka Putih', 'Cengkareng', 'Ciputat', 'Ciracas',
-            'Jatinegara', 'Kebon Jeruk', 'Kramat Jati', 'Lenteng Agung', 'Marunda', 'Menteng',
-            'Pondok Gede', 'Pondok Kopi', 'Tanjung Priok'
-        ];
-
-        if ($up3 && $up3 !== 'Semua UP3') {
-            $up3List = [$up3];
+        $up3Filter = $request->input('up3', null);
+        if ($up3Filter === 'Semua UP3') {
+            $up3Filter = null;
         }
 
-        // Get Targets
-        $targetQuery = MvodTarget::where('tahun', $tahun);
-        if ($up3 && $up3 !== 'Semua UP3') {
-            $targetQuery->where('up3', $up3);
+        $user = auth()->user();
+        if ($user && $user->role === 'pic_jaringan') {
+            $up3Filter = $user->up3;
         }
-        $targets = $targetQuery->get()->keyBy('up3');
-
+        // Get Targets (from TargetTahunan)
+        $bulanMap = [1=>'jan',2=>'feb',3=>'mar',4=>'apr',5=>'mei',6=>'jun',
+                     7=>'jul',8=>'agu',9=>'sep',10=>'okt',11=>'nov',12=>'des'];
+        
+        $targetGI = \App\Models\TargetTahunan::where('tahun', $tahun)->where('indikator', 'MVOD - SLA Gardu Induk')->first();
+        $targetJTM = \App\Models\TargetTahunan::where('tahun', $tahun)->where('indikator', 'MVOD - SLA JTM')->first();
+        $targetGD = \App\Models\TargetTahunan::where('tahun', $tahun)->where('indikator', 'MVOD - SLA Gardu Distribusi')->first();
         // Get Realisasi
         $realisasiQuery = MvodRealisasi::where('tahun', $tahun);
-        if ($up3 && $up3 !== 'Semua UP3') {
-            $realisasiQuery->where('up3', $up3);
+        if ($up3Filter) {
+            $realisasiQuery->where('up3', $up3Filter);
         }
         $realisasi = $realisasiQuery->get();
 
@@ -170,23 +169,34 @@ class MvodController extends Controller
             return min($raw, 1.1); // cap 1.1
         };
 
-        // 1. Calculate per UP3 for current year (YTD)
-        $per_up3 = [];
-        foreach ($up3List as $u) {
-            $u_data = $realisasi->where('up3', $u);
-            $u_target = $targets->get($u);
+        // We use the latest available month from realisasi, or fallback to current month/1
+        $latestMonth = $realisasi->max('bulan') ?: 1;
+        $targetColLatest = 'target_' . $bulanMap[$latestMonth];
+        
+        $sla_gi = $targetGI ? $targetGI->{$targetColLatest} : null;
+        $sla_jtm = $targetJTM ? $targetJTM->{$targetColLatest} : null;
+        $sla_gd = $targetGD ? $targetGD->{$targetColLatest} : null;
+        
+        $hasTarget = ($sla_gi !== null || $sla_jtm !== null || $sla_gd !== null);
 
-            $sla_gi = $u_target ? $u_target->sla_gi_menit : 30;
-            $sla_jtm = $u_target ? $u_target->sla_jtm_menit : 60;
-            $sla_gd = $u_target ? $u_target->sla_gd_menit : 90;
+        // 1. Calculate per Bulan for current year
+        $per_bulan = [];
+        for ($b = 1; $b <= 12; $b++) {
+            $b_data = $realisasi->where('bulan', $b);
 
-            $avg_gi = $u_data->where('tipe_rct', 'GI')->avg('rata_rct_menit');
-            $avg_jtm = $u_data->where('tipe_rct', 'JTM')->avg('rata_rct_menit');
-            $avg_gd = $u_data->where('tipe_rct', 'GD')->avg('rata_rct_menit');
+            $avg_gi = $b_data->where('tipe_rct', 'GI')->avg('rata_rct_menit');
+            $avg_jtm = $b_data->where('tipe_rct', 'JTM')->avg('rata_rct_menit');
+            $avg_gd = $b_data->where('tipe_rct', 'GD')->avg('rata_rct_menit');
 
-            $p_gi = $avg_gi !== null ? $calcPersen($avg_gi, $sla_gi) : null;
-            $p_jtm = $avg_jtm !== null ? $calcPersen($avg_jtm, $sla_jtm) : null;
-            $p_gd = $avg_gd !== null ? $calcPersen($avg_gd, $sla_gd) : null;
+            $targetCol = 'target_' . $bulanMap[$b];
+            
+            $sla_gi_b = $targetGI ? $targetGI->{$targetCol} : null;
+            $sla_jtm_b = $targetJTM ? $targetJTM->{$targetCol} : null;
+            $sla_gd_b = $targetGD ? $targetGD->{$targetCol} : null;
+
+            $p_gi = $avg_gi !== null && $sla_gi_b !== null ? $calcPersen($avg_gi, $sla_gi_b) : null;
+            $p_jtm = $avg_jtm !== null && $sla_jtm_b !== null ? $calcPersen($avg_jtm, $sla_jtm_b) : null;
+            $p_gd = $avg_gd !== null && $sla_gd_b !== null ? $calcPersen($avg_gd, $sla_gd_b) : null;
 
             // Gabungan: Bobot PLN → GI=3, JTM=2, GD=1 (total koefisien=6)
             $mvod_gabungan = null;
@@ -199,14 +209,14 @@ class MvodController extends Controller
                 $mvod_gabungan = array_sum($bobot_parts) / $total_koef;
             }
 
-            $per_up3[] = [
-                'up3' => $u,
+            $per_bulan[] = [
+                'bulan' => $b,
                 'gi_rct' => $avg_gi !== null ? round($avg_gi, 2) : null,
                 'jtm_rct' => $avg_jtm !== null ? round($avg_jtm, 2) : null,
                 'gd_rct' => $avg_gd !== null ? round($avg_gd, 2) : null,
-                'gi_status' => $avg_gi !== null ? ($avg_gi <= $sla_gi ? 'AMAN' : 'MELEWATI SLA') : '-',
-                'jtm_status' => $avg_jtm !== null ? ($avg_jtm <= $sla_jtm ? 'AMAN' : 'MELEWATI SLA') : '-',
-                'gd_status' => $avg_gd !== null ? ($avg_gd <= $sla_gd ? 'AMAN' : 'MELEWATI SLA') : '-',
+                'gi_status' => $avg_gi !== null && $sla_gi_b !== null ? ($avg_gi <= $sla_gi_b ? 'AMAN' : 'MELEWATI SLA') : '-',
+                'jtm_status' => $avg_jtm !== null && $sla_jtm_b !== null ? ($avg_jtm <= $sla_jtm_b ? 'AMAN' : 'MELEWATI SLA') : '-',
+                'gd_status' => $avg_gd !== null && $sla_gd_b !== null ? ($avg_gd <= $sla_gd_b ? 'AMAN' : 'MELEWATI SLA') : '-',
                 'mvod_gabungan' => $mvod_gabungan !== null ? round($mvod_gabungan * 100, 2) : null
             ];
         }
@@ -226,16 +236,21 @@ class MvodController extends Controller
                 $b_tipe_data = $b_data->where('tipe_rct', $tipe);
                 if ($b_tipe_data->count() > 0) {
                     $avg_rct = $b_tipe_data->avg('rata_rct_menit');
-                    // Average SLA across selected UP3s
-                    $sla_field = 'sla_' . strtolower($tipe) . '_menit';
-                    $default_sla = $tipe == 'GI' ? 30 : ($tipe == 'JTM' ? 60 : 90);
-                    $avg_sla = $targets->count() > 0 ? $targets->avg($sla_field) : $default_sla;
+                    $targetCol = 'target_' . $bulanMap[$b];
+                    $avg_sla = null;
+                    if ($tipe === 'GI' && $targetGI) $avg_sla = $targetGI->{$targetCol};
+                    if ($tipe === 'JTM' && $targetJTM) $avg_sla = $targetJTM->{$targetCol};
+                    if ($tipe === 'GD' && $targetGD) $avg_sla = $targetGD->{$targetCol};
+                    
+                    if ($avg_sla !== null) {
+                        $avg_sla = (float) $avg_sla;
+                    }
 
                     $trend_bulanan[$tipe][] = [
                         'bulan' => $b,
                         'rata_rct' => round($avg_rct, 2),
-                        'sla' => round($avg_sla, 2),
-                        'persen' => round($calcPersen($avg_rct, $avg_sla) * 100, 2)
+                        'sla' => $avg_sla !== null ? round($avg_sla, 2) : null,
+                        'persen' => $avg_sla !== null ? round($calcPersen($avg_rct, $avg_sla) * 100, 2) : null
                     ];
                 }
             }
@@ -245,9 +260,10 @@ class MvodController extends Controller
         $summary = [];
         foreach (['GI', 'JTM', 'GD'] as $tipe) {
             $tipe_data = $realisasi->where('tipe_rct', $tipe);
-            $sla_field = 'sla_' . strtolower($tipe) . '_menit';
-            $default_sla = $tipe == 'GI' ? 30 : ($tipe == 'JTM' ? 60 : 90);
-            $avg_sla = $targets->count() > 0 ? $targets->avg($sla_field) : $default_sla;
+            $avg_sla = null;
+            if ($tipe === 'GI') $avg_sla = $sla_gi;
+            if ($tipe === 'JTM') $avg_sla = $sla_jtm;
+            if ($tipe === 'GD') $avg_sla = $sla_gd;
 
             if ($tipe_data->count() > 0) {
                 $avg_rct = $tipe_data->avg('rata_rct_menit');
@@ -255,14 +271,14 @@ class MvodController extends Controller
 
                 $summary[strtolower($tipe)] = [
                     'rata_rct' => round($avg_rct, 2),
-                    'sla' => round($avg_sla, 2),
-                    'persen' => round($persen * 100, 2),
-                    'status' => $avg_rct <= $avg_sla ? 'AMAN' : 'MELEWATI SLA'
+                    'sla' => $avg_sla !== null ? round($avg_sla, 2) : null,
+                    'persen' => $avg_sla !== null ? round($calcPersen($avg_rct, $avg_sla) * 100, 2) : null,
+                    'status' => $avg_sla !== null ? ($avg_rct <= $avg_sla ? 'AMAN' : 'MELEWATI SLA') : '-'
                 ];
             } else {
                 $summary[strtolower($tipe)] = [
                     'rata_rct' => null,
-                    'sla' => round($avg_sla, 2),
+                    'sla' => $avg_sla !== null ? round($avg_sla, 2) : null,
                     'persen' => null,
                     'status' => '-'
                 ];
@@ -285,14 +301,14 @@ class MvodController extends Controller
         }
 
         $summary['mvod_gabungan'] = $mvod_gabungan !== null ? round($mvod_gabungan * 100, 2) : null;
-        $summary['has_target'] = $targets->count() > 0;
+        $summary['has_target'] = $hasTarget;
 
         return response()->json([
             'success' => true,
             'data' => [
                 'summary' => $summary,
                 'trend_bulanan' => $trend_bulanan,
-                'per_up3' => collect($per_up3)->sortByDesc('mvod_gabungan')->values()->all()
+                'per_bulan' => $per_bulan
             ]
         ]);
     }

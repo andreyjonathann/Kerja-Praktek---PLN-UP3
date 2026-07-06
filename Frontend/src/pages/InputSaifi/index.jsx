@@ -1,28 +1,21 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import api from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { MONTHS } from '@/utils/constants';
-import { Activity, Target, Zap, RadioTower, Factory, ChevronDown, ChevronRight, Save } from 'lucide-react';
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine
-} from 'recharts';
+import { CheckCircle, AlertCircle, Save, ArrowLeft, Activity, AlertTriangle, Zap, RadioTower, Factory } from 'lucide-react';
 
 export default function InputSaifiPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [isDistribusiOpen, setIsDistribusiOpen] = useState(true);
   const [dashboardData, setDashboardData] = useState(null);
-  const [loadingData, setLoadingData] = useState(false);
 
-  const { register, handleSubmit, formState: { errors }, reset, control } = useForm({
+  const { register, handleSubmit, formState: { errors }, control } = useForm({
     defaultValues: {
-      tahun: '',
-      periode_id: '',
+      tahun: '', periode_id: '',
       saifi_distribusi_padam_tidak_terencana: '',
       saifi_distribusi_padam_terencana: '',
       saifi_distribusi_bencana_alam: '',
@@ -34,375 +27,160 @@ export default function InputSaifiPage() {
   const selectedMonth = useWatch({ control, name: 'periode_id' });
   const selectedYear = useWatch({ control, name: 'tahun' });
 
-  const val1 = useWatch({ control, name: 'saifi_distribusi_padam_tidak_terencana' }) || 0;
-  const val2 = useWatch({ control, name: 'saifi_distribusi_padam_terencana' }) || 0;
-  const val3 = useWatch({ control, name: 'saifi_distribusi_bencana_alam' }) || 0;
-  const val4 = useWatch({ control, name: 'saifi_transmisi' }) || 0;
-  const val5 = useWatch({ control, name: 'saifi_pembangkit' }) || 0;
-
-  const liveTotal = parseFloat(val1 || 0) + parseFloat(val2 || 0) + parseFloat(val3 || 0) + parseFloat(val4 || 0) + parseFloat(val5 || 0);
-
   useEffect(() => {
-    if (selectedYear) {
-      const fetchDashboardData = async () => {
-        setLoadingData(true);
-        try {
-          const res = await api.get(`/jaringan/dashboard?tahun=${selectedYear}`);
-          setDashboardData(res.data);
-        } catch (err) {
-          console.error(err);
-        } finally {
-          setLoadingData(false);
-        }
-      };
-      fetchDashboardData();
+    if (selectedYear && selectedYear.toString().length === 4) {
+      api.get(`/jaringan/dashboard?tahun=${selectedYear}`)
+        .then(res => setDashboardData(res.data))
+        .catch(err => console.error(err));
     }
   }, [selectedYear]);
 
+  const saifiData = dashboardData?.saifi || [];
+  const currentMonthData = saifiData.find(d => parseInt(d.bulan) === parseInt(selectedMonth));
+  const isDuplicate = !!(selectedMonth && currentMonthData && currentMonthData.realisasi != null);
+
   const onSubmit = async (data) => {
+    if (isDuplicate) {
+      alert('Data sudah ada! Tidak bisa menginput dari halaman Tambah.');
+      return;
+    }
     setLoading(true);
     setSuccess(false);
     try {
       await api.post('/kinerja/jaringan', data);
       setSuccess(true);
-      navigate('/saifi');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      setTimeout(() => navigate('/saifi'), 2000);
     } catch (err) {
-      alert("Error: " + err.message);
+      alert('Error: ' + err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const saifiData = dashboardData?.saifi || [];
-  const currentMonthData = saifiData.find(d => parseInt(d.bulan) === parseInt(selectedMonth));
-  const target = currentMonthData ? currentMonthData.target : 0;
-  const percentage = target > 0 ? (liveTotal / target) * 100 : 0;
-  const isOverTarget = liveTotal > target;
-  
-  const isDuplicate = selectedMonth && currentMonthData && currentMonthData.realisasi != null;
+  const inputStyle = (dis) => ({
+    width: '100%', padding: '10px 14px', borderRadius: 10,
+    border: '1px solid #e2e8f0', background: dis ? '#f1f5f9' : '#f8fafc',
+    fontSize: '0.9rem', color: dis ? '#94a3b8' : '#334155', outline: 'none',
+  });
 
-  const trendData = useMemo(() => {
-    if (!selectedMonth || !dashboardData) return [];
-    const monthInt = parseInt(selectedMonth);
-    const data = [];
-    for (let i = 5; i >= 0; i--) {
-      const m = monthInt - i;
-      if (m >= 1 && m <= 12) {
-        const mData = saifiData.find(d => parseInt(d.bulan) === m);
-        if (mData) {
-          const realisasi = mData.realisasi;
-          if (realisasi !== null && realisasi !== undefined) {
-            data.push({
-              name: mData.label,
-              realisasi: realisasi,
-              target: mData.target
-            });
-          }
-        }
-      }
-    }
-    return data;
-  }, [selectedMonth, dashboardData, saifiData]);
-
-  const CustomTrendTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-white p-3 rounded-lg shadow-lg border border-slate-100 text-sm">
-          <p className="font-bold text-slate-800 mb-2">{label}</p>
-          {payload.map((entry, index) => (
-            <div key={`item-${index}`} className="flex items-center gap-2 mb-1">
-              <span className="text-slate-600 capitalize">{entry.name}:</span>
-              <span className="font-bold text-slate-900 ml-auto">
-                {Number(entry.value).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Kali
-              </span>
-            </div>
-          ))}
-        </div>
-      );
-    }
-    return null;
-  };
+  const fieldInputClass = `w-[140px] border border-gray-200 rounded-lg px-3 py-2 text-[13px] shadow-sm text-right outline-none focus:border-blue-500 ${isDuplicate ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white'}`;
 
   return (
-    <div className="bg-slate-50 min-h-screen w-full flex flex-col gap-6 animate-fade-in relative">
-      
-      {/* Sticky Header */}
-      <div className="sticky top-0 z-50 bg-white border-b border-slate-200 py-4 px-4 md:px-8 shadow-sm">
-        <div className="w-full flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-             <div className="w-12 h-12 rounded-xl bg-blue-50 flex flex-shrink-0 items-center justify-center text-blue-600">
-               <Activity size={26} />
-             </div>
-             <div>
-               <h1 className="text-xl md:text-2xl font-bold text-slate-800">
-                 Tambah SAIFI
-               </h1>
-             </div>
-          </div>
-          <div className="flex items-center gap-3">
-             <div style={{
-               display: 'inline-flex',
-               background: 'rgba(100, 116, 139, 0.05)',
-               padding: 4,
-               borderRadius: 12,
-               border: '1px solid rgba(100, 116, 139, 0.15)',
-               cursor: 'pointer'
-             }}>
-               <button 
-                  type="button" 
-                  onClick={() => navigate('/saifi')}
-                  style={{
-                    padding: '6px 16px',
-                    borderRadius: 9,
-                    fontSize: '0.85rem',
-                    fontWeight: 700,
-                    transition: 'all 0.2s ease',
-                    border: 'none',
-                    cursor: 'pointer',
-                    background: 'transparent',
-                    color: '#64748b',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px'
-                  }}
-                  onMouseEnter={e => {
-                       e.currentTarget.style.background = '#f1f5f9';
-                       e.currentTarget.style.color = '#334155';
-                  }}
-                  onMouseLeave={e => {
-                       e.currentTarget.style.background = 'transparent';
-                       e.currentTarget.style.color = '#64748b';
-                  }}
-               >
-                  Batal
-               </button>
-             </div>
-             <div style={{
-               display: 'inline-flex',
-               background: '#00A2B9',
-               padding: 4,
-               borderRadius: 12,
-               border: 'none',
-               cursor: (loading || isDuplicate) ? 'not-allowed' : 'pointer',
-               opacity: (loading || isDuplicate) ? 0.6 : 1
-             }}>
-               <button 
-                  type="button"
-                  onClick={handleSubmit(onSubmit)}
-                  disabled={loading || isDuplicate}
-                  style={{
-                    padding: '6px 16px',
-                    borderRadius: 9,
-                    fontSize: '0.85rem',
-                    fontWeight: 700,
-                    transition: 'all 0.2s ease',
-                    border: 'none',
-                    cursor: (loading || isDuplicate) ? 'not-allowed' : 'pointer',
-                    background: (loading || isDuplicate) ? '#93c5fd' : '#00A2B9',
-                    color: '#ffffff',
-                    boxShadow: (loading || isDuplicate) ? 'none' : '0 4px 12px rgba(0, 162, 185, 0.3)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px'
-                  }}
-                  onMouseEnter={e => {
-                     if(!loading && !isDuplicate) {
-                       e.currentTarget.style.background = '#035B71'; e.currentTarget.style.color = '#ffffff';
-                     }
-                  }}
-                  onMouseLeave={e => {
-                     if(!loading && !isDuplicate) {
-                       e.currentTarget.style.background = '#00A2B9'; e.currentTarget.style.color = '#ffffff';
-                     }
-                  }}
-               >
-                  {loading ? <div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" /> : <Save size={16} />}
-                  Simpan Realisasi
-               </button>
-             </div>
+    <div className="min-h-screen bg-slate-50 flex flex-col animate-fade-in py-12">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 640, margin: '0 auto', width: '100%', padding: '0 20px' }}>
+
+        {/* HEADER */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button type="button" onClick={() => navigate(-1)}
+            style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 10, padding: '8px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', fontWeight: 600, color: '#64748b', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
+          >
+            <ArrowLeft size={16} /> Kembali
+          </button>
+          <div>
+            <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#1e293b' }}>Tambah SAIFI</h1>
+            <p style={{ margin: 0, fontSize: '0.78rem', color: '#94a3b8', fontWeight: 500 }}>
+              {selectedMonth ? MONTHS.find(m => String(m.value) === String(selectedMonth))?.label : ''} {selectedYear}
+            </p>
           </div>
         </div>
-      </div>
 
-      <div className="w-full px-[32px] py-4 md:py-8">
-        
-        <div className="flex flex-col gap-6 pt-[28px] mb-[36px]">
-          
-          {success && (
-            <div className="mb-6 px-5 py-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-3 shadow-sm animate-fade-in">
-                <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0 text-emerald-600">
-                    <Activity size={20} />
-                </div>
-                <div>
-                    <h4 className="text-sm font-bold text-emerald-900">Data SAIFI Berhasil Disimpan!</h4>
-                    <p className="text-xs text-emerald-700 font-medium">Realisasi bulan ini telah direkam dengan sukses.</p>
-                </div>
+        {/* SUCCESS */}
+        {success && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 16px', borderRadius: 10, background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#16a34a', fontWeight: 600, fontSize: '0.86rem' }}>
+            <CheckCircle size={16} /> Data SAIFI Berhasil Disimpan!
+          </div>
+        )}
+
+        {/* DUPLICATE */}
+        {isDuplicate && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 16px', borderRadius: 10, background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 600, fontSize: '0.86rem' }}>
+            <AlertTriangle size={16} /> Data untuk periode ini sudah ada. Anda tidak dapat mengubah data melalui halaman ini. Silakan gunakan fitur Edit.
+          </div>
+        )}
+
+        <form style={{ display: 'flex', flexDirection: 'column', gap: 14 }} onSubmit={handleSubmit(onSubmit)}>
+
+          {/* CARD PERIODE */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="p-4 border-b border-slate-100 flex items-center gap-2 bg-slate-50/50">
+              <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center"><Activity size={16} /></div>
+              <h3 className="font-bold text-slate-800 text-sm tracking-wide">PILIH PERIODE</h3>
             </div>
-          )}
-
-          {/* PERIODE SETTINGS */}
-          <div className="mb-8 py-6">
-            <h3 className="text-xs font-bold text-slate-500 mb-3 uppercase tracking-wider mt-6">Pilih Periode</h3>
-            <div className="flex gap-4">
-              <div className="relative w-1/2">
-                  <select 
-                      {...register('periode_id', { required: true })} 
-                      className="w-full px-4 py-2 pr-12 bg-white border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-sm cursor-pointer appearance-none shadow-sm text-gray-400 font-normal"
-                  >
-                      <option value="" className="text-gray-400">Bulan</option>
-                      {MONTHS.map(m => (
-                      <option key={m.value} value={m.value}>{m.label}</option>
-                      ))}
+            <div className="p-5 flex flex-col gap-4">
+              <div className="flex gap-4">
+                <div className="w-1/2">
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#64748b', marginBottom: 5 }}>Bulan</label>
+                  <select {...register('periode_id', { required: true })} style={inputStyle(false)}>
+                    <option value="">Pilih Bulan</option>
+                    {MONTHS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
                   </select>
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                      <ChevronDown size={20} />
+                </div>
+                <div className="w-1/2">
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#64748b', marginBottom: 5 }}>Tahun</label>
+                  <input readOnly={isDuplicate} type="number" {...register('tahun', { required: true })} placeholder="Tahun" style={inputStyle(isDuplicate)} />
+                </div>
+              </div>
+              {(errors.periode_id || errors.tahun) && (
+                <div style={{ fontSize: '0.8rem', color: '#ef4444', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <AlertCircle size={14} /> Wajib isi periode
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* CARD DETAIL SAIFI */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="p-4 border-b border-slate-100 flex items-center gap-2 bg-slate-50/50">
+              <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center"><Activity size={16} /></div>
+              <h3 className="font-bold text-slate-800 text-sm tracking-wide">DETAIL KOMPONEN SAIFI</h3>
+            </div>
+            <div className="p-5 flex flex-col gap-3">
+              <p style={{ fontSize: '0.72rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', margin: 0 }}>Distribusi</p>
+              {[
+                { name: 'saifi_distribusi_padam_tidak_terencana', label: 'Padam Tidak Terencana', icon: <Zap size={15} />, bg: 'bg-blue-50 text-blue-600' },
+                { name: 'saifi_distribusi_padam_terencana', label: 'Padam Terencana', icon: <Zap size={15} />, bg: 'bg-blue-50 text-blue-600' },
+                { name: 'saifi_distribusi_bencana_alam', label: 'Bencana Alam', icon: <Zap size={15} />, bg: 'bg-amber-50 text-amber-600' },
+              ].map(f => (
+                <div key={f.name} className="flex items-center justify-between p-3 bg-white border border-[#f3f4f6] rounded-xl gap-4 hover:bg-slate-50 transition">
+                  <div className="flex items-center gap-3 flex-1">
+                    <div className={`w-9 h-9 rounded-lg ${f.bg} flex items-center justify-center flex-shrink-0`}>{f.icon}</div>
+                    <label className="font-semibold text-slate-700 text-[13px]">{f.label}</label>
                   </div>
+                  <input readOnly={isDuplicate} type="number" step="0.0001" {...register(f.name)} className={fieldInputClass} placeholder="-" />
+                </div>
+              ))}
+
+              <div style={{ borderTop: '1px dashed #e2e8f0', margin: '4px 0' }} />
+
+              <div className="flex items-center justify-between p-3 bg-white border border-[#f3f4f6] rounded-xl gap-4 hover:bg-slate-50 transition">
+                <div className="flex items-center gap-3 flex-1">
+                  <div className="w-9 h-9 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center flex-shrink-0"><RadioTower size={15} /></div>
+                  <label className="font-semibold text-slate-700 text-[13px]">Transmisi</label>
+                </div>
+                <input readOnly={isDuplicate} type="number" step="0.0001" {...register('saifi_transmisi')} className={fieldInputClass} placeholder="-" />
               </div>
 
-              <div className="relative w-1/2">
-                  <input 
-                      type="number"
-                      {...register('tahun', { required: true })} 
-                      placeholder="Tahun"
-                      className="w-full border border-slate-200 rounded-xl px-4 py-2 text-sm text-gray-400 font-normal shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500"
-                  />
+              <div className="flex items-center justify-between p-3 bg-white border border-[#f3f4f6] rounded-xl gap-4 hover:bg-slate-50 transition">
+                <div className="flex items-center gap-3 flex-1">
+                  <div className="w-9 h-9 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center flex-shrink-0"><Factory size={15} /></div>
+                  <label className="font-semibold text-slate-700 text-[13px]">Pembangkit</label>
+                </div>
+                <input readOnly={isDuplicate} type="number" step="0.0001" {...register('saifi_pembangkit')} className={fieldInputClass} placeholder="-" />
               </div>
             </div>
-            {isDuplicate && (
-              <p className="text-red-500 text-sm mt-3 font-semibold">
-                Data untuk periode ini sudah diinput. Silakan pilih bulan/tahun lain.
-              </p>
-            )}
           </div>
 
-          <div className="mb-6 mt-10">
-            <h2 className="text-xl font-extrabold text-slate-800 flex items-center gap-2">
-              <Activity size={24} className="text-blue-500" />
-              Detail Komponen SAIFI
-            </h2>
-          </div>
+          {/* SUBMIT */}
+          <button type="submit" disabled={loading || isDuplicate}
+            style={{ width: '100%', padding: '14px', borderRadius: 12, background: (loading || isDuplicate) ? '#93c5fd' : '#3b82f6', color: '#fff', fontSize: '0.95rem', fontWeight: 700, border: 'none', cursor: (loading || isDuplicate) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: (loading || isDuplicate) ? 'none' : '0 4px 14px rgba(59,130,246,0.3)', transition: 'all 0.2s' }}
+          >
+            {loading ? <div style={{width:20,height:20,border:'2px solid rgba(255,255,255,0.5)',borderTop:'2px solid white',borderRadius:'50%',animation:'spin 1s linear infinite'}}/> : <Save size={18} />}
+            {isDuplicate ? 'Data Sudah Ada' : 'Simpan Data'}
+          </button>
 
-          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden mb-8">
-            
-            {/* Input Row 1: Distribusi Header */}
-            <div 
-               className="flex flex-col md:flex-row md:items-center justify-between px-5 py-[20px] bg-white border-b border-[#f3f4f6] gap-4 hover:bg-slate-50/80 transition cursor-pointer"
-               onClick={() => setIsDistribusiOpen(!isDistribusiOpen)}
-            >
-               <div className="flex items-center gap-4 flex-1">
-                 <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
-                   <Zap size={20} />
-                 </div>
-                 <div>
-                   <label className="font-bold text-slate-800 text-[15px] cursor-pointer">Distribusi</label>
-                   <p className="text-xs text-slate-400 font-medium mt-[6px]">Klik untuk melihat detail input</p>
-                 </div>
-               </div>
-               <div className="text-slate-400">
-                 {isDistribusiOpen ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
-               </div>
-            </div>
-
-            {/* CHILD ROWS (Only shown if isDistribusiOpen) */}
-            {isDistribusiOpen && (
-              <div className="bg-slate-50/70 border-b border-slate-200 shadow-inner">
-                {/* Input Row 1 */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between py-[20px] px-4 pl-[48px] border-b border-[#f3f4f6] gap-4 hover:bg-slate-100/50 transition">
-                   <div className="flex items-center gap-4 flex-1">
-                     <div>
-                       <label className="font-bold text-slate-600 text-[13px]">Padam Tidak Terencana</label>
-                     </div>
-                   </div>
-                   <div className="relative flex-1 flex justify-end">
-                     <input 
-                        type="number" step="0.0001" 
-                        {...register('saifi_distribusi_padam_tidak_terencana')} 
-                        className="w-full max-w-xs border border-gray-300 rounded-md bg-white px-3 py-2 shadow-sm text-right outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" 
-                        placeholder="-" 
-                     />
-                   </div>
-                </div>
-
-                {/* Input Row 2 */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between py-[20px] px-4 pl-[48px] border-b border-[#f3f4f6] gap-4 hover:bg-slate-100/50 transition">
-                   <div className="flex items-center gap-4 flex-1">
-                     <div>
-                       <label className="font-bold text-slate-600 text-[13px]">Padam Terencana</label>
-                     </div>
-                   </div>
-                   <div className="relative flex-1 flex justify-end">
-                     <input 
-                        type="number" step="0.0001" 
-                        {...register('saifi_distribusi_padam_terencana')} 
-                        className="w-full max-w-xs border border-gray-300 rounded-md bg-white px-3 py-2 shadow-sm text-right outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" 
-                        placeholder="-" 
-                     />
-                   </div>
-                </div>
-
-                {/* Input Row 3 */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between py-[20px] px-4 pl-[48px] border-b border-[#f3f4f6] gap-4 hover:bg-slate-100/50 transition">
-                   <div className="flex items-center gap-4 flex-1">
-                     <div>
-                       <label className="font-bold text-slate-600 text-[13px]">Bencana Alam</label>
-                     </div>
-                   </div>
-                   <div className="relative flex-1 flex justify-end">
-                     <input 
-                        type="number" step="0.0001" 
-                        {...register('saifi_distribusi_bencana_alam')} 
-                        className="w-full max-w-xs border border-gray-300 rounded-md bg-white px-3 py-2 shadow-sm text-right outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" 
-                        placeholder="-" 
-                     />
-                   </div>
-                </div>
-              </div>
-            )}
-
-            {/* Input Row 4: Transmisi */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between px-5 py-[20px] bg-white border-b border-[#f3f4f6] gap-4 hover:bg-slate-50/50 transition">
-               <div className="flex items-center gap-4 flex-1">
-                 <div className="w-10 h-10 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center flex-shrink-0">
-                   <RadioTower size={20} />
-                 </div>
-                 <div>
-                   <label className="font-bold text-slate-800 text-[15px]">Transmisi</label>
-                 </div>
-               </div>
-               <div className="relative flex-1 flex justify-end">
-                 <input 
-                    type="number" step="0.0001" 
-                    {...register('saifi_transmisi')} 
-                    className="w-full max-w-xs border border-gray-300 rounded-md bg-white px-3 py-2 shadow-sm text-right outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" 
-                    placeholder="-" 
-                 />
-               </div>
-            </div>
-
-            {/* Input Row 5: Pembangkit */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between px-5 py-[20px] bg-white gap-4 hover:bg-slate-50/50 transition">
-               <div className="flex items-center gap-4 flex-1">
-                 <div className="w-10 h-10 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center flex-shrink-0">
-                   <Factory size={20} />
-                 </div>
-                 <div>
-                   <label className="font-bold text-slate-800 text-[15px]">Pembangkit</label>
-                 </div>
-               </div>
-               <div className="relative flex-1 flex justify-end">
-                 <input 
-                    type="number" step="0.0001" 
-                    {...register('saifi_pembangkit')} 
-                    className="w-full max-w-xs border border-gray-300 rounded-md bg-white px-3 py-2 shadow-sm text-right outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" 
-                    placeholder="-" 
-                 />
-               </div>
-            </div>
-
-          </div>
-        </div>
-
-              </div>
+        </form>
+      </div>
     </div>
   );
 }

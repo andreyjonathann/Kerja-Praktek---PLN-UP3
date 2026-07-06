@@ -13,7 +13,7 @@ import PageHeader from '@/components/ui/PageHeader'
 import ActionButton from '@/components/ui/ActionButton'
 import { useFilter } from '@/context/FilterContext'
 import { useAuth } from '@/context/AuthContext'
-import { MONTHS_SHORT } from '@/utils/formatters'
+import { MONTHS_ID } from '@/utils/formatters'
 import api from '@/services/api'
 
 export default function MttrPage() {
@@ -54,7 +54,7 @@ export default function MttrPage() {
   const { summary, trend_bulanan, per_up3 } = data
 
   const chartData = trend_bulanan?.map(t => ({
-    name: MONTHS_SHORT[t.bulan],
+    name: MONTHS_ID[t.bulan],
     'Realisasi (%)': t.realisasi,
     'Target (%)': t.target,
     'Terpenuhi': t.terpenuhi,
@@ -79,35 +79,37 @@ export default function MttrPage() {
     return null;
   };
 
+  const StatusBadge = ({ status }) => {
+    if (!status) return null;
+    return (
+      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${status === 'TERCAPAI' ? 'bg-emerald-100 text-emerald-700' : (status === '-' ? 'bg-slate-100 text-slate-500' : 'bg-rose-100 text-rose-700')}`}>
+        {status.replace('_', ' ')}
+      </span>
+    );
+  };
+
   const columns = [
-    { header: 'UP3', accessor: 'up3' },
+    { label: 'Bulan', key: 'bulan', render: (v) => <span className="font-semibold">{MONTHS_ID[v]}</span> },
+    { label: 'Jumlah Penyulang', key: 'penyulang', render: (v) => v != null ? v : '—' },
     { 
-      header: 'Penyulang', 
-      accessor: (row) => <span className="text-slate-500">{row.penyulang}</span> 
+      label: 'MTTR Bulan Ini', 
+      key: 'realisasi_bulan_ini',
+      render: (v) => v != null ? <span className="font-semibold text-emerald-600">{v}%</span> : '—'
     },
     { 
-      header: 'MTTR Bulan Ini', 
-      accessor: (row) => row.realisasi_bulan_ini != null ? <span className="font-semibold">{row.realisasi_bulan_ini}%</span> : '—'
+      label: 'Target Minimum', 
+      key: 'target',
+      render: (v) => v != null ? <span className="text-rose-500 font-semibold">{v}%</span> : '—'
     },
     { 
-      header: 'Rata-rata YTD', 
-      accessor: (row) => row.realisasi_ytd != null ? `${row.realisasi_ytd}%` : '—'
+      label: 'Pencapaian', 
+      key: 'persen_pencapaian',
+      render: (v) => v != null ? `${v}%` : '—'
     },
     { 
-      header: 'Target Minimum', 
-      accessor: (row) => <span className="text-rose-500 font-semibold">{row.target}%</span> 
-    },
-    { 
-      header: 'Pencapaian', 
-      accessor: (row) => row.persen_pencapaian != null ? `${row.persen_pencapaian}%` : '—'
-    },
-    { 
-      header: 'Status', 
-      accessor: (row) => (
-        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${row.status === 'TERCAPAI' ? 'bg-emerald-100 text-emerald-700' : (row.status === '-' ? 'bg-slate-100 text-slate-500' : 'bg-rose-100 text-rose-700')}`}>
-          {row.status.replace('_', ' ')}
-        </span>
-      )
+      label: 'Status', 
+      key: 'status',
+      render: (v) => <StatusBadge status={v} />
     }
   ];
 
@@ -204,10 +206,11 @@ export default function MttrPage() {
       </ChartWrapper>
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mt-6">
-        <div className="p-5 border-b border-slate-200">
-          <h2 className="text-lg font-bold text-slate-800">Detail Pencapaian Per UP3</h2>
+        <div className="p-5 border-b border-slate-200 text-center">
+          <h2 className="text-lg font-bold text-slate-800">Perbandingan Antar Bulan (YTD)</h2>
+          <p className="text-sm text-slate-500 mt-1">Rekapitulasi performa {filters.up3 === 'Semua UP3' ? 'semua unit' : filters.up3} per bulan</p>
         </div>
-        <DataTable columns={columns} data={per_up3 || []} loading={loading} />
+        <DataTable columns={columns} data={data?.per_bulan || []} keyField="bulan" striped={true} loading={loading} searchable={false} paginated={false} />
       </div>
 
     </div>

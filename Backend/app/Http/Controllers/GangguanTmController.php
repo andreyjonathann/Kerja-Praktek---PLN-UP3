@@ -16,9 +16,9 @@ class GangguanTmController extends Controller
     ];
 
     private $indikatorMap = [
-        'lebih_5_mnt' => 'ggn_tm_lebih_5_mnt',
-        'kurang_5_mnt' => 'ggn_tm_kurang_5_mnt',
-        'switching' => 'ggn_switching'
+        'lebih_5_mnt' => 'Gangguan TM > 5 Menit',
+        'kurang_5_mnt' => 'Gangguan TM < 5 Menit',
+        'switching' => 'Gangguan Switching'
     ];
 
     /**
@@ -40,7 +40,36 @@ class GangguanTmController extends Controller
             ->where('indikator', $indikator)
             ->first();
 
-        $targetTahunan = $target ? $target->target : null;
+        $monthlyTargets = [
+            1 => $target ? $target->target_jan : null,
+            2 => $target ? $target->target_feb : null,
+            3 => $target ? $target->target_mar : null,
+            4 => $target ? $target->target_apr : null,
+            5 => $target ? $target->target_mei : null,
+            6 => $target ? $target->target_jun : null,
+            7 => $target ? $target->target_jul : null,
+            8 => $target ? $target->target_agu : null,
+            9 => $target ? $target->target_sep : null,
+            10 => $target ? $target->target_okt : null,
+            11 => $target ? $target->target_nov : null,
+            12 => $target ? $target->target_des : null,
+        ];
+
+        // Target tahunan is sum of all monthly targets if they exist
+        $targetTahunan = null;
+        if ($target) {
+            $sumTgt = 0;
+            $hasAnyTarget = false;
+            foreach ($monthlyTargets as $mTarget) {
+                if ($mTarget !== null) {
+                    $sumTgt += $mTarget;
+                    $hasAnyTarget = true;
+                }
+            }
+            if ($hasAnyTarget) {
+                $targetTahunan = $sumTgt;
+            }
+        }
 
         $periods = Periode::where('tahun', $year)->orderBy('bulan')->get();
         $periodeIds = $periods->pluck('id');
@@ -53,6 +82,8 @@ class GangguanTmController extends Controller
         $cumulativeData = [];
 
         $sumReal = 0;
+        $sumTarget = 0;
+        $anyTargetFilled = false;
 
         foreach ($periods as $idx => $p) {
             $k = $kinerja->firstWhere('periode_id', $p->id);
@@ -62,10 +93,13 @@ class GangguanTmController extends Controller
                 $sumReal += $realisasiBulanIni;
             }
 
-            $targetKumulatif = null;
-            if ($targetTahunan !== null && $targetTahunan > 0) {
-                $targetKumulatif = ($targetTahunan / 12) * $p->bulan;
+            $tgtBulanIni = $monthlyTargets[$p->bulan];
+            if ($tgtBulanIni !== null) {
+                $sumTarget += $tgtBulanIni;
+                $anyTargetFilled = true;
             }
+
+            $targetKumulatif = $anyTargetFilled ? $sumTarget : null;
 
             $data[] = [
                 'id' => $k ? $k->id : null,
@@ -208,6 +242,56 @@ class GangguanTmController extends Controller
         ]);
     }
 
+    public function updateLebih5Mnt(Request $request, $tahun, $bulan)
+    {
+        $request->validate([
+            'kejadian' => 'array',
+            'kejadian.*.jumlah' => 'required|integer|min:1',
+            'kejadian.*.penyebab' => 'nullable|string',
+            'kejadian.*.penyulang' => 'nullable|string',
+        ]);
+
+        $up3 = $request->user() ? $request->user()->up3 : 'Semua UP3';
+        
+        // Hapus detail eksisting untuk bulan ini
+        \App\Models\DetailGangguanTmLebih5Mnt::where('bulan', $bulan)
+            ->where('tahun', $tahun)
+            ->where('up3', $up3)
+            ->delete();
+
+        $totalGangguan = 0;
+        
+        $kejadian = $request->input('kejadian', []);
+        
+        if (count($kejadian) > 0) {
+            foreach ($kejadian as $k) {
+                \App\Models\DetailGangguanTmLebih5Mnt::create([
+                    'up3' => $up3,
+                    'bulan' => $bulan,
+                    'tahun' => $tahun,
+                    'jumlah_gangguan' => $k['jumlah'],
+                    'penyebab' => $k['penyebab'] ?? null,
+                    'nama_penyulang' => $k['penyulang'] ?? null,
+                ]);
+                $totalGangguan += $k['jumlah'];
+            }
+        }
+
+        $periode = \App\Models\Periode::firstOrCreate([
+            'bulan' => $bulan,
+            'tahun' => $tahun
+        ]);
+
+        $kinerja = KinerjaJaringan::firstOrNew(['periode_id' => $periode->id]);
+        $kinerja->ggn_tm_lebih_5_mnt = $totalGangguan;
+        $kinerja->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data Gangguan TM > 5 Menit berhasil diupdate'
+        ]);
+    }
+
     public function detailLebih5Mnt(Request $request)
     {
         $tahun = $request->query('tahun');
@@ -326,7 +410,23 @@ class GangguanTmController extends Controller
         foreach ($this->tipeMap as $tipe => $dbField) {
             $indikator = $this->indikatorMap[$tipe];
             $targetObj = $targets->get($indikator);
-            $targetTahunan = $targetObj ? $targetObj->target : null;
+            
+            // Calculate sum of monthly targets
+            $targetTahunan = null;
+            if ($targetObj) {
+                $mTargets = [
+                    $targetObj->target_jan, $targetObj->target_feb, $targetObj->target_mar,
+                    $targetObj->target_apr, $targetObj->target_mei, $targetObj->target_jun,
+                    $targetObj->target_jul, $targetObj->target_agu, $targetObj->target_sep,
+                    $targetObj->target_okt, $targetObj->target_nov, $targetObj->target_des
+                ];
+                $sumTgt = 0;
+                $hasAny = false;
+                foreach ($mTargets as $mt) {
+                    if ($mt !== null) { $sumTgt += $mt; $hasAny = true; }
+                }
+                if ($hasAny) $targetTahunan = $sumTgt;
+            }
 
             $monthlyData = [];
             $sumReal = 0;
@@ -341,10 +441,30 @@ class GangguanTmController extends Controller
                 }
             }
 
+            $targetBulanan = [];
+            for ($i=1; $i<=12; $i++) {
+                $targetBulanan[$i] = null;
+            }
+            if ($targetObj) {
+                $targetBulanan[1] = $targetObj->target_jan;
+                $targetBulanan[2] = $targetObj->target_feb;
+                $targetBulanan[3] = $targetObj->target_mar;
+                $targetBulanan[4] = $targetObj->target_apr;
+                $targetBulanan[5] = $targetObj->target_mei;
+                $targetBulanan[6] = $targetObj->target_jun;
+                $targetBulanan[7] = $targetObj->target_jul;
+                $targetBulanan[8] = $targetObj->target_agu;
+                $targetBulanan[9] = $targetObj->target_sep;
+                $targetBulanan[10] = $targetObj->target_okt;
+                $targetBulanan[11] = $targetObj->target_nov;
+                $targetBulanan[12] = $targetObj->target_des;
+            }
+
             $rekapData[$tipe] = [
                 'target_tahunan' => $targetTahunan,
                 'realisasi_ytd' => $sumReal,
                 'monthly' => $monthlyData,
+                'target_bulanan' => $targetBulanan,
             ];
         }
 
@@ -371,7 +491,23 @@ class GangguanTmController extends Controller
         foreach ($this->tipeMap as $tipe => $dbField) {
             $indikator = $this->indikatorMap[$tipe];
             $targetObj = $targets->get($indikator);
-            $targetTahunan = $targetObj ? $targetObj->target : null;
+            
+            // Calculate sum of monthly targets
+            $targetTahunan = null;
+            if ($targetObj) {
+                $mTargets = [
+                    $targetObj->target_jan, $targetObj->target_feb, $targetObj->target_mar,
+                    $targetObj->target_apr, $targetObj->target_mei, $targetObj->target_jun,
+                    $targetObj->target_jul, $targetObj->target_agu, $targetObj->target_sep,
+                    $targetObj->target_okt, $targetObj->target_nov, $targetObj->target_des
+                ];
+                $sumTgt = 0;
+                $hasAny = false;
+                foreach ($mTargets as $mt) {
+                    if ($mt !== null) { $sumTgt += $mt; $hasAny = true; }
+                }
+                if ($hasAny) $targetTahunan = $sumTgt;
+            }
 
             $sumReal = 0;
             foreach ($kinerja as $k) {

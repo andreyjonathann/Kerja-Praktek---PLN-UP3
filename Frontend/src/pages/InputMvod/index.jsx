@@ -4,297 +4,261 @@ import { useNavigate } from 'react-router-dom';
 import api from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { MONTHS } from '@/utils/constants';
-import { CheckCircle, AlertCircle, Save, Zap } from 'lucide-react';
-import TargetWarning from '@/components/ui/TargetWarning';
-import PageHeader from '@/components/ui/PageHeader';
+import { CheckCircle, AlertCircle, Save, ArrowLeft, Activity, Zap } from 'lucide-react';
 
 export default function InputMvodPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth() + 1;
 
   const [loading, setLoading] = useState(false);
   const [submitError, setSubmitError] = useState(null);
-  const [activeTab, setActiveTab] = useState('GI'); // GI, JTM, GD
+  const [activeTab, setActiveTab] = useState('GI');
   const [targetSlas, setTargetSlas] = useState({ GI: 30, JTM: 60, GD: 90 });
   const [hasTarget, setHasTarget] = useState(true);
   const [existingData, setExistingData] = useState(null);
 
-  const { register, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm({
-      defaultValues: {
-          tahun: '',
-          bulan: currentMonth,
-          total_lama_padam_jam: '',
-          kali_padam: ''
-      }
+  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm({
+    defaultValues: {
+      tahun: '',
+      bulan: '',
+      total_lama_padam_menit: '',
+      kali_padam: ''
+    }
   });
 
   const selectedYear = watch('tahun');
   const selectedMonth = watch('bulan');
-  const totalJam = watch('total_lama_padam_jam');
+  const totalMenit = watch('total_lama_padam_menit');
   const kaliPadam = watch('kali_padam');
 
   useEffect(() => {
+    if (!user?.up3 || !selectedYear || !selectedMonth) return;
     const fetchTargetAndData = async () => {
-        try {
-            // Fetch targets
-            const resTarget = await api.get('/v1/mvod/targets', { params: { tahun: selectedYear } });
-            const targetUP3 = resTarget.data.data.find(t => t.up3 === user?.up3);
-            
-            if (targetUP3) {
-                setHasTarget(true);
-                setTargetSlas({
-                    GI: parseFloat(targetUP3.sla_gi_menit),
-                    JTM: parseFloat(targetUP3.sla_jtm_menit),
-                    GD: parseFloat(targetUP3.sla_gd_menit)
-                });
-            } else {
-                setHasTarget(false);
-                setTargetSlas({ GI: 30, JTM: 60, GD: 90 }); // Default
-            }
-
-            // Fetch Realisasi for this month
-            const resData = await api.get('/v1/mvod', { 
-                params: { tahun: selectedYear, up3: user?.up3, tipe_rct: activeTab } 
-            });
-            const existing = resData.data.data.find(d => d.bulan == selectedMonth);
-            
-            if (existing) {
-                setExistingData(existing);
-                setValue('total_lama_padam_jam', existing.total_lama_padam_jam);
-                setValue('kali_padam', existing.kali_padam);
-            } else {
-                setExistingData(null);
-                setValue('total_lama_padam_jam', '');
-                setValue('kali_padam', '');
-            }
-        } catch (err) {
-            console.error('Error fetching data:', err);
+      try {
+        const resTarget = await api.get('/v1/mvod/targets', { params: { tahun: selectedYear } });
+        const targetUP3 = resTarget.data.data.find(t => t.up3 === user?.up3);
+        if (targetUP3) {
+          setHasTarget(true);
+          setTargetSlas({
+            GI: parseFloat(targetUP3.sla_gi_menit),
+            JTM: parseFloat(targetUP3.sla_jtm_menit),
+            GD: parseFloat(targetUP3.sla_gd_menit)
+          });
+        } else {
+          setHasTarget(false);
         }
-    };
 
-    if (user?.up3 && selectedYear && selectedMonth) {
-        fetchTargetAndData();
-    }
+        const resData = await api.get('/v1/mvod', { params: { tahun: selectedYear, up3: user?.up3, tipe_rct: activeTab } });
+        const existing = resData.data.data.find(d => d.bulan == selectedMonth);
+        if (existing) {
+          setExistingData(existing);
+          setValue('total_lama_padam_menit', existing.total_lama_padam_menit);
+          setValue('kali_padam', existing.kali_padam);
+        } else {
+          setExistingData(null);
+          setValue('total_lama_padam_menit', '');
+          setValue('kali_padam', '');
+        }
+      } catch (err) {
+        console.error('Error fetching MVOD data:', err);
+      }
+    };
+    fetchTargetAndData();
   }, [user, selectedYear, selectedMonth, activeTab, setValue]);
 
-  let rataMenit = 0;
-  let persenCapai = 0;
   const currentSla = targetSlas[activeTab];
-
-  if (totalJam && kaliPadam && parseInt(kaliPadam) > 0) {
-      rataMenit = (parseFloat(totalJam) * 60) / parseInt(kaliPadam);
-      if (currentSla > 0) {
-          persenCapai = 2 - (rataMenit / currentSla);
-          if (persenCapai > 1.1) persenCapai = 1.1; // cap 110%
-      }
+  let rataMenit = 0, persenCapai = 0;
+  if (totalMenit && kaliPadam && parseInt(kaliPadam) > 0) {
+    rataMenit = parseFloat(totalMenit) / parseInt(kaliPadam);
+    if (currentSla > 0) persenCapai = ((1 - rataMenit / currentSla) * 100);
   }
-
-  const isAman = rataMenit <= currentSla;
+  const isAman = rataMenit > 0 && rataMenit <= currentSla;
 
   const onSubmit = async (data) => {
-      setLoading(true);
-      setSubmitError(null);
-      
-      try {
-          const payload = {
-              up3: user?.up3,
-              tahun: parseInt(data.tahun),
-              bulan: parseInt(data.bulan),
-              tipe_rct: activeTab,
-              total_lama_padam_jam: parseFloat(data.total_lama_padam_jam),
-              kali_padam: parseInt(data.kali_padam)
-          };
-
-          if (existingData) {
-              await api.put(`/v1/mvod/\${existingData.id}`, payload);
-          } else {
-              await api.post('/v1/mvod', payload);
-          }
-          
-          navigate('/jaringan/mvod');
-          
-      } catch (err) {
-          console.error(err);
-          setSubmitError(err.response?.data?.message || 'Terjadi kesalahan saat menyimpan data.');
-      } finally {
-          setLoading(false);
+    setLoading(true);
+    setSubmitError(null);
+    try {
+      const payload = {
+        up3: user?.up3,
+        tahun: parseInt(data.tahun),
+        bulan: parseInt(data.bulan),
+        tipe_rct: activeTab,
+        total_lama_padam_jam: parseFloat(data.total_lama_padam_menit) / 60,
+        kali_padam: parseInt(data.kali_padam)
+      };
+      if (existingData) {
+        await api.put(`/v1/mvod/${existingData.id}`, payload);
+      } else {
+        await api.post('/v1/mvod', payload);
       }
+      navigate('/jaringan/mvod');
+    } catch (err) {
+      setSubmitError(err.response?.data?.message || 'Terjadi kesalahan saat menyimpan data.');
+    } finally {
+      setLoading(false);
+    }
   };
 
+  const inputStyle = {
+    width: '100%', padding: '10px 14px', borderRadius: 10,
+    border: '1px solid #e2e8f0', background: '#f8fafc',
+    fontSize: '0.9rem', color: '#334155', outline: 'none',
+  };
+
+  const TAB_COLORS = { GI: '#3b82f6', JTM: '#8b5cf6', GD: '#10b981' };
+
   return (
-    <div className="w-full mx-auto py-6 animate-fade-in">
-      <PageHeader 
-        title="Input Realisasi MVOD"
-        description="Formulir pengisian Mean Value of Outage Duration per tipe aset"
-        icon={Zap}
-        iconColor="#EAB308"
-        backTo="/jaringan/mvod"
-      />
+    <div className="min-h-screen bg-slate-50 flex flex-col animate-fade-in py-12">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 640, margin: '0 auto', width: '100%', padding: '0 20px' }}>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 lg:space-y-12">
-        <div className="bg-white rounded-none border border-slate-200 overflow-hidden shadow-sm">
-            <div className="bg-slate-50 border-b border-slate-200 p-4 flex justify-between items-center">
-                <h2 className="font-bold text-slate-700 text-sm">INFORMASI PERIODE & UP3</h2>
-                {existingData && (
-                    <span className="bg-blue-100 text-blue-700 text-xs font-bold px-3 py-1 rounded-full">MODE EDIT</span>
-                )}
+        {/* HEADER */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button type="button" onClick={() => navigate('/jaringan/mvod')}
+            style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 10, padding: '8px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', fontWeight: 600, color: '#64748b', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
+          >
+            <ArrowLeft size={16} /> Kembali
+          </button>
+          <div style={{ flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#1e293b' }}>Input Realisasi MVOD</h1>
+              {existingData && (
+                <span style={{ background: '#dbeafe', color: '#1d4ed8', fontSize: '0.72rem', fontWeight: 700, padding: '3px 10px', borderRadius: 20 }}>MODE EDIT</span>
+              )}
             </div>
-            <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-2">UP3</label>
-                    <input 
-                        type="text" 
-                        value={user?.up3 || ''} 
-                        disabled 
-                        className="w-full bg-slate-100 border border-slate-200 text-slate-500 rounded-none px-4 py-3 font-semibold"
-                    />
-                </div>
-                <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-2">TAHUN</label>
-                    <select 
-                        {...register('tahun')} 
-                        className="w-full bg-white border border-slate-300 text-slate-800 rounded-none px-4 py-3 font-semibold focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                    >
-                        {[...Array(5)].map((_, i) => {
-                            const year = currentYear - 2 + i;
-                            return <option key={year} value={year}>{year}</option>;
-                        })}
-                    </select>
-                </div>
-                <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-2">BULAN</label>
-                    <div className="relative">
-                        <select 
-                            {...register('bulan')} 
-                             
-                            className="w-full px-4 py-2 pr-12 bg-white border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-sm cursor-pointer appearance-none shadow-sm text-gray-400 font-normal"
-                            style={{ boxShadow: '0 2px 10px rgba(0,0,0,0.03)' }}
-                        >
-                            <option value="">-- PILIH BULAN --</option>
-                            {MONTHS.map((m) => (
-                                <option key={m.value} value={m.value}>{m.label.toUpperCase()}</option>
-                            ))}
-                        </select>
-                    </div>
-                </div>
-            </div>
+            <p style={{ margin: 0, fontSize: '0.78rem', color: '#94a3b8', fontWeight: 500 }}>
+              {MONTHS.find(m => String(m.value) === String(selectedMonth))?.label} {selectedYear} — RCT {activeTab}
+            </p>
+          </div>
         </div>
 
-        <div className="mb-6">
-          <TargetWarning up3={user?.up3 || 'Semua UP3'} year={selectedYear} isVisible={!hasTarget} />
-        </div>
-
-        {/* TABS FOR RCT */}
-        <div className="flex bg-slate-100 p-1 rounded-lg w-fit mb-4 border border-slate-200">
-            {['GI', 'JTM', 'GD'].map(tab => (
-                <button
-                    key={tab}
-                    type="button"
-                    onClick={() => setActiveTab(tab)}
-                    className={`px-6 py-2 rounded-md font-bold text-sm transition-all \${activeTab === tab ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
-                >
-                    RCT {tab}
-                </button>
-            ))}
-        </div>
-
-        <div className="bg-white rounded-none border border-slate-200 overflow-hidden shadow-sm relative">
-            <div className="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
-            <div className="bg-slate-50 border-b border-slate-200 p-4">
-                <h2 className="font-bold text-slate-700 text-sm">DATA GANGGUAN RCT {activeTab}</h2>
-            </div>
-            
-            <div className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-                     <div className="space-y-6">
-                         <div>
-                            <label className="block text-xs font-bold text-slate-500 mb-2">TOTAL DURASI PADAM (JAM)</label>
-                            <input 
-                                type="number" 
-                                step="0.01"
-                                min="0"
-                                {...register('total_lama_padam_jam', { 
-                                    required: "Durasi harus diisi",
-                                    min: { value: 0, message: "Tidak boleh negatif" }
-                                })} 
-                                placeholder="0.00"
-                                className={`w-full bg-white border \${errors.total_lama_padam_jam ? 'border-rose-500 focus:border-rose-500 focus:ring-rose-500' : 'border-slate-300 focus:border-blue-500 focus:ring-blue-500'} text-slate-800 rounded-none px-4 py-3 font-bold text-lg`}
-                            />
-                            {errors.total_lama_padam_jam && <p className="text-rose-500 text-xs font-bold mt-2">{errors.total_lama_padam_jam.message}</p>}
-                         </div>
-
-                         <div>
-                            <label className="block text-xs font-bold text-slate-500 mb-2">JUMLAH KEJADIAN PADAM</label>
-                            <input 
-                                type="number" 
-                                min="1"
-                                {...register('kali_padam', { 
-                                    required: "Jumlah kejadian harus diisi",
-                                    min: { value: 1, message: "Minimal 1" }
-                                })} 
-                                placeholder="0"
-                                className={`w-full bg-white border \${errors.kali_padam ? 'border-rose-500 focus:border-rose-500 focus:ring-rose-500' : 'border-slate-300 focus:border-blue-500 focus:ring-blue-500'} text-slate-800 rounded-none px-4 py-3 font-bold text-lg`}
-                            />
-                            {errors.kali_padam && <p className="text-rose-500 text-xs font-bold mt-2">{errors.kali_padam.message}</p>}
-                         </div>
-                     </div>
-
-                     <div className="bg-slate-50 p-6 border border-slate-200 flex flex-col justify-center h-full">
-                         <div className="text-center mb-6">
-                              <p className="text-xs font-bold text-slate-500 mb-2">PREVIEW RATA-RATA RCT</p>
-                              <div className="flex items-end justify-center gap-1">
-                                  <span className="text-5xl font-black text-slate-800">
-                                      {rataMenit > 0 ? rataMenit.toFixed(2) : '0.00'}
-                                  </span>
-                                  <span className="text-xl font-bold text-slate-500 mb-1">mnt</span>
-                              </div>
-                              <p className="text-xs text-slate-400 mt-2">Pencapaian: {(persenCapai * 100).toFixed(2)}%</p>
-                         </div>
-                         
-                         <div className="text-center">
-                              <p className="text-xs font-bold text-slate-500 mb-1">BATAS SLA MAKSIMUM: {currentSla} mnt</p>
-                              {totalJam && kaliPadam ? (
-                                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold \${isAman ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
-                                      {isAman ? <CheckCircle size={14}/> : <AlertCircle size={14}/>}
-                                      {isAman ? 'AMAN' : 'MELEWATI SLA'}
-                                  </span>
-                              ) : (
-                                  <span className="inline-block px-3 py-1 bg-slate-100 text-slate-500 rounded-full text-xs font-bold">MENUNGGU INPUT</span>
-                              )}
-                         </div>
-                     </div>
-                </div>
-            </div>
-        </div>
-
-        {submitError && (
-            <div className="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-none font-semibold text-sm">
-                {submitError}
-            </div>
+        {!hasTarget && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 16px', borderRadius: 10, background: '#fffbeb', border: '1px solid #fde68a', color: '#92400e', fontWeight: 600, fontSize: '0.86rem' }}>
+            <AlertCircle size={16} /> Target MVOD belum diatur untuk tahun {selectedYear}.
+          </div>
         )}
 
-        <div className="bg-white border border-slate-200 p-4 shadow-sm w-full">
-             <div className="flex gap-4">
-                <button 
-                    type="submit" 
-                    disabled={loading}
-                    className={`
-                    w-full flex items-center justify-center gap-2 px-4 py-3 rounded-none font-bold text-sm md:text-base transition-colors duration-200
-                    \${loading ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}
-                    `}
-                >
-                    {loading ? (
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                    ) : (
-                        <><Save size={20} /> SIMPAN RCT {activeTab}</>
-                    )}
-                </button>
-             </div>
-        </div>
-      </form>
+        <form style={{ display: 'flex', flexDirection: 'column', gap: 14 }} onSubmit={handleSubmit(onSubmit)}>
+
+          {/* CARD PERIODE */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="p-4 border-b border-slate-100 flex items-center gap-2 bg-slate-50/50">
+              <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center"><Activity size={16} /></div>
+              <h3 className="font-bold text-slate-800 text-sm tracking-wide">PILIH PERIODE</h3>
+            </div>
+            <div className="p-5 flex flex-col gap-4">
+              <div className="flex gap-4">
+                <div className="w-1/2">
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#64748b', marginBottom: 5 }}>Bulan</label>
+                  <select {...register('bulan', { required: true })} style={inputStyle}>
+                    <option value="">Pilih Bulan</option>
+                    {MONTHS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+                  </select>
+                </div>
+                <div className="w-1/2">
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#64748b', marginBottom: 5 }}>Tahun</label>
+                  <input 
+                    type="number" 
+                    min="2000" 
+                    max="2100"
+                    placeholder="Ketik Tahun (misal: 2026)"
+                    {...register('tahun', { required: true })} 
+                    style={inputStyle} 
+                  />
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: '#f8fafc', borderRadius: 8, fontSize: '0.8rem' }}>
+                <span style={{ color: '#64748b', fontWeight: 600 }}>UP3</span>
+                <span style={{ color: '#1e293b', fontWeight: 700 }}>{user?.up3 || '-'}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* TABS RCT */}
+          <div style={{ display: 'flex', gap: 8, padding: '6px', background: '#f1f5f9', borderRadius: 14 }}>
+            {['GI', 'JTM', 'GD'].map(tab => (
+              <button key={tab} type="button" onClick={() => setActiveTab(tab)}
+                style={{
+                  flex: 1, padding: '9px', borderRadius: 10, fontSize: '0.85rem', fontWeight: 700, border: 'none', cursor: 'pointer', transition: 'all 0.2s',
+                  background: activeTab === tab ? '#fff' : 'transparent',
+                  color: activeTab === tab ? TAB_COLORS[tab] : '#94a3b8',
+                  boxShadow: activeTab === tab ? '0 1px 4px rgba(0,0,0,0.08)' : 'none',
+                }}
+              >
+                RCT {tab}
+              </button>
+            ))}
+          </div>
+
+          {/* CARD DETAIL MVOD */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="p-4 border-b border-slate-100 flex items-center gap-2 bg-slate-50/50">
+              <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center"><Zap size={16} /></div>
+              <h3 className="font-bold text-slate-800 text-sm tracking-wide">DATA GANGGUAN RCT {activeTab}</h3>
+            </div>
+            <div className="p-5 flex flex-col gap-3">
+
+              <div className="flex items-center justify-between p-3 bg-white border border-[#f3f4f6] rounded-xl gap-4 hover:bg-slate-50 transition">
+                <div className="flex items-center gap-3 flex-1">
+                  <div className="w-9 h-9 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center flex-shrink-0"><Activity size={15} /></div>
+                  <label className="font-semibold text-slate-700 text-[13px]">Total Durasi Padam (Menit)</label>
+                </div>
+                <input type="number" step="1" min="1" {...register('total_lama_padam_menit', { required: true })}
+                  className={`w-[120px] border ${errors.total_lama_padam_menit ? 'border-red-400' : 'border-gray-200'} rounded-lg px-3 py-2 text-[13px] shadow-sm text-right outline-none focus:border-blue-500 bg-white`}
+                  placeholder="-" />
+              </div>
+
+              <div className="flex items-center justify-between p-3 bg-white border border-[#f3f4f6] rounded-xl gap-4 hover:bg-slate-50 transition">
+                <div className="flex items-center gap-3 flex-1">
+                  <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0"><Zap size={15} /></div>
+                  <label className="font-semibold text-slate-700 text-[13px]">Jumlah Kejadian Padam (Kali)</label>
+                </div>
+                <input type="number" step="1" min="1" {...register('kali_padam', { required: true })}
+                  className={`w-[120px] border ${errors.kali_padam ? 'border-red-400' : 'border-gray-200'} rounded-lg px-3 py-2 text-[13px] shadow-sm text-right outline-none focus:border-blue-500 bg-white`}
+                  placeholder="-" />
+              </div>
+
+              {/* Live Preview */}
+              <div style={{ padding: '12px 16px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <p style={{ margin: 0, fontSize: '0.75rem', fontWeight: 700, color: '#64748b' }}>Rata-rata RCT {activeTab}</p>
+                  <p style={{ margin: '2px 0 0', fontSize: '0.72rem', color: '#94a3b8' }}>SLA Maks: {currentSla} menit</p>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <span style={{ fontSize: '1.4rem', fontWeight: 800, color: rataMenit === 0 ? '#94a3b8' : (isAman ? '#16a34a' : '#dc2626') }}>
+                    {rataMenit.toFixed(2)}
+                  </span>
+                  <span style={{ fontSize: '0.85rem', color: '#94a3b8', marginLeft: 4 }}>mnt</span>
+                  {rataMenit > 0 && (
+                    <div>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 20, fontSize: '0.7rem', fontWeight: 700, background: isAman ? '#dcfce7' : '#fee2e2', color: isAman ? '#16a34a' : '#dc2626', marginTop: 4 }}>
+                        {isAman ? <CheckCircle size={11} /> : <AlertCircle size={11} />}
+                        {isAman ? 'AMAN' : 'MELEBIHI SLA'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {submitError && (
+            <div style={{ padding: '11px 16px', borderRadius: 10, background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 600, fontSize: '0.86rem' }}>
+              {submitError}
+            </div>
+          )}
+
+          {/* SUBMIT */}
+          <button type="submit" disabled={loading}
+            style={{ width: '100%', padding: '14px', borderRadius: 12, background: loading ? '#93c5fd' : '#3b82f6', color: '#fff', fontSize: '0.95rem', fontWeight: 700, border: 'none', cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: loading ? 'none' : '0 4px 14px rgba(59,130,246,0.3)', transition: 'all 0.2s' }}
+          >
+            {loading ? <div style={{width:20,height:20,border:'2px solid rgba(255,255,255,0.5)',borderTop:'2px solid white',borderRadius:'50%',animation:'spin 1s linear infinite'}}/> : <Save size={18} />}
+            {existingData ? `Simpan Perubahan RCT ${activeTab}` : `Simpan Data RCT ${activeTab}`}
+          </button>
+
+        </form>
+      </div>
     </div>
   );
 }

@@ -38,6 +38,9 @@ Route::middleware('api')->group(function () {
         Route::post('/gangguan-trafo', [\App\Http\Controllers\Api\GangguanSwitchingController::class, 'storeTrafo']);
         Route::put('/gangguan-trafo/{id}', [\App\Http\Controllers\Api\GangguanSwitchingController::class, 'updateTrafo']);
 
+        Route::delete('/gangguan-switching/{id}', [\App\Http\Controllers\Api\GangguanSwitchingController::class, 'destroySwitching']);
+        Route::delete('/gangguan-trafo/{id}', [\App\Http\Controllers\Api\GangguanSwitchingController::class, 'destroyTrafo']);
+
         Route::get('/gangguan-switching-trafo', [\App\Http\Controllers\Api\GangguanSwitchingController::class, 'indexGabungan']);
         Route::put('/gangguan-switching/detail/{id}', [\App\Http\Controllers\Api\GangguanSwitchingController::class, 'updateKejadianSwitching']);
         Route::delete('/gangguan-switching/detail/{id}', [\App\Http\Controllers\Api\GangguanSwitchingController::class, 'destroyKejadianSwitching']);
@@ -53,6 +56,7 @@ Route::middleware('api')->group(function () {
         Route::get('/rpt-gangguan', [\App\Http\Controllers\Api\RptGangguanController::class, 'index']);
         Route::post('/rpt-gangguan', [\App\Http\Controllers\Api\RptGangguanController::class, 'store']);
         Route::put('/rpt-gangguan/{id}', [\App\Http\Controllers\Api\RptGangguanController::class, 'update']);
+        Route::delete('/rpt-gangguan/{id}', [\App\Http\Controllers\Api\RptGangguanController::class, 'destroy']);
         Route::get('/rpt-gangguan/dashboard', [\App\Http\Controllers\Api\RptGangguanController::class, 'dashboard']);
         
         Route::get('/rpt-gangguan/targets', [\App\Http\Controllers\Api\RptGangguanController::class, 'indexTargets']);
@@ -101,6 +105,7 @@ Route::middleware('api')->group(function () {
     // Rating Negatif
     Route::get('/jaringan/rating-negatif', [\App\Http\Controllers\RatingNegatifController::class, 'index']);
     Route::post('/jaringan/rating-negatif', [\App\Http\Controllers\RatingNegatifController::class, 'store']);
+    Route::delete('/jaringan/rating-negatif/{id}', [\App\Http\Controllers\RatingNegatifController::class, 'destroy']);
     Route::get('/jaringan/rating-negatif/rekap', [\App\Http\Controllers\RatingNegatifController::class, 'rekap']);
     Route::get('/jaringan/rating-negatif/yoy', [\App\Http\Controllers\RatingNegatifController::class, 'yoy']);
     
@@ -109,6 +114,7 @@ Route::middleware('api')->group(function () {
     Route::post('/jaringan/gangguan-tm', [\App\Http\Controllers\GangguanTmController::class, 'store']); // Legacy
     Route::post('/jaringan/gangguan-tm/kurang-5', [\App\Http\Controllers\GangguanTmController::class, 'storeKurang5Mnt']);
     Route::post('/jaringan/gangguan-tm/lebih-5', [\App\Http\Controllers\GangguanTmController::class, 'storeLebih5Mnt']);
+    Route::put('/jaringan/gangguan-tm/lebih-5/{tahun}/{bulan}', [\App\Http\Controllers\GangguanTmController::class, 'updateLebih5Mnt']);
     Route::get('/jaringan/gangguan-tm/lebih-5/detail', [\App\Http\Controllers\GangguanTmController::class, 'detailLebih5Mnt']);
     Route::get('/jaringan/gangguan-tm/rekap', [\App\Http\Controllers\GangguanTmController::class, 'rekap']);
     Route::get('/jaringan/gangguan-tm/semua-up3', [\App\Http\Controllers\GangguanTmController::class, 'semuaUp3']);

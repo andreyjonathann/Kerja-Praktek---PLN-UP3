@@ -28,6 +28,7 @@ class DatabaseSeeder extends Seeder
                 'email' => 'aset@pln.co.id',
                 'password' => Hash::make('password'),
                 'role' => 'pic_aset',
+                'up3' => 'UP3 Kebon Jeruk',
                 'is_active' => true,
             ],
             [
@@ -36,6 +37,7 @@ class DatabaseSeeder extends Seeder
                 'email' => 'jaringan@pln.co.id',
                 'password' => Hash::make('password'),
                 'role' => 'pic_jaringan',
+                'up3' => 'UP3 Kebon Jeruk',
                 'is_active' => true,
             ],
             [
@@ -44,6 +46,7 @@ class DatabaseSeeder extends Seeder
                 'email' => 'te@pln.co.id',
                 'password' => Hash::make('password'),
                 'role' => 'pic_transaksi_energi',
+                'up3' => 'UP3 Kebon Jeruk',
                 'is_active' => true,
             ],
             [
@@ -52,6 +55,7 @@ class DatabaseSeeder extends Seeder
                 'email' => 'niaga@pln.co.id',
                 'password' => Hash::make('password'),
                 'role' => 'pic_niaga',
+                'up3' => 'UP3 Kebon Jeruk',
                 'is_active' => true,
             ],
             [
@@ -60,6 +64,7 @@ class DatabaseSeeder extends Seeder
                 'email' => 'pemasaran@pln.co.id',
                 'password' => Hash::make('password'),
                 'role' => 'pic_pemasaran',
+                'up3' => 'UP3 Kebon Jeruk',
                 'is_active' => true,
             ],
             [
@@ -68,6 +73,7 @@ class DatabaseSeeder extends Seeder
                 'email' => 'keuangan@pln.co.id',
                 'password' => Hash::make('password'),
                 'role' => 'pic_keuangan',
+                'up3' => 'UP3 Kebon Jeruk',
                 'is_active' => true,
             ]
         ];

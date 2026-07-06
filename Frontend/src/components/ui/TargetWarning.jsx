@@ -1,7 +1,7 @@
 import React from 'react'
 import { AlertTriangle } from 'lucide-react'
 
-export default function TargetWarning({ up3, year, isVisible }) {
+export default function TargetWarning({ up3, year, isVisible, monthName }) {
   if (!isVisible) return null;
 
   return (
@@ -13,7 +13,12 @@ export default function TargetWarning({ up3, year, isVisible }) {
         <div className="ml-3">
           <h3 className="text-sm font-medium text-orange-800">Peringatan: Target belum ditetapkan</h3>
           <div className="mt-2 text-sm text-orange-700">
-            <p>Target tahunan untuk UP3 {up3} tahun {year} belum ditetapkan oleh Admin. Harap hubungi Admin untuk mengatur target tahun ini.</p>
+            <p>
+              {monthName 
+                ? `Target untuk UP3 ${up3} bulan ${monthName} tahun ${year} belum ditetapkan oleh Admin. Harap hubungi Admin untuk mengatur target bulan ini.`
+                : `Target tahunan untuk UP3 ${up3} tahun ${year} belum ditetapkan oleh Admin. Harap hubungi Admin untuk mengatur target tahun ini.`
+              }
+            </p>
           </div>
         </div>
       </div>

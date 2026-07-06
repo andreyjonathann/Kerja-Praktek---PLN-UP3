@@ -132,8 +132,8 @@ class TargetTahunanController extends Controller
             // Ideally, TargetTahunan is seeded, so it SHOULD exist. 
             // If not, we just create it with empty defaults.
             $target = TargetTahunan::create([
-                'bidang' => title_case($bidangStr), // basic formatting
-                'indikator' => strtoupper($indikatorStr),
+                'bidang' => ucwords($bidangStr), // basic formatting
+                'indikator' => $indikatorStr,
                 'tahun' => $tahun,
                 'target_jan' => $validated['target_jan'] ?? null,
                 'target_feb' => $validated['target_feb'] ?? null,
