@@ -87,7 +87,7 @@ export default function TargetMttrPage() {
       };
 
       await api.post('/v1/mttr/targets', payload);
-      setMessage({ type: 'success', text: 'Target MTTR & Jumlah Penyulang berhasil disimpan!' });
+      setMessage({ type: 'success', text: 'Referensi Jumlah Penyulang berhasil disimpan!' });
     } catch (err) {
       console.error(err);
       setMessage({ type: 'error', text: 'Gagal menyimpan target.' });
@@ -99,8 +99,8 @@ export default function TargetMttrPage() {
   return (
     <div className="w-full mx-auto py-6 animate-fade-in">
       <PageHeader 
-        title="Kelola Target MTTR Siaga 1"
-        description="Penetapan batas minimum persentase (%) dan jumlah penyulang per UP3"
+        title="Data Referensi Penyulang MTTR"
+        description="Penetapan referensi jumlah penyulang per UP3"
         icon={Target}
         iconColor="#10B981"
         backTo="/jaringan/mttr-siaga1"
@@ -129,7 +129,7 @@ export default function TargetMttrPage() {
       <div className="bg-white border border-slate-200 shadow-sm rounded-none overflow-hidden mb-6 relative">
         <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
         <div className="bg-slate-50 border-b border-slate-200 p-4 flex justify-between items-center pl-6">
-            <h2 className="font-bold text-slate-700 text-sm">NILAI TARGET & REFERENSI PENYULANG</h2>
+            <h2 className="font-bold text-slate-700 text-sm">REFERENSI JUMLAH PENYULANG</h2>
             <button onClick={fetchTargets} disabled={loading} className="text-slate-400 hover:text-slate-600 transition-colors" title="Refresh">
               <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
             </button>
@@ -145,7 +145,6 @@ export default function TargetMttrPage() {
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-xs text-slate-500 uppercase">
                   <th className="px-6 py-3 font-bold border-r border-slate-200">UP3</th>
-                  <th className="px-6 py-3 font-bold text-center border-r border-slate-200">TARGET (%)</th>
                   <th className="px-6 py-3 font-bold text-center">JUMLAH PENYULANG</th>
                 </tr>
               </thead>
@@ -154,17 +153,6 @@ export default function TargetMttrPage() {
                   <tr key={up3} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
                     <td className="px-6 py-3 font-semibold text-slate-700 text-sm border-r border-slate-200 whitespace-nowrap">
                       {up3}
-                    </td>
-                    <td className="px-6 py-2 border-r border-slate-200 w-48">
-                      <input 
-                        type="number" 
-                        step="0.01"
-                        min="0"
-                        max="100"
-                        value={targets[up3]?.target || ''}
-                        onChange={(e) => handleTargetChange(up3, 'target', e.target.value)}
-                        className="w-full text-center bg-white border border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-slate-800 rounded-none px-3 py-1.5 font-bold text-sm"
-                      />
                     </td>
                     <td className="px-6 py-2 w-48">
                       <input 
@@ -195,7 +183,7 @@ export default function TargetMttrPage() {
              {saving ? (
                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
              ) : (
-                 <><Save size={20} /> SIMPAN SEMUA TARGET</>
+                 <><Save size={20} /> SIMPAN REFERENSI PENYULANG</>
              )}
          </button>
       </div>

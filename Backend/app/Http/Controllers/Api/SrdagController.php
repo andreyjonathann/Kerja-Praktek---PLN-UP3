@@ -88,6 +88,24 @@ class SrdagController extends Controller
         return response()->json(['success' => true, 'data' => $record, 'message' => 'Data SRDAG berhasil diupdate']);
     }
 
+    public function destroy(Request $request, $id)
+    {
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $record = SrdagRealisasi::findOrFail($id);
+
+        if ($user->role !== 'admin' && $user->up3 !== $record->up3) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized UP3'], 403);
+        }
+
+        $record->delete();
+
+        return response()->json(['success' => true, 'message' => 'Data SRDAG berhasil dihapus']);
+    }
+
     // ==========================================
     // TARGET SRDAG
     // ==========================================
@@ -139,158 +157,89 @@ class SrdagController extends Controller
             $up3Filter = $user->up3;
         }
 
-        // Aggregate All Data for trend & UP3
-        $realisasiRaw = SrdagRealisasi::where('tahun', $tahun)->get();
-        $targetRaw = SrdagTarget::where('tahun', $tahun)->get()->keyBy('up3');
+        // Query data — filtered by UP3 user yang login
+        $query = SrdagRealisasi::where('tahun', $tahun);
+        if ($up3Filter) {
+            $query->where('up3', $up3Filter);
+        }
+        $realisasiRaw = $query->get();
 
-        $up3List = [
-            'Bandengan', 'Bintaro', 'Bulungan', 'Cempaka Putih', 'Cengkareng', 'Ciputat', 'Ciracas',
-            'Jatinegara', 'Kebon Jeruk', 'Kramat Jati', 'Lenteng Agung', 'Marunda', 'Menteng',
-            'Pondok Gede', 'Pondok Kopi', 'Tanjung Priok'
-        ];
-
-        // Default Filter (All or Specific)
-        $filteredUp3List = ($up3Filter && $up3Filter !== 'Semua UP3') ? [$up3Filter] : $up3List;
+        // Target — ambil dari Master TargetTahunan (NKO)
+        $targetRecord = \App\Models\TargetTahunan::where('tahun', $tahun)
+            ->where('indikator', 'SRDAG')
+            ->first();
+        
+        // Karena target SRDAG konstan (flat), kita ambil dari target_jan atau bulan pertama yang diisi
+        $targetRate = 0;
+        if ($targetRecord) {
+            $rawTarget = (float)($targetRecord->target_jan ?? $targetRecord->target_feb ?? 0);
+            // Konversi dari bentuk persen (100) ke desimal (1.0) agar konsisten dengan hitungan sr_bulan_ini
+            $targetRate = $rawTarget / 100;
+        }
 
         // SUMMARY METRICS
         $summary = [
             'sr_bulan_ini' => 0,
             'sr_rata_ytd' => 0,
-            'target_rate' => 0,
+            'target_rate' => $targetRate,
             'persen_pencapaian' => 0,
             'status' => 'BELUM_TERCAPAI',
-            'has_target' => false
+            'has_target' => $targetRate > 0,
+            'total_gangguan_ytd' => 0
         ];
 
-        // Average YTD and Month Now for summary
-        $avgTarget = 0;
-        $totalYtdBerhasil = 0;
-        $totalYtdTotal = 0;
-        $ytdRates = [];
-
-        foreach ($filteredUp3List as $u) {
-            $tRate = isset($targetRaw[$u]) ? (float)$targetRaw[$u]->target_rate : 0;
-            $avgTarget += $tRate;
-
-            $uRecords = $realisasiRaw->where('up3', $u)->where('bulan', '<=', $bulanSekarang);
-            foreach ($uRecords as $r) {
-                $ytdRates[] = (float)$r->success_rate;
-                $totalYtdBerhasil += $r->jumlah_dispatch_berhasil;
-                $totalYtdTotal += $r->jumlah_total_gangguan;
-            }
-        }
-
-        $avgTarget = count($filteredUp3List) > 0 ? $avgTarget / count($filteredUp3List) : 0;
-        $summary['target_rate'] = $avgTarget;
-        $summary['has_target'] = $avgTarget > 0;
-        $summary['total_gangguan_ytd'] = $totalYtdTotal;
+        // YTD metrics
+        $ytdRecords = $realisasiRaw->where('bulan', '<=', $bulanSekarang);
+        $ytdRates = $ytdRecords->pluck('success_rate')->map(fn($v) => (float)$v)->toArray();
+        
+        $summary['total_gangguan_ytd'] = $ytdRecords->sum('jumlah_total_gangguan');
 
         if (count($ytdRates) > 0) {
             $summary['sr_rata_ytd'] = array_sum($ytdRates) / count($ytdRates);
         }
 
-        // Bulan Ini (Latest month data from all filtered UP3)
-        // Find the latest month that has data among filtered UP3
-        $latestMonth = 0;
-        foreach($realisasiRaw as $r) {
-            if(in_array($r->up3, $filteredUp3List) && $r->bulan > $latestMonth && $r->bulan <= $bulanSekarang) {
-                $latestMonth = $r->bulan;
-            }
-        }
-        
+        // Bulan Ini — cari bulan terakhir yang ada datanya
+        $latestMonth = $ytdRecords->max('bulan') ?: 0;
+
         if ($latestMonth > 0) {
-            $bulanIniRates = [];
-            foreach($realisasiRaw as $r) {
-                if(in_array($r->up3, $filteredUp3List) && $r->bulan === $latestMonth) {
-                    $bulanIniRates[] = (float)$r->success_rate;
-                }
-            }
+            $bulanIniRecords = $realisasiRaw->where('bulan', $latestMonth);
+            $bulanIniRates = $bulanIniRecords->pluck('success_rate')->map(fn($v) => (float)$v)->toArray();
             if (count($bulanIniRates) > 0) {
                 $summary['sr_bulan_ini'] = array_sum($bulanIniRates) / count($bulanIniRates);
             }
         }
 
-        if ($summary['target_rate'] > 0) {
-            $summary['persen_pencapaian'] = ($summary['sr_bulan_ini'] / $summary['target_rate']) * 100;
-            $summary['status'] = $summary['sr_bulan_ini'] >= $summary['target_rate'] ? 'TERCAPAI' : 'BELUM_TERCAPAI';
+        // % Pencapaian — MAXIMIZE, tanpa capping
+        if ($targetRate > 0) {
+            $summary['persen_pencapaian'] = ($summary['sr_bulan_ini'] / $targetRate) * 100;
+            $summary['status'] = $summary['sr_bulan_ini'] >= $targetRate ? 'TERCAPAI' : 'BELUM_TERCAPAI';
         }
 
         // TREND BULANAN
         $trend_bulanan = [];
         for ($i = 1; $i <= 12; $i++) {
-            if ($i > $bulanSekarang) break;
-
-            $rates = [];
-            $b_berhasil = 0;
-            $b_total = 0;
-            foreach ($filteredUp3List as $u) {
-                $r = $realisasiRaw->where('up3', $u)->where('bulan', $i)->first();
-                if ($r) {
-                    $rates[] = (float)$r->success_rate;
-                    $b_berhasil += $r->jumlah_dispatch_berhasil;
-                    $b_total += $r->jumlah_total_gangguan;
-                }
-            }
+            $monthData = $realisasiRaw->where('bulan', $i);
             
-            if (count($rates) > 0) {
-                $sr = array_sum($rates) / count($rates);
+            if ($monthData->count() > 0) {
+                $sr = $monthData->avg('success_rate');
                 $trend_bulanan[] = [
                     'bulan' => $i,
-                    'success_rate' => $sr,
-                    'target' => $avgTarget,
-                    'jumlah_berhasil' => $b_berhasil,
-                    'jumlah_total' => $b_total,
-                    'persen_pencapaian' => $avgTarget > 0 ? ($sr / $avgTarget) * 100 : 0
+                    'success_rate' => (float)$sr,
+                    'target' => $targetRate,
+                    'jumlah_berhasil' => $monthData->sum('jumlah_dispatch_berhasil'),
+                    'jumlah_total' => $monthData->sum('jumlah_total_gangguan'),
+                    'persen_pencapaian' => $targetRate > 0 ? ($sr / $targetRate) * 100 : 0
                 ];
             }
         }
-
-        // PER UP3
-        $per_up3 = [];
-        foreach ($up3List as $u) {
-            // If pic_jaringan, only show their own
-            if ($user && $user->role === 'pic_jaringan' && $user->up3 !== $u) continue;
-
-            $tRate = isset($targetRaw[$u]) ? (float)$targetRaw[$u]->target_rate : 0;
-            $uRecords = $realisasiRaw->where('up3', $u)->where('bulan', '<=', $bulanSekarang);
-            
-            $uRatesYTD = [];
-            $srBulanIni = 0;
-            
-            $uLatestMonth = 0;
-            foreach ($uRecords as $r) {
-                $uRatesYTD[] = (float)$r->success_rate;
-                if ($r->bulan > $uLatestMonth) {
-                    $uLatestMonth = $r->bulan;
-                    $srBulanIni = (float)$r->success_rate;
-                }
-            }
-
-            $srYtd = count($uRatesYTD) > 0 ? array_sum($uRatesYTD) / count($uRatesYTD) : 0;
-            $pencapaian = $tRate > 0 ? ($srBulanIni / $tRate) * 100 : 0;
-
-            $per_up3[] = [
-                'up3' => $u,
-                'sr_bulan_ini' => $srBulanIni,
-                'sr_rata_ytd' => $srYtd,
-                'target' => $tRate,
-                'persen_pencapaian' => $pencapaian,
-                'status' => $tRate > 0 && $srBulanIni >= $tRate ? 'TERCAPAI' : 'BELUM_TERCAPAI'
-            ];
-        }
-
-        // Sort per_up3 by sr_bulan_ini ascending (worst first)
-        usort($per_up3, function($a, $b) {
-            return $a['sr_bulan_ini'] <=> $b['sr_bulan_ini'];
-        });
 
         return response()->json([
             'success' => true,
             'data' => [
                 'summary' => $summary,
                 'trend_bulanan' => $trend_bulanan,
-                'per_up3' => $per_up3
             ]
         ]);
     }
 }
+

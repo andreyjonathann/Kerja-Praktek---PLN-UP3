@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { MONTHS } from '@/utils/constants';
-import { CheckCircle, AlertCircle, Activity, Save, ChevronDown } from 'lucide-react';
+import { CheckCircle, AlertCircle, Activity, Save, ChevronDown, ArrowLeft, AlertTriangle } from 'lucide-react';
 import TargetWarning from '@/components/ui/TargetWarning';
 
 export default function InputGangguanTmKurang5Page() {
@@ -29,11 +29,16 @@ export default function InputGangguanTmKurang5Page() {
     if (!selectedYear) return;
     const checkTarget = async () => {
       try {
-        const res = await api.get('/jaringan/dashboard', { params: { tahun: selectedYear } });
-        const summary = res.data.rekap_kinerja_ytd;
+        const res = await api.get('/jaringan/gangguan-tm/rekap', { params: { tahun: selectedYear } });
+        const summary = res.data;
         let isTargetSet = false;
-        if (summary) {
-           isTargetSet = Object.values(summary).some(t => t.target_tahunan > 0);
+        if (summary && summary['kurang_5_mnt']) {
+           if (selectedMonth) {
+             const targetBulan = summary['kurang_5_mnt'].target_bulanan[selectedMonth];
+             isTargetSet = targetBulan !== null && targetBulan !== undefined;
+           } else {
+             isTargetSet = summary['kurang_5_mnt'].target_tahunan > 0;
+           }
         }
         setHasTarget(isTargetSet);
       } catch (err) {
@@ -50,7 +55,7 @@ export default function InputGangguanTmKurang5Page() {
     };
     checkTarget();
     fetchData();
-  }, [selectedYear]);
+  }, [selectedYear, selectedMonth]);
 
   const isDuplicate = React.useMemo(() => {
     if (!dashboardData || !selectedMonth) return false;
@@ -73,6 +78,12 @@ export default function InputGangguanTmKurang5Page() {
   const onSubmit = async (data) => {
     setLoading(true);
     setSuccess(false);
+    if (isDuplicate) {
+      alert('Data sudah ada! Tidak bisa mengedit dari halaman Tambah.');
+      setLoading(false);
+      if(typeof setSaving !== 'undefined') setSaving(false);
+      return;
+    }
     try {
       await api.post('/jaringan/gangguan-tm', {
           bulan: parseInt(data.bulan),
@@ -106,180 +117,175 @@ export default function InputGangguanTmKurang5Page() {
   }
 
   return (
-    <div className="bg-slate-50 min-h-screen w-full flex flex-col gap-6 animate-fade-in relative">
-      
-      <div className="sticky top-0 z-50 bg-white border-b border-slate-200 py-4 px-4 md:px-8 shadow-sm">
-        <div className="w-full flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-             <div className="w-12 h-12 rounded-xl bg-blue-50 flex flex-shrink-0 items-center justify-center text-blue-600">
-               <Activity size={26} />
-             </div>
-             <div>
-               <h1 className="text-xl md:text-2xl font-bold text-slate-800">
-                 Tambah Gangguan TM &lt; 5 Menit
-               </h1>
-             </div>
-          </div>
-          <div className="flex items-center gap-3">
-             <div style={{
-               display: 'inline-flex',
-               background: 'rgba(100, 116, 139, 0.05)',
-               padding: 4,
-               borderRadius: 12,
-               border: '1px solid rgba(100, 116, 139, 0.15)',
-               cursor: 'pointer'
-             }}>
-               <button 
-                  type="button" 
-                  onClick={() => navigate(-1)}
-                  style={{
-                    padding: '6px 16px',
-                    borderRadius: 9,
-                    fontSize: '0.85rem',
-                    fontWeight: 700,
-                    transition: 'all 0.2s ease',
-                    border: 'none',
-                    cursor: 'pointer',
-                    background: 'transparent',
-                    color: '#64748b',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px'
-                  }}
-                  onMouseEnter={e => {
-                       e.currentTarget.style.background = '#f1f5f9';
-                       e.currentTarget.style.color = '#334155';
-                  }}
-                  onMouseLeave={e => {
-                       e.currentTarget.style.background = 'transparent';
-                       e.currentTarget.style.color = '#64748b';
-                  }}
-               >
-                  Batal
-               </button>
-             </div>
-             <div style={{
-               display: 'inline-flex',
-               background: '#00A2B9',
-               padding: 4,
-               borderRadius: 12,
-               border: 'none',
-               cursor: (loading || isDuplicate) ? 'not-allowed' : 'pointer',
-               opacity: (loading || isDuplicate) ? 0.6 : 1
-             }}>
-               <button 
-                  type="button"
-                  onClick={handleSubmit(onSubmit)}
-                  disabled={loading || isDuplicate}
-                  style={{
-                    padding: '6px 16px',
-                    borderRadius: 9,
-                    fontSize: '0.85rem',
-                    fontWeight: 700,
-                    transition: 'all 0.2s ease',
-                    border: 'none',
-                    cursor: (loading || isDuplicate) ? 'not-allowed' : 'pointer',
-                    background: (loading || isDuplicate) ? '#93c5fd' : '#00A2B9',
-                    color: '#ffffff',
-                    boxShadow: (loading || isDuplicate) ? 'none' : '0 4px 12px rgba(0, 162, 185, 0.3)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px'
-                  }}
-                  onMouseEnter={e => {
-                     if(!loading && !isDuplicate) {
-                       e.currentTarget.style.background = '#035B71'; e.currentTarget.style.color = '#ffffff';
-                     }
-                  }}
-                  onMouseLeave={e => {
-                     if(!loading && !isDuplicate) {
-                       e.currentTarget.style.background = '#00A2B9'; e.currentTarget.style.color = '#ffffff';
-                     }
-                  }}
-               >
-                  {loading ? <div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" /> : <Save size={16} />}
-                  Simpan Data
-               </button>
-             </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="w-full px-[32px] py-4 md:py-8">
+    <div className="min-h-screen bg-slate-50 flex flex-col animate-fade-in py-12">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 640, margin: '0 auto', width: '100%', padding: '0 20px' }}>
         
-        <div className="flex flex-col gap-6 pt-[28px] mb-[36px]">
-          
-          {success && (
-            <div className="mb-6 px-5 py-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-3 shadow-sm animate-fade-in">
-                <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0 text-emerald-600">
-                    <CheckCircle size={20} />
-                </div>
-                <div>
-                    <h4 className="text-sm font-bold text-emerald-900">Data Berhasil Disimpan!</h4>
-                    <p className="text-xs text-emerald-700 font-medium">Realisasi bulan ini telah direkam dengan sukses.</p>
-                </div>
-            </div>
-          )}
+        {/* HEADER */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            title="Kembali"
+            style={{
+              width: 36, height: 36, borderRadius: 10,
+              border: '1px solid var(--border, #e2e8f0)',
+              background: 'var(--bg-card, #ffffff)', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'var(--text-secondary, #64748b)', flexShrink: 0,
+            }}
+          >
+            <ArrowLeft size={16} />
+          </button>
 
-          <div className="mb-6">
-            <TargetWarning up3={user?.up3 || 'Semua UP3'} year={selectedYear} isVisible={!hasTarget} />
+          <div style={{
+            width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+            background: `linear-gradient(135deg, #3b82f622, #3b82f60a)`,
+            border: `1px solid #3b82f630`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Activity size={17} style={{ color: '#3b82f6' }} />
           </div>
 
-          <div className="mb-8 py-6">
-            <h3 className="text-xs font-bold text-slate-500 mb-3 uppercase tracking-wider mt-6">Pilih Periode</h3>
-            <div className="flex gap-4">
-                <div className="relative w-1/2">
-                    <select 
-                        {...register('bulan', { required: true })} 
-                        className={`w-full px-4 py-2 pr-12 bg-white border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-bold cursor-pointer appearance-none shadow-sm ${!selectedMonth ? 'text-gray-400' : 'text-slate-700'}`}
-                    >
-                        <option value="" className="text-gray-400">Bulan</option>
-                        {MONTHS.map(m => (
-                        <option key={m.value} value={m.value}>{m.label}</option>
-                        ))}
-                    </select>
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                        <ChevronDown size={20} />
-                    </div>
-                </div>
-
-                <div className="relative w-1/2">
-                    <input 
-                        type="number"
-                        {...register('tahun', { required: true })} 
-                        placeholder="Tahun"
-                        className="w-full border border-slate-200 rounded-xl px-4 py-2 text-sm text-gray-400 font-normal shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500"
-                    />
-                </div>
-              </div>
-              {isDuplicate && (
-                <p className="text-red-500 text-sm mt-3 font-semibold">
-                  Data untuk periode ini sudah diinput.
-                </p>
-              )}
-            </div>
-
-            <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden mb-8">
-              <div className="flex flex-col md:flex-row md:items-center justify-between py-[20px] px-4 border-b border-[#f3f4f6] gap-4 hover:bg-slate-100/50 transition">
-                 <div className="flex items-center gap-4 flex-1">
-                   <div>
-                     <label className="font-bold text-slate-600 text-[13px]">Gangguan &lt; 5 Menit (Kali)</label>
-                   </div>
-                 </div>
-                 <div className="relative flex-1 flex justify-end">
-                   <input 
-                      type="number" min="0" 
-                      {...register('ggn_tm_kurang_5_mnt')} 
-                      readOnly={existingData.kurang}
-                      className={`w-full max-w-xs border ${errors.ggn_tm_kurang_5_mnt ? 'border-red-400' : 'border-gray-300'} rounded-md px-3 py-2 shadow-sm text-right outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 ${existingData.kurang ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'bg-white'}`}
-                      placeholder="Contoh: 1"
-                   />
-                 </div>
-              </div>
-
-            </div>
-
+          <div>
+            <h1 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-primary, #1e293b)' }}>
+              Tambah Gangguan TM &lt; 5 Menit
+            </h1>
+            <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-muted, #94a3b8)', fontWeight: 500 }}>
+              {selectedMonth ? MONTHS.find(m => String(m.value) === String(selectedMonth))?.label : ''} {selectedYear}
+            </p>
+          </div>
         </div>
+
+        {/* NOTIFICATION */}
+        {success && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10,
+            padding: '11px 16px', borderRadius: 10,
+            background: '#f0fdf4',
+            border: `1px solid #bbf7d0`,
+            color: '#16a34a',
+            fontWeight: 600, fontSize: '0.86rem',
+          }}>
+            <CheckCircle size={16} />
+            Data Berhasil Disimpan!
+          </div>
+        )}
+
+        <TargetWarning 
+            up3={user?.up3 || 'UP3 Kebon Jeruk'} 
+            year={selectedYear} 
+            monthName={selectedMonth ? MONTHS.find(m => m.value == selectedMonth)?.label : null} 
+            isVisible={!hasTarget} 
+        />
+
+                {isDuplicate && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10,
+            padding: '11px 16px', borderRadius: 10,
+            background: '#fef2f2', border: `1px solid #fecaca`,
+            color: '#dc2626', fontWeight: 600, fontSize: '0.86rem',
+            marginBottom: 20
+          }}>
+            <AlertTriangle size={16} />
+            Data untuk periode ini sudah ada. Anda tidak dapat mengubah data melalui halaman ini. Silakan gunakan fitur Edit.
+          </div>
+        )}
+
+        <form style={{ display: 'flex', flexDirection: 'column', gap: 14 }} onSubmit={handleSubmit(onSubmit)}>
+          
+          {/* CARD */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
+                  <Activity size={16} />
+                </div>
+                <h3 className="font-bold text-slate-800 text-sm tracking-wide">RINCIAN GANGGUAN</h3>
+              </div>
+            </div>
+            
+            <div className="p-5 flex flex-col gap-4">
+              {/* PILIH PERIODE */}
+              <div className="flex gap-4">
+                <div className="w-1/2">
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#64748b', marginBottom: 5 }}>Bulan</label>
+                  <select
+                    {...register('bulan', { required: true })} 
+                    style={{
+                      width: '100%', padding: '10px 14px', borderRadius: 10,
+                      border: '1px solid #e2e8f0', background: '#f8fafc',
+                      fontSize: '0.9rem', color: '#334155', outline: 'none',
+                    }}
+                  >
+                    <option value="">Pilih Bulan</option>
+                    {MONTHS.map(m => (
+                      <option key={m.value} value={m.value}>{m.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="w-1/2">
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#64748b', marginBottom: 5 }}>Tahun</label>
+                  <input 
+                    readOnly={isDuplicate}
+                    type="number"
+                    {...register('tahun', { required: true })} 
+                    placeholder="Tahun"
+                    style={{
+                      width: '100%', padding: '10px 14px', borderRadius: 10,
+                      border: '1px solid #e2e8f0', background: '#f8fafc',
+                      fontSize: '0.9rem', color: '#334155', outline: 'none',
+                    }}
+                  />
+                </div>
+              </div>
+
+              {(errors.bulan || errors.tahun) && (
+                <div style={{ fontSize: '0.8rem', color: '#ef4444', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <AlertCircle size={14} /> Wajib isi periode
+                </div>
+              )}
+              
+
+              <div style={{ borderTop: '1px dashed #e2e8f0', margin: '8px 0' }} />
+
+              {/* Input Row: Gangguan */}
+              <div className="flex items-center justify-between p-3 bg-white border border-[#f3f4f6] rounded-xl gap-4 hover:bg-slate-50 transition">
+                 <div className="flex items-center gap-4 flex-1">
+                   <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
+                     <Activity size={20} />
+                   </div>
+                   <label className="font-bold text-slate-800 text-[14px]">Gangguan &lt; 5 Menit (Kali)</label>
+                 </div>
+                 <input 
+                    readOnly={isDuplicate}
+                    type="number" min="0" 
+                    {...register('ggn_tm_kurang_5_mnt')} 
+                    readOnly={existingData.kurang}
+                    className={`w-[140px] border ${errors.ggn_tm_kurang_5_mnt ? 'border-red-400' : 'border-gray-300'} rounded-md px-3 py-1.5 text-[13px] shadow-sm text-right outline-none focus:border-blue-500 ${existingData.kurang ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'bg-white'}`}
+                    placeholder="Contoh: 1"
+                 />
+              </div>
+
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading || existingData.kurang}
+            style={{
+              width: '100%', padding: '14px', borderRadius: 12,
+              background: (loading || existingData.kurang) ? '#93c5fd' : '#3b82f6', color: '#fff',
+              fontSize: '0.95rem', fontWeight: 700, border: 'none', cursor: (loading || existingData.kurang) ? 'not-allowed' : 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              boxShadow: (loading || existingData.kurang) ? 'none' : '0 4px 14px rgba(59, 130, 246, 0.3)',
+              transition: 'all 0.2s',
+            }}
+          >
+            {loading ? <div style={{width: 20, height: 20, border: '2px solid rgba(255,255,255,0.5)', borderTop: '2px solid white', borderRadius: '50%', animation: 'spin 1s linear infinite'}} /> : <Save size={18} />}
+            {existingData.kurang ? 'Data Sudah Ada' : 'Simpan Data'}
+          </button>
+
+        </form>
       </div>
     </div>
   );

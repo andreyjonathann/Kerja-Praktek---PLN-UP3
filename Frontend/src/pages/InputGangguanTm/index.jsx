@@ -28,11 +28,11 @@ export default function InputGangguanTmPage() {
     if (!selectedYear) return;
     const checkTarget = async () => {
       try {
-        const res = await api.get('/jaringan/dashboard', { params: { tahun: selectedYear } });
-        const summary = res.data.rekap_kinerja_ytd;
+        const res = await api.get('/jaringan/gangguan-tm/rekap', { params: { tahun: selectedYear } });
+        const summary = res.data;
         let isTargetSet = false;
-        if (summary) {
-           isTargetSet = Object.values(summary).some(t => t.target_tahunan > 0);
+        if (summary && summary['kurang_5_mnt'] && summary['lebih_5_mnt']) {
+           isTargetSet = summary['kurang_5_mnt'].target_tahunan > 0 || summary['lebih_5_mnt'].target_tahunan > 0;
         }
         setHasTarget(isTargetSet);
       } catch (err) {
@@ -242,7 +242,7 @@ export default function InputGangguanTmPage() {
           )}
 
           <div className="mb-6">
-            <TargetWarning up3={user?.up3 || 'Semua UP3'} year={selectedYear} isVisible={!hasTarget} />
+            <TargetWarning up3={user?.up3 || 'UP3 Kebon Jeruk'} year={selectedYear} isVisible={!hasTarget} />
           </div>
 
           <div className="mb-8 py-6">

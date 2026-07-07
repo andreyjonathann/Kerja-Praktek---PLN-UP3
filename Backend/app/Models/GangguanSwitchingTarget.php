@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class GangguanSwitchingTarget extends Model
 {
+    use HasFactory;
+
     protected $table = 'gangguan_switching_targets';
 
     protected $fillable = [

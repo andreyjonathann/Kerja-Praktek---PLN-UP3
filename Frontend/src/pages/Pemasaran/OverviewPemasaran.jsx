@@ -13,7 +13,7 @@ import {
 import { useFilter } from '@/context/FilterContext'
 import { useAuth } from '@/context/AuthContext'
 import { MONTHS } from '@/utils/constants'
-import { MONTHS_SHORT, formatNumber } from '@/utils/formatters'
+import { MONTHS_ID, formatNumber } from '@/utils/formatters'
 import { exportToExcel } from '@/utils/exportExcel'
 
 // ─── Warna tema Pemasaran ─────────────────────────────────────────────────────
@@ -38,7 +38,7 @@ function genMonthly(year) {
     const pendapatan = Math.round(331000 * g)             // Juta Rp
     const pendTarget = Math.round(pendapatan * 1.02)
     return {
-      bulan: m, label: MONTHS_SHORT[m],
+      bulan: m, label: MONTHS_ID[m],
       pelanggan, pelTarget,
       daya, dayaTarget,
       penjualan, penjTarget,

@@ -11,9 +11,10 @@ import DataTable from '@/components/ui/DataTable'
 import TargetWarning from '@/components/ui/TargetWarning'
 import PageHeader from '@/components/ui/PageHeader'
 import ActionButton from '@/components/ui/ActionButton'
+import SrdagDetailModal from '@/components/ui/SrdagDetailModal'
 import { useFilter } from '@/context/FilterContext'
 import { useAuth } from '@/context/AuthContext'
-import { MONTHS_SHORT } from '@/utils/formatters'
+import { MONTHS_ID } from '@/utils/formatters'
 import api from '@/services/api'
 
 export default function SrdagPage() {
@@ -27,6 +28,10 @@ export default function SrdagPage() {
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+
+  // Modal states
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [selectedMonthData, setSelectedMonthData] = useState(null)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -51,15 +56,22 @@ export default function SrdagPage() {
     fetchData()
   }, [fetchData])
 
-  const { summary, trend_bulanan, per_up3 } = data
+  const { summary, trend_bulanan } = data
 
-  const chartData = trend_bulanan?.map(t => ({
-    name: MONTHS_SHORT[t.bulan],
-    'Realisasi (%)': t.success_rate * 100,
-    'Target (%)': t.target * 100,
-    'Jumlah Berhasil': t.jumlah_berhasil,
-    'Jumlah Total': t.jumlah_total
-  })) || [];
+  const chartData = Array.from({ length: 12 }, (_, i) => {
+    const bulanNum = i + 1;
+    const match = trend_bulanan?.find(t => t.bulan === bulanNum);
+    const baseTarget = summary?.target_rate != null ? summary.target_rate * 100 : 0;
+    const targetValue = match ? (match.target * 100) : baseTarget;
+    
+    return {
+      name: MONTHS_ID[bulanNum],
+      'Realisasi (%)': match ? match.success_rate * 100 : null,
+      'Target (%)': targetValue,
+      'Jumlah Berhasil': match ? match.jumlah_berhasil : '-',
+      'Jumlah Total': match ? match.jumlah_total : '-'
+    };
+  });
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
@@ -67,41 +79,80 @@ export default function SrdagPage() {
       return (
         <div className="bg-white p-3 rounded-lg shadow-lg border border-slate-100 text-sm">
           <p className="font-bold text-slate-800 mb-2">{label}</p>
-          <p className="text-slate-600 mb-1">Target: <span className="font-semibold text-rose-500">{pointData['Target (%)']?.toFixed(2)}%</span></p>
-          <p className="text-slate-600 mb-1">Realisasi: <span className="font-bold text-emerald-600">{pointData['Realisasi (%)']?.toFixed(2)}%</span></p>
-          <p className="text-xs text-slate-500 mt-2 border-t pt-2">
-            Berhasil Di-dispatch: {pointData['Jumlah Berhasil']} <br/>
-            Total Gangguan: {pointData['Jumlah Total']}
-          </p>
+          {pointData['Target (%)'] != null && (
+            <p className="text-slate-600 mb-1">Target: <span className="font-semibold text-rose-500">{pointData['Target (%)']?.toFixed(2)}%</span></p>
+          )}
+          {pointData['Realisasi (%)'] != null ? (
+            <>
+              <p className="text-slate-600 mb-1">Realisasi: <span className="font-bold text-emerald-600">{pointData['Realisasi (%)']?.toFixed(2)}%</span></p>
+              <p className="text-xs text-slate-500 mt-2 border-t pt-2">
+                Berhasil Di-dispatch: {pointData['Jumlah Berhasil']} <br/>
+                Total Gangguan: {pointData['Jumlah Total']}
+              </p>
+            </>
+          ) : (
+            <p className="text-slate-500 italic mt-1">Belum ada data realisasi</p>
+          )}
         </div>
       );
     }
     return null;
   };
 
+  const tableDataBulan = Array.from({ length: 12 }, (_, i) => {
+    const bulanNum = i + 1;
+    const match = trend_bulanan?.find(t => t.bulan === bulanNum);
+    
+    if (match) {
+      const isAman = (match.success_rate * 100) >= (match.target * 100);
+      return {
+        bulan: MONTHS_ID[bulanNum],
+        sr_realisasi: match.success_rate,
+        target: match.target,
+        jumlah_berhasil: match.jumlah_berhasil,
+        jumlah_total: match.jumlah_total,
+        status: isAman ? 'TERCAPAI' : 'BELUM TERCAPAI'
+      };
+    }
+    
+    return {
+      bulan: MONTHS_ID[bulanNum],
+      sr_realisasi: null,
+      target: null,
+      jumlah_berhasil: null,
+      jumlah_total: null,
+      status: '-'
+    };
+  });
+
   const columns = [
-    { header: 'UP3', accessor: 'up3' },
+    { label: 'Bulan', key: 'bulan', render: (v) => <span className="font-semibold">{v}</span> },
     { 
-      header: 'SR Bulan Ini', 
-      accessor: (row) => <span className="font-semibold">{(row.sr_bulan_ini * 100).toFixed(2)}%</span> 
+      label: 'Dispatch Berhasil', 
+      key: 'jumlah_berhasil',
+      render: (v, row) => row.jumlah_berhasil != null ? <span className="text-slate-500">{row.jumlah_berhasil} Kali</span> : '—'
     },
     { 
-      header: 'Rata-rata YTD', 
-      accessor: (row) => `${(row.sr_rata_ytd * 100).toFixed(2)}%` 
+      label: 'Total Gangguan', 
+      key: 'jumlah_total',
+      render: (v, row) => row.jumlah_total != null ? <span className="text-slate-500">{row.jumlah_total} Kali</span> : '—'
     },
     { 
-      header: 'Target', 
-      accessor: (row) => <span className="text-rose-500 font-semibold">{(row.target * 100).toFixed(2)}%</span> 
+      label: 'Success Rate', 
+      key: 'sr_realisasi',
+      render: (v, row) => row.sr_realisasi != null ? <span className="font-bold text-emerald-600">{(row.sr_realisasi * 100).toFixed(2)}%</span> : '—'
     },
     { 
-      header: 'Pencapaian', 
-      accessor: (row) => `${row.persen_pencapaian.toFixed(1)}%` 
+      label: 'Target', 
+      key: 'target',
+      render: (v, row) => row.target != null ? <span className="text-rose-500 font-semibold">{(row.target * 100).toFixed(2)}%</span> : '—'
     },
     { 
-      header: 'Status', 
-      accessor: (row) => (
-        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${row.status === 'TERCAPAI' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
-          {row.status.replace('_', ' ')}
+      label: 'Status', 
+      key: 'status',
+      render: (v, row) => (
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${row.status === 'TERCAPAI' ? 'bg-emerald-100 text-emerald-700' : (row.status === '-' ? 'bg-slate-100 text-slate-500' : 'bg-rose-100 text-rose-700')}`}>
+          {row.status}
         </span>
       )
     }
@@ -171,8 +222,8 @@ export default function SrdagPage() {
         {(user?.role === 'pic_jaringan' || user?.role === 'admin') && (
           <ActionButton 
             icon={Plus} 
-            label="Input SRDAG" 
-            onClick={() => navigate('/jaringan/input-srdag')}
+            label="Input Realisasi" 
+            onClick={() => navigate('/jaringan/srdag/input')}
             colorHex="#00A2B9"
             colorRgb="0, 162, 185"
           />
@@ -185,27 +236,51 @@ export default function SrdagPage() {
         loading={loading}
         error={error}
       >
-        <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
-            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--text-muted)' }} dy={10} />
-            <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--text-muted)' }} dx={-10} domain={[0, 100]} />
-            <Tooltip content={<CustomTooltip />} />
-            <Legend wrapperStyle={{ paddingTop: '20px' }} iconType="circle" />
-            <Area type="monotone" dataKey="Target (%)" stroke="none" fill="rgba(244, 63, 94, 0.1)" activeDot={false} />
-            <Line type="monotone" dataKey="Target (%)" stroke="#F43F5E" strokeWidth={2} strokeDasharray="5 5" dot={false} />
-            <Line type="monotone" dataKey="Realisasi (%)" stroke="#10B981" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
-          </ComposedChart>
-        </ResponsiveContainer>
+        <div className="h-[350px] mt-4">
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--text-muted)' }} dy={10} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--text-muted)' }} dx={-10} domain={[0, 100]} />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend wrapperStyle={{ paddingTop: '20px' }} iconType="circle" />
+              <Area type="monotone" dataKey="Target (%)" stroke="none" fill="rgba(244, 63, 94, 0.1)" activeDot={false} legendType="none" />
+              <Line type="monotone" dataKey="Target (%)" stroke="#F43F5E" strokeWidth={2} strokeDasharray="5 5" dot={false} />
+              <Line type="monotone" dataKey="Realisasi (%)" stroke="#10B981" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
       </ChartWrapper>
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mt-6">
-        <div className="p-5 border-b border-slate-200">
-          <h2 className="text-lg font-bold text-slate-800">Detail Pencapaian Per UP3</h2>
+        <div className="p-5 border-b border-slate-200 flex justify-center items-center bg-slate-50/50">
+          <h2 className="text-lg font-bold text-slate-800">Perbandingan Antar Bulan</h2>
         </div>
-        <DataTable columns={columns} data={per_up3 || []} loading={loading} />
+        <DataTable 
+          columns={columns} 
+          data={tableDataBulan} 
+          loading={loading} 
+          paginated={false} 
+          searchable={false} 
+          onRowClick={(row) => {
+            setSelectedMonthData({
+              bulan: MONTHS_ID.indexOf(row.bulan),
+              label: row.bulan
+            });
+            setIsModalOpen(true);
+          }}
+          rowClassName="cursor-pointer hover:bg-slate-50 transition-colors"
+        />
       </div>
 
+      <SrdagDetailModal 
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        rowData={selectedMonthData}
+        tahun={filters.year}
+        up3={filters.up3}
+        onSuccess={fetchData}
+      />
     </div>
   )
 }

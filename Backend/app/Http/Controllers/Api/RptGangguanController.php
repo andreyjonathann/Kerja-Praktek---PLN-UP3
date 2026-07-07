@@ -6,19 +6,12 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\RptGangguan;
 use App\Models\RptTarget;
+use App\Models\TargetTahunan;
 use Illuminate\Support\Facades\DB;
 
 class RptGangguanController extends Controller
 {
-    private function getTargetMenit($up3, $tahun) {
-        $target = RptTarget::where('tahun', $tahun)
-            ->where(function($q) use ($up3) {
-                $q->where('up3', $up3)->orWhere('up3', 'ALL');
-            })
-            ->first();
-            
-        return $target ? (float) $target->target_menit : 30.00;
-    }
+    // getTargetMenit dihapus karena target kini per bulan dari TargetTahunan
 
     public function index(Request $request)
     {
@@ -92,6 +85,24 @@ class RptGangguanController extends Controller
         return response()->json(['success' => true, 'data' => $record, 'message' => 'Data RPT berhasil diupdate']);
     }
 
+    public function destroy($id)
+    {
+        $user = auth()->user();
+        if ($user->role !== 'pic_jaringan' && $user->role !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        }
+
+        $record = RptGangguan::findOrFail($id);
+        
+        if ($user->role === 'pic_jaringan' && $record->up3 !== $user->up3) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized UP3.'], 403);
+        }
+
+        $record->delete();
+
+        return response()->json(['success' => true, 'message' => 'Data RPT berhasil dihapus']);
+    }
+
     public function dashboard(Request $request)
     {
         $tahun = $request->tahun ?: date('Y');
@@ -109,12 +120,22 @@ class RptGangguanController extends Controller
         }
         $allData = $query->get();
 
-        $targetMenit = $this->getTargetMenit($up3 ?: 'ALL', $tahun);
-        
+        $targetMaster = TargetTahunan::where('tahun', $tahun)
+            ->where('indikator', 'RPT G (Tanpa CT)')
+            ->first();
+            
+        $bulanMap = [
+            1 => 'jan', 2 => 'feb', 3 => 'mar', 4 => 'apr', 
+            5 => 'mei', 6 => 'jun', 7 => 'jul', 8 => 'agu', 
+            9 => 'sep', 10 => 'okt', 11 => 'nov', 12 => 'des'
+        ];
         // Find latest month
         $latestMonth = $allData->max('bulan') ?: 1;
         $bulanIniData = $allData->where('bulan', $latestMonth);
         
+        $valLatest = $targetMaster ? $targetMaster->{'target_'.$bulanMap[$latestMonth]} : null;
+        $targetMenit = $valLatest !== null ? (float) $valLatest : null;
+
         $rptBulanIni = 0;
         if ($bulanIniData->sum('jumlah_gangguan') > 0) {
             $rptBulanIni = $bulanIniData->sum('total_durasi_menit') / $bulanIniData->sum('jumlah_gangguan');
@@ -134,8 +155,15 @@ class RptGangguanController extends Controller
             }
         }
 
-        $persenPencapaian = 2 - ($rptBulanIni / $targetMenit);
-        $status = $rptBulanIni <= $targetMenit ? 'AMAN' : 'MELEWATI TARGET';
+        $persenPencapaian = null;
+        $status = '-';
+        if ($targetMenit !== null && $targetMenit > 0) {
+            $persenPencapaian = 2 - ($rptBulanIni / $targetMenit);
+            $status = $rptBulanIni <= $targetMenit ? 'AMAN' : 'MELEWATI TARGET';
+        } elseif ($targetMenit !== null && $targetMenit == 0) {
+            $persenPencapaian = 0;
+            $status = $rptBulanIni <= 0 ? 'AMAN' : 'MELEWATI TARGET';
+        }
 
         // Trend Bulanan
         $trendBulanan = [];
@@ -145,67 +173,31 @@ class RptGangguanController extends Controller
                 $jmlGangguan = $monthData->sum('jumlah_gangguan');
                 $totDurasi = $monthData->sum('total_durasi_menit');
                 $rptMonth = $totDurasi / $jmlGangguan;
+                
+                $valMonth = $targetMaster ? $targetMaster->{'target_'.$bulanMap[$m]} : null;
+                $tgtMonth = $valMonth !== null ? (float) $valMonth : null;
+
+                $persenBulanIni = null;
+                if ($tgtMonth !== null && $tgtMonth > 0) {
+                    $persenBulanIni = round((2 - ($rptMonth / $tgtMonth)) * 100, 2);
+                } elseif ($tgtMonth !== null && $tgtMonth == 0) {
+                    $persenBulanIni = 0;
+                }
+
                 $trendBulanan[] = [
+                    'id' => $monthData->count() == 1 ? $monthData->first()->id : null,
                     'bulan' => $m,
                     'rpt_realisasi' => round($rptMonth, 2),
                     'jumlah_gangguan' => $jmlGangguan,
                     'total_durasi' => round($totDurasi, 2),
-                    'target' => $targetMenit,
-                    'persen_pencapaian' => round((2 - ($rptMonth / $targetMenit)) * 100, 2)
+                    'target' => $tgtMonth,
+                    'persen_pencapaian' => $persenBulanIni
                 ];
             }
         }
 
-        // Per UP3 Comparison
-        $perUp3 = [];
-        $up3List = RptGangguan::where('tahun', $tahun)->select('up3')->distinct()->pluck('up3');
-        if ($up3 && $user->role === 'pic_jaringan') {
-            $up3List = collect([$up3]);
-        }
-
-        foreach ($up3List as $u) {
-            $uData = RptGangguan::where('tahun', $tahun)->where('up3', $u)->get();
-            $uLatestMonth = $uData->max('bulan');
-            $uBulanIni = $uData->where('bulan', $uLatestMonth)->first();
-            
-            $uRptBulanIni = $uBulanIni ? $uBulanIni->rata_rata_rpt : 0;
-            $uRptRataYtd = $uData->avg('rata_rata_rpt') ?: 0;
-            
-            $uTarget = $this->getTargetMenit($u, $tahun);
-            $uPersen = 2 - ($uRptBulanIni / $uTarget);
-            
-            // YoY
-            $lastYearData = RptGangguan::where('tahun', $tahun - 1)->where('up3', $u)->where('bulan', $uLatestMonth)->first();
-            $uRptTahunLalu = $lastYearData ? $lastYearData->rata_rata_rpt : 0;
-            
-            $trendYoy = 'SAMA';
-            if ($uRptTahunLalu > 0) {
-                if ($uRptBulanIni > $uRptTahunLalu) $trendYoy = 'NAIK';
-                elseif ($uRptBulanIni < $uRptTahunLalu) $trendYoy = 'TURUN';
-            }
-
-            $perUp3[] = [
-                'up3' => $u,
-                'rpt_bulan_ini' => round($uRptBulanIni, 2),
-                'rpt_rata_ytd' => round($uRptRataYtd, 2),
-                'target' => $uTarget,
-                'persen_pencapaian' => round($uPersen * 100, 2),
-                'rpt_tahun_lalu' => round($uRptTahunLalu, 2),
-                'trend_yoy' => $trendYoy,
-                'status' => $uRptBulanIni <= $uTarget ? 'AMAN' : 'MELEWATI TARGET'
-            ];
-        }
-        
-        // Sort perUp3 terburuk (tertinggi RPT) di atas
-        usort($perUp3, function($a, $b) {
-            return $b['rpt_bulan_ini'] <=> $a['rpt_bulan_ini'];
-        });
-
         // Add Target Existence Flag for Warning
-        $hasTarget = RptTarget::where('tahun', $tahun)
-            ->where(function($q) use ($up3) {
-                $q->where('up3', $up3 ?: 'ALL')->orWhere('up3', 'ALL');
-            })->exists();
+        $hasTarget = $targetMaster !== null;
 
         return response()->json([
             'success' => true,
@@ -221,7 +213,6 @@ class RptGangguanController extends Controller
                     'has_target' => $hasTarget
                 ],
                 'trend_bulanan' => $trendBulanan,
-                'per_up3' => $perUp3
             ]
         ]);
     }

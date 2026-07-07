@@ -7,6 +7,7 @@ import {
   CloudLightning, RadioTower, Factory, ChevronDown, ChevronRight,
   Save, ArrowLeft, CheckCircle, AlertCircle, Loader2, Trash2
 } from 'lucide-react';
+import Swal from 'sweetalert2';
 
 function FieldInput({ name, label, register, errors }) {
   return (
@@ -106,7 +107,18 @@ export default function EditEnsPage() {
   };
 
   const handleDelete = async () => {
-    if (window.confirm('Yakin ingin menghapus data ENS bulan ini?')) {
+    const result = await Swal.fire({
+      title: 'Konfirmasi',
+      text: 'Yakin ingin menghapus data ENS bulan ini?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Ya, Hapus',
+      cancelButtonText: 'Batal'
+    });
+
+    if (result.isConfirmed) {
       setDeleting(true);
       setStatus(null);
       try {
