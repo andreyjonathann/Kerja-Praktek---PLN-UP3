@@ -42,6 +42,7 @@ Route::middleware('api')->group(function () {
         Route::delete('/gangguan-trafo/{id}', [\App\Http\Controllers\Api\GangguanSwitchingController::class, 'destroyTrafo']);
 
         Route::get('/gangguan-switching-trafo', [\App\Http\Controllers\Api\GangguanSwitchingController::class, 'indexGabungan']);
+        Route::post('/gangguan-switching/detail', [\App\Http\Controllers\Api\GangguanSwitchingController::class, 'storeKejadianSwitching']);
         Route::put('/gangguan-switching/detail/{id}', [\App\Http\Controllers\Api\GangguanSwitchingController::class, 'updateKejadianSwitching']);
         Route::delete('/gangguan-switching/detail/{id}', [\App\Http\Controllers\Api\GangguanSwitchingController::class, 'destroyKejadianSwitching']);
         Route::put('/gangguan-trafo/detail/{id}', [\App\Http\Controllers\Api\GangguanSwitchingController::class, 'updateKejadianTrafo']);
@@ -66,6 +67,7 @@ Route::middleware('api')->group(function () {
         Route::get('/srdag', [\App\Http\Controllers\Api\SrdagController::class, 'index']);
         Route::post('/srdag', [\App\Http\Controllers\Api\SrdagController::class, 'store']);
         Route::put('/srdag/{id}', [\App\Http\Controllers\Api\SrdagController::class, 'update']);
+        Route::delete('/srdag/{id}', [\App\Http\Controllers\Api\SrdagController::class, 'destroy']);
         Route::get('/srdag/dashboard', [\App\Http\Controllers\Api\SrdagController::class, 'dashboard']);
         
         Route::get('/srdag/targets', [\App\Http\Controllers\Api\SrdagController::class, 'indexTargets']);
@@ -75,6 +77,7 @@ Route::middleware('api')->group(function () {
         Route::get('/mvod', [\App\Http\Controllers\Api\MvodController::class, 'index']);
         Route::post('/mvod', [\App\Http\Controllers\Api\MvodController::class, 'store']);
         Route::put('/mvod/{id}', [\App\Http\Controllers\Api\MvodController::class, 'update']);
+        Route::delete('/mvod/{id}', [\App\Http\Controllers\Api\MvodController::class, 'destroy']);
         Route::get('/mvod/dashboard', [\App\Http\Controllers\Api\MvodController::class, 'dashboard']);
         
         Route::get('/mvod/targets', [\App\Http\Controllers\Api\MvodController::class, 'targets']);
@@ -84,6 +87,7 @@ Route::middleware('api')->group(function () {
         Route::get('/mttr', [\App\Http\Controllers\Api\MttrController::class, 'index']);
         Route::post('/mttr', [\App\Http\Controllers\Api\MttrController::class, 'store']);
         Route::put('/mttr/{id}', [\App\Http\Controllers\Api\MttrController::class, 'update']);
+        Route::delete('/mttr/{id}', [\App\Http\Controllers\Api\MttrController::class, 'destroy']);
         Route::get('/mttr/dashboard', [\App\Http\Controllers\Api\MttrController::class, 'dashboard']);
         
         Route::get('/mttr/targets', [\App\Http\Controllers\Api\MttrController::class, 'targets']);
@@ -97,6 +101,8 @@ Route::middleware('api')->group(function () {
     // Jaringan CRUD
     Route::post('/jaringan/ens', [DataJaringanController::class, 'saveEns']);
     Route::delete('/jaringan/ens', [DataJaringanController::class, 'deleteEns']);
+    Route::put('/jaringan/ens/{id}', [DataJaringanController::class, 'updateEns']);
+    Route::delete('/jaringan/ens/{id}', [DataJaringanController::class, 'destroyEns']);
     Route::post('/jaringan/gangguan', [DataJaringanController::class, 'saveGangguan']);
     Route::post('/jaringan/gangguan-list', [DataJaringanController::class, 'saveGangguanList']);
     Route::get('/jaringan/gangguan-list', [DataJaringanController::class, 'getGangguanList']);
@@ -113,8 +119,13 @@ Route::middleware('api')->group(function () {
     Route::get('/jaringan/gangguan-tm', [\App\Http\Controllers\GangguanTmController::class, 'index']);
     Route::post('/jaringan/gangguan-tm', [\App\Http\Controllers\GangguanTmController::class, 'store']); // Legacy
     Route::post('/jaringan/gangguan-tm/kurang-5', [\App\Http\Controllers\GangguanTmController::class, 'storeKurang5Mnt']);
+    Route::put('/jaringan/gangguan-tm/kurang-5/{id}', [\App\Http\Controllers\GangguanTmController::class, 'updateKurang5Mnt']);
+    Route::delete('/jaringan/gangguan-tm/kurang-5/{id}', [\App\Http\Controllers\GangguanTmController::class, 'deleteKurang5Mnt']);
     Route::post('/jaringan/gangguan-tm/lebih-5', [\App\Http\Controllers\GangguanTmController::class, 'storeLebih5Mnt']);
     Route::put('/jaringan/gangguan-tm/lebih-5/{tahun}/{bulan}', [\App\Http\Controllers\GangguanTmController::class, 'updateLebih5Mnt']);
+    Route::post('/jaringan/gangguan-tm/detail-lebih5', [\App\Http\Controllers\GangguanTmController::class, 'insertDetailLebih5Mnt']);
+    Route::put('/jaringan/gangguan-tm/detail-lebih5/{id}', [\App\Http\Controllers\GangguanTmController::class, 'updateDetailLebih5Mnt']);
+    Route::delete('/jaringan/gangguan-tm/detail-lebih5/{id}', [\App\Http\Controllers\GangguanTmController::class, 'deleteDetailLebih5Mnt']);
     Route::get('/jaringan/gangguan-tm/lebih-5/detail', [\App\Http\Controllers\GangguanTmController::class, 'detailLebih5Mnt']);
     Route::get('/jaringan/gangguan-tm/rekap', [\App\Http\Controllers\GangguanTmController::class, 'rekap']);
     Route::get('/jaringan/gangguan-tm/semua-up3', [\App\Http\Controllers\GangguanTmController::class, 'semuaUp3']);

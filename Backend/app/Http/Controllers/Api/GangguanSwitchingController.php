@@ -488,6 +488,38 @@ class GangguanSwitchingController extends Controller
         return response()->json(['success' => true, 'message' => 'Data Kejadian Trafo bulan ini berhasil dihapus.']);
     }
 
+    public function storeKejadianSwitching(Request $request)
+    {
+        $user = $request->user();
+        if ($user->role !== 'PIC' && $user->role !== 'pic_jaringan') {
+            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        }
+
+        $validated = $request->validate([
+            'up3' => 'required|string',
+            'tahun' => 'required|integer',
+            'bulan' => 'required|integer|min:1|max:12',
+            'merek' => 'nullable|string',
+            'tahun_alat' => 'nullable|string',
+            'nomor_seri' => 'nullable|string',
+        ]);
+
+        $parent = GangguanSwitching::firstOrCreate(
+            ['up3' => $validated['up3'], 'tahun' => $validated['tahun'], 'bulan' => $validated['bulan']],
+            ['jumlah_gangguan' => 0, 'created_by' => $user->id]
+        );
+
+        $detail = $parent->details()->create([
+            'merek' => $validated['merek'] ?? null,
+            'tahun_alat' => $validated['tahun_alat'] ?? null,
+            'nomor_seri' => $validated['nomor_seri'] ?? null,
+        ]);
+
+        $parent->update(['jumlah_gangguan' => $parent->details()->count()]);
+
+        return response()->json(['success' => true, 'data' => $detail, 'message' => 'Data Kejadian Switching berhasil ditambahkan.']);
+    }
+
     public function updateKejadianSwitching(Request $request, $id)
     {
         $user = $request->user();

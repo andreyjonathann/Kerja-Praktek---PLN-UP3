@@ -22,6 +22,7 @@ import TargetWarning from '@/components/ui/TargetWarning'
 import DataTable from '@/components/ui/DataTable'
 import ChartWrapper from '@/components/ui/ChartWrapper'
 import DetailGangguanTmModal from '@/components/ui/DetailGangguanTmModal'
+import DetailGangguanTmKurang5Modal from '@/components/ui/DetailGangguanTmKurang5Modal'
 
 const COLORS = {
   target: '#ef4444',
@@ -75,7 +76,7 @@ export default function GangguanTmPage() {
   const [dataRekap, setDataRekap] = useState(null)
   const [dataUp3, setDataUp3] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [detailModalType, setDetailModalType] = useState(null); // 'lebih_5_mnt' or 'kurang_5_mnt'
   const [selectedDetailMonth, setSelectedDetailMonth] = useState(null);
 
   const fetchData = useCallback(async () => {
@@ -109,7 +110,10 @@ export default function GangguanTmPage() {
     let anyTgt = false;
     return MONTHS_FULL.map((m, idx) => {
       const bulan = idx + 1;
-      const real = tipeData.monthly[bulan];
+      const monthlyInfo = tipeData.monthly[bulan] || {};
+      const real = typeof monthlyInfo === 'object' ? monthlyInfo.realisasi : monthlyInfo;
+      const ringkasanId = typeof monthlyInfo === 'object' ? monthlyInfo.id : null;
+      
       if (real !== null && real !== undefined) {
         sumReal += real;
       }
@@ -124,6 +128,7 @@ export default function GangguanTmPage() {
         bulan,
         label: m.substring(0, 3),
         realisasi: real,
+        id: ringkasanId,
         targetBulanan: targetBulanan !== null && targetBulanan !== undefined ? Number(targetBulanan) : null,
         kumulatifReal: real !== null ? sumReal : null,
         targetKumulatif: anyTgt ? sumTgt : null
@@ -255,12 +260,12 @@ export default function GangguanTmPage() {
                   radius={[4, 4, 0, 0]} 
                   maxBarSize={40}
                   onClick={(data) => {
-                    if (tipe === 'lebih_5_mnt' && data && data.bulan) {
+                    if (data && data.bulan) {
                       setSelectedDetailMonth(data.bulan);
-                      setIsDetailModalOpen(true);
+                      setDetailModalType(tipe);
                     }
                   }}
-                  style={{ cursor: tipe === 'lebih_5_mnt' ? 'pointer' : 'default' }}
+                  style={{ cursor: 'pointer' }}
                 />
                 <Line yAxisId="left" type="monotone" dataKey="targetBulanan" name="Target Bulanan" stroke={COLORS.target} strokeWidth={2} dot={{r:3, fill:COLORS.target}} strokeDasharray="4 4" />
               </>
@@ -305,12 +310,12 @@ export default function GangguanTmPage() {
         </div>
         <DataTable
           searchable={false}
-          onRowClick={tipe === 'lebih_5_mnt' ? (row) => {
+          onRowClick={(row) => {
             if (!row.isTotal) {
               setSelectedDetailMonth(row.bulan);
-              setIsDetailModalOpen(true);
+              setDetailModalType(tipe);
             }
-          } : undefined}
+          }}
           columns={[
             { 
               key: 'label', label: 'Bulan', align: 'center',
@@ -423,69 +428,6 @@ export default function GangguanTmPage() {
 
         {/* Action Buttons */}
         <div className="flex items-center gap-3">
-          <div style={{
-            display: 'inline-flex',
-            background: 'rgba(0, 162, 185, 0.05)',
-            padding: 4,
-            borderRadius: 12,
-            border: '1px solid rgba(0, 162, 185, 0.15)',
-            gap: 8,
-            cursor: 'default'
-          }}>
-            <button
-              onClick={() => navigate('/jaringan/gangguan-tm/input-kurang-5-menit')}
-              style={{
-                padding: '6px 12px',
-                borderRadius: 9,
-                fontSize: '0.85rem',
-                fontWeight: 700,
-                transition: 'all 0.2s ease',
-                border: 'none',
-                cursor: 'pointer',
-                background: 'var(--bg-card)',
-                color: '#00A2B9',
-                boxShadow: '0 2px 8px rgba(0, 162, 185, 0.15)',
-                display: 'flex', alignItems: 'center', gap: '6px'
-              }}
-              onMouseEnter={e => {
-                  e.currentTarget.style.background = '#00A2B9';
-                  e.currentTarget.style.color = '#FFFFFF';
-              }}
-              onMouseLeave={e => {
-                  e.currentTarget.style.background = 'var(--bg-card)';
-                  e.currentTarget.style.color = '#00A2B9';
-              }}
-            >
-              <Plus size={16} /> Input &lt; 5 Menit
-            </button>
-            <button
-              onClick={() => navigate('/jaringan/gangguan-tm/input-lebih-5-menit')}
-              style={{
-                padding: '6px 12px',
-                borderRadius: 9,
-                fontSize: '0.85rem',
-                fontWeight: 700,
-                transition: 'all 0.2s ease',
-                border: 'none',
-                cursor: 'pointer',
-                background: 'var(--bg-card)',
-                color: '#00A2B9',
-                boxShadow: '0 2px 8px rgba(0, 162, 185, 0.15)',
-                display: 'flex', alignItems: 'center', gap: '6px'
-              }}
-              onMouseEnter={e => {
-                  e.currentTarget.style.background = '#00A2B9';
-                  e.currentTarget.style.color = '#FFFFFF';
-              }}
-              onMouseLeave={e => {
-                  e.currentTarget.style.background = 'var(--bg-card)';
-                  e.currentTarget.style.color = '#00A2B9';
-              }}
-            >
-              <Plus size={16} /> Input &gt; 5 Menit
-            </button>
-          </div>
-          
           <div style={{
             display: 'inline-flex',
             background: 'rgba(16, 185, 129, 0.05)',
@@ -648,16 +590,28 @@ export default function GangguanTmPage() {
         </div>
       )}
       <DetailGangguanTmModal 
-        open={isDetailModalOpen} 
-        onOpenChange={setIsDetailModalOpen} 
-        tahun={filters.year || new Date().getFullYear()} 
-        bulan={selectedDetailMonth}
-        targetTahunan={dataRekap?.lebih_5_mnt?.target_tahunan}
-        totalKejadian={
-          selectedDetailMonth 
-            ? dataRekap?.lebih_5_mnt?.monthly[selectedDetailMonth] || 0
-            : 0
-        }
+        open={detailModalType === 'lebih_5_mnt'} 
+        onOpenChange={(open) => !open && setDetailModalType(null)} 
+        year={filters.year || new Date().getFullYear()} 
+        onSuccess={fetchData}
+        rowData={{
+          bulan: selectedDetailMonth,
+          id: dataRekap?.lebih_5_mnt?.monthly[selectedDetailMonth]?.id,
+          target_tahunan: dataRekap?.lebih_5_mnt?.target_tahunan,
+          realisasi: dataRekap?.lebih_5_mnt?.monthly[selectedDetailMonth]?.realisasi || 0
+        }}
+      />
+      <DetailGangguanTmKurang5Modal 
+        open={detailModalType === 'kurang_5_mnt'} 
+        onOpenChange={(open) => !open && setDetailModalType(null)} 
+        year={filters.year || new Date().getFullYear()} 
+        onSuccess={fetchData}
+        rowData={{
+          bulan: selectedDetailMonth,
+          id: dataRekap?.kurang_5_mnt?.monthly[selectedDetailMonth]?.id,
+          target_tahunan: dataRekap?.kurang_5_mnt?.target_tahunan,
+          realisasi: dataRekap?.kurang_5_mnt?.monthly[selectedDetailMonth]?.realisasi || 0
+        }}
       />
     </div>
   )

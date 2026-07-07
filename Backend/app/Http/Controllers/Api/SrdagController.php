@@ -88,6 +88,24 @@ class SrdagController extends Controller
         return response()->json(['success' => true, 'data' => $record, 'message' => 'Data SRDAG berhasil diupdate']);
     }
 
+    public function destroy(Request $request, $id)
+    {
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $record = SrdagRealisasi::findOrFail($id);
+
+        if ($user->role !== 'admin' && $user->up3 !== $record->up3) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized UP3'], 403);
+        }
+
+        $record->delete();
+
+        return response()->json(['success' => true, 'message' => 'Data SRDAG berhasil dihapus']);
+    }
+
     // ==========================================
     // TARGET SRDAG
     // ==========================================

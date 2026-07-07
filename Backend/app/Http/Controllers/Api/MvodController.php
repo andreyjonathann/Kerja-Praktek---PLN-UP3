@@ -97,6 +97,23 @@ class MvodController extends Controller
         return response()->json(['success' => true, 'data' => $mvod, 'message' => 'Data MVOD berhasil diupdate']);
     }
 
+    public function destroy(Request $request, $id)
+    {
+        $mvod = MvodRealisasi::find($id);
+        if (!$mvod) {
+            return response()->json(['success' => false, 'message' => 'Data MVOD tidak ditemukan'], 404);
+        }
+
+        // Pastikan pic jaringan hanya hapus datanya sendiri/up3-nya
+        $user = auth()->user();
+        if ($user && $user->role === 'pic_jaringan' && $mvod->up3 !== $user->up3) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak'], 403);
+        }
+
+        $mvod->delete();
+        return response()->json(['success' => true, 'message' => 'Data MVOD berhasil dihapus']);
+    }
+
     public function targets(Request $request)
     {
         $tahun = $request->tahun ?: date('Y');

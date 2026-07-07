@@ -11,6 +11,7 @@ import DataTable from '@/components/ui/DataTable'
 import TargetWarning from '@/components/ui/TargetWarning'
 import PageHeader from '@/components/ui/PageHeader'
 import ActionButton from '@/components/ui/ActionButton'
+import SrdagDetailModal from '@/components/ui/SrdagDetailModal'
 import { useFilter } from '@/context/FilterContext'
 import { useAuth } from '@/context/AuthContext'
 import { MONTHS_ID } from '@/utils/formatters'
@@ -27,6 +28,10 @@ export default function SrdagPage() {
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+
+  // Modal states
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [selectedMonthData, setSelectedMonthData] = useState(null)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -217,8 +222,8 @@ export default function SrdagPage() {
         {(user?.role === 'pic_jaringan' || user?.role === 'admin') && (
           <ActionButton 
             icon={Plus} 
-            label="Input SRDAG" 
-            onClick={() => navigate('/jaringan/input-srdag')}
+            label="Input Realisasi" 
+            onClick={() => navigate('/jaringan/srdag/input')}
             colorHex="#00A2B9"
             colorRgb="0, 162, 185"
           />
@@ -251,9 +256,31 @@ export default function SrdagPage() {
         <div className="p-5 border-b border-slate-200 flex justify-center items-center bg-slate-50/50">
           <h2 className="text-lg font-bold text-slate-800">Perbandingan Antar Bulan</h2>
         </div>
-        <DataTable columns={columns} data={tableDataBulan} loading={loading} paginated={false} searchable={false} />
+        <DataTable 
+          columns={columns} 
+          data={tableDataBulan} 
+          loading={loading} 
+          paginated={false} 
+          searchable={false} 
+          onRowClick={(row) => {
+            setSelectedMonthData({
+              bulan: MONTHS_ID.indexOf(row.bulan),
+              label: row.bulan
+            });
+            setIsModalOpen(true);
+          }}
+          rowClassName="cursor-pointer hover:bg-slate-50 transition-colors"
+        />
       </div>
 
+      <SrdagDetailModal 
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        rowData={selectedMonthData}
+        tahun={filters.year}
+        up3={filters.up3}
+        onSuccess={fetchData}
+      />
     </div>
   )
 }

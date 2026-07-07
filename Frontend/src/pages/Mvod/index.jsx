@@ -16,6 +16,7 @@ import { useFilter } from '@/context/FilterContext'
 import { useAuth } from '@/context/AuthContext'
 import { MONTHS_ID } from '@/utils/formatters'
 import api from '@/services/api'
+import MvodDetailModal from '@/components/ui/MvodDetailModal'
 
 export default function MvodPage() {
   const navigate = useNavigate()
@@ -29,6 +30,9 @@ export default function MvodPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [chartTab, setChartTab] = useState('GI') // GI, JTM, GD
+
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [selectedMonthData, setSelectedMonthData] = useState(null)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -124,6 +128,10 @@ export default function MvodPage() {
     }
   ];
 
+  const handleRowClick = (row) => {
+    setSelectedMonthData(row)
+    setIsModalOpen(true)
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--page-gap, 20px)' }} className="animate-fade-in">
@@ -142,34 +150,6 @@ export default function MvodPage() {
       />
 
 
-
-      <div style={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        alignItems: 'center',
-        justifyContent: 'flex-end',
-        gap: '12px',
-        margin: '12px 0 24px',
-      }}>
-        {user?.role === 'admin' && (
-          <ActionButton 
-            icon={Target} 
-            label="Kelola Target SLA" 
-            onClick={() => navigate('/jaringan/mvod/target')}
-            colorHex="#00A2B9"
-            colorRgb="0, 162, 185"
-          />
-        )}
-        {(user?.role === 'pic_jaringan' || user?.role === 'admin') && (
-          <ActionButton 
-            icon={Plus} 
-            label="Input Realisasi MVOD" 
-            onClick={() => navigate('/jaringan/input-mvod')}
-            colorHex="#00A2B9"
-            colorRgb="0, 162, 185"
-          />
-        )}
-      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
         {['gi', 'jtm', 'gd'].map((tipe) => {
@@ -197,6 +177,34 @@ export default function MvodPage() {
           loading={loading} 
           achievement={summary?.mvod_gabungan}
         />
+      </div>
+
+      <div style={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+        gap: '12px',
+        margin: '12px 0 24px',
+      }}>
+        {user?.role === 'admin' && (
+          <ActionButton 
+            icon={Target} 
+            label="Kelola Target" 
+            onClick={() => navigate('/jaringan/mvod/target')}
+            colorHex="#00A2B9"
+            colorRgb="0, 162, 185"
+          />
+        )}
+        {(user?.role === 'pic_jaringan' || user?.role === 'admin') && (
+          <ActionButton 
+            icon={Plus} 
+            label="Input Realisasi" 
+            onClick={() => navigate('/jaringan/mvod/input')}
+            colorHex="#00A2B9"
+            colorRgb="0, 162, 185"
+          />
+        )}
       </div>
 
       <ChartWrapper 
@@ -242,8 +250,18 @@ export default function MvodPage() {
             striped={true}
             searchable={false}
             paginated={false}
+            onRowClick={handleRowClick}
           />
         </div>
+
+      <MvodDetailModal 
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        rowData={selectedMonthData}
+        tahun={filters.year}
+        up3={filters.up3}
+        onSuccess={fetchData}
+      />
     </div>
   )
 }

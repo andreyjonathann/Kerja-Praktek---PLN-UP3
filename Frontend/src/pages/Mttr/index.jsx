@@ -15,6 +15,7 @@ import { useFilter } from '@/context/FilterContext'
 import { useAuth } from '@/context/AuthContext'
 import { MONTHS_ID } from '@/utils/formatters'
 import api from '@/services/api'
+import MttrDetailModal from '@/components/ui/MttrDetailModal'
 
 export default function MttrPage() {
   const navigate = useNavigate()
@@ -27,6 +28,9 @@ export default function MttrPage() {
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [selectedMonthData, setSelectedMonthData] = useState(null)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -113,6 +117,11 @@ export default function MttrPage() {
     }
   ];
 
+  const handleRowClick = (row) => {
+    setSelectedMonthData(row)
+    setIsModalOpen(true)
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--page-gap, 20px)' }} className="animate-fade-in">
       
@@ -141,7 +150,7 @@ export default function MttrPage() {
         />
         <KpiCard 
           title="Rata-rata YTD" 
-          value={summary?.rata_ytd != null ? (summary.rata_ytd).toFixed(2) : '—'} 
+          value={summary?.realisasi_ytd != null ? (summary.realisasi_ytd).toFixed(2) : '—'} 
           unit="%" 
           icon={TrendingUp} 
           color="emerald" 
@@ -149,7 +158,7 @@ export default function MttrPage() {
         />
         <KpiCard 
           title="Total Kejadian Siaga 1 YTD" 
-          value={summary?.total_kejadian_ytd || 0} 
+          value={summary?.total_siaga1_ytd || 0} 
           unit="gangguan" 
           icon={Clock} 
           color="blue" 
@@ -178,7 +187,7 @@ export default function MttrPage() {
           <ActionButton 
             icon={Plus} 
             label="Input Realisasi" 
-            onClick={() => navigate('/jaringan/input-mttr')}
+            onClick={() => navigate('/jaringan/mttr-siaga1/input')}
             colorHex="#00A2B9"
             colorRgb="0, 162, 185"
           />
@@ -210,9 +219,26 @@ export default function MttrPage() {
           <h2 className="text-lg font-bold text-slate-800">Perbandingan Antar Bulan (YTD)</h2>
           <p className="text-sm text-slate-500 mt-1">Rekapitulasi performa {filters.up3 === 'Semua UP3' ? 'semua unit' : filters.up3} per bulan</p>
         </div>
-        <DataTable columns={columns} data={data?.per_bulan || []} keyField="bulan" striped={true} loading={loading} searchable={false} paginated={false} />
+        <DataTable 
+          columns={columns} 
+          data={data?.per_bulan || []} 
+          keyField="bulan" 
+          striped={true} 
+          loading={loading} 
+          searchable={false} 
+          paginated={false} 
+          onRowClick={handleRowClick}
+        />
       </div>
 
+      <MttrDetailModal 
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        rowData={selectedMonthData}
+        tahun={filters.year}
+        up3={filters.up3}
+        onSuccess={fetchData}
+      />
     </div>
   )
 }

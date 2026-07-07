@@ -188,6 +188,44 @@ class GangguanTmController extends Controller
         ]);
     }
 
+    public function updateKurang5Mnt(Request $request, $id)
+    {
+        $request->validate([
+            'ggn_tm_kurang_5_mnt' => 'required|integer|min:0',
+        ]);
+
+        $user = $request->user();
+        if (!$user || ($user->role !== 'pic_jaringan' && $user->role !== 'admin')) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $kinerja = KinerjaJaringan::findOrFail($id);
+        $kinerja->ggn_tm_kurang_5_mnt = $request->ggn_tm_kurang_5_mnt;
+        $kinerja->save();
+
+        return response()->json([
+            'message' => 'Data Gangguan TM < 5 Menit berhasil diupdate',
+            'data' => $kinerja
+        ]);
+    }
+
+    public function deleteKurang5Mnt(Request $request, $id)
+    {
+        $user = $request->user();
+        if (!$user || ($user->role !== 'pic_jaringan' && $user->role !== 'admin')) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $kinerja = KinerjaJaringan::findOrFail($id);
+        $kinerja->ggn_tm_kurang_5_mnt = 0;
+        $kinerja->save();
+
+        return response()->json([
+            'message' => 'Data Gangguan TM < 5 Menit berhasil dihapus (direset ke 0)',
+            'data' => $kinerja
+        ]);
+    }
+
     public function storeLebih5Mnt(Request $request)
     {
         $request->validate([
@@ -299,11 +337,23 @@ class GangguanTmController extends Controller
 
         $query = \App\Models\DetailGangguanTmLebih5Mnt::query();
         
+        $ringkasanId = null;
+
         if ($tahun) {
             $query->where('tahun', $tahun);
         }
         if ($bulan) {
             $query->where('bulan', $bulan);
+        }
+
+        if ($tahun && $bulan) {
+            $periode = \App\Models\Periode::where('tahun', $tahun)->where('bulan', $bulan)->first();
+            if ($periode) {
+                $kinerja = \App\Models\KinerjaJaringan::where('periode_id', $periode->id)->first();
+                if ($kinerja) {
+                    $ringkasanId = $kinerja->id;
+                }
+            }
         }
 
         // Only UP3 logic if user is UP3, or show all for admin/pic
@@ -315,29 +365,67 @@ class GangguanTmController extends Controller
         $details = $query->orderBy('created_at', 'desc')->get();
 
         return response()->json([
+            'id' => $ringkasanId,
             'data' => $details
+        ]);
+    }
+
+    public function insertDetailLebih5Mnt(Request $request)
+    {
+        $request->validate([
+            'bulan' => 'required|integer|min:1|max:12',
+            'tahun' => 'required|integer|min:2000',
+            'jumlah_gangguan' => 'required|integer|min:1',
+            'penyebab' => 'nullable|string',
+            'nama_penyulang' => 'nullable|string',
+        ]);
+
+        $user = $request->user();
+        if (!$user || ($user->role !== 'pic_jaringan' && $user->role !== 'admin')) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $up3 = $user->role === 'admin' ? 'Semua UP3' : ($user->up3 ?: 'Semua UP3');
+
+        $detail = \App\Models\DetailGangguanTmLebih5Mnt::create([
+            'up3' => $up3,
+            'bulan' => $request->bulan,
+            'tahun' => $request->tahun,
+            'jumlah_gangguan' => $request->jumlah_gangguan,
+            'penyebab' => $request->penyebab,
+            'nama_penyulang' => $request->nama_penyulang,
+        ]);
+
+        $this->recalculateTotalLebih5Mnt($request->bulan, $request->tahun);
+
+        return response()->json([
+            'message' => 'Detail berhasil ditambahkan',
+            'data' => $detail
         ]);
     }
 
     public function updateDetailLebih5Mnt(Request $request, $id)
     {
         $request->validate([
-            'jumlah' => 'required|integer|min:1',
+            'jumlah_gangguan' => 'required|integer|min:1',
             'penyebab' => 'nullable|string',
-            'penyulang' => 'nullable|string',
+            'nama_penyulang' => 'nullable|string',
         ]);
 
         $detail = \App\Models\DetailGangguanTmLebih5Mnt::findOrFail($id);
         
         // Authorization check
         $user = $request->user();
-        if ($user && $user->role === 'up3' && $user->up3 !== $detail->up3) {
+        if (!$user || ($user->role !== 'pic_jaringan' && $user->role !== 'admin')) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
+        if ($user->role === 'pic_jaringan' && $user->up3 !== $detail->up3) {
+            return response()->json(['message' => 'Unauthorized UP3'], 403);
+        }
 
-        $detail->jumlah_gangguan = $request->jumlah;
+        $detail->jumlah_gangguan = $request->jumlah_gangguan;
         $detail->penyebab = $request->penyebab;
-        $detail->nama_penyulang = $request->penyulang;
+        $detail->nama_penyulang = $request->nama_penyulang;
         $detail->save();
 
         // Recalculate total for that month
@@ -355,8 +443,11 @@ class GangguanTmController extends Controller
         
         // Authorization check
         $user = $request->user();
-        if ($user && $user->role === 'up3' && $user->up3 !== $detail->up3) {
+        if (!$user || ($user->role !== 'pic_jaringan' && $user->role !== 'admin')) {
             return response()->json(['message' => 'Unauthorized'], 403);
+        }
+        if ($user->role === 'pic_jaringan' && $user->up3 !== $detail->up3) {
+            return response()->json(['message' => 'Unauthorized UP3'], 403);
         }
 
         $bulan = $detail->bulan;
@@ -434,7 +525,10 @@ class GangguanTmController extends Controller
             foreach ($periods as $p) {
                 $k = $kinerja->firstWhere('periode_id', $p->id);
                 $realisasi = $k ? $k->{$dbField} : null;
-                $monthlyData[$p->bulan] = $realisasi;
+                $monthlyData[$p->bulan] = [
+                    'id' => $k ? $k->id : null,
+                    'realisasi' => $realisasi
+                ];
                 
                 if ($realisasi !== null) {
                     $sumReal += $realisasi;

@@ -102,6 +102,22 @@ class MttrController extends Controller
         return response()->json(['success' => true, 'data' => $mttr, 'message' => 'Data MTTR berhasil diupdate']);
     }
 
+    public function destroy(Request $request, $id)
+    {
+        $mttr = MttrRealisasi::find($id);
+        if (!$mttr) {
+            return response()->json(['success' => false, 'message' => 'Data MTTR tidak ditemukan'], 404);
+        }
+
+        $user = auth()->user();
+        if ($user && $user->role === 'pic_jaringan' && $mttr->up3 !== $user->up3) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak'], 403);
+        }
+
+        $mttr->delete();
+        return response()->json(['success' => true, 'message' => 'Data MTTR berhasil dihapus']);
+    }
+
     public function targets(Request $request)
     {
         $tahun = $request->tahun ?: date('Y');

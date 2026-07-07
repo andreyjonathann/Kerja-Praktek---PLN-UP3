@@ -307,7 +307,7 @@ export default function App() {
                 </ProtectedRoute>
               } />
 
-              <Route path="/jaringan/input-srdag" element={
+              <Route path="/jaringan/srdag/input" element={
                 <ProtectedRoute>
                   <InputSrdagPage />
                 </ProtectedRoute>
@@ -325,7 +325,7 @@ export default function App() {
                 </ProtectedRoute>
               } />
 
-              <Route path="/jaringan/input-mvod" element={
+              <Route path="/jaringan/mvod/input" element={
                 <ProtectedRoute>
                   <InputMvodPage />
                 </ProtectedRoute>
@@ -343,7 +343,7 @@ export default function App() {
                 </ProtectedRoute>
               } />
 
-              <Route path="/jaringan/input-mttr" element={
+              <Route path="/jaringan/mttr-siaga1/input" element={
                 <ProtectedRoute>
                   <InputMttrPage />
                 </ProtectedRoute>

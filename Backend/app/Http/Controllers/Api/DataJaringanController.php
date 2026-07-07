@@ -200,6 +200,7 @@ class DataJaringanController extends Controller
             $result['ensPageData'][] = [
                 'bulan' => $i, 'label' => $bulanMap[$i-1],
                 'bulanan' => [
+                    'id' => $ensData ? $ensData->id : null,
                     'target' => $targetBulananEns,
                     'padam_terencana' => $ensData ? $ensData->distribusi_padam_terencana : 0,
                     'tidak_terencana' => $ensData ? $ensData->distribusi_padam_tidak_terencana : 0,
@@ -287,6 +288,55 @@ class DataJaringanController extends Controller
             }
         }
         return response()->json(['message' => 'Data tidak ditemukan'], 404);
+    }
+
+    public function updateEns(Request $request, $id)
+    {
+        $user = auth()->user();
+        if (!$user || ($user->role !== 'pic_jaringan' && $user->role !== 'admin')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        }
+
+        $request->validate([
+            'distribusi_padam_tidak_terencana' => 'nullable|numeric|min:0',
+            'distribusi_padam_terencana' => 'nullable|numeric|min:0',
+            'distribusi_bencana_alam' => 'nullable|numeric|min:0',
+            'transmisi' => 'nullable|numeric|min:0',
+            'pembangkit' => 'nullable|numeric|min:0',
+        ]);
+
+        $ens = EnsBulanan::findOrFail($id);
+
+        $data = $request->only([
+            'distribusi_padam_tidak_terencana',
+            'distribusi_padam_terencana',
+            'distribusi_bencana_alam',
+            'transmisi',
+            'pembangkit'
+        ]);
+
+        foreach ($data as $key => $val) {
+            if ($val === null || $val === '') {
+                $data[$key] = 0;
+            }
+        }
+
+        $ens->update($data);
+
+        return response()->json(['success' => true, 'data' => $ens, 'message' => 'Data ENS berhasil diupdate']);
+    }
+
+    public function destroyEns($id)
+    {
+        $user = auth()->user();
+        if (!$user || ($user->role !== 'pic_jaringan' && $user->role !== 'admin')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        }
+
+        $ens = EnsBulanan::findOrFail($id);
+        $ens->delete();
+
+        return response()->json(['success' => true, 'message' => 'Data ENS berhasil dihapus']);
     }
 
     public function saveGangguan(Request $request)
