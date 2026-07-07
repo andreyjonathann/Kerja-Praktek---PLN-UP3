@@ -35,6 +35,11 @@ class MvodController extends Controller
 
     public function store(Request $request)
     {
+        $user = auth()->user();
+        if ($user->role !== 'pic_jaringan') {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
         $validator = Validator::make($request->all(), [
             'up3' => 'required|string',
             'tahun' => 'required|integer',
@@ -73,6 +78,11 @@ class MvodController extends Controller
 
     public function update(Request $request, $id)
     {
+        $user = auth()->user();
+        if ($user->role !== 'pic_jaringan') {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
         $validator = Validator::make($request->all(), [
             'total_lama_padam_jam' => 'required|numeric|min:0',
             'kali_padam' => 'required|integer|min:1',
@@ -104,10 +114,12 @@ class MvodController extends Controller
             return response()->json(['success' => false, 'message' => 'Data MVOD tidak ditemukan'], 404);
         }
 
-        // Pastikan pic jaringan hanya hapus datanya sendiri/up3-nya
         $user = auth()->user();
-        if ($user && $user->role === 'pic_jaringan' && $mvod->up3 !== $user->up3) {
-            return response()->json(['success' => false, 'message' => 'Akses ditolak'], 403);
+        if (!$user || !in_array($user->role, ['pic_jaringan', 'admin'])) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+        if ($user->role === 'pic_jaringan' && $mvod->up3 !== $user->up3) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized - beda UP3'], 403);
         }
 
         $mvod->delete();
