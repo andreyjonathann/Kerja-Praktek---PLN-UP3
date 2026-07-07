@@ -94,5 +94,7 @@ class DatabaseSeeder extends Seeder
         }
 
         $this->call(TargetTahunanSeeder::class);
+        $this->call(TargetTahunanRatingNegatifSeeder::class);
+        $this->call(NkoParameterSeeder::class);
     }
 }

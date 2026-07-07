@@ -8,7 +8,7 @@ import { MONTHS, YEARS } from '@/utils/constants'
 import { NAV_ITEMS } from '@/utils/constants'
 import api from '@/services/api'
 import { formatDistanceToNow } from 'date-fns'
-import { id } from 'date-fns/locale'
+import { id } from 'date-fns/locale/id'
 
 export default function Header({ onMenuToggle, onRefresh, refreshing }) {
   const { dark, toggle }              = useTheme()
@@ -98,21 +98,23 @@ export default function Header({ onMenuToggle, onRefresh, refreshing }) {
         </div>
       </div>
 
-      {/* Center — Filters */}
-      <div style={{ display:'flex', alignItems:'center', gap:8 }} className="hidden lg:flex">
-        <FilterPill
-          value={filters.year}
-          onChange={v => updateFilter('year', Number(v))}
-          options={YEARS.map(y => ({ value:y, label:String(y) }))}
-          width={84}
-        />
-        <FilterPill
-          value={filters.month}
-          onChange={v => updateFilter('month', Number(v))}
-          options={[{value:0,label:'Semua Bulan'}, ...MONTHS.map(m => ({value:m.value,label:m.label}))]}
-          width={130}
-        />
-      </div>
+      {/* Center — Filters (Hidden for NKO and Trend NKO pages as they have local selectors) */}
+      {!(location.pathname === '/nko' || location.pathname === '/trend-nko') && (
+        <div style={{ display:'flex', alignItems:'center', gap:8 }} className="hidden lg:flex">
+          <FilterPill
+            value={filters.year}
+            onChange={v => updateFilter('year', Number(v))}
+            options={YEARS.map(y => ({ value:y, label:String(y) }))}
+            width={84}
+          />
+          <FilterPill
+            value={filters.month}
+            onChange={v => updateFilter('month', Number(v))}
+            options={[{value:0,label:'Semua Bulan'}, ...MONTHS.map(m => ({value:m.value,label:m.label}))]}
+            width={130}
+          />
+        </div>
+      )}
 
       {/* Right */}
       <div style={{ display:'flex', alignItems:'center', gap:4, flexShrink:0 }}>
@@ -365,6 +367,16 @@ function FilterPill({ value, onChange, options, width }) {
 }
 
 function getBreadcrumb(pathname) {
+  if (pathname.startsWith('/pemasaran/input')) {
+    const params = new URLSearchParams(window.location.search)
+    const type = params.get('type')
+    if (type === 'penjualan') return 'PENJUALAN'
+    if (type === 'pelanggan') return 'PELANGGAN'
+    if (type === 'daya') return 'DAYA TERSAMBUNG'
+    if (type === 'pendapatan') return 'PENDAPATAN BP'
+    return 'INPUT KPI'
+  }
+
   const getAllPaths = (items) => {
     let list = []
     items.forEach(item => {

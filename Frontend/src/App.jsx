@@ -12,6 +12,7 @@ import SaidiPage from '@/pages/Saidi'
 import SaifiPage from '@/pages/Saifi'
 import EnsPage from '@/pages/Ens'
 import NkoPage from '@/pages/Nko'
+import TrendNkoPage from '@/pages/TrendNko'
 import PlaceholderPage from '@/pages/Placeholder'
 import InputKinerjaSaidiPage from '@/pages/InputKinerjaSaidi'
 import InputSaifiPage from '@/pages/InputSaifi'
@@ -61,6 +62,8 @@ import PenjualanPage     from '@/pages/Pemasaran/v2/Penjualan'
 import PelangganPage     from '@/pages/Pemasaran/v2/Pelanggan'
 import DayaTersambungV2Page  from '@/pages/Pemasaran/v2/DayaTersambung'
 import PendapatanBPPage  from '@/pages/Pemasaran/v2/PendapatanBP'
+import PlnMobilePage     from '@/pages/Pemasaran/v2/PlnMobile'
+import EditKinerjaPermasaranPage from '@/pages/Pemasaran/v2/EditKinerjaPermasaranPage'
 import EditKinerjaPage from '@/pages/EditKinerja'
 import EditEnsPage from '@/pages/EditEns'
 
@@ -133,6 +136,12 @@ export default function App() {
                   <InputKinerjaPemasaranPage />
                 </ProtectedRoute>
               } />
+              <Route path="/pemasaran/edit/:type/:bulan/:tahun" element={
+                <ProtectedRoute>
+                  <EditKinerjaPermasaranPage />
+                </ProtectedRoute>
+              } />
+
               <Route path="/pemasaran/penjualan" element={
                 <ProtectedRoute>
                   <PenjualanPage />
@@ -151,6 +160,11 @@ export default function App() {
               <Route path="/pemasaran/pendapatan-bp" element={
                 <ProtectedRoute>
                   <PendapatanBPPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/pemasaran/pln-mobile" element={
+                <ProtectedRoute>
+                  <PlnMobilePage />
                 </ProtectedRoute>
               } />
 
@@ -359,6 +373,11 @@ export default function App() {
               <Route path="/nko" element={
                 <ProtectedRoute>
                   <NkoPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/trend-nko" element={
+                <ProtectedRoute>
+                  <TrendNkoPage />
                 </ProtectedRoute>
               } />
               <Route path="/ens" element={

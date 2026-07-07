@@ -141,7 +141,14 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
                     <li key={navItem.key}>
                       <NavLink
                         to={navItem.path}
-                        onClick={onMobileClose}
+                        onClick={(e) => {
+                          if (window.sigap_block_navigation) {
+                            e.preventDefault();
+                            alert('Harap simpan perubahan parameter Anda terlebih dahulu dengan mengklik tombol "Simpan Perubahan".');
+                            return;
+                          }
+                          onMobileClose();
+                        }}
                         className={() => `sidebar-nav-item ${isActive ? 'active' : ''}`}
                         style={{ paddingLeft: 16 + (depth * 24) }}
                       >

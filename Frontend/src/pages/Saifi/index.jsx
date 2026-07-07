@@ -351,7 +351,7 @@ export default function SaifiPage() {
               key: 'label', label: 'Bulan', width: '100px', align: 'center',
               render: v => ({
                 'Jan': 'Januari', 'Feb': 'Februari', 'Mar': 'Maret', 'Apr': 'April',
-                'Mei': 'Mei', 'Jun': 'Juni', 'Jul': 'Juli', 'Agu': 'Agustus',
+                'Mei': 'Mei', 'Jun': 'Juni', 'Jul': 'Juli', 'Agu': 'Agustus', 'Ags': 'Agustus',
                 'Sep': 'September', 'Okt': 'Oktober', 'Nov': 'November', 'Des': 'Desember'
               })[v] || v
             },
