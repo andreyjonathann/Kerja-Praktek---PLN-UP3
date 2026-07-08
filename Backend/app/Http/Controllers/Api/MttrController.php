@@ -32,6 +32,15 @@ class MttrController extends Controller
 
     public function store(Request $request)
     {
+        $user = auth()->user();
+        if (!$user || ($user->role !== 'pic_jaringan' && $user->role !== 'admin')) {
+            return response()->json(['success' => false, 'message' => 'Anda tidak berwenang mengelola data ini.'], 403);
+        }
+
+        if ($user->role === 'pic_jaringan' && $request->up3 !== $user->up3) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak. UP3 tidak sesuai.'], 403);
+        }
+
         $validator = Validator::make($request->all(), [
             'up3' => 'required|string',
             'tahun' => 'required|integer',
@@ -76,6 +85,16 @@ class MttrController extends Controller
 
     public function update(Request $request, $id)
     {
+        $user = auth()->user();
+        if (!$user || ($user->role !== 'pic_jaringan' && $user->role !== 'admin')) {
+            return response()->json(['success' => false, 'message' => 'Anda tidak berwenang mengelola data ini.'], 403);
+        }
+
+        $mttr = MttrRealisasi::findOrFail($id);
+        if ($user->role === 'pic_jaringan' && $mttr->up3 !== $user->up3) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak. UP3 tidak sesuai.'], 403);
+        }
+
         $validator = Validator::make($request->all(), [
             'jumlah_siaga1_terpenuhi' => 'required|integer|min:0',
             'jumlah_siaga1_total' => 'required|integer|min:1',
@@ -89,7 +108,7 @@ class MttrController extends Controller
             return response()->json(['success' => false, 'message' => 'Jumlah terpenuhi tidak boleh melebihi jumlah total'], 422);
         }
 
-        $mttr = MttrRealisasi::findOrFail($id);
+        // mttr already found above
 
         $persen = ($request->jumlah_siaga1_terpenuhi / $request->jumlah_siaga1_total) * 100;
 
@@ -104,14 +123,18 @@ class MttrController extends Controller
 
     public function destroy(Request $request, $id)
     {
+        $user = auth()->user();
+        if (!$user || ($user->role !== 'pic_jaringan' && $user->role !== 'admin')) {
+            return response()->json(['success' => false, 'message' => 'Anda tidak berwenang mengelola data ini.'], 403);
+        }
+
         $mttr = MttrRealisasi::find($id);
         if (!$mttr) {
             return response()->json(['success' => false, 'message' => 'Data MTTR tidak ditemukan'], 404);
         }
 
-        $user = auth()->user();
-        if ($user && $user->role === 'pic_jaringan' && $mttr->up3 !== $user->up3) {
-            return response()->json(['success' => false, 'message' => 'Akses ditolak'], 403);
+        if ($user->role === 'pic_jaringan' && $mttr->up3 !== $user->up3) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak. UP3 tidak sesuai.'], 403);
         }
 
         $mttr->delete();

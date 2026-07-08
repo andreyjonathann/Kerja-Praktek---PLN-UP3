@@ -104,6 +104,13 @@ class RatingNegatifController extends Controller
      */
     public function store(Request $request)
     {
+        $user = $request->user();
+        if ($user->role !== 'pic_jaringan' && $user->role !== 'admin') {
+            return response()->json([
+                'message' => 'Anda tidak berwenang mengelola data ini.'
+            ], 403);
+        }
+
         $request->validate([
             'tahun' => 'required|integer',
             'bulan' => 'required|integer',
@@ -228,6 +235,13 @@ class RatingNegatifController extends Controller
 
     public function destroy($id)
     {
+        $user = auth()->user();
+        if ($user->role !== 'pic_jaringan' && $user->role !== 'admin') {
+            return response()->json([
+                'message' => 'Anda tidak berwenang mengelola data ini.'
+            ], 403);
+        }
+
         try {
             $data = KinerjaJaringan::find($id);
             if (!$data) {

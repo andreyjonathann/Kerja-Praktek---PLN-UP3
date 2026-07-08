@@ -138,6 +138,11 @@ class GangguanTmController extends Controller
             'ggn_tm_kurang_5_mnt' => 'nullable|integer|min:0',
         ]);
 
+        $user = $request->user();
+        if (!$user || !in_array($user->role, ['pic_jaringan', 'admin'])) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
         $periode = \App\Models\Periode::firstOrCreate([
             'bulan' => $request->bulan,
             'tahun' => $request->tahun
@@ -173,6 +178,11 @@ class GangguanTmController extends Controller
             'ggn_tm_kurang_5_mnt' => 'required|integer|min:0',
         ]);
 
+        $user = $request->user();
+        if (!$user || !in_array($user->role, ['pic_jaringan', 'admin'])) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
         $periode = \App\Models\Periode::firstOrCreate([
             'bulan' => $request->bulan,
             'tahun' => $request->tahun
@@ -195,7 +205,7 @@ class GangguanTmController extends Controller
         ]);
 
         $user = $request->user();
-        if (!$user || ($user->role !== 'pic_jaringan' && $user->role !== 'admin')) {
+        if (!$user || !in_array($user->role, ['pic_jaringan', 'admin'])) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -212,7 +222,7 @@ class GangguanTmController extends Controller
     public function deleteKurang5Mnt(Request $request, $id)
     {
         $user = $request->user();
-        if (!$user || ($user->role !== 'pic_jaringan' && $user->role !== 'admin')) {
+        if (!$user || !in_array($user->role, ['pic_jaringan', 'admin'])) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -236,6 +246,11 @@ class GangguanTmController extends Controller
             'kejadian.*.penyebab' => 'nullable|string',
             'kejadian.*.penyulang' => 'nullable|string',
         ]);
+
+        $user = $request->user();
+        if (!$user || !in_array($user->role, ['pic_jaringan', 'admin'])) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
 
         $periode = \App\Models\Periode::firstOrCreate([
             'bulan' => $request->bulan,
@@ -289,7 +304,12 @@ class GangguanTmController extends Controller
             'kejadian.*.penyulang' => 'nullable|string',
         ]);
 
-        $up3 = $request->user() ? $request->user()->up3 : 'Semua UP3';
+        $user = $request->user();
+        if (!$user || !in_array($user->role, ['pic_jaringan', 'admin'])) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $up3 = $user->up3 ?: 'Semua UP3';
         
         // Hapus detail eksisting untuk bulan ini
         \App\Models\DetailGangguanTmLebih5Mnt::where('bulan', $bulan)
@@ -381,7 +401,7 @@ class GangguanTmController extends Controller
         ]);
 
         $user = $request->user();
-        if (!$user || ($user->role !== 'pic_jaringan' && $user->role !== 'admin')) {
+        if (!$user || !in_array($user->role, ['pic_jaringan', 'admin'])) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -416,7 +436,7 @@ class GangguanTmController extends Controller
         
         // Authorization check
         $user = $request->user();
-        if (!$user || ($user->role !== 'pic_jaringan' && $user->role !== 'admin')) {
+        if (!$user || !in_array($user->role, ['pic_jaringan', 'admin'])) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
         if ($user->role === 'pic_jaringan' && $user->up3 !== $detail->up3) {
@@ -443,7 +463,7 @@ class GangguanTmController extends Controller
         
         // Authorization check
         $user = $request->user();
-        if (!$user || ($user->role !== 'pic_jaringan' && $user->role !== 'admin')) {
+        if (!$user || !in_array($user->role, ['pic_jaringan', 'admin'])) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
         if ($user->role === 'pic_jaringan' && $user->up3 !== $detail->up3) {

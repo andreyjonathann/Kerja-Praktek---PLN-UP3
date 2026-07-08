@@ -127,8 +127,6 @@ export const NAV_ITEMS = [
           { key: 'susut', label: 'SUSUT (%)', path: '/susut' },
           { key: 'kwh-p2tl', label: 'KwH P2TL', path: '/kwh-p2tl' },
           { key: 'ganti-meter', label: 'Ganti Meter', path: '/ganti-meter' },
-          { key: 'lbkb', label: 'LBKB', path: '/lbkb' },
-          { key: 'niaga', label: 'NIAGA', path: '/niaga' },
         ],
       },
       {

@@ -36,7 +36,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/nko-realizations', [\App\Http\Controllers\Api\NkoRealizationController::class, 'index']);
     Route::post('/nko-realizations', [\App\Http\Controllers\Api\NkoRealizationController::class, 'store']);
     Route::delete('/nko-realizations/{id}', [\App\Http\Controllers\Api\NkoRealizationController::class, 'destroy']);
+
+    // Kinerja endpoints
+    Route::get('/kinerja/{bidang}', [KinerjaController::class, 'index']);
+    Route::post('/kinerja/{bidang}', [KinerjaController::class, 'store']);
+    Route::delete('/kinerja/{bidang}', [KinerjaController::class, 'destroy']);
 });
+
 
 Route::middleware('api')->group(function () {
     // Gangguan Switching & Trafo
@@ -103,52 +109,57 @@ Route::middleware('api')->group(function () {
         
         Route::get('/mttr/targets', [\App\Http\Controllers\Api\MttrController::class, 'targets']);
         Route::post('/mttr/targets', [\App\Http\Controllers\Api\MttrController::class, 'storeTargets']);
-    });
-    Route::get('/nko/summary', [NkoController::class, 'summary']);
-    
-    // Data Jaringan (Dashboard)
-    Route::get('/jaringan/dashboard', [DataJaringanController::class, 'getDashboardData']);
 
-    // Jaringan CRUD
-    Route::post('/jaringan/ens', [DataJaringanController::class, 'saveEns']);
-    Route::delete('/jaringan/ens', [DataJaringanController::class, 'deleteEns']);
-    Route::put('/jaringan/ens/{id}', [DataJaringanController::class, 'updateEns']);
-    Route::delete('/jaringan/ens/{id}', [DataJaringanController::class, 'destroyEns']);
-    Route::post('/jaringan/gangguan', [DataJaringanController::class, 'saveGangguan']);
-    Route::post('/jaringan/gangguan-list', [DataJaringanController::class, 'saveGangguanList']);
-    Route::get('/jaringan/gangguan-list', [DataJaringanController::class, 'getGangguanList']);
-    Route::delete('/jaringan/gangguan-list/{id}', [DataJaringanController::class, 'deleteGangguanList']);
-    
-    // Rating Negatif
-    Route::get('/jaringan/rating-negatif', [\App\Http\Controllers\RatingNegatifController::class, 'index']);
-    Route::post('/jaringan/rating-negatif', [\App\Http\Controllers\RatingNegatifController::class, 'store']);
-    Route::delete('/jaringan/rating-negatif/{id}', [\App\Http\Controllers\RatingNegatifController::class, 'destroy']);
-    Route::get('/jaringan/rating-negatif/rekap', [\App\Http\Controllers\RatingNegatifController::class, 'rekap']);
-    Route::get('/jaringan/rating-negatif/yoy', [\App\Http\Controllers\RatingNegatifController::class, 'yoy']);
-    
-    // Gangguan TM
-    Route::get('/jaringan/gangguan-tm', [\App\Http\Controllers\GangguanTmController::class, 'index']);
-    Route::post('/jaringan/gangguan-tm', [\App\Http\Controllers\GangguanTmController::class, 'store']); // Legacy
-    Route::post('/jaringan/gangguan-tm/kurang-5', [\App\Http\Controllers\GangguanTmController::class, 'storeKurang5Mnt']);
-    Route::put('/jaringan/gangguan-tm/kurang-5/{id}', [\App\Http\Controllers\GangguanTmController::class, 'updateKurang5Mnt']);
-    Route::delete('/jaringan/gangguan-tm/kurang-5/{id}', [\App\Http\Controllers\GangguanTmController::class, 'deleteKurang5Mnt']);
-    Route::post('/jaringan/gangguan-tm/lebih-5', [\App\Http\Controllers\GangguanTmController::class, 'storeLebih5Mnt']);
-    Route::put('/jaringan/gangguan-tm/lebih-5/{tahun}/{bulan}', [\App\Http\Controllers\GangguanTmController::class, 'updateLebih5Mnt']);
-    Route::post('/jaringan/gangguan-tm/detail-lebih5', [\App\Http\Controllers\GangguanTmController::class, 'insertDetailLebih5Mnt']);
-    Route::put('/jaringan/gangguan-tm/detail-lebih5/{id}', [\App\Http\Controllers\GangguanTmController::class, 'updateDetailLebih5Mnt']);
-    Route::delete('/jaringan/gangguan-tm/detail-lebih5/{id}', [\App\Http\Controllers\GangguanTmController::class, 'deleteDetailLebih5Mnt']);
-    Route::get('/jaringan/gangguan-tm/lebih-5/detail', [\App\Http\Controllers\GangguanTmController::class, 'detailLebih5Mnt']);
-    Route::get('/jaringan/gangguan-tm/rekap', [\App\Http\Controllers\GangguanTmController::class, 'rekap']);
-    Route::get('/jaringan/gangguan-tm/semua-up3', [\App\Http\Controllers\GangguanTmController::class, 'semuaUp3']);
-    
-    // Target Tahunan
-    Route::get('/targets', [TargetTahunanController::class, 'index']);
-    Route::post('/targets', [TargetTahunanController::class, 'store']);
-    Route::get('/target/{bidang}/{indikator}', [TargetTahunanController::class, 'getMonthlyTarget']);
-    Route::put('/target/{bidang}/{indikator}/{tahun}', [TargetTahunanController::class, 'updateMonthlyTarget']);
-    
-    // Kinerja endpoints
-    Route::get('/kinerja/{bidang}', [KinerjaController::class, 'index']);
-    Route::post('/kinerja/{bidang}', [KinerjaController::class, 'store']);
-    Route::delete('/kinerja/{bidang}', [KinerjaController::class, 'destroy']);
+        // Ganti Meter
+        Route::get('/ganti-meter', [\App\Http\Controllers\Api\RealisasiGantiMeterController::class, 'index']);
+        Route::post('/ganti-meter', [\App\Http\Controllers\Api\RealisasiGantiMeterController::class, 'store']);
+        Route::get('/ganti-meter/dashboard', [\App\Http\Controllers\Api\RealisasiGantiMeterController::class, 'dashboard']);
+        Route::put('/ganti-meter/{id}', [\App\Http\Controllers\Api\RealisasiGantiMeterController::class, 'update']);
+        Route::delete('/ganti-meter/{id}', [\App\Http\Controllers\Api\RealisasiGantiMeterController::class, 'destroy']);
+    });
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/nko/summary', [NkoController::class, 'summary']);
+        
+        // Data Jaringan (Dashboard)
+        Route::get('/jaringan/dashboard', [DataJaringanController::class, 'getDashboardData']);
+
+        // Jaringan CRUD
+        Route::post('/jaringan/ens', [DataJaringanController::class, 'saveEns']);
+        Route::delete('/jaringan/ens', [DataJaringanController::class, 'deleteEns']);
+        Route::put('/jaringan/ens/{id}', [DataJaringanController::class, 'updateEns']);
+        Route::delete('/jaringan/ens/{id}', [DataJaringanController::class, 'destroyEns']);
+        Route::post('/jaringan/gangguan', [DataJaringanController::class, 'saveGangguan']);
+        Route::post('/jaringan/gangguan-list', [DataJaringanController::class, 'saveGangguanList']);
+        Route::get('/jaringan/gangguan-list', [DataJaringanController::class, 'getGangguanList']);
+        Route::delete('/jaringan/gangguan-list/{id}', [DataJaringanController::class, 'deleteGangguanList']);
+        
+        // Rating Negatif
+        Route::get('/jaringan/rating-negatif', [\App\Http\Controllers\RatingNegatifController::class, 'index']);
+        Route::post('/jaringan/rating-negatif', [\App\Http\Controllers\RatingNegatifController::class, 'store']);
+        Route::delete('/jaringan/rating-negatif/{id}', [\App\Http\Controllers\RatingNegatifController::class, 'destroy']);
+        Route::get('/jaringan/rating-negatif/rekap', [\App\Http\Controllers\RatingNegatifController::class, 'rekap']);
+        Route::get('/jaringan/rating-negatif/yoy', [\App\Http\Controllers\RatingNegatifController::class, 'yoy']);
+        
+        // Gangguan TM
+        Route::get('/jaringan/gangguan-tm', [\App\Http\Controllers\GangguanTmController::class, 'index']);
+        Route::post('/jaringan/gangguan-tm', [\App\Http\Controllers\GangguanTmController::class, 'store']); // Legacy
+        Route::post('/jaringan/gangguan-tm/kurang-5', [\App\Http\Controllers\GangguanTmController::class, 'storeKurang5Mnt']);
+        Route::put('/jaringan/gangguan-tm/kurang-5/{id}', [\App\Http\Controllers\GangguanTmController::class, 'updateKurang5Mnt']);
+        Route::delete('/jaringan/gangguan-tm/kurang-5/{id}', [\App\Http\Controllers\GangguanTmController::class, 'deleteKurang5Mnt']);
+        Route::post('/jaringan/gangguan-tm/lebih-5', [\App\Http\Controllers\GangguanTmController::class, 'storeLebih5Mnt']);
+        Route::put('/jaringan/gangguan-tm/lebih-5/{tahun}/{bulan}', [\App\Http\Controllers\GangguanTmController::class, 'updateLebih5Mnt']);
+        Route::post('/jaringan/gangguan-tm/detail-lebih5', [\App\Http\Controllers\GangguanTmController::class, 'insertDetailLebih5Mnt']);
+        Route::put('/jaringan/gangguan-tm/detail-lebih5/{id}', [\App\Http\Controllers\GangguanTmController::class, 'updateDetailLebih5Mnt']);
+        Route::delete('/jaringan/gangguan-tm/detail-lebih5/{id}', [\App\Http\Controllers\GangguanTmController::class, 'deleteDetailLebih5Mnt']);
+        Route::get('/jaringan/gangguan-tm/lebih-5/detail', [\App\Http\Controllers\GangguanTmController::class, 'detailLebih5Mnt']);
+        Route::get('/jaringan/gangguan-tm/rekap', [\App\Http\Controllers\GangguanTmController::class, 'rekap']);
+        Route::get('/jaringan/gangguan-tm/semua-up3', [\App\Http\Controllers\GangguanTmController::class, 'semuaUp3']);
+        
+        // Target Tahunan
+        Route::get('/targets', [TargetTahunanController::class, 'index']);
+        Route::post('/targets', [TargetTahunanController::class, 'store']);
+        Route::get('/target/{bidang}/{indikator}', [TargetTahunanController::class, 'getMonthlyTarget']);
+        Route::put('/target/{bidang}/{indikator}/{tahun}', [TargetTahunanController::class, 'updateMonthlyTarget']);
+    });
 });
+

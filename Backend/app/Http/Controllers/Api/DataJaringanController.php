@@ -249,6 +249,11 @@ class DataJaringanController extends Controller
 
     public function saveEns(Request $request)
     {
+        $user = auth()->user();
+        if (!$user || !in_array($user->role, ['pic_jaringan', 'admin'])) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
         $request->validate([
             'periode_id' => 'required', // This is actually bulan from the frontend
             'tahun' => 'required'
@@ -274,6 +279,11 @@ class DataJaringanController extends Controller
 
     public function deleteEns(Request $request)
     {
+        $user = auth()->user();
+        if (!$user || !in_array($user->role, ['pic_jaringan', 'admin'])) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
         $request->validate([
             'bulan' => 'required',
             'tahun' => 'required'
@@ -293,7 +303,7 @@ class DataJaringanController extends Controller
     public function updateEns(Request $request, $id)
     {
         $user = auth()->user();
-        if (!$user || ($user->role !== 'pic_jaringan' && $user->role !== 'admin')) {
+        if (!$user || !in_array($user->role, ['pic_jaringan', 'admin'])) {
             return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
         }
 
@@ -329,7 +339,7 @@ class DataJaringanController extends Controller
     public function destroyEns($id)
     {
         $user = auth()->user();
-        if (!$user || ($user->role !== 'pic_jaringan' && $user->role !== 'admin')) {
+        if (!$user || !in_array($user->role, ['pic_jaringan', 'admin'])) {
             return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
         }
 

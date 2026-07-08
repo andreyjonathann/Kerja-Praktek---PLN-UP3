@@ -36,7 +36,7 @@ class MvodController extends Controller
     public function store(Request $request)
     {
         $user = auth()->user();
-        if ($user->role !== 'pic_jaringan') {
+        if (!$user || !in_array($user->role, ['pic_jaringan', 'admin'])) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
@@ -79,7 +79,7 @@ class MvodController extends Controller
     public function update(Request $request, $id)
     {
         $user = auth()->user();
-        if ($user->role !== 'pic_jaringan') {
+        if (!$user || !in_array($user->role, ['pic_jaringan', 'admin'])) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 

@@ -39,8 +39,8 @@ class SrdagController extends Controller
         ]);
 
         $user = auth()->user();
-        if (!$user) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        if (!$user || !in_array($user->role, ['pic_jaringan', 'admin'])) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
         $up3 = $user->role === 'admin' ? $request->up3 : $user->up3;
@@ -73,6 +73,14 @@ class SrdagController extends Controller
 
         $record = SrdagRealisasi::findOrFail($id);
 
+        $user = auth()->user();
+        if (!$user || !in_array($user->role, ['pic_jaringan', 'admin'])) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+        if ($user->role === 'pic_jaringan' && $user->up3 !== $record->up3) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized UP3'], 403);
+        }
+
         if ($request->jumlah_dispatch_berhasil > $request->jumlah_total_gangguan) {
             return response()->json(['success' => false, 'message' => 'Jumlah berhasil tidak boleh lebih dari total gangguan'], 422);
         }
@@ -91,13 +99,13 @@ class SrdagController extends Controller
     public function destroy(Request $request, $id)
     {
         $user = auth()->user();
-        if (!$user) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        if (!$user || !in_array($user->role, ['pic_jaringan', 'admin'])) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
         $record = SrdagRealisasi::findOrFail($id);
 
-        if ($user->role !== 'admin' && $user->up3 !== $record->up3) {
+        if ($user->role === 'pic_jaringan' && $user->up3 !== $record->up3) {
             return response()->json(['success' => false, 'message' => 'Unauthorized UP3'], 403);
         }
 
