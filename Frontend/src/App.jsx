@@ -49,6 +49,8 @@ import InputKinerjaPenghapusanPage from '@/pages/Niaga/InputKinerjaPenghapusan'
 import TindakLanjutLbkbPage from '@/pages/Niaga/TindakLanjutLbkb'
 import InputKinerjaLbkbPage from '@/pages/Niaga/InputKinerjaLbkb'
 
+import GantiMeterPage from '@/pages/GantiMeter'
+
 // Pemasaran Pages (legacy)
 import JumlahPelangganPage from '@/pages/Pemasaran/JumlahPelanggan'
 import DayaTersambungPage from '@/pages/Pemasaran/DayaTersambung'
@@ -428,7 +430,7 @@ export default function App() {
               } />
               <Route path="/ganti-meter" element={
                 <ProtectedRoute>
-                  <PlaceholderPage title="Ganti Meter Kwh" />
+                  <GantiMeterPage />
                 </ProtectedRoute>
               } />
               <Route path="/niaga" element={<Navigate to="/niaga/pelunasan" replace />} />
