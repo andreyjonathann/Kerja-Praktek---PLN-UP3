@@ -98,12 +98,12 @@ export default function PenjualanPage() {
       <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
         <div style={{ display:'flex', alignItems:'center', gap:10 }}>
           <div className="icon-wrapper-interactive" style={{
-            width:34, height:34, borderRadius:12,
+            width:28, height:28, borderRadius:8,
             background:'linear-gradient(135deg, rgba(20,162,186,0.2), rgba(20,162,186,0.08))',
             border:'1px solid rgba(20,162,186,0.25)',
             display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0,
           }}>
-            <ShoppingCart size={16} style={{ color:'#14A2BA' }} />
+            <ShoppingCart size={14} style={{ color:'#14A2BA' }} />
           </div>
           <h1 className="page-heading">PENJUALAN — Energi Listrik (kWh)</h1>
         </div>

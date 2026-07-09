@@ -135,3 +135,39 @@ Route::middleware('api')->group(function () {
     Route::post('/kinerja/{bidang}', [KinerjaController::class, 'store']);
     Route::delete('/kinerja/{bidang}', [KinerjaController::class, 'destroy']);
 });
+
+// =============================================================================
+// K3 Maturity Level Routes
+// =============================================================================
+Route::prefix('k3')->middleware('auth:sanctum')->group(function () {
+
+    // Master data: categories with criteria & levels (read-only)
+    Route::get('/categories', [\App\Http\Controllers\K3AssessmentController::class, 'categories']);
+
+    // Dashboard (radar data, monthly trend, unit comparison)
+    Route::get('/dashboard', [\App\Http\Controllers\K3AssessmentController::class, 'dashboard']);
+
+    // Assessments
+    Route::get('/assessments',               [\App\Http\Controllers\K3AssessmentController::class, 'index']);
+    Route::post('/assessments',              [\App\Http\Controllers\K3AssessmentController::class, 'store']);
+    Route::get('/assessments/{id}',          [\App\Http\Controllers\K3AssessmentController::class, 'show']);
+    Route::put('/assessments/{id}',          [\App\Http\Controllers\K3AssessmentController::class, 'update']);
+    Route::post('/assessments/{id}/submit',  [\App\Http\Controllers\K3AssessmentController::class, 'submit']);
+    Route::post('/assessments/{id}/unsubmit',[\App\Http\Controllers\K3AssessmentController::class, 'unsubmit']);
+    Route::post('/assessments/{id}/approve', [\App\Http\Controllers\K3AssessmentController::class, 'approve']);
+    Route::post('/assessments/{id}/revisi',  [\App\Http\Controllers\K3AssessmentController::class, 'revisi']);
+
+    // Findings
+    Route::get('/findings',         [\App\Http\Controllers\K3FindingController::class, 'index']);
+    Route::post('/findings',        [\App\Http\Controllers\K3FindingController::class, 'store']);
+    Route::get('/findings/{id}',    [\App\Http\Controllers\K3FindingController::class, 'show']);
+    Route::put('/findings/{id}',    [\App\Http\Controllers\K3FindingController::class, 'update']);
+    Route::delete('/findings/{id}', [\App\Http\Controllers\K3FindingController::class, 'destroy']);
+
+    // Activities
+    Route::get('/activities',         [\App\Http\Controllers\K3ActivityController::class, 'index']);
+    Route::post('/activities',        [\App\Http\Controllers\K3ActivityController::class, 'store']);
+    Route::get('/activities/{id}',    [\App\Http\Controllers\K3ActivityController::class, 'show']);
+    Route::put('/activities/{id}',    [\App\Http\Controllers\K3ActivityController::class, 'update']);
+    Route::delete('/activities/{id}', [\App\Http\Controllers\K3ActivityController::class, 'destroy']);
+});

@@ -8,7 +8,7 @@ import { MONTHS, YEARS } from '@/utils/constants'
 import { NAV_ITEMS } from '@/utils/constants'
 import api from '@/services/api'
 import { formatDistanceToNow } from 'date-fns'
-import { id } from 'date-fns/locale/id'
+import { id } from 'date-fns/locale'
 
 export default function Header({ onMenuToggle, onRefresh, refreshing }) {
   const { dark, toggle }              = useTheme()

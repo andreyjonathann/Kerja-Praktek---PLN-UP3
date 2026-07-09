@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import api from '@/services/api';
-import { Target, ChevronDown, ChevronRight } from 'lucide-react';
+import { Target, ChevronDown, ChevronRight, ListFilter, MoreVertical, ChevronLeft } from 'lucide-react';
 
 export default function KelolaTargetPage() {
   const location = useLocation();
@@ -71,86 +71,114 @@ export default function KelolaTargetPage() {
     : Object.keys(groupedTargets).sort();
 
   return (
-    <div className="bg-slate-50 min-h-screen w-full flex flex-col gap-6 animate-fade-in relative pb-20">
-      
-      {/* Header */}
-      <div className="sticky top-0 z-40 bg-white border-b border-slate-200 py-4 px-4 md:px-8 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-[#00A2B9] rounded-2xl flex flex-shrink-0 items-center justify-center text-white shadow-lg shadow-teal-500/20">
-            <Target size={26} />
-          </div>
-          <div>
-            <h1 className="text-xl md:text-2xl font-extrabold text-slate-800 tracking-tight">
-              Kelola Target {activeBidang && `— Bidang ${activeBidang}`}
-            </h1>
-            <p className="text-sm font-medium text-slate-500">Manajemen target tahunan untuk seluruh bidang</p>
-          </div>
-        </div>
-      </div>
+    <div className="bg-slate-50 min-h-screen w-full">
 
-      <div className="w-full px-[32px] py-4 md:py-8 mt-2">
-        {loading ? (
-          <div className="flex justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-800"></div>
-          </div>
-        ) : targets.length === 0 ? (
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-10 text-center text-slate-500">
-            Tidak ada target yang ditemukan untuk tahun {tahun}. Silakan pastikan Database Seeder sudah berjalan.
-          </div>
-        ) : (
-          <div className="flex flex-col gap-8 pb-10 items-start">
-            
-            {/* Konten Kanan: Tabel Target */}
-            <div className="flex-1 min-w-0 w-full space-y-8">
-              {bidangToRender.map((bidang) => (
-                <div key={bidang} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden animate-fade-in">
-                  <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 text-center">
-                    <h2 className="font-extrabold text-lg text-slate-800 tracking-tight uppercase">{bidang}</h2>
-                  </div>
-                  
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-center border-collapse table-fixed">
-                      <thead>
-                        <tr className="bg-slate-50 border-b border-slate-200">
-                          <th className="py-3 px-8 font-bold text-sm text-slate-600 w-auto text-left">Indikator</th>
-                          <th className="py-3 px-4 font-bold text-sm text-slate-600 text-center w-32">Polaritas</th>
-                          <th className="py-3 px-4 font-bold text-sm text-slate-600 text-center w-40">Satuan</th>
-                          <th className="py-3 px-4 font-bold text-sm text-slate-600 text-center w-10"></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {groupedTargets[bidang].map((item, idx) => (
-                          <tr 
-                            key={item.id} 
-                            onClick={() => handleRowClick(item)}
-                            className="border-b border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors group"
-                          >
-                            <td className="py-4 px-8 text-sm font-semibold text-slate-800 align-middle text-left group-hover:text-teal-600 transition-colors">
-                              {item.indikator}
-                            </td>
-                            <td className="py-4 px-4 text-sm text-slate-600 text-center align-middle">
-                              <div className="flex justify-center w-full">
-                                <span className={`px-2 py-1 rounded-md text-xs font-bold ${
-                                  item.polaritas === 'MAXIMIZE' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
-                                }`}>
-                                  {item.polaritas}
-                                </span>
-                              </div>
-                            </td>
-                            <td className="py-4 px-4 text-sm text-slate-600 text-center align-middle">{item.satuan}</td>
-                            <td className="py-4 px-4 text-right align-middle text-slate-400 group-hover:text-teal-600 transition-colors">
-                              <ChevronRight size={18} className="inline-block" />
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              ))}
+      <div className="pl-8 pr-6 py-6 flex flex-col gap-5">
+
+        {/* ── Header Card ── */}
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm px-6 py-5 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-11 h-11 bg-[#00A2B9] rounded-xl flex-shrink-0 flex items-center justify-center text-white shadow">
+              <Target size={22} />
+            </div>
+            <div>
+              <h1 className="text-base font-bold text-slate-800 leading-tight">
+                Kelola Target {activeBidang && `— Bidang ${activeBidang.toUpperCase()}`}
+              </h1>
+              <p className="text-xs text-slate-500 mt-0.5">Manajemen target tahunan untuk seluruh bidang</p>
             </div>
           </div>
+          <button className="text-slate-400 hover:text-slate-600 p-2 rounded-lg hover:bg-slate-100 transition-colors">
+            <ListFilter size={17} />
+          </button>
+        </div>
+
+        {/* ── Loading / Empty / Table ── */}
+        {loading ? (
+          <div className="flex justify-center items-center py-20">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#00A2B9]" />
+          </div>
+        ) : targets.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-slate-200 p-10 text-center text-sm text-slate-500">
+            Tidak ada target yang ditemukan untuk tahun {tahun}.
+          </div>
+        ) : (
+          <div className="flex flex-col gap-5">
+            {bidangToRender.map((bidang) => (
+              <div key={bidang} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+
+                {/* Card title */}
+                <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+                  <h2 className="text-[15px] font-bold text-slate-800">Daftar Target — {bidang.toUpperCase()}</h2>
+                  <button className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors">
+                    <ListFilter size={15} />
+                  </button>
+                </div>
+
+                {/* Column headers */}
+                <div className="grid grid-cols-[1fr_140px_160px_52px] bg-slate-50 border-b border-slate-200 px-6 py-2.5">
+                  <span className="text-[11px] font-bold text-slate-400 tracking-widest uppercase">INDIKATOR</span>
+                  <span className="text-[11px] font-bold text-slate-400 tracking-widest uppercase text-center">POLARITAS</span>
+                  <span className="text-[11px] font-bold text-slate-400 tracking-widest uppercase text-center">SATUAN</span>
+                  <span className="text-[11px] font-bold text-slate-400 tracking-widest uppercase text-center">ACTION</span>
+                </div>
+
+                {/* Rows */}
+                {groupedTargets[bidang].map((item) => (
+                  <div
+                    key={item.id}
+                    onClick={() => handleRowClick(item)}
+                    className="grid grid-cols-[1fr_140px_160px_52px] items-center px-6 py-5 border-b border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors group"
+                  >
+                    {/* Indikator */}
+                    <div>
+                      <div className="text-[15px] font-bold text-slate-800 group-hover:text-teal-600 transition-colors leading-snug">
+                        {item.indikator}
+                      </div>
+                      <div className="text-xs text-slate-400 mt-1 font-medium">TARGET TAHUNAN</div>
+                    </div>
+
+                    {/* Polaritas */}
+                    <div className="flex justify-center">
+                      <span className={`px-3 py-1 rounded-full text-[11px] font-bold ${
+                        item.polaritas === 'MAXIMIZE'
+                          ? 'text-green-600 bg-green-50 border border-green-200'
+                          : 'text-orange-500 bg-orange-50 border border-orange-200'
+                      }`}>
+                        {item.polaritas}
+                      </span>
+                    </div>
+
+                    {/* Satuan */}
+                    <div className="text-sm text-slate-700 font-medium text-center">{item.satuan}</div>
+
+                    {/* Action */}
+                    <div className="flex justify-center text-slate-400 group-hover:text-slate-600 transition-colors">
+                      <MoreVertical size={17} />
+                    </div>
+                  </div>
+                ))}
+
+                {/* Footer */}
+                <div className="px-6 py-3.5 flex items-center justify-between">
+                  <span className="text-xs text-slate-400 font-medium">
+                    Showing {groupedTargets[bidang].length} of {groupedTargets[bidang].length} targets
+                  </span>
+                  <div className="flex items-center gap-3 select-none">
+                    <button className="flex items-center gap-1 text-xs font-semibold text-slate-300 cursor-not-allowed">
+                      <ChevronLeft size={13} /> Prev
+                    </button>
+                    <button className="flex items-center gap-1 text-xs font-semibold text-slate-300 cursor-not-allowed">
+                      Next <ChevronRight size={13} />
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+            ))}
+          </div>
         )}
+
       </div>
     </div>
   );

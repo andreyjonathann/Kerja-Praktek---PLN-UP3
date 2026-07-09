@@ -68,6 +68,20 @@ import EditEnsPage from '@/pages/EditEns'
 import KelolaTargetPage from '@/pages/Admin/KelolaTarget'
 import KelolaTargetBulananPage from '@/pages/Admin/KelolaTargetBulanan'
 
+// K3 Pages
+import K3DashboardPage    from '@/pages/K3/Dashboard'
+import K3SelfAssessmentPage from '@/pages/K3/SelfAssessment'
+import K3SelfAssessmentDetailPage from '@/pages/K3/SelfAssessment/Detail'
+import K3ApprovalPage    from '@/pages/K3/Approval'
+import K3TemuanPage      from '@/pages/K3/Temuan'
+import K3KegiatanPage    from '@/pages/K3/Kegiatan'
+import K3LaporanPage     from '@/pages/K3/Laporan'
+import K3ManajemenPage   from '@/pages/K3/Manajemen'
+import K3DokumenPage     from '@/pages/K3/Dokumen'
+import K3NotifikasiPage  from '@/pages/K3/Notifikasi'
+import K3TrendPage       from '@/pages/K3/Trend'
+import UnitUP3Page        from '@/pages/UnitUP3'
+
 // Protected Route Wrapper
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -93,7 +107,7 @@ function ProtectedRoute({ children }) {
   return <Layout>{children}</Layout>
 }
 
-// Role-based home: pic_pemasaran → /pemasaran, lainnya → Overview biasa
+// Role-based home: pic_pemasaran → /pemasaran, lainnya → K3 Dashboard
 function RoleBasedHome() {
   const { user, loading } = useAuth()
   if (loading) return null
@@ -102,7 +116,7 @@ function RoleBasedHome() {
   }
   return (
     <ProtectedRoute>
-      <OverviewPage />
+      <K3DashboardPage />
     </ProtectedRoute>
   )
 }
@@ -206,6 +220,12 @@ export default function App() {
               <Route path="/ens/input" element={
                 <ProtectedRoute>
                   <InputEnsPage />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/unit-up3" element={
+                <ProtectedRoute>
+                  <UnitUP3Page />
                 </ProtectedRoute>
               } />
 
@@ -457,8 +477,67 @@ export default function App() {
                 </ProtectedRoute>
               } />
 
+              {/* ── K3 Maturity Level Routes ─────────────────────────── */}
+              <Route path="/k3/dashboard" element={
+                <ProtectedRoute>
+                  <K3DashboardPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/k3/trend" element={
+                <ProtectedRoute>
+                  <K3TrendPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/k3/assessment/:category" element={
+                <ProtectedRoute>
+                  <K3SelfAssessmentPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/k3/assessment/:category/:criteriaId" element={
+                <ProtectedRoute>
+                  <K3SelfAssessmentDetailPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/k3/approval" element={
+                <ProtectedRoute>
+                  <K3ApprovalPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/k3/temuan" element={
+                <ProtectedRoute>
+                  <K3TemuanPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/k3/kegiatan" element={
+                <ProtectedRoute>
+                  <K3KegiatanPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/k3/laporan" element={
+                <ProtectedRoute>
+                  <K3LaporanPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/k3/manajemen" element={
+                <ProtectedRoute>
+                  <K3ManajemenPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/k3/dokumen" element={
+                <ProtectedRoute>
+                  <K3DokumenPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/k3/notifikasi" element={
+                <ProtectedRoute>
+                  <K3NotifikasiPage />
+                </ProtectedRoute>
+              } />
+
+
               {/* Legacy Routes Redirect */}
               <Route path="/gangguan-tm" element={<Navigate to="/jaringan/gangguan-tm" replace />} />
+
 
               {/* Fallback */}
               <Route path="*" element={<Navigate to="/" replace />} />

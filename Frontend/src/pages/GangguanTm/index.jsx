@@ -510,20 +510,22 @@ export default function GangguanTmPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-slate-200 mb-6 w-full max-w-2xl bg-white rounded-lg shadow-sm overflow-hidden">
-        {TABS.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex-1 py-3 px-4 text-sm font-semibold transition-colors duration-200 ${
-              activeTab === tab.id 
-                ? 'border-b-2 border-blue-600 text-blue-600' 
-                : 'text-slate-500 hover:text-slate-700 hover:border-slate-300 border-b-2 border-transparent'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      <div className="w-full flex justify-center mb-6">
+        <div className="flex bg-slate-100 rounded-xl p-1 w-full max-w-xl shadow-none">
+          {TABS.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex-1 py-2.5 px-4 text-sm font-semibold rounded-lg transition-all duration-200 ${
+                activeTab === tab.id 
+                  ? 'bg-white text-blue-600 shadow-sm' 
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <TargetWarning up3={filters.up3} year={filters.year} isVisible={summary.target == null} />

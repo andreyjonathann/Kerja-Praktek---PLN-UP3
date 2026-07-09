@@ -69,7 +69,15 @@ class DatabaseSeeder extends Seeder
                 'password' => Hash::make('password'),
                 'role' => 'pic_keuangan',
                 'is_active' => true,
-            ]
+            ],
+            [
+                'name' => 'Admin K3',
+                'username' => 'admin_k3',
+                'email' => 'k3@pln.co.id',
+                'password' => Hash::make('password'),
+                'role' => 'admin_k3',
+                'is_active' => true,
+            ],
         ];
 
         foreach ($users as $user) {

@@ -49,6 +49,7 @@ export const TARIFF_SEGMENTS = [
 
 export const NAV_ITEMS = [
   { type: 'item', key: 'home', label: 'HOME', icon: 'Home', path: '/' },
+  { type: 'item', key: 'unit-up3', label: 'UNIT UP3', icon: 'Building2', path: '/unit-up3', k3: true },
   {
     type: 'group',
     group: 'NKO',
@@ -168,4 +169,40 @@ export const NAV_ITEMS = [
   },
   { type: 'item', key: 'informasi-gi', label: 'INFORMASI GI', icon: 'FileText', path: '/informasi-gi' },
   { type: 'item', key: 'spreadsheet', label: 'LIVE SPREADSHEET', icon: 'LayoutDashboard', path: '/spreadsheet' },
+
+  // ── K3 Maturity Level ────────────────────────────────────────────────────────
+  {
+    type: 'group', group: 'K3 MATURITY LEVEL', icon: 'ShieldCheck', k3: true,
+    items: [
+      { key: 'k3-trend',     label: 'TREND MATURITY LEVEL',  path: '/k3/trend',     icon: 'TrendingUp' },
+      {
+        type: 'subgroup',
+        group: 'KELOLA ASSESSMENT',
+        icon: 'ClipboardList',
+        items: [
+          { key: 'k3-assessment-lmc', label: 'LMC', path: '/k3/assessment/lmc' },
+          { key: 'k3-assessment-aai', label: 'AAI', path: '/k3/assessment/aai' },
+          { key: 'k3-assessment-ibp', label: 'IBP', path: '/k3/assessment/ibp' },
+          { key: 'k3-assessment-ste', label: 'STE', path: '/k3/assessment/ste' },
+          { key: 'k3-assessment-scc', label: 'SCC', path: '/k3/assessment/scc' },
+          { key: 'k3-assessment-rep', label: 'REP', path: '/k3/assessment/rep' },
+        ]
+      },
+    ],
+  },
+
+  // ── Kinerja K3 ────────────────────────────────────────────────────────────────
+  {
+    type: 'group', group: 'KINERJA K3', icon: 'Activity', k3: true,
+    items: [
+      { key: 'k3-temuan', label: 'TEMUAN & TINDAK LANJUT', path: '/k3/temuan', icon: 'AlertTriangle' },
+      { key: 'k3-kegiatan', label: 'KEGIATAN K3', path: '/k3/kegiatan', icon: 'Activity' },
+    ],
+  },
+
+  // ── Laporan ───────────────────────────────────────────────────────────────────
+  { type: 'item', key: 'k3-laporan', label: 'LAPORAN', icon: 'FileText', path: '/k3/laporan', k3: true },
+
+  // ── Manajemen Data (Admin K3 only) ────────────────────────────────────────────
+  { type: 'item', key: 'k3-manajemen', label: 'MANAJEMEN DATA', icon: 'Settings', path: '/k3/manajemen', k3: true },
 ]
