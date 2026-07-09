@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Constants\Up3Constants;
+
 use Illuminate\Http\Request;
 use App\Models\KinerjaJaringan;
 use App\Models\Periode;
@@ -505,6 +507,10 @@ class GangguanTmController extends Controller
     public function rekap(Request $request)
     {
         $year = $request->query('tahun', date('Y'));
+        
+        $bulanSekarang = date('n');
+        if ($year < date('Y')) $bulanSekarang = 12;
+        if ($year > date('Y')) $bulanSekarang = 0;
 
         $periods = Periode::where('tahun', $year)->orderBy('bulan')->get();
         $periodeIds = $periods->pluck('id');
@@ -524,6 +530,7 @@ class GangguanTmController extends Controller
             
             // Calculate sum of monthly targets
             $targetTahunan = null;
+            $targetYtd = null;
             if ($targetObj) {
                 $mTargets = [
                     $targetObj->target_jan, $targetObj->target_feb, $targetObj->target_mar,
@@ -532,11 +539,21 @@ class GangguanTmController extends Controller
                     $targetObj->target_okt, $targetObj->target_nov, $targetObj->target_des
                 ];
                 $sumTgt = 0;
+                $sumYtd = 0;
                 $hasAny = false;
-                foreach ($mTargets as $mt) {
-                    if ($mt !== null) { $sumTgt += $mt; $hasAny = true; }
+                foreach ($mTargets as $idx => $mt) {
+                    if ($mt !== null) { 
+                        $sumTgt += $mt; 
+                        $hasAny = true; 
+                        if (($idx + 1) <= $bulanSekarang) {
+                            $sumYtd += $mt;
+                        }
+                    }
                 }
-                if ($hasAny) $targetTahunan = $sumTgt;
+                if ($hasAny) {
+                    $targetTahunan = $sumTgt;
+                    $targetYtd = $sumYtd;
+                }
             }
 
             $monthlyData = [];
@@ -576,6 +593,7 @@ class GangguanTmController extends Controller
 
             $rekapData[$tipe] = [
                 'target_tahunan' => $targetTahunan,
+                'target_ytd' => $targetYtd,
                 'realisasi_ytd' => $sumReal,
                 'monthly' => $monthlyData,
                 'target_bulanan' => $targetBulanan,
@@ -591,6 +609,9 @@ class GangguanTmController extends Controller
     public function semuaUp3(Request $request)
     {
         $year = $request->query('tahun', date('Y'));
+        $bulanSekarang = date('n');
+        if ($year < date('Y')) $bulanSekarang = 12;
+        if ($year > date('Y')) $bulanSekarang = 0;
         
         $periods = Periode::where('tahun', $year)->get();
         $kinerja = KinerjaJaringan::whereIn('periode_id', $periods->pluck('id'))->get();
@@ -608,6 +629,7 @@ class GangguanTmController extends Controller
             
             // Calculate sum of monthly targets
             $targetTahunan = null;
+            $targetYtd = null;
             if ($targetObj) {
                 $mTargets = [
                     $targetObj->target_jan, $targetObj->target_feb, $targetObj->target_mar,
@@ -616,11 +638,21 @@ class GangguanTmController extends Controller
                     $targetObj->target_okt, $targetObj->target_nov, $targetObj->target_des
                 ];
                 $sumTgt = 0;
+                $sumYtd = 0;
                 $hasAny = false;
-                foreach ($mTargets as $mt) {
-                    if ($mt !== null) { $sumTgt += $mt; $hasAny = true; }
+                foreach ($mTargets as $idx => $mt) {
+                    if ($mt !== null) { 
+                        $sumTgt += $mt; 
+                        $hasAny = true; 
+                        if (($idx + 1) <= $bulanSekarang) {
+                            $sumYtd += $mt;
+                        }
+                    }
                 }
-                if ($hasAny) $targetTahunan = $sumTgt;
+                if ($hasAny) {
+                    $targetTahunan = $sumTgt;
+                    $targetYtd = $sumYtd;
+                }
             }
 
             $sumReal = 0;
@@ -632,15 +664,15 @@ class GangguanTmController extends Controller
 
             $persen = null;
             $status = '-';
-            if ($targetTahunan !== null && $targetTahunan > 0) {
-                $persen = ($sumReal / $targetTahunan) * 100;
-                $status = $sumReal > $targetTahunan ? 'TERLAMPAUI' : 'AMAN';
+            if ($targetYtd !== null && $targetYtd > 0) {
+                $persen = ($targetYtd / max(0.001, $sumReal)) * 100;
+                $status = $sumReal > $targetYtd ? 'TERLAMPAUI' : 'AMAN';
             }
 
             $data[$tipe] = [
                 [
-                    'up3' => 'UP3 Kebon Jeruk',
-                    'target' => $targetTahunan,
+                    'up3' => Up3Constants::DEFAULT_UP3,
+                    'target' => $targetYtd,
                     'realisasi_ytd' => $sumReal,
                     'pencapaian' => $persen,
                     'status' => $status,

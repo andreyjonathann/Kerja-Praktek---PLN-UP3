@@ -8,7 +8,8 @@ const kpiConfig = {
     cumTargetKey: 'cumulativeTgt',
     cumRealKey: 'cumulativeReal',
     detailHeaders: ["Bulan", "Tidak Terencana", "Terencana", "Bencana Alam", "Transmisi", "Pembangkit", "Total Realisasi"],
-    detailKeys: ['distribusi_padam_tidak_terencana', 'distribusi_padam_terencana', 'distribusi_bencana_alam', 'transmisi', 'pembangkit', 'realisasi']
+    detailKeys: ['distribusi_padam_tidak_terencana', 'distribusi_padam_terencana', 'distribusi_bencana_alam', 'transmisi', 'pembangkit', 'realisasi'],
+    format: "0.0000"
   },
   saifi: {
     unit: 'Kali/Plgn',
@@ -17,7 +18,8 @@ const kpiConfig = {
     cumTargetKey: 'cumulativeTgt',
     cumRealKey: 'cumulativeReal',
     detailHeaders: ["Bulan", "Tidak Terencana", "Terencana", "Bencana Alam", "Transmisi", "Pembangkit", "Total Realisasi"],
-    detailKeys: ['distribusi_padam_tidak_terencana', 'distribusi_padam_terencana', 'distribusi_bencana_alam', 'transmisi', 'pembangkit', 'realisasi']
+    detailKeys: ['distribusi_padam_tidak_terencana', 'distribusi_padam_terencana', 'distribusi_bencana_alam', 'transmisi', 'pembangkit', 'realisasi'],
+    format: "0.0000"
   },
   penjualan: {
     unit: 'kWh',
@@ -209,9 +211,9 @@ export const exportToExcel = (kpiType, startYear, endYear, dataMap) => {
       if (C === years.length + 2 && R >= 2 && R <= 13) {
         // Pencapaian column (Akumulasi table)
         cell.z = "0%";
-      } else {
-        // Other numeric cells
-        cell.z = "0.00";
+      } else if (R !== 1) { // Skip header row 1 where years are placed
+        // Use custom format or default
+        cell.z = cfg.format || "#,##0.00";
       }
     }
   }

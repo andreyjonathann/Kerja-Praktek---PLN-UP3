@@ -4,7 +4,7 @@ import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer, BarChart
 } from 'recharts'
-import { Zap, Target, Activity, TrendingDown, Plus } from 'lucide-react'
+import { Zap, Target, Activity, TrendingDown, Plus, CheckCircle, TrendingUp, XCircle } from 'lucide-react'
 import ChartWrapper from '@/components/ui/ChartWrapper'
 import KpiCard from '@/components/ui/KpiCard'
 import DataTable from '@/components/ui/DataTable'
@@ -116,7 +116,13 @@ export default function SaifiPage() {
     if (!isBackground) { setLoading(true); setError(null) }
     try {
       const dbData = await getDashboardData(filters.year)
-      setData(dbData.saifi || [])
+      const rawData = dbData.saifi || [];
+      const cleanData = rawData.map(d => ({
+        ...d,
+        cumulativeReal: d.realisasi === null ? null : d.cumulativeReal,
+        cumulativeTgt: (d.target === null && d.realisasi === null) ? null : d.cumulativeTgt
+      }));
+      setData(cleanData);
     } catch (err) {
       console.error(err)
       if (!isBackground) {
@@ -145,9 +151,9 @@ export default function SaifiPage() {
 
   const filled      = data.filter(d => d.realisasi != null)
   const lastMonth   = filled[filled.length - 1]
-  const totalReal   = lastMonth ? (lastMonth.realisasi || 0) : 0
-  const totalTgt    = lastMonth ? lastMonth.target : null
-  const achievement = (totalTgt !== null && totalTgt > 0) ? Math.min(150, (totalTgt / Math.max(0.001, totalReal)) * 100) : 0
+  const totalReal   = lastMonth ? (lastMonth.cumulativeReal || 0) : 0
+  const totalTgt    = lastMonth ? lastMonth.cumulativeTgt : null
+  const achievement = (totalTgt !== null && totalTgt > 0) ? (totalTgt / Math.max(0.001, totalReal)) * 100 : 0
   
   const breakdownChartData = filled.map(d => {
     const takTerencana = d.distribusi_padam_tidak_terencana || 0
@@ -201,11 +207,17 @@ export default function SaifiPage() {
       </div>
       <TargetWarning up3={filters.up3} year={filters.year} isVisible={!loading && !data.some(d => d.target && d.target > 0)} />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-        <KpiCard title="SAIFI YTD" value={Number(totalReal).toFixed(4)} unit="kali/plg" achievement={achievement} icon={Zap} color="blue" isInverse loading={loading} />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <KpiCard title="Kumulatif Realisasi" value={Number(totalReal).toFixed(4)} unit="kali/plg" icon={Zap} color="blue" loading={loading} />
         <KpiCard title="Target YTD" value={totalTgt !== null ? Number(totalTgt).toFixed(4) : '-'} unit={totalTgt !== null ? "kali/plg" : ""} icon={Target} color="blue" loading={loading} />
-        <KpiCard title="Bulan Terakhir" value={lastMonth?.realisasi != null ? Number(lastMonth.realisasi).toFixed(4) : '—'} unit="kali/plg" icon={Activity} color="blue" loading={loading} />
-        <KpiCard title="Pencapaian" value={totalTgt !== null ? Number(achievement).toFixed(1) + '%' : '-'} icon={TrendingDown} color={totalReal > (totalTgt || 0) ? 'red' : 'green'} loading={loading} />
+        <KpiCard 
+          title="Status Kinerja" 
+          value={totalTgt !== null ? (totalReal <= totalTgt ? 'TERCAPAI' : 'TIDAK TERCAPAI') : '-'} 
+          icon={totalTgt !== null ? (totalReal <= totalTgt ? CheckCircle : XCircle) : Activity} 
+          color={totalTgt !== null ? (totalReal <= totalTgt ? 'green' : 'red') : 'blue'} 
+          badgeText={totalTgt !== null ? `Pencapaian: ${Number(achievement).toFixed(1)}%` : null}
+          loading={loading} 
+        />
       </div>
 
       <div style={{

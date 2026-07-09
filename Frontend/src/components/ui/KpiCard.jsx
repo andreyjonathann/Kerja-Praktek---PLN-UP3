@@ -50,7 +50,7 @@ const getAchColors = (achKey, dark) => {
  */
 export default function KpiCard({
   title, value, unit = '', achievement, target, trend,
-  statusText, statusColor,
+  statusText, statusColor, badgeText,
   icon: Icon, color = 'blue', isInverse = false, loading = false, onClick,
 }) {
   const { dark } = useTheme()
@@ -135,7 +135,8 @@ export default function KpiCard({
         <div style={{ flex:1, marginBottom:8 }}>
           <div style={{ display:'flex', alignItems:'baseline', gap:6 }}>
             <span style={{
-              fontSize: value && value.length > 7 ? '1.5rem' : '1.8rem', fontWeight:800, color:'var(--text-primary)',
+              fontSize: value && value.length > 7 ? '1.5rem' : '1.8rem', fontWeight:800, 
+              color: color === 'red' || color === 'green' ? c.accent : 'var(--text-primary)',
               lineHeight:1.1, letterSpacing:'-0.025em',
               fontFeatureSettings:'"tnum"',
             }}>
@@ -157,6 +158,16 @@ export default function KpiCard({
               background:ach.bg, color:ach.color, border:`1px solid ${ach.border}`,
             }}>
               {formatPercent(achievement, 1)} vs Target
+            </span>
+          )}
+          {badgeText != null && (
+            <span style={{
+              display:'inline-flex', alignItems:'center', gap:4,
+              padding:'3px 10px', borderRadius:99,
+              fontSize:'0.85rem', fontWeight:800,
+              background: c.bg, color: c.accent, border:`1px solid ${c.border}`,
+            }}>
+              {badgeText}
             </span>
           )}
           {statusText != null && (

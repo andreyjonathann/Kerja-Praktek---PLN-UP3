@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { DEFAULT_UP3 } from '@/constants/up3'
 import { createPortal } from 'react-dom'
 import { X, Edit2, Trash2, Loader2, Save } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
@@ -11,12 +12,14 @@ export default function GangguanDetailModal({
   onOpenChange,
   rowData,
   year,
+  up3: up3Prop,    // UP3 filter aktif dari halaman parent
   onSuccess // Added onSuccess per PATTERN_GUIDE.md
 }) {
   const navigate = useNavigate()
   const { user } = useAuth()
   const isPIC = user?.role === 'PIC' || user?.role === 'pic_jaringan'
-  const up3 = user?.up3 || 'UP3 Kebon Jeruk'
+  // Prioritaskan prop up3 dari parent (filter aktif), fallback ke user?.up3 untuk backward compatibility
+  const up3 = up3Prop ?? user?.up3 ?? DEFAULT_UP3
 
   // --- TRAFO STATES ---
   const [loadingTrafo, setLoadingTrafo] = useState(false)
@@ -83,7 +86,7 @@ export default function GangguanDetailModal({
   const fetchSwitchingData = async () => {
     setLoadingSwitching(true)
     try {
-      const resSw = await api.get(`/v1/gangguan-switching?tahun=${tahun}&up3=${up3}`)
+      const resSw = await api.get(`/v1/gangguan-switching?tahun=${tahun}&up3=${encodeURIComponent(up3)}`)
       const swData = resSw.data?.data || []
       const currentSw = swData.find(item => item.bulan == bulanNum)
       if (currentSw) {
@@ -103,7 +106,7 @@ export default function GangguanDetailModal({
   const fetchTrafoData = async () => {
     setLoadingTrafo(true)
     try {
-      const resTr = await api.get(`/v1/gangguan-trafo?tahun=${tahun}&up3=${up3}`)
+      const resTr = await api.get(`/v1/gangguan-trafo?tahun=${tahun}&up3=${encodeURIComponent(up3)}`)
       const trData = resTr.data?.data || []
       const currentTr = trData.find(item => item.bulan == bulanNum)
       if (currentTr) {
@@ -317,7 +320,7 @@ export default function GangguanDetailModal({
           }}>
             <span style={{ fontWeight: 600, fontSize: 14, color: '#0f172a' }}>SWITCHING</span>
             <span style={{ fontWeight: 500, fontSize: 14, color: '#0f172a' }}>
-              {loadingSwitching ? <Loader2 size={14} className="animate-spin inline-block" /> : fmt(switchingDetails.length)} Kali
+              {loadingSwitching ? <Loader2 size={14} className="animate-spin inline-block" /> : fmt(switchingRecord?.jumlah_gangguan ?? 0)} Kali
             </span>
           </div>
 

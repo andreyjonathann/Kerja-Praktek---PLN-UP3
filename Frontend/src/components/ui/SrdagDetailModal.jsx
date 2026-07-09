@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { DEFAULT_UP3 } from '@/constants/up3'
 import { createPortal } from 'react-dom'
 import { X, Edit2, Trash2, Loader2, Save } from 'lucide-react'
 import api from '../../services/api'
@@ -12,8 +13,7 @@ const MONTHS_ID = [
 export default function SrdagDetailModal({ open, onOpenChange, rowData, tahun, up3, onSuccess }) {
   const { user } = useAuth()
   const isPIC = user?.role === 'pic_jaringan' || user?.role === 'admin'
-  console.log('--- DEBUG SRDAG MODAL ---', { open, rowData, user, isPIC })
-  const targetUp3 = user?.role === 'admin' && up3 ? up3 : (user?.up3 || 'UP3 Kebon Jeruk')
+  const targetUp3 = user?.role === 'admin' && up3 ? up3 : (user?.up3 || DEFAULT_UP3)
 
   const bulanNum  = rowData?.bulan ?? 0
   const bulanName = MONTHS_ID[bulanNum] || rowData?.label || ''

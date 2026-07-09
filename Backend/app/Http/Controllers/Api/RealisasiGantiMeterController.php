@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Constants\Up3Constants;
+
 use App\Http\Controllers\Controller;
 use App\Models\RealisasiGantiMeter;
 use App\Models\TargetTahunan;
@@ -60,7 +62,7 @@ class RealisasiGantiMeterController extends Controller
             ], 422);
         }
 
-        $up3 = $request->up3 ?? $user->up3 ?? 'UP3 Kebon Jeruk';
+        $up3 = $request->up3 ?? $user->up3 ?? Up3Constants::DEFAULT_UP3;
 
         // Cek duplikasi
         $exists = RealisasiGantiMeter::where('up3', $up3)

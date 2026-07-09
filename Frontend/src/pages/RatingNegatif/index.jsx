@@ -132,19 +132,23 @@ export default function RatingNegatifPage() {
     
     // Header
     const up3Names = rekapData.map(r => r.up3);
-    wsData.push(['REKAPITULASI RATING NEGATIF PLN MOBILE', ...up3Names.map(() => ''), '', '']);
-    wsData.push([`TAHUN ${year}`, ...up3Names.map(() => ''), '', '']);
+    wsData.push(['REKAPITULASI RATING NEGATIF PLN MOBILE', '', '', ...up3Names.map(() => '')]);
+    wsData.push([`TAHUN ${year}`, '', '', ...up3Names.map(() => '')]);
     wsData.push([]);
-    wsData.push(['BULAN', ...up3Names, 'YTD', 'TARGET']);
+    wsData.push(['BULAN', 'TARGET (Kali)', 'REALISASI (Kali)', ...up3Names]);
     
     // Data
     pivotedData.forEach(row => {
         const rowData = [row.bulan];
+        const monthNum = MONTHS_FULL.indexOf(row.bulan) + 1;
+        const detail = data?.monthly?.find(m => m.bulan === monthNum);
+        
+        rowData.push(detail && detail.target !== null ? detail.target : '-');
+        rowData.push(detail && detail.jml_rating_negatif !== null ? detail.jml_rating_negatif : '-');
+
         up3Names.forEach(up3 => {
-            rowData.push(row[up3] !== null ? row[up3] : '-');
+            rowData.push(row[up3] !== null ? `${Number(row[up3]).toLocaleString('id-ID', {minimumFractionDigits: 2, maximumFractionDigits: 2})}%` : '-');
         });
-        rowData.push(row.ytd !== null ? row.ytd : '-');
-        rowData.push(row.target !== null ? row.target : '-');
         wsData.push(rowData);
     });
     
@@ -464,40 +468,37 @@ export default function RatingNegatifPage() {
         <DataTable
           columns={[
             { key: 'bulan', label: 'Bulan', align: 'center', width: '120px', render: v => <span className="font-semibold text-slate-800">{v}</span> },
+            { key: 'target', label: 'Target (Kali)', align: 'center', render: (v, row) => {
+                const monthNum = MONTHS_FULL.indexOf(row.bulan) + 1;
+                const detail = data?.monthly?.find(m => m.bulan === monthNum);
+                return <span className="text-slate-700">{detail && detail.target !== null ? `${Number(detail.target).toLocaleString('id-ID')} Kali` : '-'}</span>;
+            }},
+            { key: 'realisasi', label: 'Realisasi (Kali)', align: 'center', render: (v, row) => {
+                const monthNum = MONTHS_FULL.indexOf(row.bulan) + 1;
+                const detail = data?.monthly?.find(m => m.bulan === monthNum);
+                return <span className="text-slate-700">{detail && detail.jml_rating_negatif !== null ? `${Number(detail.jml_rating_negatif).toLocaleString('id-ID')} Kali` : '-'}</span>;
+            }},
             ...rekapData.map(up3Data => ({
               key: up3Data.up3,
               label: <span style={{ color: 'var(--text-muted)' }}>{up3Data.up3}</span>,
-              align: 'center',
-              render: (v, row) => {
+              align: 'center',              render: (v, row) => {
                 const monthNum = MONTHS_FULL.indexOf(row.bulan) + 1;
                 const detail = data?.monthly?.find(m => m.bulan === monthNum);
 
                 if (v === null) return <span style={{ color: 'var(--text-muted)' }}>-</span>;
 
-                let bgColor = '#f8fafc';
-                let hoverColor = '#f1f5f9';
-                let textColor = 'var(--text-secondary)';
-                let borderColor = 'var(--border)';
+                let textColor = 'text-slate-700';
 
-                if (detail && detail.target !== null && detail.target !== undefined) {
+                if (detail && detail.target !== null && detail.target !== undefined && detail.jml_rating_negatif !== null && detail.jml_rating_negatif !== undefined) {
                   if (detail.jml_rating_negatif <= detail.target) {
-                    // Tercapai (Green)
-                    bgColor = '#dcfce7';
-                    hoverColor = '#bbf7d0';
-                    textColor = '#166534';
-                    borderColor = '#86efac';
+                    textColor = 'text-green-600';
                   } else {
-                    // Tidak Tercapai (Red)
-                    bgColor = '#fee2e2';
-                    hoverColor = '#fecaca';
-                    textColor = '#991b1b';
-                    borderColor = '#fca5a5';
+                    textColor = 'text-red-600';
                   }
                 }
 
                 return (
-                  <button 
-                    type="button"
+                  <span 
                     onClick={(e) => {
                       e.stopPropagation();
                       e.preventDefault();
@@ -509,24 +510,37 @@ export default function RatingNegatifPage() {
                         alert('Data detail tidak ditemukan!');
                       }
                     }}
-                    style={{
-                      padding: '4px 8px', border: `1px solid ${borderColor}`, borderRadius: 6,
-                      background: bgColor, 
-                      minWidth: 60, color: textColor,
-                      fontSize: '0.85rem', fontWeight: 600, display: 'inline-block',
-                      cursor: 'pointer',
-                      transition: 'background 0.2s',
-                    }}
-                    onMouseOver={e => e.currentTarget.style.background = hoverColor}
-                    onMouseOut={e => e.currentTarget.style.background = bgColor}
+                    className={`font-bold cursor-pointer hover:underline ${textColor}`}
                   >
                     {`${Number(v).toLocaleString('id-ID', {minimumFractionDigits: 2, maximumFractionDigits: 2})}%`}
-                  </button>
+                  </span>
                 )
               }
             })),
-            { key: 'ytd', label: 'YTD', align: 'center', render: (v) => <span className="font-bold text-blue-600">{v !== null ? `${Number(v).toLocaleString('id-ID')} Kali` : '-'}</span> },
-            { key: 'target', label: 'Target', align: 'center', render: (v) => <span className="font-bold text-red-600">{v !== null ? `${Number(v).toLocaleString('id-ID')} Kali` : '-'}</span> },
+            { 
+              key: 'status', label: 'Status', align: 'center',
+              render: (v, row) => {
+                const monthNum = MONTHS_FULL.indexOf(row.bulan) + 1;
+                const detail = data?.monthly?.find(m => m.bulan === monthNum);
+                
+                if (!detail || detail.target === null || detail.target === undefined || detail.jml_rating_negatif === null || detail.jml_rating_negatif === undefined) {
+                  return <span style={{ color: 'var(--text-muted)' }}>-</span>;
+                }
+
+                const isAman = detail.jml_rating_negatif <= detail.target;
+
+                return (
+                  <div style={{
+                    padding: '4px 8px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 700,
+                    display: 'inline-block',
+                    background: isAman ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                    color: isAman ? '#10b981' : '#ef4444'
+                  }}>
+                    {isAman ? 'TERCAPAI' : 'TIDAK TERCAPAI'}
+                  </div>
+                )
+              }
+            }
           ]}
           data={pivotedData}
           paginated={false}

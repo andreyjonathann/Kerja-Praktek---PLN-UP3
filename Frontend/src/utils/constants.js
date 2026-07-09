@@ -88,24 +88,16 @@ export const NAV_ITEMS = [
         type: 'subgroup',
         group: 'JARINGAN',
         items: [
-
-          {
-            type: 'group',
-            group: 'REKAP JARINGAN',
-            icon: 'Activity',
-            items: [
-              { key: 'saidi', label: 'SAIDI', path: '/saidi' },
-              { key: 'saifi', label: 'SAIFI', path: '/saifi' },
-              { key: 'ens', label: 'ENS', path: '/ens' },
-              { key: 'gangguan-tm', label: 'Gangguan TM', path: '/jaringan/gangguan-tm' },
-              { key: 'gangguan-switching', label: 'Gangguan Switching', path: '/jaringan/gangguan-switching' },
-              { key: 'rating-negatif', label: 'Rating Negatif', path: '/jaringan/rating-negatif' },
-              { key: 'rpt-g', label: 'RPT G (Tanpa CT)', path: '/jaringan/rpt-gangguan' },
-              { key: 'srdag', label: 'SRDAG', path: '/jaringan/srdag' },
-              { key: 'mvod', label: 'MVOD', path: '/jaringan/mvod' },
-              { key: 'mttr-siaga-1', label: 'MTTR Siaga 1', path: '/jaringan/mttr-siaga1' },
-            ]
-          },
+          { key: 'saidi', label: 'SAIDI', path: '/saidi' },
+          { key: 'saifi', label: 'SAIFI', path: '/saifi' },
+          { key: 'ens', label: 'ENS', path: '/ens' },
+          { key: 'gangguan-tm', label: 'Gangguan TM', path: '/jaringan/gangguan-tm' },
+          { key: 'gangguan-switching', label: 'Gangguan Switching', path: '/jaringan/gangguan-switching' },
+          { key: 'rating-negatif', label: 'Rating Negatif', path: '/jaringan/rating-negatif' },
+          { key: 'rpt-g', label: 'RPT G (Tanpa CT)', path: '/jaringan/rpt-gangguan' },
+          { key: 'srdag', label: 'SRDAG', path: '/jaringan/srdag' },
+          { key: 'mvod', label: 'MVOD', path: '/jaringan/mvod' },
+          { key: 'mttr-siaga-1', label: 'MTTR Siaga 1', path: '/jaringan/mttr-siaga1' },
         ],
       },
       {

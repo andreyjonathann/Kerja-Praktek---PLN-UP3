@@ -116,6 +116,13 @@ Route::middleware('api')->group(function () {
         Route::get('/ganti-meter/dashboard', [\App\Http\Controllers\Api\RealisasiGantiMeterController::class, 'dashboard']);
         Route::put('/ganti-meter/{id}', [\App\Http\Controllers\Api\RealisasiGantiMeterController::class, 'update']);
         Route::delete('/ganti-meter/{id}', [\App\Http\Controllers\Api\RealisasiGantiMeterController::class, 'destroy']);
+
+        // Susut Distribusi
+        Route::get('/susut-distribusi', [\App\Http\Controllers\Api\RealisasiSusutDistribusiController::class, 'index']);
+        Route::post('/susut-distribusi', [\App\Http\Controllers\Api\RealisasiSusutDistribusiController::class, 'store']);
+        Route::get('/susut-distribusi/dashboard', [\App\Http\Controllers\Api\RealisasiSusutDistribusiController::class, 'dashboard']);
+        Route::put('/susut-distribusi/{id}', [\App\Http\Controllers\Api\RealisasiSusutDistribusiController::class, 'update']);
+        Route::delete('/susut-distribusi/{id}', [\App\Http\Controllers\Api\RealisasiSusutDistribusiController::class, 'destroy']);
     });
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/nko/summary', [NkoController::class, 'summary']);

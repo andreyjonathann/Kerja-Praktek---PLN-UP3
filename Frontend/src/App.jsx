@@ -50,6 +50,7 @@ import TindakLanjutLbkbPage from '@/pages/Niaga/TindakLanjutLbkb'
 import InputKinerjaLbkbPage from '@/pages/Niaga/InputKinerjaLbkb'
 
 import GantiMeterPage from '@/pages/GantiMeter'
+import SusutDistribusiPage from '@/pages/SusutDistribusiPage'
 
 // Pemasaran Pages (legacy)
 import JumlahPelangganPage from '@/pages/Pemasaran/JumlahPelanggan'
@@ -420,7 +421,7 @@ export default function App() {
               <Route path="/pendapatan" element={<ProtectedRoute><PendapatanTLPage /></ProtectedRoute>} />
               <Route path="/susut" element={
                 <ProtectedRoute>
-                  <PlaceholderPage title="Susut Jaringan" />
+                  <SusutDistribusiPage />
                 </ProtectedRoute>
               } />
               <Route path="/p2tl" element={

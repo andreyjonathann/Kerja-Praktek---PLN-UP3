@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { DEFAULT_UP3 } from '@/constants/up3'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Save, Activity, Calendar, Zap, Clock } from 'lucide-react'
 import api from '@/services/api'
@@ -35,7 +36,7 @@ export default function InputMvodPage() {
     setSaving(true)
     try {
       const payload = {
-        up3: user?.up3 || 'UP3 Kebon Jeruk',
+        up3: user?.up3 || DEFAULT_UP3,
         tahun: Number(form.tahun),
         bulan: Number(form.bulan),
         tipe_rct: form.tipe_rct,

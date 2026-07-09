@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
+import { DEFAULT_UP3 } from '@/constants/up3'
 import { useNavigate, useLocation } from 'react-router-dom'
 import api from '@/services/api'
 import Swal from 'sweetalert2'
@@ -28,7 +29,7 @@ export default function InputGangguanSwitchingPage({ isInline = false, inlineMon
   const [saving, setSaving] = useState(false)
   
   // States
-  const up3 = user?.up3 || 'UP3 Kebon Jeruk';
+  const up3 = user?.up3 || DEFAULT_UP3;
   const year = filters.year || new Date().getFullYear();
   const currentMonthIndex = new Date().getMonth();
   const initialMonth = isInline ? inlineMonth : (location.state?.initialMonth || '');

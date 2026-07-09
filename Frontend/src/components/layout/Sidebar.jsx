@@ -42,6 +42,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
       if (item.key === 'home') return [item];
       
       if (item.group === 'NKO') {
+         if (user && user.role === 'pic_jaringan') return [];
          const filteredItems = item.items.filter(i => i.group !== 'KELOLA TARGET');
          return [{ ...item, items: filteredItems }];
       }

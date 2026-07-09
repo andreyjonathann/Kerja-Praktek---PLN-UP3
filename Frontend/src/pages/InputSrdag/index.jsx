@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { DEFAULT_UP3 } from '@/constants/up3'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Save, Activity, Calendar } from 'lucide-react'
 import api from '@/services/api'
@@ -29,7 +30,7 @@ export default function InputSrdagPage() {
     setSaving(true)
     try {
       const payload = {
-        up3: user?.up3 || 'UP3 Kebon Jeruk',
+        up3: user?.up3 || DEFAULT_UP3,
         tahun: Number(form.tahun),
         bulan: Number(form.bulan),
         jumlah_dispatch_berhasil: Number(form.berhasil),

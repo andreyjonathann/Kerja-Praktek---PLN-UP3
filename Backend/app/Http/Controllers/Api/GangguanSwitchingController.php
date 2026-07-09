@@ -297,11 +297,30 @@ class GangguanSwitchingController extends Controller
             $targetTahunan = ($targetSwitchingTahunan ?: 0) + ($targetTrafoTahunan ?: 0);
         }
 
+        $targetSwitchingYtd = null;
+        $targetTrafoYtd = null;
+        $targetYtd = null;
+        if ($hasTarget) {
+            $ratio = 0;
+            if ($bulanSekarang <= 6) {
+                $ratio = (0.55 / 6) * $bulanSekarang;
+            } else {
+                $ratio = 0.55 + (0.45 / 6) * ($bulanSekarang - 6);
+            }
+            if ($targetSwitchingTahunan !== null) {
+                $targetSwitchingYtd = round($targetSwitchingTahunan * $ratio);
+            }
+            if ($targetTrafoTahunan !== null) {
+                $targetTrafoYtd = round($targetTrafoTahunan * $ratio);
+            }
+            $targetYtd = ($targetSwitchingYtd ?: 0) + ($targetTrafoYtd ?: 0);
+        }
+
         $persenVsTarget = null;
         $status = '-';
         if ($hasTarget) {
-            $persenVsTarget = $targetTahunan > 0 ? ($ytdGabungan / $targetTahunan) * 100 : 0;
-            $status = $ytdGabungan <= $targetTahunan ? 'AMAN' : 'MELEBIHI_TARGET';
+            $persenVsTarget = $targetYtd > 0 ? ($ytdGabungan / $targetYtd) * 100 : 0;
+            $status = $ytdGabungan <= $targetYtd ? 'AMAN' : 'MELEBIHI_TARGET';
         }
 
         $summary = [
@@ -311,6 +330,7 @@ class GangguanSwitchingController extends Controller
             'target_switching' => $targetSwitchingTahunan,
             'target_trafo' => $targetTrafoTahunan,
             'target_gabungan' => $targetTahunan,
+            'target_ytd' => $targetYtd,
             'persen_vs_target' => $persenVsTarget,
             'status' => $status,
             'target_tahunan' => $targetTahunan,
@@ -323,11 +343,14 @@ class GangguanSwitchingController extends Controller
         $accTrafo = 0;
         
         for ($m = 1; $m <= 12; $m++) {
-            $sw = (clone $qSwitching)->where('bulan', $m)->sum('jumlah_gangguan');
-            $tr = (clone $qTrafo)->where('bulan', $m)->sum('jumlah_gangguan');
+            $swQ = (clone $qSwitching)->where('bulan', $m);
+            $trQ = (clone $qTrafo)->where('bulan', $m);
+
+            $sw = $swQ->exists() ? (int) $swQ->sum('jumlah_gangguan') : null;
+            $tr = $trQ->exists() ? (int) $trQ->sum('jumlah_gangguan') : null;
             
-            $accSwitching += $sw;
-            $accTrafo += $tr;
+            $accSwitching += ($sw ?: 0);
+            $accTrafo += ($tr ?: 0);
             
             $targetSwitchingKumulatif = null;
             $targetTrafoKumulatif = null;
@@ -360,8 +383,8 @@ class GangguanSwitchingController extends Controller
 
             $trend_bulanan[] = [
                 'bulan' => $m,
-                'switching_bulanan' => (int) $sw,
-                'trafo_bulanan' => (int) $tr,
+                'switching_bulanan' => $sw,
+                'trafo_bulanan' => $tr,
                 'switching' => $accSwitching,
                 'trafo' => $accTrafo,
                 'gabungan' => $accSwitching + $accTrafo,

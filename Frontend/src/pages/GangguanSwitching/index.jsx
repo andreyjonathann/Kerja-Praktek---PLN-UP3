@@ -16,7 +16,7 @@ import api from '@/services/api'
 
 import { useFilter } from '@/context/FilterContext'
 import { useAuth } from '@/context/AuthContext'
-import { Activity, Plus, Target, AlertTriangle, Edit3, Trash2, X, Shield, TrendingUp, TrendingDown } from 'lucide-react'
+import { Activity, Plus, Target, AlertTriangle, Edit3, Trash2, X, Shield, TrendingUp, TrendingDown, CheckCircle, XCircle } from 'lucide-react'
 import KpiCard from '@/components/ui/KpiCard'
 import TargetWarning from '@/components/ui/TargetWarning'
 import DataTable from '@/components/ui/DataTable'
@@ -281,67 +281,39 @@ function GangguanSwitchingContent() {
       ) : (
         <div className="flex flex-col gap-6">
           <TargetWarning up3={filters.up3} year={filters.year} isVisible={!summary.has_target} />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <KpiCard
-              title="Gangguan Switching YTD"
-              value={summary.ytd_switching || 0}
+              title="Kumulatif Realisasi YTD"
+              value={summary.ytd_gabungan || 0}
               unit="Kali"
               icon={Activity}
-              target={summary.target_switching || null}
-              achievement={summary.target_switching ? ((summary.ytd_switching || 0) / summary.target_switching) * 100 : null}
-              trend={trendSwitching}
-              isInverse={true}
               color="blue"
+              badgeText={`Switching: ${summary.ytd_switching || 0} | Trafo: ${summary.ytd_trafo || 0}`}
             />
-            <KpiCard
-              title="Gangguan Trafo YTD"
-              value={summary.ytd_trafo || 0}
-              unit="Kali"
-              icon={Activity}
-              target={summary.target_trafo || null}
-              achievement={summary.target_trafo ? ((summary.ytd_trafo || 0) / summary.target_trafo) * 100 : null}
-              trend={trendTrafo}
-              isInverse={true}
-              color="orange"
+            <KpiCard 
+              title="Target YTD" 
+              value={summary.target_ytd !== null ? Number(summary.target_ytd).toLocaleString('id-ID') : '-'} 
+              icon={Target} 
+              color="blue" 
+              subtitle={!summary.has_target ? "Target belum diset" : undefined}
             />
-            
-            <KpiCard
-              title="Target Tahunan"
-              value={summary.has_target ? summary.target_tahunan : '-'}
-              unit={summary.has_target ? 'Kali' : ''}
-              icon={Target}
-              color="teal"
-            />
-
             {(() => {
               const hasTarget = summary.has_target;
-              const t = hasTarget ? summary.target_tahunan : null;
-              const y = summary.ytd_gabungan || 0;
-              const sisa = hasTarget ? t - y : null;
-              const cColor = !hasTarget ? 'blue' : (sisa > 0 ? 'green' : (sisa === 0 ? 'orange' : 'red'));
+              const target = summary.target_ytd || 0;
+              const total = summary.ytd_gabungan || 0;
+              const isTercapai = total <= target;
+              const achievementPercent = target > 0 ? (target / Math.max(0.001, total)) * 100 : 0;
               
               return (
-                <KpiCard
-                  title="Sisa Kuota"
-                  value={hasTarget ? sisa : '-'}
-                  unit={hasTarget ? 'Kali' : ''}
-                  icon={hasTarget && sisa < 0 ? TrendingUp : TrendingDown}
-                  color={cColor}
-                  statusText={hasTarget ? (sisa < 0 ? 'MELEBIHI TARGET' : 'AMAN') : null}
-                  statusColor={cColor}
+                <KpiCard 
+                  title="Status Kinerja" 
+                  value={hasTarget ? (isTercapai ? 'TERCAPAI' : 'TIDAK TERCAPAI') : '-'} 
+                  icon={hasTarget ? (isTercapai ? CheckCircle : XCircle) : Activity} 
+                  color={hasTarget ? (isTercapai ? 'green' : 'red') : 'blue'} 
+                  badgeText={hasTarget ? `Pencapaian: ${Number(achievementPercent).toFixed(1)}%` : null}
                 />
               )
             })()}
-
-            <KpiCard
-              title="Total Kerusakan YTD"
-              value={summary.ytd_gabungan || 0}
-              unit="Kali"
-              icon={!summary.has_target ? Activity : (summary.status === 'AMAN' ? Target : AlertTriangle)}
-              target={summary.has_target ? summary.target_gabungan : null}
-              achievement={summary.has_target ? summary.persen_vs_target : null}
-              color={!summary.has_target ? 'blue' : (summary.status === 'AMAN' ? 'green' : 'red')}
-            />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6">
@@ -412,11 +384,9 @@ function GangguanSwitchingContent() {
             
             <div className="lg:col-span-12 mt-2">
               <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                <div className="px-6 py-5 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center bg-slate-50/50">
-                  <div>
-                    <h3 className="font-bold text-slate-800 text-lg">Detail Data Kejadian Gangguan</h3>
-                    <p className="text-sm text-slate-500">Klik baris untuk edit kejadian tiap bulan</p>
-                  </div>
+                <div className="px-6 py-5 border-b border-slate-100 flex flex-col items-center justify-center text-center bg-slate-50/50">
+                  <h3 className="font-bold text-slate-800 text-lg">Detail Data Kejadian Gangguan</h3>
+                  <p className="text-sm text-slate-500">Klik baris untuk edit kejadian tiap bulan</p>
                 </div>
                 <div className="p-0 overflow-x-auto">
                   <DataTable
@@ -426,19 +396,38 @@ function GangguanSwitchingContent() {
                         render: v => MONTHS_FULL[v - 1] || v
                       },
                       {
-                        key: 'gabungan',
-                        label: 'Total', align: 'center',
-                        render: (v, row) => <span className="font-bold">{(row.switching_bulanan || 0) + (row.trafo_bulanan || 0)}</span>,
-                      },
-                      {
                         key: 'switching_bulanan',
                         label: 'Switching', align: 'center',
-                        render: v => v != null ? v : '-',
+                        render: (v, row) => {
+                          const target = row.target_switching_bulanan;
+                          let textColor = 'text-slate-700';
+                          if (v !== null && target !== null && target !== undefined) {
+                            textColor = v <= target ? 'text-green-600' : 'text-red-600';
+                          }
+                          return <span className={`font-bold ${textColor}`}>{v != null ? v : '-'}</span>;
+                        },
+                      },
+                      {
+                        key: 'target_switching_bulanan',
+                        label: 'Target', align: 'center',
+                        render: v => <span className="text-slate-700">{v != null ? Number(v).toLocaleString('id-ID', { maximumFractionDigits: 2 }) : '-'}</span>,
                       },
                       {
                         key: 'trafo_bulanan',
                         label: 'Trafo', align: 'center',
-                        render: v => v != null ? v : '-',
+                        render: (v, row) => {
+                          const target = row.target_trafo_bulanan;
+                          let textColor = 'text-slate-700';
+                          if (v !== null && target !== null && target !== undefined) {
+                            textColor = v <= target ? 'text-green-600' : 'text-red-600';
+                          }
+                          return <span className={`font-bold ${textColor}`}>{v != null ? v : '-'}</span>;
+                        },
+                      },
+                      {
+                        key: 'target_trafo_bulanan',
+                        label: 'Target', align: 'center',
+                        render: v => <span className="text-slate-700">{v != null ? Number(v).toLocaleString('id-ID', { maximumFractionDigits: 2 }) : '-'}</span>,
                       },
                     ]}
                     onRowClick={row => { setSelectedRow(row); setIsModalOpen(true) }}
@@ -480,6 +469,7 @@ function GangguanSwitchingContent() {
         onOpenChange={setIsModalOpen}
         rowData={selectedRow}
         year={filters.year}
+        up3={filters.up3}
       />
     </div>
   )

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Constants\Up3Constants;
+
 use Illuminate\Http\Request;
 use App\Models\KinerjaJaringan;
 use App\Models\Periode;
@@ -165,7 +167,7 @@ class RatingNegatifController extends Controller
             ->first();
 
         return response()->json([
-            'up3' => 'UP3 Kebon Jeruk', // Hardcoded as per current DB structure
+            'up3' => Up3Constants::DEFAULT_UP3, // Hardcoded as per current DB structure
             'bulan' => $bulan,
             'tahun_curr' => $tahun,
             'tahun_prev' => $prevTahun,
@@ -216,7 +218,7 @@ class RatingNegatifController extends Controller
 
         return response()->json([
             [
-                'up3' => 'UP3 Kebon Jeruk',
+                'up3' => Up3Constants::DEFAULT_UP3,
                 'monthly' => $monthlyData,
                 'ytd' => $ytd,
                 'target' => $ytdTarget,
