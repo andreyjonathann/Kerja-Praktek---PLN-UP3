@@ -26,31 +26,41 @@ export default function PageHeader({ title, description, icon: Icon, iconColor =
         </button>
       )}
       
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div
-              className="icon-wrapper-interactive"
-              style={{
-                width: 28, height: 28, borderRadius: 8,
-                background: `linear-gradient(135deg, rgba(${r},${g},${b},0.2), rgba(${r},${g},${b},0.08))`,
-                border: `1px solid rgba(${r},${g},${b},0.25)`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                flexShrink: 0,
-              }}
-            >
-              {Icon && <Icon size={14} style={{ color: iconColor }} />}
+      <div style={{
+        background: 'var(--bg-card)', 
+        padding: '20px 24px', 
+        borderRadius: 16, 
+        border: '1px solid var(--border-subtle)',
+        boxShadow: '0 2px 10px rgba(0,0,0,0.02)'
+      }}>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div
+                className="icon-wrapper-interactive"
+                style={{
+                  width: 36, height: 36, borderRadius: 10,
+                  background: `linear-gradient(135deg, rgba(${r},${g},${b},0.15), rgba(${r},${g},${b},0.05))`,
+                  border: `1px solid rgba(${r},${g},${b},0.2)`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                {Icon && <Icon size={18} style={{ color: iconColor }} />}
+              </div>
+              <h1 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.01em' }}>
+                {title}
+              </h1>
             </div>
-            <h1 className="text-lg font-bold text-slate-800 tracking-tight">{title}</h1>
+            {description && <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginLeft: 46, margin: 0 }}>{description}</p>}
           </div>
-          {description && <p className="text-xs text-slate-500 ml-9">{description}</p>}
-        </div>
 
-        {children && (
-          <div className="flex gap-3 mt-2 md:mt-0">
-            {children}
-          </div>
-        )}
+          {children && (
+            <div className="flex gap-3 mt-2 md:mt-0">
+              {children}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

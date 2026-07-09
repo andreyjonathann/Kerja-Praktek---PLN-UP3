@@ -383,12 +383,11 @@ export default function K3SelfAssessmentPage() {
           <select
             value={selectedMonth}
             onChange={e => setSelectedMonth(Number(e.target.value))}
-            disabled={readOnly || status !== 'draft'}
             style={{
               padding: '7px 28px 7px 12px', borderRadius: 10,
               border: '1px solid var(--border-subtle)',
               background: 'var(--bg-card)', color: 'var(--text-primary)',
-              fontWeight: 600, fontSize: '0.875rem', cursor: readOnly ? 'default' : 'pointer',
+              fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer',
             }}
           >
             {MONTHS_FULL_ID.map((m, i) => (
@@ -402,12 +401,11 @@ export default function K3SelfAssessmentPage() {
           <select
             value={selectedYear}
             onChange={e => setSelectedYear(Number(e.target.value))}
-            disabled={readOnly || status !== 'draft'}
             style={{
               padding: '7px 28px 7px 12px', borderRadius: 10,
               border: '1px solid var(--border-subtle)',
               background: 'var(--bg-card)', color: 'var(--text-primary)',
-              fontWeight: 600, fontSize: '0.875rem',
+              fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer',
             }}
           >
             {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
@@ -540,9 +538,9 @@ export default function K3SelfAssessmentPage() {
                 <ReferenceLine y={4.0} stroke="#0070C0" strokeDasharray="4 4" strokeWidth={1.5} />
                 <Bar dataKey="score" name="Skor Aktual" radius={[6, 6, 0, 0]} maxBarSize={40}>
                   {barChartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={categoryColor} />
+                    <Cell key={`cell-${index}`} fill="#22C55E" />
                   ))}
-                  <LabelList dataKey="score" position="top" style={{ fontSize: 11, fontWeight: 800, fill: categoryColor }} />
+                  <LabelList dataKey="score" position="top" style={{ fontSize: 11, fontWeight: 800, fill: '#22C55E' }} />
                 </Bar>
               </ComposedChart>
             </ResponsiveContainer>

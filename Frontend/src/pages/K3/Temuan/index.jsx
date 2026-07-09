@@ -349,7 +349,11 @@ function AddFindingModal({ onClose, onSave, initialData }) {
             <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept="image/*" onChange={(e) => { 
               if(e.target.files[0]) {
                 const file = e.target.files[0];
-                setForm(p => ({ ...p, fotoUrl: URL.createObjectURL(file), fotoName: file.name }));
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                  setForm(p => ({ ...p, fotoUrl: ev.target.result, fotoName: file.name }));
+                };
+                reader.readAsDataURL(file);
               }
               e.target.value = null; 
             }} />

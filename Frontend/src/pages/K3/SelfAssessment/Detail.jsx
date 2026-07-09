@@ -204,30 +204,35 @@ export default function K3SelfAssessmentDetailPage() {
   const isLocked = initialLevel !== null && initialLevel !== undefined
 
   return (
-    <div style={{ maxWidth: 800, margin: '0 auto', paddingBottom: 40 }}>
+    <div style={{ paddingBottom: 40 }}>
       {/* Header Back Button */}
       <div style={{ marginBottom: 20 }}>
         <button 
           onClick={() => navigate(`/k3/assessment/${category.toLowerCase()}`)}
           style={{ 
-            display: 'flex', alignItems: 'center', gap: 6, 
-            background: 'transparent', border: 'none', 
-            color: 'var(--text-secondary)', fontSize: '0.875rem', fontWeight: 600,
-            cursor: 'pointer' 
+            display: 'inline-flex', alignItems: 'center', gap: 8, 
+            background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', 
+            padding: '8px 16px', borderRadius: 99,
+            color: 'var(--text-primary)', fontSize: '0.875rem', fontWeight: 600,
+            cursor: 'pointer', boxShadow: 'var(--shadow-sm)',
+            transition: 'all 0.2s ease'
           }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-subtle)' }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-card)' }}
         >
           <ArrowLeft size={16} /> Kembali ke Daftar Kriteria
         </button>
       </div>
 
-      {/* Main Card */}
-      <div style={{
-        border: '1px solid var(--border-subtle)',
-        borderRadius: 16, overflow: 'hidden', background: 'var(--bg-card)',
-        boxShadow: 'var(--shadow-sm)'
-      }}>
-        {/* Title Header */}
+      <div style={{ maxWidth: 800, margin: '0 auto' }}>
+        {/* Main Card */}
         <div style={{
+          border: '1px solid var(--border-subtle)',
+          borderRadius: 16, overflow: 'hidden', background: 'var(--bg-card)',
+          boxShadow: 'var(--shadow-sm)'
+        }}>
+          {/* Title Header */}
+          <div style={{
           display: 'flex', alignItems: 'center', gap: 14,
           padding: '20px 24px', borderBottom: '1px solid var(--border-subtle)'
         }}>
@@ -372,6 +377,7 @@ export default function K3SelfAssessmentDetailPage() {
             </div>
           )}
         </div>
+      </div>
       </div>
     </div>
   )
