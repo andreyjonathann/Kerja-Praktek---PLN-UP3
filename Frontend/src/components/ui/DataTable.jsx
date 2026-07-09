@@ -72,7 +72,7 @@ export default function DataTable({
               {columns.map(col => (
                 <th
                   key={col.key}
-                  style={{ width:col.width, textAlign: col.align==='right'?'right' : col.align==='center'?'center':'left' }}
+                  style={{ width:col.width, textAlign: col.align || 'center' }}
                 >
                   {col.label}
                 </th>
@@ -94,7 +94,7 @@ export default function DataTable({
                   onClick={() => onRowClick && onRowClick(row, idx)}
                 >
                   {columns.map(col => (
-                    <td key={col.key} style={{ textAlign: col.align==='right'?'right' : col.align==='center'?'center':'left' }}>
+                    <td key={col.key} style={{ textAlign: col.align || 'center' }}>
                       {col.render ? col.render(row[col.key], row, idx) : (row[col.key] ?? '—')}
                     </td>
                   ))}

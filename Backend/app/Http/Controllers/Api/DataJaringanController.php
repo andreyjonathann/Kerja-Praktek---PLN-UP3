@@ -53,6 +53,36 @@ class DataJaringanController extends Controller
             12 => $targetSaidi ? $targetSaidi->target_des : null,
         ];
 
+        $saifiTargets = [
+            1 => $targetSaifi ? $targetSaifi->target_jan : null,
+            2 => $targetSaifi ? $targetSaifi->target_feb : null,
+            3 => $targetSaifi ? $targetSaifi->target_mar : null,
+            4 => $targetSaifi ? $targetSaifi->target_apr : null,
+            5 => $targetSaifi ? $targetSaifi->target_mei : null,
+            6 => $targetSaifi ? $targetSaifi->target_jun : null,
+            7 => $targetSaifi ? $targetSaifi->target_jul : null,
+            8 => $targetSaifi ? $targetSaifi->target_agu : null,
+            9 => $targetSaifi ? $targetSaifi->target_sep : null,
+            10 => $targetSaifi ? $targetSaifi->target_okt : null,
+            11 => $targetSaifi ? $targetSaifi->target_nov : null,
+            12 => $targetSaifi ? $targetSaifi->target_des : null,
+        ];
+
+        $ensTargets = [
+            1 => $targetEns ? $targetEns->target_jan : null,
+            2 => $targetEns ? $targetEns->target_feb : null,
+            3 => $targetEns ? $targetEns->target_mar : null,
+            4 => $targetEns ? $targetEns->target_apr : null,
+            5 => $targetEns ? $targetEns->target_mei : null,
+            6 => $targetEns ? $targetEns->target_jun : null,
+            7 => $targetEns ? $targetEns->target_jul : null,
+            8 => $targetEns ? $targetEns->target_agu : null,
+            9 => $targetEns ? $targetEns->target_sep : null,
+            10 => $targetEns ? $targetEns->target_okt : null,
+            11 => $targetEns ? $targetEns->target_nov : null,
+            12 => $targetEns ? $targetEns->target_des : null,
+        ];
+
         $totalSaidi = 0;
         $totalSaifi = 0;
         $totalEns = 0;
@@ -61,6 +91,14 @@ class DataJaringanController extends Controller
         $anySaidiTargetFilled = false;
         $ytdTgtSaidiForOverview = 0;
         $hasRealisasiSaidiOverall = false;
+
+        $runningCumulativeTgtSaifi = 0;
+        $anySaifiTargetFilled = false;
+        $ytdTgtSaifiForOverview = 0;
+        $hasRealisasiSaifiOverall = false;
+
+        $runningCumulativeTgtEns = 0;
+        $anyEnsTargetFilled = false;
         
         $cumEnsTerencana = 0;
         $cumEnsTidakTerencana = 0;
@@ -111,12 +149,24 @@ class DataJaringanController extends Controller
             // SAIFI
             $sf_real = $saidiData ? $saidiData->saifi_total : null;
             $totalSaifi += $sf_real ?? 0;
+            
+            $targetBulananSaifi = $saifiTargets[$i];
+            if ($targetBulananSaifi !== null) {
+                $runningCumulativeTgtSaifi += $targetBulananSaifi;
+                $anySaifiTargetFilled = true;
+            }
+            
+            if ($sf_real !== null) {
+                $hasRealisasiSaifiOverall = true;
+                $ytdTgtSaifiForOverview = $anySaifiTargetFilled ? $runningCumulativeTgtSaifi : null;
+            }
+
             $result['saifi'][] = [
                 'id' => $i, 'bulan' => $i, 'label' => $bulanMap[$i-1],
-                'target' => $tgtSaifiVal !== null ? $tgtSaifiVal / 12 : null,
+                'target' => $targetBulananSaifi,
                 'realisasi' => $sf_real,
                 'cumulativeReal' => $totalSaifi,
-                'cumulativeTgt' => $tgtSaifiVal !== null ? ($tgtSaifiVal / 12) * $i : null,
+                'cumulativeTgt' => $anySaifiTargetFilled ? $runningCumulativeTgtSaifi : null,
                 'distribusi_padam_tidak_terencana' => $saidiData ? $saidiData->saifi_distribusi_padam_tidak_terencana : 0,
                 'distribusi_padam_terencana' => $saidiData ? $saidiData->saifi_distribusi_padam_terencana : 0,
                 'distribusi_bencana_alam' => $saidiData ? $saidiData->saifi_distribusi_bencana_alam : 0,
@@ -141,10 +191,17 @@ class DataJaringanController extends Controller
             }
             $totalEns += $ensBulananReal;
             
+            $targetBulananEns = $ensTargets[$i];
+            if ($targetBulananEns !== null) {
+                $runningCumulativeTgtEns += $targetBulananEns;
+                $anyEnsTargetFilled = true;
+            }
+
             $result['ensPageData'][] = [
                 'bulan' => $i, 'label' => $bulanMap[$i-1],
                 'bulanan' => [
-                    'target' => $tgtEnsVal / 12,
+                    'id' => $ensData ? $ensData->id : null,
+                    'target' => $targetBulananEns,
                     'padam_terencana' => $ensData ? $ensData->distribusi_padam_terencana : 0,
                     'tidak_terencana' => $ensData ? $ensData->distribusi_padam_tidak_terencana : 0,
                     'bencana_alam' => $ensData ? $ensData->distribusi_bencana_alam : 0,
@@ -153,7 +210,7 @@ class DataJaringanController extends Controller
                     $tahun => $ensData ? $ensBulananReal : null,
                 ],
                 'kumulatif' => [
-                    'target' => ($tgtEnsVal / 12) * $i,
+                    'target' => $anyEnsTargetFilled ? $runningCumulativeTgtEns : null,
                     'padam_terencana' => $cumEnsTerencana,
                     'tidak_terencana' => $cumEnsTidakTerencana,
                     'bencana_alam' => $cumEnsBencana,
@@ -173,8 +230,8 @@ class DataJaringanController extends Controller
         $result['overview'] = [
             'kpis' => [
                 'saidi' => ['val' => $totalSaidi, 'target' => $anySaidiTargetFilled ? $ytdTgtSaidiForOverview : null, 'isInverse' => true, 'unit' => 'mnt/plg'],
-                'saifi' => ['val' => $totalSaifi, 'target' => $tgtSaifiVal, 'isInverse' => true, 'unit' => 'kali/plg'],
-                'ens'   => ['val' => $totalEns, 'target' => $tgtEnsVal, 'isInverse' => true, 'unit' => 'MWh'],
+                'saifi' => ['val' => $totalSaifi, 'target' => $anySaifiTargetFilled ? $ytdTgtSaifiForOverview : null, 'isInverse' => true, 'unit' => 'kali/plg'],
+                'ens'   => ['val' => $totalEns, 'target' => $anyEnsTargetFilled ? $runningCumulativeTgtEns : null, 'isInverse' => true, 'unit' => 'MWh'],
 
                 'losses' => ['val' => 5.5, 'target' => 6.0, 'isInverse' => true, 'unit' => '%'],
             ],
@@ -231,6 +288,55 @@ class DataJaringanController extends Controller
             }
         }
         return response()->json(['message' => 'Data tidak ditemukan'], 404);
+    }
+
+    public function updateEns(Request $request, $id)
+    {
+        $user = auth()->user();
+        if (!$user || ($user->role !== 'pic_jaringan' && $user->role !== 'admin')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        }
+
+        $request->validate([
+            'distribusi_padam_tidak_terencana' => 'nullable|numeric|min:0',
+            'distribusi_padam_terencana' => 'nullable|numeric|min:0',
+            'distribusi_bencana_alam' => 'nullable|numeric|min:0',
+            'transmisi' => 'nullable|numeric|min:0',
+            'pembangkit' => 'nullable|numeric|min:0',
+        ]);
+
+        $ens = EnsBulanan::findOrFail($id);
+
+        $data = $request->only([
+            'distribusi_padam_tidak_terencana',
+            'distribusi_padam_terencana',
+            'distribusi_bencana_alam',
+            'transmisi',
+            'pembangkit'
+        ]);
+
+        foreach ($data as $key => $val) {
+            if ($val === null || $val === '') {
+                $data[$key] = 0;
+            }
+        }
+
+        $ens->update($data);
+
+        return response()->json(['success' => true, 'data' => $ens, 'message' => 'Data ENS berhasil diupdate']);
+    }
+
+    public function destroyEns($id)
+    {
+        $user = auth()->user();
+        if (!$user || ($user->role !== 'pic_jaringan' && $user->role !== 'admin')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        }
+
+        $ens = EnsBulanan::findOrFail($id);
+        $ens->delete();
+
+        return response()->json(['success' => true, 'message' => 'Data ENS berhasil dihapus']);
     }
 
     public function saveGangguan(Request $request)

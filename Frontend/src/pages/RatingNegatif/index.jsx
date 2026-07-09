@@ -21,6 +21,7 @@ import KpiCard from '@/components/ui/KpiCard'
 import DataTable from '@/components/ui/DataTable'
 import ChartWrapper from '@/components/ui/ChartWrapper'
 import TargetWarning from '@/components/ui/TargetWarning'
+import RatingNegatifDetailModal from '@/components/ui/RatingNegatifDetailModal'
 // Custom colors
 const COLORS = {
   target: '#ef4444',
@@ -69,6 +70,10 @@ export default function RatingNegatifPage() {
   const [rekapData, setRekapData] = useState([])
   const [loading, setLoading] = useState(true)
 
+  const [detailModalOpen, setDetailModalOpen] = useState(false)
+  const [selectedDetailMonth, setSelectedDetailMonth] = useState(null)
+  const [selectedMonthDetails, setSelectedMonthDetails] = useState(null)
+
   const fetchData = useCallback(async (isBackground = false) => {
     if (!isBackground) setLoading(true)
     try {
@@ -105,9 +110,10 @@ export default function RatingNegatifPage() {
       rekapData.forEach(up3Data => {
         row[up3Data.up3] = up3Data.monthly ? up3Data.monthly[idx + 1] : null;
       });
-      if (data && data.cumulative && data.cumulative[idx]) {
-         row.ytd = data.cumulative[idx].cumulativeReal;
-         row.target = data.cumulative[idx].cumulativeTgt;
+      const cumulativeRow = data?.cumulative?.find(c => c.bulan === idx + 1);
+      if (cumulativeRow) {
+         row.ytd = cumulativeRow.cumulativeReal;
+         row.target = cumulativeRow.cumulativeTgt;
       } else {
          row.ytd = null;
          row.target = null;
@@ -178,7 +184,7 @@ export default function RatingNegatifPage() {
   }
 
   const targetValue = data.target || 0;
-  const gap = targetValue > 0 ? ((ytdRealisasi - targetValue) / targetValue) * 100 : 0;
+  const persentase = targetValue > 0 ? (ytdRealisasi / targetValue) * 100 : 0;
   // For negative rating, lower is better. So if ytdRealisasi <= target, it's good (green).
   const isGood = ytdRealisasi <= targetValue;
 
@@ -297,8 +303,8 @@ export default function RatingNegatifPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
         <KpiCard
           title="Realisasi YTD"
-          value={ytdRealisasi.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          unit="%"
+          value={ytdRealisasi.toLocaleString('id-ID')}
+          unit="Kali"
           achievement={isGood ? 100 : 0}
           icon={Activity}
           color="blue"
@@ -307,16 +313,16 @@ export default function RatingNegatifPage() {
         />
         <KpiCard
           title="Target Tahunan"
-          value={targetValue.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          unit="%"
+          value={targetValue.toLocaleString('id-ID')}
+          unit="Kali"
           icon={Target}
           color="blue"
           loading={loading}
         />
         <KpiCard
           title="% vs Target"
-          value={(gap > 0 ? '+' : '') + gap.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%'}
-          icon={gap > 0 ? TrendingUp : TrendingDown}
+          value={persentase.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%'}
+          icon={isGood ? TrendingDown : TrendingUp}
           color={isGood ? 'green' : 'red'}
           loading={loading}
         />
@@ -445,17 +451,15 @@ export default function RatingNegatifPage() {
         <div style={{
           padding: '18px 22px 14px',
           borderBottom: '1px solid var(--border)',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12
+          display: 'flex', alignItems: 'center', justifyContent: 'center'
         }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <h3 style={{
-              fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)',
-              letterSpacing: '-0.01em', lineHeight: 1.3,
-              marginBottom: 0,
-            }}>
-              Rekapitulasi Rating Negatif
-            </h3>
-          </div>
+          <h3 style={{
+            fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)',
+            letterSpacing: '-0.01em', lineHeight: 1.3,
+            marginBottom: 0, textAlign: 'center'
+          }}>
+            Rekapitulasi Rating Negatif
+          </h3>
         </div>
         <DataTable
           columns={[
@@ -464,27 +468,86 @@ export default function RatingNegatifPage() {
               key: up3Data.up3,
               label: <span style={{ color: 'var(--text-muted)' }}>{up3Data.up3}</span>,
               align: 'center',
-              render: (v) => {
+              render: (v, row) => {
+                const monthNum = MONTHS_FULL.indexOf(row.bulan) + 1;
+                const detail = data?.monthly?.find(m => m.bulan === monthNum);
+
+                if (v === null) return <span style={{ color: 'var(--text-muted)' }}>-</span>;
+
+                let bgColor = '#f8fafc';
+                let hoverColor = '#f1f5f9';
+                let textColor = 'var(--text-secondary)';
+                let borderColor = 'var(--border)';
+
+                if (detail && detail.target !== null && detail.target !== undefined) {
+                  if (detail.jml_rating_negatif <= detail.target) {
+                    // Tercapai (Green)
+                    bgColor = '#dcfce7';
+                    hoverColor = '#bbf7d0';
+                    textColor = '#166534';
+                    borderColor = '#86efac';
+                  } else {
+                    // Tidak Tercapai (Red)
+                    bgColor = '#fee2e2';
+                    hoverColor = '#fecaca';
+                    textColor = '#991b1b';
+                    borderColor = '#fca5a5';
+                  }
+                }
+
                 return (
-                  <div style={{
-                    padding: '4px 8px', border: '1px solid var(--border)', borderRadius: 6,
-                    background: 'var(--bg-elevated)', minWidth: 60, color: 'var(--text-secondary)',
-                    fontSize: '0.85rem', fontWeight: 600, display: 'inline-block'
-                  }}>
-                    {v !== null ? `${Number(v).toLocaleString('id-ID', {minimumFractionDigits: 2, maximumFractionDigits: 2})}%` : '-'}
-                  </div>
+                  <button 
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      if (detail) {
+                        setSelectedDetailMonth(monthNum);
+                        setSelectedMonthDetails(detail);
+                        setDetailModalOpen(true);
+                      } else {
+                        alert('Data detail tidak ditemukan!');
+                      }
+                    }}
+                    style={{
+                      padding: '4px 8px', border: `1px solid ${borderColor}`, borderRadius: 6,
+                      background: bgColor, 
+                      minWidth: 60, color: textColor,
+                      fontSize: '0.85rem', fontWeight: 600, display: 'inline-block',
+                      cursor: 'pointer',
+                      transition: 'background 0.2s',
+                    }}
+                    onMouseOver={e => e.currentTarget.style.background = hoverColor}
+                    onMouseOut={e => e.currentTarget.style.background = bgColor}
+                  >
+                    {`${Number(v).toLocaleString('id-ID', {minimumFractionDigits: 2, maximumFractionDigits: 2})}%`}
+                  </button>
                 )
               }
             })),
-            { key: 'ytd', label: 'YTD', align: 'center', render: (v) => <span className="font-bold text-blue-600">{v !== null ? `${Number(v).toLocaleString('id-ID', {minimumFractionDigits: 2, maximumFractionDigits: 2})}%` : '-'}</span> },
-            { key: 'target', label: 'Target', align: 'center', render: (v) => <span className="font-bold text-red-600">{v !== null ? `${Number(v).toLocaleString('id-ID', {minimumFractionDigits: 2, maximumFractionDigits: 2})}%` : '-'}</span> },
+            { key: 'ytd', label: 'YTD', align: 'center', render: (v) => <span className="font-bold text-blue-600">{v !== null ? `${Number(v).toLocaleString('id-ID')} Kali` : '-'}</span> },
+            { key: 'target', label: 'Target', align: 'center', render: (v) => <span className="font-bold text-red-600">{v !== null ? `${Number(v).toLocaleString('id-ID')} Kali` : '-'}</span> },
           ]}
           data={pivotedData}
           paginated={false}
           searchable={false}
         />
       </div>
-      
+      {/* Target Warning */}
+      <TargetWarning 
+        target={data?.target_tahunan}
+        indicator="Rating Negatif PLN Mobile"
+        year={filters.year}
+      />
+
+      <RatingNegatifDetailModal 
+        open={detailModalOpen}
+        onOpenChange={setDetailModalOpen}
+        tahun={filters.year}
+        bulan={selectedDetailMonth}
+        details={selectedMonthDetails}
+        onDeleteSuccess={() => fetchData()}
+      />
     </div>
   )
 }

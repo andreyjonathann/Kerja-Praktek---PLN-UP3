@@ -99,7 +99,7 @@ export const NAV_ITEMS = [
               { key: 'saifi', label: 'SAIFI', path: '/saifi' },
               { key: 'ens', label: 'ENS', path: '/ens' },
               { key: 'gangguan-tm', label: 'Gangguan TM', path: '/jaringan/gangguan-tm' },
-              { key: 'gangguan-switching', label: 'Gangguan Switching (Kubikel & Trafo)', path: '/jaringan/gangguan-switching' },
+              { key: 'gangguan-switching', label: 'Gangguan Switching', path: '/jaringan/gangguan-switching' },
               { key: 'rating-negatif', label: 'Rating Negatif', path: '/jaringan/rating-negatif' },
               { key: 'rpt-g', label: 'RPT G (Tanpa CT)', path: '/jaringan/rpt-gangguan' },
               { key: 'srdag', label: 'SRDAG', path: '/jaringan/srdag' },

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import api from '@/services/api';
-import { ArrowLeft, Save, Edit2, ChevronDown, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Save, Edit2, CheckCircle } from 'lucide-react';
 
 const MONTHS = [
   { key: 'target_jan', label: 'Januari' },
@@ -19,43 +19,25 @@ const MONTHS = [
   { key: 'target_des', label: 'Desember' }
 ];
 
-export default function KelolaTargetBulananPage() {
-  const { bidang, indikator } = useParams();
-  const location = useLocation();
-  const searchParams = new URLSearchParams(location.search);
-  const initialTahun = searchParams.get('tahun') ? parseInt(searchParams.get('tahun')) : new Date().getFullYear();
-
-  const navigate = useNavigate();
-  const { isAdmin, loading: authLoading } = useAuth();
-  
-  const [tahun, setTahun] = useState(initialTahun);
+function TargetSection({ bidang, indikator, tahun, isDecimal }) {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [originalForm, setOriginalForm] = useState({});
-  
   const [form, setForm] = useState({
     target_jan: '', target_feb: '', target_mar: '', target_apr: '', target_mei: '', target_jun: '',
     target_jul: '', target_agu: '', target_sep: '', target_okt: '', target_nov: '', target_des: ''
   });
 
-  const displayBidang = bidang.toUpperCase();
-  const displayIndikator = indikator.toUpperCase();
-
-  // Determine step based on indikator (assuming SAIDI/SAIFI/ENS allow decimals, others integers)
-  const isDecimal = ['SAIDI', 'SAIFI', 'ENS'].includes(displayIndikator);
   const step = isDecimal ? "0.0001" : "1";
 
   useEffect(() => {
-    if (!isAdmin) return;
     if (String(tahun).length !== 4) return;
-
-    
     const fetchTarget = async () => {
       setLoading(true);
       try {
-        const res = await api.get(`/target/${bidang}/${indikator}?tahun=${tahun}`);
+        const res = await api.get(`/target/${bidang}/${encodeURIComponent(indikator)}?tahun=${tahun}`);
         const data = res.data;
         const newForm = {};
         MONTHS.forEach(m => {
@@ -71,13 +53,7 @@ export default function KelolaTargetBulananPage() {
       }
     };
     fetchTarget();
-  }, [tahun, bidang, indikator, isAdmin]);
-
-  if (authLoading) return null;
-
-  if (!isAdmin) {
-    return <Navigate to="/" replace />;
-  }
+  }, [tahun, bidang, indikator]);
 
   const handleChange = (key, value) => {
     setForm(prev => ({ ...prev, [key]: value }));
@@ -90,10 +66,8 @@ export default function KelolaTargetBulananPage() {
       MONTHS.forEach(m => {
         payload[m.key] = form[m.key] === '' ? null : parseFloat(form[m.key]);
       });
-
-      await api.put(`/target/${bidang}/${indikator}/${tahun}`, payload);
-      
-      setSuccessMsg(`Target Bulanan ${displayIndikator} berhasil disimpan!`);
+      await api.put(`/target/${bidang}/${encodeURIComponent(indikator)}/${tahun}`, payload);
+      setSuccessMsg(`Target ${indikator} berhasil disimpan!`);
       setIsEditing(false);
       setOriginalForm({...form});
       setTimeout(() => setSuccessMsg(''), 3000);
@@ -104,9 +78,223 @@ export default function KelolaTargetBulananPage() {
     }
   };
 
+  return (
+    <div className="w-full px-[32px] py-4 md:py-8 mt-2">
+      {successMsg && (
+        <div className="mb-6 bg-emerald-50 border border-emerald-200 text-emerald-700 px-6 py-4 rounded-xl flex items-center gap-3 animate-fade-in shadow-sm">
+          <CheckCircle className="text-emerald-500 shrink-0" size={24} />
+          <span className="font-semibold">{successMsg}</span>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="flex justify-center items-center py-20">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-800"></div>
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden animate-fade-in mb-8">
+          <div className="bg-slate-50 px-6 py-3 border-b border-slate-200 relative flex justify-center items-center min-h-[60px]">
+            <h2 className="font-extrabold text-lg text-slate-800 tracking-tight text-center">Target {indikator} — {tahun}</h2>
+            
+            <div className="absolute right-6 flex items-center gap-2">
+             {!isEditing ? (
+               <div style={{
+                 display: 'inline-flex',
+                 background: '#00A2B9',
+                 padding: 3,
+                 borderRadius: 8,
+                 border: 'none',
+                 cursor: 'pointer'
+               }}>
+                 <button 
+                    type="button"
+                    onClick={() => setIsEditing(true)}
+                    style={{
+                      padding: '4px 12px',
+                      borderRadius: 6,
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      transition: 'all 0.2s ease',
+                      border: 'none',
+                      cursor: 'pointer',
+                      background: '#00A2B9',
+                      color: '#ffffff',
+                      boxShadow: '0 2px 8px rgba(0, 162, 185, 0.2)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                 >
+                    <Edit2 size={14} />
+                    Edit Target
+                 </button>
+               </div>
+             ) : (
+               <>
+                 <div style={{
+                   display: 'inline-flex',
+                   background: 'transparent',
+                   padding: 3,
+                   borderRadius: 8,
+                   border: '1px solid #e2e8f0',
+                   cursor: 'pointer'
+                 }}>
+                   <button 
+                      type="button"
+                      onClick={() => {
+                        setForm(originalForm);
+                        setIsEditing(false);
+                      }}
+                      style={{
+                        padding: '4px 12px',
+                        borderRadius: 6,
+                        fontSize: '0.75rem',
+                        fontWeight: 700,
+                        transition: 'all 0.2s ease',
+                        border: 'none',
+                        cursor: 'pointer',
+                        background: 'transparent',
+                        color: '#64748b',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                      onMouseEnter={e => {
+                           e.currentTarget.style.background = '#f1f5f9';
+                           e.currentTarget.style.color = '#334155';
+                      }}
+                      onMouseLeave={e => {
+                           e.currentTarget.style.background = 'transparent';
+                           e.currentTarget.style.color = '#64748b';
+                      }}
+                   >
+                      Batal
+                   </button>
+                 </div>
+                 <div style={{
+                   display: 'inline-flex',
+                   background: saving ? '#93c5fd' : '#00A2B9',
+                   padding: 3,
+                   borderRadius: 8,
+                   border: 'none',
+                   cursor: saving ? 'not-allowed' : 'pointer',
+                   opacity: saving ? 0.6 : 1
+                 }}>
+                   <button 
+                      type="button"
+                      onClick={handleSave}
+                      disabled={saving}
+                      style={{
+                        padding: '4px 12px',
+                        borderRadius: 6,
+                        fontSize: '0.75rem',
+                        fontWeight: 700,
+                        transition: 'all 0.2s ease',
+                        border: 'none',
+                        cursor: saving ? 'not-allowed' : 'pointer',
+                        background: saving ? '#93c5fd' : '#00A2B9',
+                        color: '#ffffff',
+                        boxShadow: saving ? 'none' : '0 2px 8px rgba(0, 162, 185, 0.2)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                   >
+                      {saving ? <div className="w-3 h-3 border-2 border-white/50 border-t-white rounded-full animate-spin" /> : <Save size={14} />}
+                      Simpan
+                   </button>
+                 </div>
+               </>
+             )}
+            </div>
+
+          </div>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full text-center border-collapse">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200">
+                  <th className="py-3 px-6 font-bold text-sm text-slate-600 w-1/3 text-center">Bulan</th>
+                  <th className="py-3 px-6 font-bold text-sm text-slate-600 w-1/3 text-center">Target</th>
+                  <th className="py-3 px-6 font-bold text-sm text-slate-600 w-1/3 text-center">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {MONTHS.map((m) => {
+                  const isFilled = form[m.key] !== '';
+                  return (
+                    <tr key={m.key} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+                      <td className="py-4 px-6 text-sm font-semibold text-slate-800 align-middle text-center">
+                        {m.label}
+                      </td>
+                      <td className="py-3 px-6 align-middle text-center">
+                        <input
+                          type="number"
+                          step={step}
+                          placeholder="-"
+                          value={form[m.key]}
+                          disabled={!isEditing}
+                          onChange={(e) => handleChange(m.key, e.target.value)}
+                          className={`w-full max-w-[200px] mx-auto px-3 py-2 border rounded-lg font-bold outline-none transition-all text-center ${
+                            isEditing 
+                              ? 'border-slate-300 text-slate-800 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 bg-white' 
+                              : 'border-transparent text-slate-700 bg-transparent cursor-default'
+                          }`}
+                        />
+                      </td>
+                      <td className="py-4 px-6 align-middle text-center">
+                        {isFilled ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">
+                            ✓ Terisi
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-slate-100 text-slate-500 border border-slate-200">
+                            — Kosong
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function KelolaTargetBulananPage() {
+  const { bidang, indikator } = useParams();
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const initialTahun = searchParams.get('tahun') ? parseInt(searchParams.get('tahun')) : new Date().getFullYear();
+
+  const navigate = useNavigate();
+  const { isAdmin, loading: authLoading } = useAuth();
+  
+  const [tahun, setTahun] = useState(initialTahun);
+
+  const displayBidang = (bidang || '').toUpperCase();
+  const displayIndikator = (indikator || '').toUpperCase();
+  const isDecimal = ['SAIDI', 'SAIFI', 'ENS'].includes(displayIndikator);
+
+  if (authLoading) return null;
+  if (!isAdmin) {
+    return <Navigate to="/" replace />;
+  }
+
+  const indikatorList = displayIndikator === 'GANGGUAN TM' 
+    ? ['Gangguan TM > 5 Menit', 'Gangguan TM < 5 Menit'] 
+    : displayIndikator === 'GANGGUAN SWITCHING & TRAFO'
+    ? ['Gangguan Switching', 'Gangguan Trafo']
+    : displayIndikator === 'MVOD'
+    ? ['MVOD - SLA Gardu Induk', 'MVOD - SLA JTM', 'MVOD - SLA Gardu Distribusi']
+    : [indikator];
 
   return (
-    <div className="bg-slate-50 min-h-screen w-full flex flex-col gap-6 animate-fade-in relative pb-20">
+    <div className="bg-slate-50 min-h-screen w-full flex flex-col animate-fade-in relative pb-20">
       
       {/* Header */}
       <div className="sticky top-0 z-40 bg-white border-b border-slate-200 py-4 px-4 md:px-8 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -141,200 +329,25 @@ export default function KelolaTargetBulananPage() {
                   if (!val || val < 2000) setTahun(new Date().getFullYear());
                   else setTahun(val);
                 }}
-                disabled={isEditing}
                 min="2000"
                 max="2100"
-                className="w-24 pl-4 pr-2 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-500/20 focus:border-slate-500 outline-none font-bold text-slate-800 disabled:opacity-50 transition-all text-center"
+                className="w-24 pl-4 pr-2 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-500/20 focus:border-slate-500 outline-none font-bold text-slate-800 transition-all text-center"
               />
             </div>
-          </div>
-          
-          <div className="h-8 w-[1px] bg-slate-200 mx-1"></div>
-
-          <div className="flex items-center gap-3">
-             {!isEditing ? (
-               <div style={{
-                 display: 'inline-flex',
-                 background: '#00A2B9',
-                 padding: 4,
-                 borderRadius: 12,
-                 border: 'none',
-                 cursor: 'pointer'
-               }}>
-                 <button 
-                    type="button"
-                    onClick={() => setIsEditing(true)}
-                    style={{
-                      padding: '6px 16px',
-                      borderRadius: 9,
-                      fontSize: '0.85rem',
-                      fontWeight: 700,
-                      transition: 'all 0.2s ease',
-                      border: 'none',
-                      cursor: 'pointer',
-                      background: '#00A2B9',
-                      color: '#ffffff',
-                      boxShadow: '0 4px 12px rgba(0, 162, 185, 0.3)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px'
-                    }}
-                 >
-                    <Edit2 size={16} />
-                    Edit Target
-                 </button>
-               </div>
-             ) : (
-               <>
-                 <div style={{
-                   display: 'inline-flex',
-                   background: 'transparent',
-                   padding: 4,
-                   borderRadius: 12,
-                   border: '1px solid #e2e8f0',
-                   cursor: 'pointer'
-                 }}>
-                   <button 
-                      type="button"
-                      onClick={() => {
-                        setForm(originalForm);
-                        setIsEditing(false);
-                      }}
-                      style={{
-                        padding: '6px 16px',
-                        borderRadius: 9,
-                        fontSize: '0.85rem',
-                        fontWeight: 700,
-                        transition: 'all 0.2s ease',
-                        border: 'none',
-                        cursor: 'pointer',
-                        background: 'transparent',
-                        color: '#64748b',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px'
-                      }}
-                      onMouseEnter={e => {
-                           e.currentTarget.style.background = '#f1f5f9';
-                           e.currentTarget.style.color = '#334155';
-                      }}
-                      onMouseLeave={e => {
-                           e.currentTarget.style.background = 'transparent';
-                           e.currentTarget.style.color = '#64748b';
-                      }}
-                   >
-                      Batal
-                   </button>
-                 </div>
-                 <div style={{
-                   display: 'inline-flex',
-                   background: saving ? '#93c5fd' : '#00A2B9',
-                   padding: 4,
-                   borderRadius: 12,
-                   border: 'none',
-                   cursor: saving ? 'not-allowed' : 'pointer',
-                   opacity: saving ? 0.6 : 1
-                 }}>
-                   <button 
-                      type="button"
-                      onClick={handleSave}
-                      disabled={saving}
-                      style={{
-                        padding: '6px 16px',
-                        borderRadius: 9,
-                        fontSize: '0.85rem',
-                        fontWeight: 700,
-                        transition: 'all 0.2s ease',
-                        border: 'none',
-                        cursor: saving ? 'not-allowed' : 'pointer',
-                        background: saving ? '#93c5fd' : '#00A2B9',
-                        color: '#ffffff',
-                        boxShadow: saving ? 'none' : '0 4px 12px rgba(0, 162, 185, 0.3)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px'
-                      }}
-                   >
-                      {saving ? <div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" /> : <Save size={16} />}
-                      Simpan
-                   </button>
-                 </div>
-               </>
-             )}
           </div>
         </div>
       </div>
 
-      <div className="w-full px-[32px] py-4 md:py-8 mt-2">
-        {successMsg && (
-          <div className="mb-6 bg-emerald-50 border border-emerald-200 text-emerald-700 px-6 py-4 rounded-xl flex items-center gap-3 animate-fade-in shadow-sm">
-            <CheckCircle className="text-emerald-500 shrink-0" size={24} />
-            <span className="font-semibold">{successMsg}</span>
-          </div>
-        )}
-
-        {loading ? (
-          <div className="flex justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-800"></div>
-          </div>
-        ) : (
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden animate-fade-in">
-            <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 text-center">
-              <h2 className="font-extrabold text-lg text-slate-800 tracking-tight">Target Bulanan — {tahun}</h2>
-            </div>
-            
-            <div className="overflow-x-auto">
-              <table className="w-full text-center border-collapse">
-                <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200">
-                    <th className="py-3 px-6 font-bold text-sm text-slate-600 w-1/3 text-center">Bulan</th>
-                    <th className="py-3 px-6 font-bold text-sm text-slate-600 w-1/3 text-center">Target</th>
-                    <th className="py-3 px-6 font-bold text-sm text-slate-600 w-1/3 text-center">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {MONTHS.map((m, idx) => {
-                    const isFilled = form[m.key] !== '';
-                    return (
-                      <tr key={m.key} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
-                        <td className="py-4 px-6 text-sm font-semibold text-slate-800 align-middle text-center">
-                          {m.label}
-                        </td>
-                        <td className="py-3 px-6 align-middle text-center">
-                          <input
-                            type="number"
-                            step={step}
-                            placeholder="-"
-                            value={form[m.key]}
-                            disabled={!isEditing}
-                            onChange={(e) => handleChange(m.key, e.target.value)}
-                            className={`w-full max-w-[200px] mx-auto px-3 py-2 border rounded-lg font-bold outline-none transition-all text-center ${
-                              isEditing 
-                                ? 'border-slate-300 text-slate-800 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 bg-white' 
-                                : 'border-transparent text-slate-700 bg-transparent cursor-default'
-                            }`}
-                          />
-                        </td>
-                        <td className="py-4 px-6 align-middle text-center">
-                          {isFilled ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">
-                              ✓ Terisi
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-slate-100 text-slate-500 border border-slate-200">
-                              — Kosong
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-          </div>
-        )}
+      <div className="flex flex-col gap-6 pb-10">
+        {indikatorList.map(ind => (
+          <TargetSection 
+            key={ind} 
+            bidang={bidang} 
+            indikator={ind} 
+            tahun={tahun} 
+            isDecimal={isDecimal} 
+          />
+        ))}
       </div>
     </div>
   );

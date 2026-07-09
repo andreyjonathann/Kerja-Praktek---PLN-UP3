@@ -61,7 +61,14 @@ class TargetTahunanSeeder extends Seeder
             ],
             'Kerusakan Peralatan Distribusi' => [
                 'bidang' => 'Jaringan',
-                'indikator' => 'Gangguan Switching (Kubikel & Trafo)',
+                'indikator' => 'Gangguan Switching',
+                'satuan' => 'Kali',
+                'polaritas' => 'MINIMIZE',
+                'bobot' => 10.00
+            ],
+            'Gangguan Trafo' => [
+                'bidang' => 'Jaringan',
+                'indikator' => 'Gangguan Trafo',
                 'satuan' => 'Kali',
                 'polaritas' => 'MINIMIZE',
                 'bobot' => 10.00
@@ -69,13 +76,27 @@ class TargetTahunanSeeder extends Seeder
             'RPT Diluar CT' => [
                 'bidang' => 'Jaringan',
                 'indikator' => 'RPT G (Tanpa CT)',
-                'satuan' => 'Kali',
+                'satuan' => 'Menit',
                 'polaritas' => 'MINIMIZE',
                 'bobot' => 10.00
             ],
-            'MVOD' => [
+            'MVOD - SLA Gardu Induk' => [
                 'bidang' => 'Jaringan',
-                'indikator' => 'MVOD',
+                'indikator' => 'MVOD - SLA Gardu Induk',
+                'satuan' => 'Menit',
+                'polaritas' => 'MINIMIZE',
+                'bobot' => 10.00
+            ],
+            'MVOD - SLA JTM' => [
+                'bidang' => 'Jaringan',
+                'indikator' => 'MVOD - SLA JTM',
+                'satuan' => 'Menit',
+                'polaritas' => 'MINIMIZE',
+                'bobot' => 10.00
+            ],
+            'MVOD - SLA Gardu Distribusi' => [
+                'bidang' => 'Jaringan',
+                'indikator' => 'MVOD - SLA Gardu Distribusi',
                 'satuan' => 'Menit',
                 'polaritas' => 'MINIMIZE',
                 'bobot' => 10.00
@@ -83,8 +104,8 @@ class TargetTahunanSeeder extends Seeder
             'MTTR' => [
                 'bidang' => 'Jaringan',
                 'indikator' => 'MTTR Siaga 1',
-                'satuan' => 'Menit',
-                'polaritas' => 'MINIMIZE',
+                'satuan' => '%',
+                'polaritas' => 'MAXIMIZE',
                 'bobot' => 10.00
             ],
             'Rating Negatif PLN Mobile' => [

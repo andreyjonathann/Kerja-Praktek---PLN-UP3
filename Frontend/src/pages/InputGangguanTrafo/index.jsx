@@ -1,15 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import api from '@/services/api'
+import Swal from 'sweetalert2'
 import { useFilter } from '@/context/FilterContext'
 import { useAuth } from '@/context/AuthContext'
-import { Activity, ArrowLeft, Target, AlertTriangle, Save, Loader2, Info, Calendar, FileText } from 'lucide-react'
+import { Activity, ArrowLeft, Target, AlertTriangle, Save, Loader2, Info, Calendar, FileText, Trash2, CheckCircle } from 'lucide-react'
 import TargetWarning from '@/components/ui/TargetWarning'
 
 const MONTHS_FULL = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
-export default function InputGangguanSwitchingPage() {
+export default function InputGangguanTrafoPage({ isInline = false, inlineMonth = null, onSuccess, onCancel }) {
   const navigate = useNavigate()
+  const location = useLocation()
   const { filters } = useFilter()
   const { user } = useAuth()
   const [loading, setLoading] = useState(false)
@@ -19,12 +21,13 @@ export default function InputGangguanSwitchingPage() {
   const up3 = user?.up3 || 'UP3 Kebon Jeruk';
   const year = filters.year || new Date().getFullYear();
   const currentMonthIndex = new Date().getMonth();
+  const initialMonth = isInline ? inlineMonth : (location.state?.initialMonth || '');
   
   const [target, setTarget] = useState(null)
   
   const [trafoForm, setTrafoForm] = useState({
-    tahun: '',
-    bulan: '',
+    tahun: year,
+    bulan: initialMonth,
     jumlah_gangguan: '',
     existingId: null
   })
@@ -35,22 +38,22 @@ export default function InputGangguanSwitchingPage() {
     setLoading(true);
     try {
       // 1. Fetch Target
-      const resTarget = await api.get(`/v1/gangguan-switching/targets?tahun=${year}&up3=${up3}`);
-      if (resTarget.data?.data && resTarget.data.data.length > 0) {
-        setTarget(resTarget.data.data[0]);
+      const resTarget = await api.get(`/target/jaringan/${encodeURIComponent('Gangguan Trafo')}?tahun=${year}`);
+      if (resTarget.data) {
+        setTarget(resTarget.data);
       } else {
         setTarget(null);
       }
 
       // 2. Fetch Existing Data for selected month
-      const resTr = await api.get(`/v1/gangguan-trafo?tahun=${year}&up3=${up3}`);
+      const resSw = await api.get(`/v1/gangguan-trafo?tahun=${year}&up3=${up3}`);
       
-      const trData = resTr.data?.data || [];
+      const swData = resSw.data?.data || [];
       
       // Look for trafo record for current selected month
-      const currentTr = trData.find(item => item.bulan === Number(trafoForm.bulan));
-      if (currentTr) {
-        setTrafoForm(prev => ({ ...prev, jumlah_gangguan: currentTr.jumlah_gangguan, existingId: currentTr.id }));
+      const currentSw = swData.find(item => item.bulan === Number(trafoForm.bulan));
+      if (currentSw) {
+        setTrafoForm(prev => ({ ...prev, tahun: currentSw.tahun, jumlah_gangguan: currentSw.jumlah_gangguan, existingId: currentSw.id }));
       } else {
         setTrafoForm(prev => ({ ...prev, jumlah_gangguan: '', existingId: null }));
       }
@@ -77,6 +80,8 @@ export default function InputGangguanSwitchingPage() {
     setTrafoForm(prev => ({ ...prev, [name]: value }));
   };
 
+
+
   const submitTrafo = async (e) => {
     e?.preventDefault();
     setSaving(true);
@@ -93,206 +98,306 @@ export default function InputGangguanSwitchingPage() {
         jumlah_gangguan: Number(trafoForm.jumlah_gangguan)
       };
       
+      let res;
       if (trafoForm.existingId) {
-        await api.put(`/v1/gangguan-trafo/${trafoForm.existingId}`, payload);
+        showNotification('error', 'Data sudah ada! Tidak bisa mengedit dari halaman Tambah.');
+        setSaving(false);
+        return;
       } else {
-        await api.post(`/v1/gangguan-trafo`, payload);
+        res = await api.post(`/v1/gangguan-trafo`, payload);
       }
-      showNotification('success', 'Data Trafo berhasil disimpan.');
-      setTimeout(() => {
-        navigate('/jaringan/gangguan-switching');
-      }, 1000);
+      if (res.data.success) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Berhasil!',
+          text: 'Data kejadian Trafo berhasil diupdate.',
+          timer: 1500,
+          showConfirmButton: false
+        })
+        setTimeout(() => {
+          if (isInline && onSuccess) onSuccess();
+          else navigate('/jaringan/gangguan-switching');
+        }, 1500)
+      }
     } catch (err) {
       console.error(err);
-      showNotification('error', 'Gagal menyimpan data.');
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal',
+        text: 'Gagal menyimpan data.'
+      })
     } finally {
       setSaving(false);
     }
   };
 
-  const isDuplicate = !!trafoForm.existingId;
+  const handleDeleteParent = async () => {
+    if (!trafoForm.existingId) return;
+    
+    const confirm = await Swal.fire({
+      title: 'Hapus Data Bulan Ini?',
+      text: `Semua data kejadian Trafo bulan ${MONTHS_FULL[Number(trafoForm.bulan) - 1]} ${trafoForm.tahun} akan dihapus.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Ya, Hapus!',
+      cancelButtonText: 'Batal'
+    });
+
+    if (confirm.isConfirmed) {
+      try {
+        setSaving(true);
+        const res = await api.delete(`/v1/gangguan-trafo/${trafoForm.existingId}`);
+        if (res.data.success) {
+          Swal.fire({
+            icon: 'success',
+            title: 'Terhapus!',
+            text: 'Data berhasil dihapus.',
+            timer: 1500,
+            showConfirmButton: false
+          });
+          setTimeout(() => {
+            if (isInline && onSuccess) onSuccess();
+            else navigate('/jaringan/gangguan-switching');
+          }, 1500);
+        }
+      } catch (err) {
+        console.error("Gagal menghapus:", err);
+        Swal.fire({
+          icon: 'error',
+          title: 'Gagal',
+          text: err.response?.data?.message || 'Terjadi kesalahan saat menghapus data'
+        });
+      } finally {
+        setSaving(false);
+      }
+    }
+  };
+
+  const isDuplicate = !!trafoForm.existingId && Number(trafoForm.jumlah_gangguan) > 0;
 
   return (
-    <div className="min-h-screen bg-slate-50/50 flex flex-col animate-fade-in">
-      {/* HEADER BAR (Identik dgn referensi SAIDI) */}
-      <div className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
-        <div className="w-full px-[32px] py-4">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-             {/* Left Header */}
-             <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100/50 flex items-center justify-center text-blue-600 border border-blue-100/50 shadow-inner">
-                  <Activity size={24} />
-                </div>
-                <div>
-                  <h1 className="text-xl font-extrabold text-slate-800 tracking-tight">Input Gangguan Trafo</h1>
-                  <p className="text-slate-500 text-sm font-medium mt-0.5">Form pengisian realisasi bulanan untuk UP3 {up3} ({year})</p>
-                </div>
-             </div>
+    <div className={isInline ? "animate-fade-in" : "min-h-screen bg-slate-50 flex flex-col animate-fade-in py-12"}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 640, margin: '0 auto', width: '100%', padding: isInline ? '0' : '0 20px' }}>
+        
+        {/* HEADER */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button
+            type="button"
+            onClick={() => {
+              if (isInline && onCancel) onCancel();
+              else navigate(-1);
+            }}
+            title="Kembali"
+            style={{
+              width: 36, height: 36, borderRadius: 10,
+              border: '1px solid var(--border, #e2e8f0)',
+              background: 'var(--bg-card, #ffffff)', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'var(--text-secondary, #64748b)', flexShrink: 0,
+            }}
+          >
+            <ArrowLeft size={16} />
+          </button>
 
-             {/* Right Actions */}
-             <div className="flex items-center gap-3">
-               <div style={{
-                 display: 'inline-flex',
-                 background: 'transparent',
-                 padding: 4,
-                 borderRadius: 12,
-                 border: '1px solid #e2e8f0',
-                 cursor: 'pointer'
-               }}>
-                 <button 
-                    type="button"
-                    onClick={() => navigate('/jaringan/gangguan-switching')}
-                    style={{
-                      padding: '6px 16px',
-                      borderRadius: 9,
-                      fontSize: '0.85rem',
-                      fontWeight: 700,
-                      transition: 'all 0.2s ease',
-                      border: 'none',
-                      cursor: 'pointer',
-                      background: 'transparent',
-                      color: '#64748b',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px'
-                    }}
-                    onMouseEnter={e => {
-                         e.currentTarget.style.background = '#f1f5f9';
-                         e.currentTarget.style.color = '#334155';
-                    }}
-                    onMouseLeave={e => {
-                         e.currentTarget.style.background = 'transparent';
-                         e.currentTarget.style.color = '#64748b';
-                    }}
-                 >
-                    Batal
-                 </button>
-               </div>
-               <div style={{
-                 display: 'inline-flex',
-                 background: (saving || isDuplicate) ? '#93c5fd' : '#00A2B9',
-                 padding: 4,
-                 borderRadius: 12,
-                 border: 'none',
-                 cursor: saving ? 'not-allowed' : 'pointer',
-                 opacity: saving ? 0.6 : 1
-               }}>
-                 <button 
-                    type="button"
-                    onClick={submitTrafo}
-                    disabled={saving}
-                    style={{
-                      padding: '6px 16px',
-                      borderRadius: 9,
-                      fontSize: '0.85rem',
-                      fontWeight: 700,
-                      transition: 'all 0.2s ease',
-                      border: 'none',
-                      cursor: saving ? 'not-allowed' : 'pointer',
-                      background: saving ? '#93c5fd' : '#00A2B9',
-                      color: '#ffffff',
-                      boxShadow: saving ? 'none' : '0 4px 12px rgba(0, 162, 185, 0.3)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px'
-                    }}
-                 >
-                    {saving ? <div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" /> : <Save size={16} />}
-                    Simpan Realisasi
-                 </button>
-               </div>
-            </div>
+          <div style={{
+            width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+            background: `linear-gradient(135deg, #f9731622, #f973160a)`,
+            border: `1px solid #f9731630`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Activity size={17} style={{ color: '#f97316' }} />
+          </div>
+
+          <div>
+            <h1 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-primary, #1e293b)' }}>
+              Tambah Gangguan Trafo — {trafoForm.bulan ? MONTHS_FULL[Number(trafoForm.bulan) - 1] : ''} {trafoForm.tahun}
+            </h1>
+            <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-muted, #94a3b8)', fontWeight: 500 }}>
+              Satuan: Kali
+            </p>
           </div>
         </div>
-      </div>
 
-      <div className="w-full px-[32px] py-4 md:py-8">
-        <div className="flex flex-col gap-6 pt-[28px] mb-[36px]">
-          
-          {notification && (
-            <div className={`px-5 py-4 border rounded-xl flex items-center gap-3 shadow-sm animate-fade-in ${notification.type === 'error' ? 'bg-red-50 border-red-200 text-red-700' : 'bg-emerald-50 border-emerald-200 text-emerald-700'}`}>
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${notification.type === 'error' ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}`}>
-                    <Activity size={20} />
-                </div>
-                <div>
-                    <h4 className="text-sm font-bold">{notification.type === 'error' ? 'Gagal' : 'Berhasil'}</h4>
-                    <p className="text-xs font-medium">{notification.message}</p>
-                </div>
+        {/* NOTIFICATION */}
+        {notification && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10,
+            padding: '11px 16px', borderRadius: 10,
+            background: notification.type === 'error' ? '#fef2f2' : '#f0fdf4',
+            border: `1px solid ${notification.type === 'error' ? '#fecaca' : '#bbf7d0'}`,
+            color: notification.type === 'error' ? '#dc2626' : '#16a34a',
+            fontWeight: 600, fontSize: '0.86rem',
+          }}>
+            {notification.type === 'error' ? <AlertTriangle size={16} /> : <Activity size={16} />}
+            {notification.message}
+          </div>
+        )}
+
+        <TargetWarning 
+          up3={up3.replace(/^UP3\s+/i, '')} 
+          year={year} 
+          monthName={trafoForm.bulan ? MONTHS_FULL[Number(trafoForm.bulan) - 1] : null} 
+          isVisible={!target}
+        />
+
+        {isDuplicate && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10,
+            padding: '11px 16px', borderRadius: 10,
+            background: '#fef2f2', border: `1px solid #fecaca`,
+            color: '#dc2626', fontWeight: 600, fontSize: '0.86rem',
+          }}>
+            <AlertTriangle size={16} />
+            Data untuk periode ini sudah ada. Anda tidak dapat mengubah data melalui halaman ini. Silakan gunakan fitur Edit.
+          </div>
+        )}
+
+        {loading ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 60, gap: 12, color: '#94a3b8' }}>
+            <Loader2 size={22} style={{ animation: 'spin 1s linear infinite' }} />
+            <span style={{ fontWeight: 600 }}>Memuat data...</span>
+          </div>
+        ) : (
+          <form style={{ display: 'flex', flexDirection: 'column', gap: 14 }} onSubmit={submitTrafo}>
+            
+            {/* TOTAL PREVIEW */}
+            <div style={{
+              padding: '13px 18px', borderRadius: 12,
+              background: `linear-gradient(135deg, #f9731612, #f9731605)`,
+              border: `1px solid #f9731628`,
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            }}>
+              <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted, #64748b)' }}>
+                Total Gangguan (preview)
+              </span>
+              <span style={{ fontSize: '1.18rem', fontWeight: 800, color: '#f97316' }}>
+                {trafoForm.jumlah_gangguan || '0'}
+                <span style={{ fontSize: '0.73rem', color: 'var(--text-muted, #94a3b8)', marginLeft: 6, fontWeight: 600 }}>
+                  Kali
+                </span>
+              </span>
             </div>
-          )}
 
-          <TargetWarning up3={up3} year={year} isVisible={!loading && !target} />
-
-          <div className="mb-8 py-6">
-            <h3 className="text-xs font-bold text-slate-500 mb-3 uppercase tracking-wider mt-6">Pilih Periode</h3>
-            <div className="flex gap-4">
-               <div className="relative w-1/2">
+            {/* CARD */}
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+              <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center">
+                    <Activity size={16} />
+                  </div>
+                  <h3 className="font-bold text-slate-800 text-sm tracking-wide">DETAIL GANGGUAN</h3>
+                </div>
+              </div>
+              <div className="p-5 flex flex-col gap-4">
+                {/* PILIH PERIODE */}
+              <div className="flex gap-4">
+                <div className="w-1/2">
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#64748b', marginBottom: 5 }}>Bulan</label>
                   <select
                     name="bulan"
                     value={trafoForm.bulan}
                     onChange={handleTrafoChange}
-                    className="w-full px-4 py-2 pr-12 bg-white border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-sm cursor-pointer appearance-none shadow-sm text-gray-400 font-normal"
+                    required
+                    style={{
+                      width: '100%', padding: '10px 14px', borderRadius: 10,
+                      border: '1px solid #e2e8f0', background: '#f8fafc',
+                      fontSize: '0.9rem', color: '#334155', outline: 'none',
+                    }}
                   >
-                    <option value="" disabled className="text-gray-400">Bulan</option>
+                    <option value="">Pilih Bulan</option>
                     {MONTHS_FULL.map((m, i) => (
-                      <option key={i+1} value={i+1}>{m}</option>
+                      <option key={i} value={i + 1}>{m}</option>
                     ))}
                   </select>
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                    <Calendar size={16} />
-                  </div>
-               </div>
-               
-               <div className="relative w-1/2">
+                </div>
+                <div className="w-1/2">
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#64748b', marginBottom: 5 }}>Tahun</label>
                   <input
                     type="number"
                     name="tahun"
                     value={trafoForm.tahun}
                     onChange={handleTrafoChange}
-                    placeholder="Tahun"
-                    className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-sm placeholder:text-gray-400 text-gray-400 shadow-sm font-normal"
+                    required
+                    style={{
+                      width: '100%', padding: '10px 14px', borderRadius: 10,
+                      border: '1px solid #e2e8f0', background: '#f8fafc',
+                      fontSize: '0.9rem', color: '#334155', outline: 'none',
+                    }}
                   />
-               </div>
-            </div>
-          </div>
+                </div>
+              </div>
 
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mt-2">
-            <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center">
-                  <FileText size={18} />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-slate-800">RINCIAN DATA GANGGUAN</h3>
-                  <p className="text-xs text-slate-500 font-medium">Masukkan jumlah kali gangguan trafo</p>
-                </div>
+                <div style={{ paddingTop: 12 }}>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#64748b', marginBottom: 5 }}>
+                    Jumlah Gangguan Trafo (Kali)
+                  </label>
+                  <input
+                  type="number"
+                  min="0"
+                  name="jumlah_gangguan"
+                  value={trafoForm.jumlah_gangguan}
+                  onChange={handleTrafoChange}
+                  readOnly={isDuplicate}
+                  placeholder="Contoh: 1"
+                  style={{
+                    width: 140, padding: '7px 12px', borderRadius: 8,
+                    border: '1px solid #e2e8f0', background: isDuplicate ? '#f8fafc' : '#fff', color: isDuplicate ? '#94a3b8' : '#334155',
+                    fontSize: '0.92rem', fontWeight: 600, outline: 'none',
+                    textAlign: 'right'
+                  }}
+                /></div>
               </div>
             </div>
 
-            <div className="p-6 space-y-4">
-              <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden mb-8">
-                <div className="flex flex-col md:flex-row md:items-center justify-between py-[20px] px-4 border-b border-[#f3f4f6] gap-4 hover:bg-slate-100/50 transition">
-                   <div className="flex items-center gap-4 flex-1">
-                     <div>
-                       <label className="font-bold text-slate-600 text-[13px]">Gangguan Trafo (Kali)</label>
-                     </div>
-                   </div>
-                   <div className="relative flex-1 flex justify-end">
-                     <input 
-                        type="number" min="0" 
-                        name="jumlah_gangguan"
-                        value={trafoForm.jumlah_gangguan}
-                        onChange={handleTrafoChange}
-                        className="w-full max-w-xs border border-gray-300 rounded-md px-3 py-2 shadow-sm text-right outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white"
-                        placeholder="Contoh: 2"
-                     />
-                   </div>
-                </div>
+            {isDuplicate && (
+              <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg flex items-start gap-3 mt-2">
+                <Info size={18} className="text-orange-500 mt-0.5 shrink-0" />
+                <p className="text-orange-700 text-sm font-medium leading-relaxed">
+                  Data trafo bulan ini sudah ada. Anda dapat mengedit jumlah gangguan atau menghapusnya.
+                </p>
               </div>
+            )}
+
+            <div style={{ display: 'flex', gap: 12, marginTop: 10 }}>
+              {isDuplicate && (
+                <button
+                  type="button"
+                  onClick={handleDeleteParent}
+                  disabled={saving}
+                  style={{
+                    flex: '0 0 auto',
+                    padding: '0 20px', borderRadius: 10,
+                    border: '1px solid #fecaca', background: '#fef2f2',
+                    color: '#dc2626', fontWeight: 700, fontSize: '0.9rem',
+                    cursor: saving ? 'not-allowed' : 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
+                  }}
+                >
+                  {saving ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
+                </button>
+              )}
+              <button
+                type="submit"
+                disabled={saving || loading || isDuplicate}
+                style={{
+                  width: '100%', padding: '14px', borderRadius: 12,
+                  background: (saving || loading || isDuplicate) ? '#93c5fd' : '#f97316', color: '#fff',
+                  fontSize: '0.95rem', fontWeight: 700, border: 'none', cursor: (saving || loading || isDuplicate) ? 'not-allowed' : 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  boxShadow: (saving || loading || isDuplicate) ? 'none' : '0 4px 14px rgba(249, 115, 22, 0.3)',
+                  transition: 'all 0.2s',
+                }}
+              >
+                {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+                {saving ? 'Menyimpan...' : (isDuplicate ? 'Data Sudah Ada' : 'Simpan Data')}
+              </button>
             </div>
-          </div>
-        </div>
+            
+          </form>
+        )}
       </div>
     </div>
-  )
+  );
 }

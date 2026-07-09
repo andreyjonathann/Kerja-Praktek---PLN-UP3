@@ -21,6 +21,8 @@ import KpiCard from '@/components/ui/KpiCard'
 import TargetWarning from '@/components/ui/TargetWarning'
 import DataTable from '@/components/ui/DataTable'
 import ChartWrapper from '@/components/ui/ChartWrapper'
+import DetailGangguanTmModal from '@/components/ui/DetailGangguanTmModal'
+import DetailGangguanTmKurang5Modal from '@/components/ui/DetailGangguanTmKurang5Modal'
 
 const COLORS = {
   target: '#ef4444',
@@ -65,14 +67,17 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 export default function GangguanTmPage() {
-  const navigate = useNavigate()
   const { filters } = useFilter()
   const { isAdmin } = useAuth()
+  const navigate = useNavigate()
   
   const [activeTab, setActiveTab] = useState('semua')
+  const [chartView, setChartView] = useState('monthly')
   const [dataRekap, setDataRekap] = useState(null)
   const [dataUp3, setDataUp3] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [detailModalType, setDetailModalType] = useState(null); // 'lebih_5_mnt' or 'kurang_5_mnt'
+  const [selectedDetailMonth, setSelectedDetailMonth] = useState(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -101,24 +106,32 @@ export default function GangguanTmPage() {
   const processChartData = (tipeData) => {
     if (!tipeData) return [];
     let sumReal = 0;
+    let sumTgt = 0;
+    let anyTgt = false;
     return MONTHS_FULL.map((m, idx) => {
       const bulan = idx + 1;
-      const real = tipeData.monthly[bulan];
+      const monthlyInfo = tipeData.monthly[bulan] || {};
+      const real = typeof monthlyInfo === 'object' ? monthlyInfo.realisasi : monthlyInfo;
+      const ringkasanId = typeof monthlyInfo === 'object' ? monthlyInfo.id : null;
+      
       if (real !== null && real !== undefined) {
         sumReal += real;
       }
       
-      let targetKumulatif = null;
-      if (tipeData.target_tahunan) {
-        targetKumulatif = (tipeData.target_tahunan / 12) * bulan;
+      let targetBulanan = tipeData.target_bulanan ? tipeData.target_bulanan[bulan] : null;
+      if (targetBulanan !== null && targetBulanan !== undefined) {
+        sumTgt += Number(targetBulanan);
+        anyTgt = true;
       }
 
       return {
         bulan,
         label: m.substring(0, 3),
         realisasi: real,
+        id: ringkasanId,
+        targetBulanan: targetBulanan !== null && targetBulanan !== undefined ? Number(targetBulanan) : null,
         kumulatifReal: real !== null ? sumReal : null,
-        targetKumulatif: targetKumulatif
+        targetKumulatif: anyTgt ? sumTgt : null
       }
     });
   }
@@ -134,8 +147,8 @@ export default function GangguanTmPage() {
       ['lebih_5_mnt', 'kurang_5_mnt'].forEach(t => {
         if (dataRekap[t]) {
           ytd += dataRekap[t].realisasi_ytd || 0;
-          if (dataRekap[t].target_tahunan) {
-            target = (target || 0) + dataRekap[t].target_tahunan;
+          if (dataRekap[t].target_tahunan !== null && dataRekap[t].target_tahunan !== undefined) {
+            target = (target || 0) + Number(dataRekap[t].target_tahunan);
           }
         }
       });
@@ -237,23 +250,31 @@ export default function GangguanTmPage() {
             <Tooltip content={<CustomTooltip />} cursor={{fill: 'rgba(0,0,0,0.05)'}} />
             <Legend iconType="circle" wrapperStyle={{paddingTop: '20px', fontSize: '12px'}} />
             
-            <Bar 
-              yAxisId="left" 
-              dataKey="realisasi" 
-              name="Realisasi Bulanan" 
-              fill={COLORS.realisasi} 
-              radius={[4, 4, 0, 0]} 
-              maxBarSize={40}
-              onClick={(data) => {
-                if (tipe === 'lebih_5_mnt' && data && data.bulan) {
-                  const tahun = filters.year || new Date().getFullYear();
-                  navigate(`/jaringan/gangguan-tm/lebih-5-menit/detail/${tahun}/${data.bulan}`);
-                }
-              }}
-              style={{ cursor: tipe === 'lebih_5_mnt' ? 'pointer' : 'default' }}
-            />
-            <Line yAxisId="left" type="monotone" dataKey="kumulatifReal" name="Realisasi Kumulatif" stroke={COLORS.kumulatif} strokeWidth={3} dot={{r:4, fill:COLORS.kumulatif}} />
-            <Line yAxisId="left" type="stepAfter" strokeDasharray="5 5" dataKey="targetKumulatif" name="Target Kumulatif" stroke={COLORS.target} strokeWidth={2} dot={false} />
+            {chartView === 'monthly' ? (
+              <>
+                <Bar 
+                  yAxisId="left" 
+                  dataKey="realisasi" 
+                  name="Realisasi Bulanan" 
+                  fill={COLORS.realisasi} 
+                  radius={[4, 4, 0, 0]} 
+                  maxBarSize={40}
+                  onClick={(data) => {
+                    if (data && data.bulan) {
+                      setSelectedDetailMonth(data.bulan);
+                      setDetailModalType(tipe);
+                    }
+                  }}
+                  style={{ cursor: 'pointer' }}
+                />
+                <Line yAxisId="left" type="monotone" dataKey="targetBulanan" name="Target Bulanan" stroke={COLORS.target} strokeWidth={2} dot={{r:3, fill:COLORS.target}} strokeDasharray="4 4" />
+              </>
+            ) : (
+              <>
+                <Line yAxisId="left" type="monotone" dataKey="kumulatifReal" name="Realisasi Kumulatif" stroke={COLORS.kumulatif} strokeWidth={3} dot={{r:4, fill:COLORS.kumulatif}} />
+                <Line yAxisId="left" type="stepAfter" strokeDasharray="5 5" dataKey="targetKumulatif" name="Target Kumulatif" stroke={COLORS.target} strokeWidth={2} dot={false} />
+              </>
+            )}
           </ComposedChart>
         </ResponsiveContainer>
       </ChartWrapper>
@@ -289,16 +310,16 @@ export default function GangguanTmPage() {
         </div>
         <DataTable
           searchable={false}
-          onRowClick={tipe === 'lebih_5_mnt' ? (row) => {
+          onRowClick={(row) => {
             if (!row.isTotal) {
-              const tahun = filters.year || new Date().getFullYear();
-              navigate(`/jaringan/gangguan-tm/lebih-5-menit/detail/${tahun}/${row.bulan}`);
+              setSelectedDetailMonth(row.bulan);
+              setDetailModalType(tipe);
             }
-          } : undefined}
+          }}
           columns={[
             { 
-              key: 'label', label: <span className="pl-6 block">Bulan</span>, align: 'left',
-              render: (v, item) => <span className={`pl-6 block font-semibold ${item.isTotal ? 'text-blue-700 uppercase' : 'text-slate-800'}`}>{item.isTotal ? 'TOTAL' : MONTHS_FULL[item.bulan-1]}</span>
+              key: 'label', label: 'Bulan', align: 'center',
+              render: (v, item) => <span className={`block font-semibold ${item.isTotal ? 'text-blue-700 uppercase' : 'text-slate-800'}`}>{item.isTotal ? 'TOTAL' : MONTHS_FULL[item.bulan-1]}</span>
             },
             { 
               key: 'realisasi', label: 'Realisasi Bulanan', align: 'center',
@@ -566,6 +587,46 @@ export default function GangguanTmPage() {
         />
       </div>
 
+      {/* Toggle View */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+        marginBottom: '16px'
+      }}>
+        <div style={{
+          display: 'inline-flex',
+          background: 'rgba(0, 162, 185, 0.05)',
+          padding: 4,
+          borderRadius: 12,
+          border: '1px solid rgba(0, 162, 185, 0.08)',
+        }}>
+        {['monthly','cumulative'].map(t => {
+          const isActive = chartView === t
+          return (
+            <button
+              key={t}
+              onClick={() => setChartView(t)}
+              style={{
+                padding: '6px 16px',
+                borderRadius: 9,
+                fontSize: '0.85rem',
+                fontWeight: 700,
+                transition: 'all 0.2s ease',
+                border: 'none',
+                cursor: 'pointer',
+                background: isActive ? 'var(--bg-card)' : 'transparent',
+                color: isActive ? '#00A2B9' : 'var(--text-muted)',
+                boxShadow: isActive ? '0 2px 8px rgba(0, 162, 185, 0.12)' : 'none',
+              }}
+            >
+              {t === 'monthly' ? 'Bulanan' : 'Kumulatif'}
+            </button>
+          )
+        })}
+        </div>
+      </div>
+
       {/* Charts & Tables */}
       {activeTab === 'semua' ? (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mt-4">
@@ -593,6 +654,30 @@ export default function GangguanTmPage() {
           )}
         </div>
       )}
+      <DetailGangguanTmModal 
+        open={detailModalType === 'lebih_5_mnt'} 
+        onOpenChange={(open) => !open && setDetailModalType(null)} 
+        year={filters.year || new Date().getFullYear()} 
+        onSuccess={fetchData}
+        rowData={{
+          bulan: selectedDetailMonth,
+          id: dataRekap?.lebih_5_mnt?.monthly[selectedDetailMonth]?.id,
+          target_tahunan: dataRekap?.lebih_5_mnt?.target_tahunan,
+          realisasi: dataRekap?.lebih_5_mnt?.monthly[selectedDetailMonth]?.realisasi || 0
+        }}
+      />
+      <DetailGangguanTmKurang5Modal 
+        open={detailModalType === 'kurang_5_mnt'} 
+        onOpenChange={(open) => !open && setDetailModalType(null)} 
+        year={filters.year || new Date().getFullYear()} 
+        onSuccess={fetchData}
+        rowData={{
+          bulan: selectedDetailMonth,
+          id: dataRekap?.kurang_5_mnt?.monthly[selectedDetailMonth]?.id,
+          target_tahunan: dataRekap?.kurang_5_mnt?.target_tahunan,
+          realisasi: dataRekap?.kurang_5_mnt?.monthly[selectedDetailMonth]?.realisasi || 0
+        }}
+      />
     </div>
   )
 }
