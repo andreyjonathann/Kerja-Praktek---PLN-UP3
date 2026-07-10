@@ -72,7 +72,10 @@ export default function K3SelfAssessmentDetailPage() {
   const { category, criteriaId } = useParams()
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { filters, selectedMonth, selectedYear } = useFilter()
+  const { filters } = useFilter()
+  
+  const selectedMonth = parseInt(sessionStorage.getItem('k3_assessment_month')) || (new Date().getMonth() + 1)
+  const selectedYear = parseInt(sessionStorage.getItem('k3_assessment_year')) || filters.year
 
   const [categories, setCategories] = useState([])
   const [assessmentId, setAssessmentId] = useState(null)

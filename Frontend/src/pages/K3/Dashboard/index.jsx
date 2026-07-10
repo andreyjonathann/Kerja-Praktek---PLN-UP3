@@ -321,7 +321,7 @@ export default function K3DashboardPage() {
 
   const MOCK_TREN = trenData.map(t => ({
     bulan: t.label,
-    skor: t.avg_score || 0
+    skor: t.avg_score !== null ? parseFloat(t.avg_score) : null
   }))
 
   const ASSESSMENT_AKTIF = 3

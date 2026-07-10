@@ -1,20 +1,32 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Building2, Plus, Edit2, Trash2 } from 'lucide-react'
 import PageHeader from '@/components/ui/PageHeader'
-
-const MOCK_UNITS = [
-  { id: 1, kode: 'UP3-KJ', nama: 'UP3 Kebon Jeruk', wilayah: 'Jakarta Barat', status: 'aktif' },
-  { id: 2, kode: 'UP3-CK', nama: 'UP3 Cengkareng', wilayah: 'Jakarta Barat', status: 'aktif' },
-  { id: 3, kode: 'UP3-JB', nama: 'UP3 Jakarta Barat', wilayah: 'Jakarta Barat', status: 'aktif' },
-  { id: 4, kode: 'UP3-JT', nama: 'UP3 Jakarta Timur', wilayah: 'Jakarta Timur', status: 'aktif' },
-  { id: 5, kode: 'UP3-JS', nama: 'UP3 Jakarta Selatan', wilayah: 'Jakarta Selatan', status: 'aktif' },
-]
+import api from '@/services/api'
+import Swal from 'sweetalert2'
 
 export default function UnitUP3Page() {
-  const [units, setUnits] = useState(MOCK_UNITS)
+  const [units, setUnits] = useState([])
   const [showForm, setShowForm] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [form, setForm] = useState({ id: null, kode: '', nama: '', wilayah: '', status: 'aktif' })
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    fetchUnits()
+  }, [])
+
+  const fetchUnits = async () => {
+    setIsLoading(true)
+    try {
+      const res = await api.get('/unit-up3')
+      setUnits(res.data)
+    } catch (error) {
+      console.error('Failed to fetch units:', error)
+      Swal.fire('Error', 'Gagal memuat data Unit UP3', 'error')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const handleAdd = () => {
     setForm({ id: null, kode: '', nama: '', wilayah: '', status: 'aktif' })
@@ -28,13 +40,46 @@ export default function UnitUP3Page() {
     setShowForm(true)
   }
 
-  const handleSave = () => {
-    if (isEditing) {
-      setUnits(p => p.map(x => x.id === form.id ? form : x))
-    } else {
-      setUnits(p => [...p, { ...form, id: Date.now(), status: 'aktif' }])
+  const handleDelete = async (id) => {
+    const result = await Swal.fire({
+      title: 'Apakah Anda yakin?',
+      text: "Data unit ini akan dihapus secara permanen!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#DC2626',
+      cancelButtonColor: '#6B7280',
+      confirmButtonText: 'Ya, hapus!',
+      cancelButtonText: 'Batal'
+    })
+
+    if (result.isConfirmed) {
+      try {
+        await api.delete(`/unit-up3/${id}`)
+        Swal.fire('Terhapus!', 'Data unit berhasil dihapus.', 'success')
+        fetchUnits()
+      } catch (error) {
+        console.error('Failed to delete:', error)
+        Swal.fire('Error', 'Gagal menghapus data', 'error')
+      }
     }
-    setShowForm(false)
+  }
+
+  const handleSave = async () => {
+    try {
+      if (isEditing) {
+        await api.put(`/unit-up3/${form.id}`, form)
+        Swal.fire('Berhasil!', 'Data unit berhasil diupdate.', 'success')
+      } else {
+        await api.post('/unit-up3', form)
+        Swal.fire('Berhasil!', 'Unit baru berhasil ditambahkan.', 'success')
+      }
+      setShowForm(false)
+      fetchUnits()
+    } catch (error) {
+      console.error('Failed to save:', error)
+      const errorMsg = error.response?.data?.message || 'Gagal menyimpan data'
+      Swal.fire('Error', errorMsg, 'error')
+    }
   }
 
   return (
@@ -48,7 +93,9 @@ export default function UnitUP3Page() {
 
       <div style={{ background: 'var(--bg-card)', padding: 24, borderRadius: 16, border: '1px solid var(--border-subtle)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{units.length} unit terdaftar</span>
+          <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+            {isLoading ? 'Memuat...' : `${units.length} unit terdaftar`}
+          </span>
           <div style={{ display: 'inline-flex', background: 'rgba(0, 162, 185,0.05)', padding: 4, borderRadius: 12, border: '1px solid rgba(0, 162, 185,0.15)' }}>
             <button
               onClick={handleAdd}
@@ -83,20 +130,25 @@ export default function UnitUP3Page() {
                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                   <td style={{ padding: '12px 16px', fontWeight: 700, color: 'var(--text-primary)' }}>{u.kode}</td>
                   <td style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text-secondary)' }}>{u.nama}</td>
-                  <td style={{ padding: '12px 16px', color: 'var(--text-secondary)' }}>{u.wilayah}</td>
+                  <td style={{ padding: '12px 16px', color: 'var(--text-secondary)' }}>{u.wilayah || '-'}</td>
                   <td style={{ padding: '12px 16px' }}>
                     <span style={{ padding: '2px 8px', borderRadius: 99, fontSize: '0.7rem', fontWeight: 700, background: u.status === 'aktif' ? '#16A34A20' : '#DC262620', color: u.status === 'aktif' ? '#16A34A' : '#DC2626' }}>
-                      {u.status.toUpperCase()}
+                      {(u.status || '').toUpperCase()}
                     </span>
                   </td>
                   <td style={{ padding: '12px 16px' }}>
                     <div style={{ display: 'flex', gap: 6 }}>
                       <button onClick={() => handleEditClick(u)} style={{ background: '#F1F5F9', border: 'none', padding: 6, borderRadius: 6, color: '#0070C0', cursor: 'pointer' }}><Edit2 size={14} /></button>
-                      <button style={{ background: '#FEE2E2', border: 'none', padding: 6, borderRadius: 6, color: '#DC2626', cursor: 'pointer' }}><Trash2 size={14} /></button>
+                      <button onClick={() => handleDelete(u.id)} style={{ background: '#FEE2E2', border: 'none', padding: 6, borderRadius: 6, color: '#DC2626', cursor: 'pointer' }}><Trash2 size={14} /></button>
                     </div>
                   </td>
                 </tr>
               ))}
+              {units.length === 0 && !isLoading && (
+                <tr>
+                  <td colSpan="5" style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>Belum ada data unit.</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

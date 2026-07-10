@@ -151,6 +151,9 @@ Route::middleware('api')->group(function () {
     Route::get('/kinerja/{bidang}', [KinerjaController::class, 'index']);
     Route::post('/kinerja/{bidang}', [KinerjaController::class, 'store']);
     Route::delete('/kinerja/{bidang}', [KinerjaController::class, 'destroy']);
+
+    // Unit UP3
+    Route::apiResource('unit-up3', \App\Http\Controllers\Api\UnitUp3Controller::class);
 });
 
 // =============================================================================

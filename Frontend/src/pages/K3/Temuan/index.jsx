@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Plus, Search, Calendar, User, FileText, CheckCircle, Clock, AlertTriangle, X, Camera, Edit2, MessageSquare, Paperclip } from 'lucide-react'
 import PageHeader from '@/components/ui/PageHeader'
 import { useAuth } from '@/context/AuthContext'
+import { useFilter } from '@/context/FilterContext'
 import { K3_JENIS_TEMUAN, K3_STATUS_TEMUAN, MONTHS_FULL_ID } from '@/data/k3MasterData'
 
 // ─── Mock Data ─────────────────────────────────────────────────────────────────
@@ -12,7 +13,7 @@ const MOCK_FINDINGS = [
     jenis: 'mayor', pic_name: 'Budi Santoso', due_date: '2026-07-15',
     status: 'open', unit: 'UP3 Kebon Jeruk',
     catatan_tindak_lanjut: '',
-    created_at: '2026-06-05'
+    created_at: '2026-06-05', year: 2026
   },
   {
     id: 2, judul: 'IBPPR belum diperbarui untuk pekerjaan pemeliharaan trafo',
@@ -20,7 +21,7 @@ const MOCK_FINDINGS = [
     jenis: 'minor', pic_name: 'Rina Wulandari', due_date: '2026-07-30',
     status: 'in_progress', unit: 'UP3 Kebon Jeruk',
     catatan_tindak_lanjut: 'Sedang dalam proses revisi dokumen oleh tim K3.',
-    created_at: '2026-06-10'
+    created_at: '2026-06-10', year: 2026
   },
   {
     id: 3, judul: 'Rambu K3 di area panel tegangan menengah terkikis/tidak terbaca',
@@ -28,7 +29,7 @@ const MOCK_FINDINGS = [
     jenis: 'observasi', pic_name: 'Ahmad Fauzi', due_date: '2026-06-25',
     status: 'closed', unit: 'UP3 Kebon Jeruk',
     catatan_tindak_lanjut: 'Rambu sudah diganti pada 20 Jun 2026.',
-    created_at: '2026-05-20'
+    created_at: '2026-05-20', year: 2026
   },
   {
     id: 4, judul: 'Petugas tidak memiliki SIO untuk pekerjaan di ketinggian',
@@ -36,7 +37,7 @@ const MOCK_FINDINGS = [
     jenis: 'kritikal', pic_name: 'Devi Rahayu', due_date: '2026-06-15',
     status: 'open', unit: 'UP3 Kebon Jeruk',
     catatan_tindak_lanjut: '',
-    created_at: '2026-06-12',
+    created_at: '2026-06-12', year: 2026,
     progress: []
   },
 ]
@@ -392,6 +393,7 @@ function AddFindingModal({ onClose, onSave, initialData }) {
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function K3TemuanPage() {
   const { isAdminK3 } = useAuth()
+  const { filters } = useFilter()
   const [findings, setFindings] = useState(() => {
     const saved = localStorage.getItem('k3_temuan_mock')
     return saved ? JSON.parse(saved) : MOCK_FINDINGS
@@ -430,7 +432,9 @@ export default function K3TemuanPage() {
     const matchSearch = f.judul.toLowerCase().includes(search.toLowerCase()) || f.pic_name.toLowerCase().includes(search.toLowerCase())
     const matchJenis  = filterJenis === 'all' || f.jenis === filterJenis
     const matchStatus = filterStatus === 'all' || f.status === filterStatus
-    return matchSearch && matchJenis && matchStatus
+    const findingYear = f.year || (f.created_at ? new Date(f.created_at).getFullYear() : null)
+    const matchYear   = !filters.year || findingYear === filters.year
+    return matchSearch && matchJenis && matchStatus && matchYear
   })
 
   const isOverdue = (f) => f.status !== 'closed' && f.due_date < today
@@ -483,11 +487,16 @@ export default function K3TemuanPage() {
   }
 
   const handleSaveFinding = (savedFinding) => {
+    // Pastikan tahun tersimpan dari created_at
+    const withYear = {
+      ...savedFinding,
+      year: savedFinding.year || (savedFinding.created_at ? new Date(savedFinding.created_at).getFullYear() : new Date().getFullYear())
+    }
     if (editingFinding) {
-      setFindings(prev => prev.map(f => f.id === savedFinding.id ? savedFinding : f))
-      if (selectedFinding?.id === savedFinding.id) setSelectedFinding(savedFinding)
+      setFindings(prev => prev.map(f => f.id === withYear.id ? withYear : f))
+      if (selectedFinding?.id === withYear.id) setSelectedFinding(withYear)
     } else {
-      setFindings(prev => [savedFinding, ...prev])
+      setFindings(prev => [withYear, ...prev])
     }
     setEditingFinding(null)
   }

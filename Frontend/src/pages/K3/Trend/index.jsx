@@ -49,6 +49,7 @@ function Delta({ from, to }) {
 }
 
 // ─── Main Page ─────────────────────────────────────────────────────────────────
+// ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function K3TrendPage() {
   const { filters } = useFilter()
   const [showCats, setShowCats] = useState(CAT_CFG.map(c => c.key))
@@ -82,15 +83,6 @@ export default function K3TrendPage() {
        }
     }
     
-    // Mock data untuk bulan-bulan sebelumnya (Jan - Jun) agar grafik terlihat
-    if (idx < 6 && dashboardData) {
-      const b = 2.8 + (idx * 0.15);
-      return {
-         bulan: m, avg: b,
-         lmc: b + 0.3, aai: b - 0.1, ibp: b + 0.2, 
-         ste: b - 0.2, scc: b + 0.1, rep: b
-      }
-    }
 
     return { bulan: m, avg: null, lmc: null, aai: null, ibp: null, ste: null, scc: null, rep: null }
   })

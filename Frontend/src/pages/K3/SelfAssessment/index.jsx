@@ -172,8 +172,22 @@ export default function K3SelfAssessmentPage() {
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
 
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
-  const [selectedYear, setSelectedYear]   = useState(currentYear)
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const saved = sessionStorage.getItem('k3_assessment_month')
+    return saved ? parseInt(saved) : (new Date().getMonth() + 1)
+  })
+
+  useEffect(() => {
+    sessionStorage.setItem('k3_assessment_month', selectedMonth)
+  }, [selectedMonth])
+  const [selectedYear, setSelectedYear]   = useState(() => {
+    const saved = sessionStorage.getItem('k3_assessment_year')
+    return saved ? parseInt(saved) : currentYear
+  })
+
+  useEffect(() => {
+    sessionStorage.setItem('k3_assessment_year', selectedYear)
+  }, [selectedYear])
   const [status, setStatus]               = useState('draft')
   const [details, setDetails]             = useState({})
   const [saving, setSaving]               = useState(false)

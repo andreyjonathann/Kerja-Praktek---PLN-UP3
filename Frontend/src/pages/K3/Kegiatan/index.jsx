@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Search, Plus, X, Calendar, Users, BookOpen, ClipboardCheck, Briefcase, Activity, Edit, Trash2 } from 'lucide-react'
 import PageHeader from '@/components/ui/PageHeader'
 import { useAuth } from '@/context/AuthContext'
+import { useFilter } from '@/context/FilterContext'
 import { K3_JENIS_KEGIATAN, K3_STATUS_KEGIATAN, MONTHS_FULL_ID } from '@/data/k3MasterData'
 
 const ICON_MAP = { Search, Users, BookOpen, ClipboardCheck, Briefcase, Activity }
@@ -10,31 +11,31 @@ const MOCK_ACTIVITIES = [
   {
     id: 1, jenis: 'inspeksi', judul: 'Inspeksi K3 Manajemen — Gardu GH-01 s/d GH-05',
     tanggal: '2026-06-15', lokasi: 'Gardu Distribusi GH-01 hingga GH-05',
-    peserta: 4, status: 'done',
-    keterangan: 'Inspeksi berjalan lancar. Ditemukan 1 temuan observasi (rambu terkikis).'
+    peserta: 4, status: 'done', year: 2026,
+    keterangan: 'Inspeksi berjalan lancar. Ditemukan 1 temuan observasi (rambu terkikis.)'
   },
   {
     id: 2, jenis: 'rapat_p2k3', judul: 'Rapat P2K3 Bulanan — Juni 2026',
     tanggal: '2026-06-20', lokasi: 'Ruang Rapat Lt. 2 UP3 Kebon Jeruk',
-    peserta: 12, status: 'done',
+    peserta: 12, status: 'done', year: 2026,
     keterangan: 'Dibahas temuan inspeksi bulan Mei, rencana pelatihan K3 Listrik, laporan ke Disnaker.'
   },
   {
     id: 3, jenis: 'pelatihan', judul: 'Pelatihan K3 Listrik — Dasar & Lanjutan',
     tanggal: '2026-07-10', lokasi: 'Aula Training PLN UID Jaya',
-    peserta: 20, status: 'planned',
+    peserta: 20, status: 'planned', year: 2026,
     keterangan: 'Pelatihan bersertifikat K3 Listrik kerjasama dengan BSN dan Disnaker DKI.'
   },
   {
     id: 4, jenis: 'audit_internal', judul: 'Audit Internal SMK3 — Semester I 2026',
     tanggal: '2026-07-25', lokasi: 'Seluruh area UP3 Kebon Jeruk',
-    peserta: 6, status: 'planned',
+    peserta: 6, status: 'planned', year: 2026,
     keterangan: 'Audit SMK3 internal sesuai PP 50/2012 dan ISO 45001.'
   },
   {
     id: 5, jenis: 'audit_mitra', judul: 'CSMS Assessment — PT. Jasa Listrik Mandiri',
     tanggal: '2026-06-05', lokasi: 'Kantor PT. JLM & Lokasi Kerja',
-    peserta: 3, status: 'done',
+    peserta: 3, status: 'done', year: 2026,
     keterangan: 'Hasil assessment: skor CSMS 78 (cukup). Rekomendasi perbaikan APD dan JSA.'
   },
 ]
@@ -128,6 +129,7 @@ function ActivityModal({ initialData, onClose, onSave }) {
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function K3KegiatanPage() {
   const { isAdminK3 } = useAuth()
+  const { filters } = useFilter()
   const [activities, setActivities] = useState(() => {
     const saved = localStorage.getItem('k3_kegiatan_mock')
     return saved ? JSON.parse(saved) : MOCK_ACTIVITIES
@@ -146,7 +148,9 @@ export default function K3KegiatanPage() {
   const filtered = activities.filter(a => {
     const matchJenis  = activeJenis === 'all' || a.jenis === activeJenis
     const matchSearch = a.judul.toLowerCase().includes(search.toLowerCase()) || a.lokasi.toLowerCase().includes(search.toLowerCase())
-    return matchJenis && matchSearch
+    const actYear     = a.year || (a.tanggal ? new Date(a.tanggal).getFullYear() : null)
+    const matchYear   = !filters.year || actYear === filters.year
+    return matchJenis && matchSearch && matchYear
   })
 
   return (
@@ -296,8 +300,9 @@ export default function K3KegiatanPage() {
           initialData={editingItem}
           onClose={() => { setShowAdd(false); setEditingItem(null); }}
           onSave={a => {
-            if (editingItem) setActivities(p => p.map(x => x.id === a.id ? a : x))
-            else setActivities(p => [a, ...p])
+            const withYear = { ...a, year: a.year || (a.tanggal ? new Date(a.tanggal).getFullYear() : new Date().getFullYear()) }
+            if (editingItem) setActivities(p => p.map(x => x.id === withYear.id ? withYear : x))
+            else setActivities(p => [withYear, ...p])
           }}
         />
       )}
