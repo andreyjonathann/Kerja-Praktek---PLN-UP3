@@ -27,7 +27,7 @@ export default function GangguanDetailModal({
   
   const [isEditingTrafo, setIsEditingTrafo] = useState(false)
   const [isDeletingTrafo, setIsDeletingTrafo] = useState(false)
-  const [trafoValue, setTrafoValue] = useState('')
+  const [trafoDetails, setTrafoDetails] = useState([])
   const [savingTrafo, setSavingTrafo] = useState(false)
 
   // --- SWITCHING STATES ---
@@ -73,7 +73,7 @@ export default function GangguanDetailModal({
       // Reset states when closed
       setIsEditingTrafo(false)
       setIsDeletingTrafo(false)
-      setTrafoValue('')
+      setTrafoDetails([])
       setTrafoRecord(null)
       setIsEditingSwitching(false)
       setSwitchingDetails([])
@@ -111,7 +111,7 @@ export default function GangguanDetailModal({
       const currentTr = trData.find(item => item.bulan == bulanNum)
       if (currentTr) {
         setTrafoRecord(currentTr)
-        setTrafoValue(currentTr.jumlah_gangguan.toString())
+        setTrafoDetails(currentTr.details || [])
       } else {
         setTrafoRecord(null)
         setTrafoValue('')
@@ -120,50 +120,6 @@ export default function GangguanDetailModal({
       console.error('Failed to fetch Trafo data:', error)
     } finally {
       setLoadingTrafo(false)
-    }
-  }
-
-  const handleSaveTrafo = async () => {
-    if (!trafoValue) return
-    setSavingTrafo(true)
-    try {
-      const payload = {
-        up3,
-        tahun: Number(tahun),
-        bulan: Number(bulanNum),
-        jumlah_gangguan: Number(trafoValue)
-      }
-      
-      if (trafoRecord?.id) {
-        await api.put(`/v1/gangguan-trafo/${trafoRecord.id}`, payload)
-      } else {
-        await api.post(`/v1/gangguan-trafo`, payload)
-      }
-      
-      setIsEditingTrafo(false)
-      if (onSuccess) onSuccess()
-      fetchTrafoData() // Refresh local modal data
-    } catch (err) {
-      console.error('Failed to save Trafo:', err)
-      alert('Gagal menyimpan data Trafo')
-    } finally {
-      setSavingTrafo(false)
-    }
-  }
-
-  const handleDeleteTrafo = async () => {
-    if (!trafoRecord?.id) return
-    setSavingTrafo(true)
-    try {
-      await api.delete(`/v1/gangguan-trafo/${trafoRecord.id}`)
-      setIsDeletingTrafo(false)
-      if (onSuccess) onSuccess()
-      fetchTrafoData()
-    } catch (err) {
-      console.error('Failed to delete Trafo:', err)
-      alert('Gagal menghapus data Trafo')
-    } finally {
-      setSavingTrafo(false)
     }
   }
 
@@ -222,6 +178,62 @@ export default function GangguanDetailModal({
     }
   }
 
+  const handleSaveTrafoRow = async () => {
+    setSavingTrafo(true)
+    try {
+      if (editingRowId === 'new') {
+        // Insert new
+        const payload = {
+          up3,
+          tahun: Number(tahun),
+          bulan: Number(bulanNum),
+          ...editRowForm
+        }
+        await api.post(`/v1/gangguan-trafo/detail`, payload)
+      } else {
+        // Update existing
+        await api.put(`/v1/gangguan-trafo/detail/${editingRowId}`, editRowForm)
+      }
+      
+      setEditingRowId(null)
+      if (onSuccess) onSuccess()
+      fetchTrafoData() // Refresh list
+      return true
+    } catch (err) {
+      console.error('Failed to save Trafo row:', err)
+      alert('Gagal menyimpan data baris')
+      return false
+    } finally {
+      setSavingTrafo(false)
+    }
+  }
+
+  const handleSaveAndCloseTrafo = async () => {
+    if (editingRowId) {
+      const success = await handleSaveTrafoRow()
+      if (!success) return // do not close if failed
+    }
+    setIsEditingTrafo(false)
+    setEditingRowId(null)
+    setDeletingRowId(null)
+  }
+
+  const handleDeleteTrafoRow = async (id) => {
+    setSavingTrafo(true)
+    try {
+      await api.delete(`/v1/gangguan-trafo/detail/${id}`)
+      setDeletingRowId(null)
+      if (onSuccess) onSuccess()
+      fetchTrafoData() // Refresh list
+    } catch (err) {
+      console.error('Failed to delete Trafo row:', err)
+      alert('Gagal menghapus baris')
+    } finally {
+      setSavingTrafo(false)
+    }
+  }
+
+  
   const startEditRow = (det) => {
     setEditingRowId(det.id)
     setEditRowForm({ merek: det.merek || '', tahun_alat: det.tahun_alat || '', nomor_seri: det.nomor_seri || '' })
@@ -478,81 +490,172 @@ export default function GangguanDetailModal({
             )
           )}
 
-          {/* TRAFO SECTION */}
+          {/* SWITCHING SECTION */}
           <div style={{
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             paddingTop: 14, paddingBottom: 14, borderBottom: '1px solid #f3f4f6',
           }}>
-            <span style={{ fontWeight: 600, fontSize: 14, color: '#0f172a' }}>TRAFO</span>
+            <span style={{ fontWeight: 600, fontSize: 14, color: '#0f172a' }}>SWITCHING</span>
             <span style={{ fontWeight: 500, fontSize: 14, color: '#0f172a' }}>
-              {loadingTrafo ? <Loader2 size={14} className="animate-spin inline-block" /> : fmt(trafoRecord ? trafoRecord.jumlah_gangguan : 0)} Kali
+              {loadingTrafo ? <Loader2 size={14} className="animate-spin inline-block" /> : fmt(trafoRecord?.jumlah_gangguan ?? 0)} Kali
             </span>
           </div>
 
-          {/* TRAFO INLINE UI */}
-          {loadingTrafo ? null : isDeletingTrafo ? (
-            <div style={{ padding: '16px', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, marginTop: 12, animation: 'modalCardIn 0.2s ease' }}>
-              <p style={{ margin: '0 0 12px 0', fontSize: 14, color: '#991b1b', fontWeight: 500 }}>
-                Yakin ingin menghapus seluruh kejadian Trafo bulan ini?
-              </p>
-              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                <button
-                  onClick={() => setIsDeletingTrafo(false)}
-                  disabled={savingTrafo}
-                  style={{ padding: '6px 12px', fontSize: 13, fontWeight: 600, color: '#475569', background: '#fff', border: '1px solid #cbd5e1', borderRadius: 6, cursor: 'pointer' }}
-                >
-                  Batal
-                </button>
-                <button
-                  onClick={handleDeleteTrafo}
-                  disabled={savingTrafo}
-                  style={{ padding: '6px 12px', fontSize: 13, fontWeight: 600, color: '#fff', background: '#dc2626', border: 'none', borderRadius: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
-                >
-                  {savingTrafo ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />} Ya, Hapus
-                </button>
-              </div>
-            </div>
-          ) : isEditingTrafo ? (
+          {/* TRAFO DETAILS UI */}
+          {loadingTrafo ? null : isEditingTrafo ? (
             <div style={{ padding: '16px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, marginTop: 12, animation: 'modalCardIn 0.2s ease' }}>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 8 }}>
-                Jumlah Gangguan Trafo (Kali)
-              </label>
-              <input
-                type="number"
-                min="0"
-                value={trafoValue}
-                onChange={(e) => setTrafoValue(e.target.value)}
-                style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: 6, fontSize: 14, marginBottom: 12 }}
-                disabled={savingTrafo}
-              />
-              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                {trafoRecord && (
-                  <button
-                    onClick={() => setIsDeletingTrafo(true)}
-                    disabled={savingTrafo}
-                    style={{ padding: '6px 12px', fontSize: 13, fontWeight: 600, color: '#dc2626', background: '#fff', border: '1.5px solid #dc2626', borderRadius: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, marginRight: 'auto' }}
-                  >
-                    <Trash2 size={14} /> Hapus
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}>
+                
+                {trafoDetails.map((det) => {
+                  const isEditingThis = editingRowId === det.id
+                  const isDeletingThis = deletingRowId === det.id
+
+                  if (isDeletingThis) {
+                    return (
+                      <div key={det.id} style={{ padding: '16px', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, animation: 'modalCardIn 0.15s ease' }}>
+                        <p style={{ margin: '0 0 12px 0', fontSize: 13, color: '#991b1b', fontWeight: 500 }}>
+                          Yakin ingin menghapus alat {det.merek || '-'}?
+                        </p>
+                        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                          <button onClick={() => setDeletingRowId(null)} disabled={savingTrafo} style={{ padding: '6px 12px', fontSize: 12, fontWeight: 600, color: '#475569', background: '#fff', border: '1px solid #cbd5e1', borderRadius: 6, cursor: 'pointer' }}>Batal</button>
+                          <button onClick={() => handleDeleteTrafoRow(det.id)} disabled={savingTrafo} style={{ padding: '6px 12px', fontSize: 12, fontWeight: 600, color: '#fff', background: '#dc2626', border: 'none', borderRadius: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+                            {savingTrafo ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />} Hapus
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  }
+
+                  if (isEditingThis) {
+                    return (
+                      <div key={det.id} style={{ display: 'flex', flexDirection: 'column', gap: 12, background: '#fff', padding: 12, borderRadius: 8, border: '1.5px solid #2563eb', boxShadow: '0 4px 12px rgba(37,99,235,0.1)', animation: 'modalCardIn 0.15s ease' }}>
+                        <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                          <div style={{ flex: 1 }}>
+                            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#64748b', marginBottom: 4 }}>Merek</label>
+                            <input type="text" placeholder="Cth: Schneider" value={editRowForm.merek} onChange={(e) => setEditRowForm({ ...editRowForm, merek: e.target.value })} style={{ width: '100%', padding: '6px 10px', fontSize: 13, border: '1px solid #cbd5e1', borderRadius: 6 }} disabled={savingTrafo} />
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#64748b', marginBottom: 4 }}>Tahun Alat</label>
+                            <input type="text" placeholder="Cth: 2015" value={editRowForm.tahun_alat} onChange={(e) => setEditRowForm({ ...editRowForm, tahun_alat: e.target.value })} style={{ width: '100%', padding: '6px 10px', fontSize: 13, border: '1px solid #cbd5e1', borderRadius: 6 }} disabled={savingTrafo} />
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#64748b', marginBottom: 4 }}>Nomor Seri</label>
+                            <input type="text" placeholder="Cth: SN-123" value={editRowForm.nomor_seri} onChange={(e) => setEditRowForm({ ...editRowForm, nomor_seri: e.target.value })} style={{ width: '100%', padding: '6px 10px', fontSize: 13, border: '1px solid #cbd5e1', borderRadius: 6 }} disabled={savingTrafo} />
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                          <button onClick={() => setEditingRowId(null)} disabled={savingTrafo} style={{ padding: '6px 12px', fontSize: 12, fontWeight: 600, color: '#475569', background: '#fff', border: '1px solid #cbd5e1', borderRadius: 6, cursor: 'pointer' }}>Batal</button>
+                          <button onClick={handleSaveTrafoRow} disabled={savingTrafo} style={{ padding: '6px 12px', fontSize: 12, fontWeight: 600, color: '#fff', background: '#2563eb', border: 'none', borderRadius: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+                            {savingTrafo ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Simpan
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  }
+
+                  return (
+                    <div key={det.id} style={{ display: 'flex', alignItems: 'center', background: '#fff', padding: '12px 16px', borderRadius: 8, border: '1px solid #e2e8f0', gap: 16 }}>
+                      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+                        <div>
+                          <span style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase' }}>Merek</span>
+                          <span style={{ fontSize: 13, color: '#0f172a', fontWeight: 500 }}>{det.merek || '-'}</span>
+                        </div>
+                        <div>
+                          <span style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase' }}>Tahun Alat</span>
+                          <span style={{ fontSize: 13, color: '#0f172a', fontWeight: 500 }}>{det.tahun_alat || '-'}</span>
+                        </div>
+                        <div>
+                          <span style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase' }}>Nomor Seri</span>
+                          <span style={{ fontSize: 13, color: '#0f172a', fontWeight: 500 }}>{det.nomor_seri || '-'}</span>
+                        </div>
+                      </div>
+                      {isPIC && (
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <button onClick={() => startEditRow(det)} style={{ padding: 6, color: '#2563eb', background: '#fff', border: '1px solid #bfdbfe', borderRadius: 6, cursor: 'pointer', display: 'flex', alignItems: 'center' }} title="Edit baris">
+                            <Edit2 size={14} />
+                          </button>
+                          <button onClick={() => setDeletingRowId(det.id)} style={{ padding: 6, color: '#dc2626', background: '#fff', border: '1px solid #fecaca', borderRadius: 6, cursor: 'pointer', display: 'flex', alignItems: 'center' }} title="Hapus baris">
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+                
+                {trafoDetails.length === 0 && editingRowId !== 'new' && (
+                  <div style={{ textAlign: 'center', padding: '20px 0', border: '1px dashed #cbd5e1', borderRadius: 8 }}>
+                    <p style={{ margin: 0, fontSize: 13, color: '#64748b' }}>Belum ada data alat Trafo.</p>
+                  </div>
+                )}
+                
+                {/* TAMBAH BARIS BARU (INLINE) */}
+                {editingRowId === 'new' ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12, background: '#fff', padding: 12, borderRadius: 8, border: '1.5px solid #2563eb', boxShadow: '0 4px 12px rgba(37,99,235,0.1)', animation: 'modalCardIn 0.15s ease' }}>
+                    <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#64748b', marginBottom: 4 }}>Merek</label>
+                        <input type="text" placeholder="Cth: Schneider" value={editRowForm.merek} onChange={(e) => setEditRowForm({ ...editRowForm, merek: e.target.value })} style={{ width: '100%', padding: '6px 10px', fontSize: 13, border: '1px solid #cbd5e1', borderRadius: 6 }} disabled={savingTrafo} />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#64748b', marginBottom: 4 }}>Tahun Alat</label>
+                        <input type="text" placeholder="Cth: 2015" value={editRowForm.tahun_alat} onChange={(e) => setEditRowForm({ ...editRowForm, tahun_alat: e.target.value })} style={{ width: '100%', padding: '6px 10px', fontSize: 13, border: '1px solid #cbd5e1', borderRadius: 6 }} disabled={savingTrafo} />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#64748b', marginBottom: 4 }}>Nomor Seri</label>
+                        <input type="text" placeholder="Cth: SN-123" value={editRowForm.nomor_seri} onChange={(e) => setEditRowForm({ ...editRowForm, nomor_seri: e.target.value })} style={{ width: '100%', padding: '6px 10px', fontSize: 13, border: '1px solid #cbd5e1', borderRadius: 6 }} disabled={savingTrafo} />
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                      <button onClick={() => setEditingRowId(null)} disabled={savingTrafo} style={{ padding: '6px 12px', fontSize: 12, fontWeight: 600, color: '#475569', background: '#fff', border: '1px solid #cbd5e1', borderRadius: 6, cursor: 'pointer' }}>Batal</button>
+                      <button onClick={handleSaveTrafoRow} disabled={savingTrafo} style={{ padding: '6px 12px', fontSize: 12, fontWeight: 600, color: '#fff', background: '#2563eb', border: 'none', borderRadius: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        {savingTrafo ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Simpan
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button type="button" onClick={startAddRow} disabled={savingTrafo} style={{ width: '100%', padding: '10px', background: '#f0f9ff', color: '#0284c7', border: '1px dashed #bae6fd', borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>
+                    + Tambah Alat Trafo
                   </button>
                 )}
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'center', marginTop: 12, borderTop: '1px solid #e2e8f0', paddingTop: 16 }}>
                 <button
-                  onClick={() => setIsEditingTrafo(false)}
+                  onClick={handleSaveAndCloseTrafo}
                   disabled={savingTrafo}
-                  style={{ padding: '6px 12px', fontSize: 13, fontWeight: 600, color: '#475569', background: '#fff', border: '1px solid #cbd5e1', borderRadius: 6, cursor: 'pointer' }}
+                  style={{
+                    padding: '8px 24px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, cursor: 'pointer',
+                    background: editingRowId ? '#2563eb' : '#f1f5f9',
+                    color: editingRowId ? '#fff' : '#1e293b',
+                    display: 'flex', alignItems: 'center', gap: 6
+                  }}
                 >
-                  Batal
-                </button>
-                <button
-                  onClick={handleSaveTrafo}
-                  disabled={savingTrafo || trafoValue === ''}
-                  style={{ padding: '6px 12px', fontSize: 13, fontWeight: 600, color: '#fff', background: '#2563eb', border: 'none', borderRadius: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
-                >
-                  {savingTrafo ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Simpan
+                  {savingTrafo && editingRowId && <Loader2 size={14} className="animate-spin" />}
+                  {editingRowId ? 'Simpan Perubahan & Tutup' : 'Selesai / Tutup Mode Edit'}
                 </button>
               </div>
             </div>
-          ) : null}
+          ) : (
+            trafoDetails.length > 0 && (
+              <div style={{ padding: '12px 16px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, marginTop: 12 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 8 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Merek</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Tahun Alat</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Nomor Seri</span>
+                </div>
+                {trafoDetails.map((det, i) => (
+                  <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, padding: '8px 0', borderTop: i > 0 ? '1px solid #e2e8f0' : 'none' }}>
+                    <span style={{ fontSize: 13, color: '#0f172a', fontWeight: 500 }}>{det.merek || '-'}</span>
+                    <span style={{ fontSize: 13, color: '#0f172a', fontWeight: 500 }}>{det.tahun_alat || '-'}</span>
+                    <span style={{ fontSize: 13, color: '#0f172a', fontWeight: 500 }}>{det.nomor_seri || '-'}</span>
+                  </div>
+                ))}
+              </div>
+            )
+          )}
 
+          
         </div>
 
         {/* ── FOOTER ────────────────────────────────────────────────── */}
@@ -572,7 +675,7 @@ export default function GangguanDetailModal({
             </button>
             
             <button
-              onClick={() => { setIsEditingTrafo(true); setTrafoValue(trafoRecord ? trafoRecord.jumlah_gangguan.toString() : ''); }}
+              onClick={() => { setIsEditingTrafo(true); setTrafoDetails(trafoRecord?.details || []); }}
               style={{
                 flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                 padding: '11px 0', borderRadius: 10, border: '1.5px solid #f97316', background: 'transparent',

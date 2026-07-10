@@ -62,6 +62,7 @@ Route::middleware('api')->group(function () {
         Route::post('/gangguan-switching/detail', [\App\Http\Controllers\Api\GangguanSwitchingController::class, 'storeKejadianSwitching']);
         Route::put('/gangguan-switching/detail/{id}', [\App\Http\Controllers\Api\GangguanSwitchingController::class, 'updateKejadianSwitching']);
         Route::delete('/gangguan-switching/detail/{id}', [\App\Http\Controllers\Api\GangguanSwitchingController::class, 'destroyKejadianSwitching']);
+        Route::post('/gangguan-trafo/detail', [\App\Http\Controllers\Api\GangguanSwitchingController::class, 'storeKejadianTrafo']);
         Route::put('/gangguan-trafo/detail/{id}', [\App\Http\Controllers\Api\GangguanSwitchingController::class, 'updateKejadianTrafo']);
         Route::delete('/gangguan-trafo/detail/{id}', [\App\Http\Controllers\Api\GangguanSwitchingController::class, 'destroyKejadianTrafo']);
 

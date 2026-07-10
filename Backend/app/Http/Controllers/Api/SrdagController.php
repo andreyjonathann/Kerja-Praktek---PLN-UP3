@@ -177,12 +177,25 @@ class SrdagController extends Controller
             ->where('indikator', 'SRDAG')
             ->first();
         
-        // Karena target SRDAG konstan (flat), kita ambil dari target_jan atau bulan pertama yang diisi
+        $bulanMap = [1=>'jan', 2=>'feb', 3=>'mar', 4=>'apr', 5=>'mei', 6=>'jun', 7=>'jul', 8=>'agu', 9=>'sep', 10=>'okt', 11=>'nov', 12=>'des'];
+
+        $ytdRecords = clone $realisasiRaw;
+        $latestMonth = $ytdRecords->max('bulan') ?: 0;
+        
         $targetRate = 0;
-        if ($targetRecord) {
-            $rawTarget = (float)($targetRecord->target_jan ?? $targetRecord->target_feb ?? 0);
-            // Konversi dari bentuk persen (100) ke desimal (1.0) agar konsisten dengan hitungan sr_bulan_ini
-            $targetRate = $rawTarget / 100;
+        if ($targetRecord && $latestMonth > 0) {
+            $sumTarget = 0;
+            $countTarget = 0;
+            for ($i = 1; $i <= $latestMonth; $i++) {
+                $val = $targetRecord->{'target_'.$bulanMap[$i]};
+                if ($val !== null) {
+                    $sumTarget += (float)$val;
+                    $countTarget++;
+                }
+            }
+            if ($countTarget > 0) {
+                $targetRate = ($sumTarget / $countTarget) / 100;
+            }
         }
 
         // SUMMARY METRICS
@@ -196,18 +209,12 @@ class SrdagController extends Controller
             'total_gangguan_ytd' => 0
         ];
 
-        // YTD metrics
-        $ytdRecords = $realisasiRaw->where('bulan', '<=', $bulanSekarang);
         $ytdRates = $ytdRecords->pluck('success_rate')->map(fn($v) => (float)$v)->toArray();
-        
         $summary['total_gangguan_ytd'] = $ytdRecords->sum('jumlah_total_gangguan');
 
         if (count($ytdRates) > 0) {
             $summary['sr_rata_ytd'] = array_sum($ytdRates) / count($ytdRates);
         }
-
-        // Bulan Ini — cari bulan terakhir yang ada datanya
-        $latestMonth = $ytdRecords->max('bulan') ?: 0;
 
         if ($latestMonth > 0) {
             $bulanIniRecords = $realisasiRaw->where('bulan', $latestMonth);
@@ -219,24 +226,36 @@ class SrdagController extends Controller
 
         // % Pencapaian — MAXIMIZE, tanpa capping
         if ($targetRate > 0) {
-            $summary['persen_pencapaian'] = ($summary['sr_bulan_ini'] / $targetRate) * 100;
-            $summary['status'] = $summary['sr_bulan_ini'] >= $targetRate ? 'TERCAPAI' : 'BELUM_TERCAPAI';
+            $summary['persen_pencapaian'] = ($summary['sr_rata_ytd'] / $targetRate) * 100;
+            $summary['status'] = $summary['sr_rata_ytd'] >= $targetRate ? 'TERCAPAI' : 'BELUM_TERCAPAI';
         }
 
         // TREND BULANAN
         $trend_bulanan = [];
         for ($i = 1; $i <= 12; $i++) {
             $monthData = $realisasiRaw->where('bulan', $i);
+            $monthTarget = $targetRecord ? $targetRecord->{'target_'.$bulanMap[$i]} : null;
+            $monthTargetRate = $monthTarget !== null ? (float)$monthTarget / 100 : null;
             
             if ($monthData->count() > 0) {
                 $sr = $monthData->avg('success_rate');
+                
                 $trend_bulanan[] = [
                     'bulan' => $i,
                     'success_rate' => (float)$sr,
-                    'target' => $targetRate,
+                    'target' => $monthTargetRate,
                     'jumlah_berhasil' => $monthData->sum('jumlah_dispatch_berhasil'),
                     'jumlah_total' => $monthData->sum('jumlah_total_gangguan'),
-                    'persen_pencapaian' => $targetRate > 0 ? ($sr / $targetRate) * 100 : 0
+                    'persen_pencapaian' => $monthTargetRate > 0 ? ($sr / $monthTargetRate) * 100 : 0
+                ];
+            } else {
+                $trend_bulanan[] = [
+                    'bulan' => $i,
+                    'success_rate' => null,
+                    'target' => $monthTargetRate,
+                    'jumlah_berhasil' => null,
+                    'jumlah_total' => null,
+                    'persen_pencapaian' => null
                 ];
             }
         }

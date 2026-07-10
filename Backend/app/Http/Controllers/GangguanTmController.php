@@ -528,6 +528,24 @@ class GangguanTmController extends Controller
             $indikator = $this->indikatorMap[$tipe];
             $targetObj = $targets->get($indikator);
             
+            $monthlyData = [];
+            $sumReal = 0;
+            $latestMonth = 0;
+
+            foreach ($periods as $p) {
+                $k = $kinerja->firstWhere('periode_id', $p->id);
+                $realisasi = $k ? $k->{$dbField} : null;
+                $monthlyData[$p->bulan] = [
+                    'id' => $k ? $k->id : null,
+                    'realisasi' => $realisasi
+                ];
+                
+                if ($realisasi !== null) {
+                    $sumReal += $realisasi;
+                    $latestMonth = max($latestMonth, $p->bulan);
+                }
+            }
+
             // Calculate sum of monthly targets
             $targetTahunan = null;
             $targetYtd = null;
@@ -545,30 +563,14 @@ class GangguanTmController extends Controller
                     if ($mt !== null) { 
                         $sumTgt += $mt; 
                         $hasAny = true; 
-                        if (($idx + 1) <= $bulanSekarang) {
+                        if (($idx + 1) <= $latestMonth) {
                             $sumYtd += $mt;
                         }
                     }
                 }
                 if ($hasAny) {
                     $targetTahunan = $sumTgt;
-                    $targetYtd = $sumYtd;
-                }
-            }
-
-            $monthlyData = [];
-            $sumReal = 0;
-
-            foreach ($periods as $p) {
-                $k = $kinerja->firstWhere('periode_id', $p->id);
-                $realisasi = $k ? $k->{$dbField} : null;
-                $monthlyData[$p->bulan] = [
-                    'id' => $k ? $k->id : null,
-                    'realisasi' => $realisasi
-                ];
-                
-                if ($realisasi !== null) {
-                    $sumReal += $realisasi;
+                    $targetYtd = $latestMonth > 0 ? $sumYtd : null;
                 }
             }
 
@@ -627,6 +629,15 @@ class GangguanTmController extends Controller
             $indikator = $this->indikatorMap[$tipe];
             $targetObj = $targets->get($indikator);
             
+            $sumReal = 0;
+            $latestMonth = 0;
+            foreach ($kinerja as $k) {
+                if ($k->{$dbField} !== null) {
+                    $sumReal += $k->{$dbField};
+                    $latestMonth = max($latestMonth, $k->periode->bulan);
+                }
+            }
+
             // Calculate sum of monthly targets
             $targetTahunan = null;
             $targetYtd = null;
@@ -644,23 +655,17 @@ class GangguanTmController extends Controller
                     if ($mt !== null) { 
                         $sumTgt += $mt; 
                         $hasAny = true; 
-                        if (($idx + 1) <= $bulanSekarang) {
+                        if (($idx + 1) <= $latestMonth) {
                             $sumYtd += $mt;
                         }
                     }
                 }
                 if ($hasAny) {
                     $targetTahunan = $sumTgt;
-                    $targetYtd = $sumYtd;
+                    $targetYtd = $latestMonth > 0 ? $sumYtd : null;
                 }
             }
 
-            $sumReal = 0;
-            foreach ($kinerja as $k) {
-                if ($k->{$dbField} !== null) {
-                    $sumReal += $k->{$dbField};
-                }
-            }
 
             $persen = null;
             $status = '-';

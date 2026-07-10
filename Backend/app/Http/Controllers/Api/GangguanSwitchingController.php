@@ -124,19 +124,30 @@ class GangguanSwitchingController extends Controller
             'up3' => 'required|string',
             'tahun' => 'required|integer',
             'bulan' => 'required|integer|min:1|max:12',
-            'jumlah_gangguan' => 'required|integer|min:0',
+            'details' => 'array',
+            'details.*.merek' => 'nullable|string',
+            'details.*.tahun_alat' => 'nullable|string',
+            'details.*.nomor_seri' => 'nullable|string',
         ]);
 
         if ($user->role === 'pic_jaringan' && $user->up3 && $user->up3 !== $validated['up3']) {
             return response()->json(['success' => false, 'message' => 'Unauthorized UP3.'], 403);
         }
 
+        $details = $request->input('details', []);
+        $jumlahGangguan = count($details);
+
         $record = GangguanTrafo::updateOrCreate(
             ['up3' => $validated['up3'], 'tahun' => $validated['tahun'], 'bulan' => $validated['bulan']],
-            ['jumlah_gangguan' => $validated['jumlah_gangguan'], 'created_by' => $user->id]
+            ['jumlah_gangguan' => $jumlahGangguan, 'created_by' => $user->id]
         );
 
-        return response()->json(['success' => true, 'data' => $record, 'message' => 'Data Trafo berhasil disimpan.']);
+        $record->details()->delete();
+        if ($jumlahGangguan > 0) {
+            $record->details()->createMany($details);
+        }
+
+        return response()->json(['success' => true, 'data' => $record->load('details'), 'message' => 'Data Trafo berhasil disimpan.']);
     }
 
     public function updateTrafo(Request $request, $id)
@@ -223,9 +234,14 @@ class GangguanSwitchingController extends Controller
             $qTarget->where('up3', $up3Filter);
         }
 
+        // Find latest month with realisasi
+        $latestSw = (clone $qSwitching)->whereNotNull('jumlah_gangguan')->max('bulan') ?: 0;
+        $latestTr = (clone $qTrafo)->whereNotNull('jumlah_gangguan')->max('bulan') ?: 0;
+        $latestMonth = max((int)$latestSw, (int)$latestTr);
+
         // Summary Data
-        $ytdSwitching = (clone $qSwitching)->where('bulan', '<=', $bulanSekarang)->sum('jumlah_gangguan');
-        $ytdTrafo = (clone $qTrafo)->where('bulan', '<=', $bulanSekarang)->sum('jumlah_gangguan');
+        $ytdSwitching = (clone $qSwitching)->where('bulan', '<=', $latestMonth)->sum('jumlah_gangguan');
+        $ytdTrafo = (clone $qTrafo)->where('bulan', '<=', $latestMonth)->sum('jumlah_gangguan');
         $ytdGabungan = $ytdSwitching + $ytdTrafo;
 
         $targetSwitching = (clone $qTarget)->sum('target_switching_tahunan');
@@ -301,19 +317,26 @@ class GangguanSwitchingController extends Controller
         $targetTrafoYtd = null;
         $targetYtd = null;
         if ($hasTarget) {
-            $ratio = 0;
-            if ($bulanSekarang <= 6) {
-                $ratio = (0.55 / 6) * $bulanSekarang;
-            } else {
-                $ratio = 0.55 + (0.45 / 6) * ($bulanSekarang - 6);
+            $sumSw = 0;
+            $sumTr = 0;
+            for ($i = 0; $i < $latestSw; $i++) {
+                if (isset($mTargetsSwitching[$i])) {
+                    $sumSw += $mTargetsSwitching[$i];
+                }
+            }
+            for ($i = 0; $i < $latestTr; $i++) {
+                if (isset($mTargetsTrafo[$i])) {
+                    $sumTr += $mTargetsTrafo[$i];
+                }
             }
             if ($targetSwitchingTahunan !== null) {
-                $targetSwitchingYtd = round($targetSwitchingTahunan * $ratio);
+                $targetSwitchingYtd = $latestSw > 0 ? $sumSw : null;
             }
             if ($targetTrafoTahunan !== null) {
-                $targetTrafoYtd = round($targetTrafoTahunan * $ratio);
+                $targetTrafoYtd = $latestTr > 0 ? $sumTr : null;
             }
             $targetYtd = ($targetSwitchingYtd ?: 0) + ($targetTrafoYtd ?: 0);
+            if ($latestSw == 0 && $latestTr == 0) $targetYtd = null;
         }
 
         $persenVsTarget = null;
@@ -331,6 +354,8 @@ class GangguanSwitchingController extends Controller
             'target_trafo' => $targetTrafoTahunan,
             'target_gabungan' => $targetTahunan,
             'target_ytd' => $targetYtd,
+            'target_switching_ytd' => $targetSwitchingYtd,
+            'target_trafo_ytd' => $targetTrafoYtd,
             'persen_vs_target' => $persenVsTarget,
             'status' => $status,
             'target_tahunan' => $targetTahunan,
@@ -358,19 +383,21 @@ class GangguanSwitchingController extends Controller
             $targetTrafoBulanan = null;
             
             if ($hasTarget) {
-                // S1 (1-6) = 55%, S2 (7-12) = 45%
-                $ratio = 0;
-                if ($m <= 6) {
-                    $ratio = (0.55 / 6) * $m;
-                } else {
-                    $ratio = 0.55 + (0.45 / 6) * ($m - 6);
-                }
-                
                 if ($targetSwitchingTahunan !== null) {
-                    $targetSwitchingKumulatif = round($targetSwitchingTahunan * $ratio);
+                    $targetSwitchingKumulatif = 0;
+                    for ($i = 0; $i < $m; $i++) {
+                        if (isset($mTargetsSwitching[$i])) {
+                            $targetSwitchingKumulatif += $mTargetsSwitching[$i];
+                        }
+                    }
                 }
                 if ($targetTrafoTahunan !== null) {
-                    $targetTrafoKumulatif = round($targetTrafoTahunan * $ratio);
+                    $targetTrafoKumulatif = 0;
+                    for ($i = 0; $i < $m; $i++) {
+                        if (isset($mTargetsTrafo[$i])) {
+                            $targetTrafoKumulatif += $mTargetsTrafo[$i];
+                        }
+                    }
                 }
                 
                 if (isset($mTargetsSwitching[$m - 1])) {
@@ -581,10 +608,47 @@ class GangguanSwitchingController extends Controller
         $detail->delete();
 
         if ($parent) {
-            $parent->update(['jumlah_gangguan' => $parent->details()->count()]);
+            $count = $parent->details()->count();
+            if ($count === 0) {
+                $parent->delete();
+            } else {
+                $parent->update(['jumlah_gangguan' => $count]);
+            }
         }
 
         return response()->json(['success' => true, 'message' => 'Data berhasil dihapus']);
+    }
+
+    public function storeKejadianTrafo(Request $request)
+    {
+        $user = $request->user();
+        if ($user->role !== 'pic_jaringan' && $user->role !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Anda tidak berwenang mengelola data ini.'], 403);
+        }
+
+        $validated = $request->validate([
+            'up3' => 'required|string',
+            'tahun' => 'required|integer',
+            'bulan' => 'required|integer|min:1|max:12',
+            'merek' => 'nullable|string',
+            'tahun_alat' => 'nullable|string',
+            'nomor_seri' => 'nullable|string',
+        ]);
+
+        $parent = GangguanTrafo::firstOrCreate(
+            ['up3' => $validated['up3'], 'tahun' => $validated['tahun'], 'bulan' => $validated['bulan']],
+            ['jumlah_gangguan' => 0, 'created_by' => $user->id]
+        );
+
+        $detail = $parent->details()->create([
+            'merek' => $validated['merek'] ?? null,
+            'tahun_alat' => $validated['tahun_alat'] ?? null,
+            'nomor_seri' => $validated['nomor_seri'] ?? null,
+        ]);
+
+        $parent->update(['jumlah_gangguan' => $parent->details()->count()]);
+
+        return response()->json(['success' => true, 'data' => $detail, 'message' => 'Data Kejadian Trafo berhasil ditambahkan.']);
     }
 
     public function updateKejadianTrafo(Request $request, $id)
@@ -619,7 +683,12 @@ class GangguanSwitchingController extends Controller
         $detail->delete();
 
         if ($parent) {
-            $parent->update(['jumlah_gangguan' => $parent->details()->count()]);
+            $count = $parent->details()->count();
+            if ($count === 0) {
+                $parent->delete();
+            } else {
+                $parent->update(['jumlah_gangguan' => $count]);
+            }
         }
 
         return response()->json(['success' => true, 'message' => 'Data berhasil dihapus']);

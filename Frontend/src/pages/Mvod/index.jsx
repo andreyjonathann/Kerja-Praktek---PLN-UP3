@@ -94,32 +94,50 @@ export default function MvodPage() {
     { 
       label: 'RCT GI', 
       key: 'gi_rct',
-      render: (v) => v != null ? <span className="font-semibold">{v} mnt</span> : '—'
+      render: (v, row) => {
+        if (v == null) return '—';
+        const isExceed = row.gi_target != null && v > row.gi_target;
+        const isMeet = row.gi_target != null && v <= row.gi_target;
+        const colorClass = isExceed ? 'text-rose-600' : (isMeet ? 'text-emerald-600' : '');
+        return <span className={`font-bold ${colorClass}`}>{v} mnt</span>
+      }
     },
     { 
-      label: 'Status GI', 
-      key: 'gi_status',
-      render: (v) => <StatusBadge status={v} />
+      label: 'Target GI', 
+      key: 'gi_target',
+      render: (v) => v != null ? <span className="font-semibold text-slate-500">{v} mnt</span> : '—'
     },
     { 
       label: 'RCT JTM', 
       key: 'jtm_rct',
-      render: (v) => v != null ? <span className="font-semibold">{v} mnt</span> : '—'
+      render: (v, row) => {
+        if (v == null) return '—';
+        const isExceed = row.jtm_target != null && v > row.jtm_target;
+        const isMeet = row.jtm_target != null && v <= row.jtm_target;
+        const colorClass = isExceed ? 'text-rose-600' : (isMeet ? 'text-emerald-600' : '');
+        return <span className={`font-bold ${colorClass}`}>{v} mnt</span>
+      }
     },
     { 
-      label: 'Status JTM', 
-      key: 'jtm_status',
-      render: (v) => <StatusBadge status={v} />
+      label: 'Target JTM', 
+      key: 'jtm_target',
+      render: (v) => v != null ? <span className="font-semibold text-slate-500">{v} mnt</span> : '—'
     },
     { 
       label: 'RCT GD', 
       key: 'gd_rct',
-      render: (v) => v != null ? <span className="font-semibold">{v} mnt</span> : '—'
+      render: (v, row) => {
+        if (v == null) return '—';
+        const isExceed = row.gd_target != null && v > row.gd_target;
+        const isMeet = row.gd_target != null && v <= row.gd_target;
+        const colorClass = isExceed ? 'text-rose-600' : (isMeet ? 'text-emerald-600' : '');
+        return <span className={`font-bold ${colorClass}`}>{v} mnt</span>
+      }
     },
     { 
-      label: 'Status GD', 
-      key: 'gd_status',
-      render: (v) => <StatusBadge status={v} />
+      label: 'Target GD', 
+      key: 'gd_target',
+      render: (v) => v != null ? <span className="font-semibold text-slate-500">{v} mnt</span> : '—'
     },
     { 
       label: 'MVOD Gabungan', 
@@ -154,7 +172,11 @@ export default function MvodPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
         {['gi', 'jtm', 'gd'].map((tipe) => {
           const s = summary?.[tipe];
-          const warna = tipe === 'gi' ? 'yellow' : tipe === 'jtm' ? 'blue' : 'red';
+          let warna = 'blue';
+          if (s && s.rata_rct != null && s.sla != null) {
+            warna = s.rata_rct <= s.sla ? 'green' : 'red';
+          }
+          
           return (
             <KpiCard 
               key={tipe}
@@ -165,6 +187,7 @@ export default function MvodPage() {
               color={warna} 
               loading={loading}
               achievement={s?.persen}
+              subText={s?.sla != null ? `Target YTD: ${s.sla.toFixed(2)} mnt` : 'Target YTD: —'}
             />
           )
         })}

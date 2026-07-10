@@ -296,6 +296,7 @@ function GangguanSwitchingContent() {
               icon={Target} 
               color="blue" 
               subtitle={!summary.has_target ? "Target belum diset" : undefined}
+              badgeText={summary.has_target ? `Switching: ${summary.target_switching_ytd || 0} | Trafo: ${summary.target_trafo_ytd || 0}` : undefined}
             />
             {(() => {
               const hasTarget = summary.has_target;

@@ -133,8 +133,17 @@ class RptGangguanController extends Controller
         $latestMonth = $allData->max('bulan') ?: 1;
         $bulanIniData = $allData->where('bulan', $latestMonth);
         
-        $valLatest = $targetMaster ? $targetMaster->{'target_'.$bulanMap[$latestMonth]} : null;
-        $targetMenit = $valLatest !== null ? (float) $valLatest : null;
+        $targetMenit = null;
+        if ($targetMaster) {
+            $sumTarget = 0;
+            for ($i = 1; $i <= $latestMonth; $i++) {
+                $val = $targetMaster->{'target_'.$bulanMap[$i]};
+                if ($val !== null) {
+                    $sumTarget += (float) $val;
+                }
+            }
+            $targetMenit = $sumTarget > 0 ? $sumTarget : null;
+        }
 
         $rptBulanIni = 0;
         if ($bulanIniData->sum('jumlah_gangguan') > 0) {

@@ -508,7 +508,7 @@ export default function GangguanTmPage() {
       <TargetWarning up3={filters.up3} year={filters.year} isVisible={summary.target == null} />
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
         <KpiCard
           title="Realisasi YTD"
           value={Number(summary.ytd).toLocaleString('id-ID')}
@@ -524,14 +524,6 @@ export default function GangguanTmPage() {
           unit={summary.target !== null ? "Kali" : ""}
           icon={Target}
           color="red"
-        />
-        <KpiCard
-          title="Sisa Kuota"
-          value={summary.sisa !== null ? Number(summary.sisa).toLocaleString('id-ID', {maximumFractionDigits: 1}) : '-'}
-          unit={summary.sisa !== null ? "Kali" : ""}
-          icon={summary.sisa !== null && summary.sisa < 0 ? TrendingUp : TrendingDown}
-          trend={summary.sisa !== null && summary.sisa < 0 ? 'bad' : 'good'}
-          color={summary.sisa !== null && summary.sisa < 0 ? 'red' : 'green'}
         />
         <KpiCard
           title="Status Kinerja"

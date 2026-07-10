@@ -50,7 +50,7 @@ const getAchColors = (achKey, dark) => {
  */
 export default function KpiCard({
   title, value, unit = '', achievement, target, trend,
-  statusText, statusColor, badgeText,
+  statusText, statusColor, badgeText, subText,
   icon: Icon, color = 'blue', isInverse = false, loading = false, onClick,
 }) {
   const { dark } = useTheme()
@@ -146,6 +146,11 @@ export default function KpiCard({
               <span style={{ fontSize:'0.88rem', fontWeight:600, color:'var(--text-muted)' }}>{unit}</span>
             )}
           </div>
+          {subText && (
+            <div style={{ fontSize:'0.75rem', color: dark ? '#D1D5DB' : '#111827', fontWeight: 600, marginTop: 4 }}>
+              {subText}
+            </div>
+          )}
         </div>
 
         {/* Footer */}

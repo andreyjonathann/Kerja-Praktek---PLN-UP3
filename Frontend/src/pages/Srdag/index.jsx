@@ -4,7 +4,7 @@ import {
   Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, ComposedChart, Area
 } from 'recharts'
-import { Clock, TrendingUp, Target, Activity, Plus } from 'lucide-react'
+import { Clock, TrendingUp, Target, Activity, Plus, CheckCircle, XCircle } from 'lucide-react'
 import ChartWrapper from '@/components/ui/ChartWrapper'
 import KpiCard from '@/components/ui/KpiCard'
 import DataTable from '@/components/ui/DataTable'
@@ -140,21 +140,19 @@ export default function SrdagPage() {
     { 
       label: 'Success Rate', 
       key: 'sr_realisasi',
-      render: (v, row) => row.sr_realisasi != null ? <span className="font-bold text-emerald-600">{(row.sr_realisasi * 100).toFixed(2)}%</span> : '—'
+      render: (v, row) => {
+        if (row.sr_realisasi == null) return '—';
+        let textColor = 'text-slate-800';
+        if (row.target != null) {
+          textColor = row.sr_realisasi >= row.target ? 'text-green-600' : 'text-red-600';
+        }
+        return <span className={`font-bold ${textColor}`}>{(row.sr_realisasi * 100).toFixed(2)}%</span>;
+      }
     },
     { 
-      label: 'Target', 
+      label: 'Target Minimum', 
       key: 'target',
-      render: (v, row) => row.target != null ? <span className="text-rose-500 font-semibold">{(row.target * 100).toFixed(2)}%</span> : '—'
-    },
-    { 
-      label: 'Status', 
-      key: 'status',
-      render: (v, row) => (
-        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${row.status === 'TERCAPAI' ? 'bg-emerald-100 text-emerald-700' : (row.status === '-' ? 'bg-slate-100 text-slate-500' : 'bg-rose-100 text-rose-700')}`}>
-          {row.status}
-        </span>
-      )
+      render: (v, row) => row.target != null ? <span className="text-slate-600 font-semibold">{(row.target * 100).toFixed(2)}%</span> : '—'
     }
   ];
 
@@ -176,29 +174,28 @@ export default function SrdagPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <KpiCard 
-          title="SRDAG Bulan Ini" 
-          value={summary?.sr_bulan_ini != null ? (summary.sr_bulan_ini * 100).toFixed(2) : '—'} 
-          unit="%" 
-          icon={Activity} 
-          color="emerald" 
-          loading={loading}
-          achievement={summary?.persen_pencapaian}
-        />
-        <KpiCard 
-          title="Rata-rata YTD" 
+          title="Realisasi YTD" 
           value={summary?.sr_rata_ytd != null ? (summary.sr_rata_ytd * 100).toFixed(2) : '—'} 
           unit="%" 
-          icon={TrendingUp} 
-          color="emerald" 
+          icon={Activity} 
+          color="blue" 
+          loading={loading}
+        />
+        <KpiCard 
+          title="Target YTD" 
+          value={summary?.target_rate != null ? (summary.target_rate * 100).toFixed(2) : '—'} 
+          unit="%" 
+          icon={Target} 
+          color="blue" 
           loading={loading} 
         />
         <KpiCard 
-          title="Total Gangguan YTD" 
-          value={summary?.total_gangguan_ytd || 0} 
-          unit="gangguan" 
-          icon={Clock} 
-          color="blue" 
+          title="Status Kinerja" 
+          value={summary?.status === 'TERCAPAI' ? 'TERCAPAI' : 'TIDAK TERCAPAI'} 
+          icon={summary?.status === 'TERCAPAI' ? CheckCircle : XCircle} 
+          color={summary?.status === 'TERCAPAI' ? 'green' : 'red'} 
           loading={loading} 
+          badgeText={summary?.target_rate > 0 && summary?.persen_pencapaian != null ? `Pencapaian: ${summary.persen_pencapaian.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%` : null}
         />
       </div>
 

@@ -20,6 +20,32 @@ export default function InputSrdagPage() {
 
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({ tahun: currentYear, bulan: '', berhasil: '', total: '' })
+  const [existingData, setExistingData] = useState([])
+  const [isUpdateMode, setIsUpdateMode] = useState(false)
+
+  React.useEffect(() => {
+    if (!form.tahun) return;
+    api.get('/v1/srdag/dashboard', { params: { tahun: form.tahun, up3: user?.up3 } })
+      .then(res => {
+        setExistingData(res.data.data.trend_bulanan || []);
+      })
+      .catch(() => {});
+  }, [form.tahun, user?.up3]);
+
+  React.useEffect(() => {
+    if (!form.bulan || !existingData.length) {
+      setIsUpdateMode(false);
+      return;
+    }
+    const match = existingData.find(d => String(d.bulan) === String(form.bulan));
+    if (match && match.success_rate !== null) {
+      setIsUpdateMode(true);
+      setForm(prev => ({ ...prev, berhasil: match.jumlah_berhasil, total: match.jumlah_total }));
+    } else {
+      setIsUpdateMode(false);
+      setForm(prev => ({ ...prev, berhasil: '', total: '' }));
+    }
+  }, [form.bulan, existingData]);
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -71,6 +97,12 @@ export default function InputSrdagPage() {
         </div>
 
         <form style={{ display: 'flex', flexDirection: 'column', gap: 14 }} onSubmit={handleSubmit}>
+
+          {isUpdateMode && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 16px', borderRadius: 10, background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', fontWeight: 600, fontSize: '0.86rem' }}>
+              <Activity size={16} /> Data SRDAG untuk bulan ini sudah ditambahkan. Anda tidak dapat menyimpan data untuk periode yang sama.
+            </div>
+          )}
 
           {/* CARD PERIODE */}
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
@@ -135,11 +167,11 @@ export default function InputSrdagPage() {
           </div>
 
           {/* SUBMIT */}
-          <button type="submit" disabled={saving}
-            style={{ width: '100%', padding: '14px', borderRadius: 12, background: saving ? '#93c5fd' : '#3b82f6', color: '#fff', fontSize: '0.95rem', fontWeight: 700, border: 'none', cursor: saving ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: saving ? 'none' : '0 4px 14px rgba(59,130,246,0.3)', transition: 'all 0.2s' }}
+          <button type="submit" disabled={saving || isUpdateMode}
+            style={{ width: '100%', padding: '14px', borderRadius: 12, background: (saving || isUpdateMode) ? '#94a3b8' : '#3b82f6', color: '#fff', fontSize: '0.95rem', fontWeight: 700, border: 'none', cursor: (saving || isUpdateMode) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: (saving || isUpdateMode) ? 'none' : '0 4px 14px rgba(59,130,246,0.3)', transition: 'all 0.2s' }}
           >
             {saving ? <div style={{width:20,height:20,border:'2px solid rgba(255,255,255,0.5)',borderTop:'2px solid white',borderRadius:'50%',animation:'spin 1s linear infinite'}}/> : <Save size={18} />}
-            Simpan Data
+            {isUpdateMode ? 'Data Sudah Ada' : 'Simpan Data'}
           </button>
 
         </form>

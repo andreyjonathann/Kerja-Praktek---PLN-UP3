@@ -207,17 +207,17 @@ class GangguanSwitchingTest extends TestCase
         $trendDesember = $trendData->where('bulan', 12)->first();
         $this->assertEquals(60, $trendDesember['switching']);
 
-        // --- ASERSI S1/S2 RATIO (Target Tahunan = 120) ---
+        // --- ASERSI KUMULATIF TARGET BULANAN BARU ---
         
-        // Bulan 3 (Maret): (0.55 / 6) * 3 = 27.5% dari 120 = 33
+        // Bulan 3 (Maret): SUM target_jan + target_feb + target_mar (10 + 10 + 10 = 30)
         $trendMaret = $trendData->where('bulan', 3)->first();
-        $this->assertEquals(33, $trendMaret['target_switching_kumulatif']);
+        $this->assertEquals(30, $trendMaret['target_switching_kumulatif']);
 
-        // Bulan 6 (Juni): 55% dari 120 = 66
+        // Bulan 6 (Juni): SUM bulan 1-6 = 6 * 10 = 60
         $trendJuni = $trendData->where('bulan', 6)->first();
-        $this->assertEquals(66, $trendJuni['target_switching_kumulatif']);
+        $this->assertEquals(60, $trendJuni['target_switching_kumulatif']);
 
-        // Bulan 12 (Desember): 100% dari 120 = 120
+        // Bulan 12 (Desember): SUM bulan 1-12 = 120
         $this->assertEquals(120, $trendDesember['target_switching_kumulatif']);
     }
 }

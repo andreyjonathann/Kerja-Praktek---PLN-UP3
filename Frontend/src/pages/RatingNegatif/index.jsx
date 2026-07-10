@@ -16,7 +16,7 @@ import {
 import api from '@/services/api'
 import { useFilter } from '@/context/FilterContext'
 import * as XLSX from 'xlsx'
-import { Activity, Plus, Download, Target, TrendingDown, TrendingUp, FileSpreadsheet } from 'lucide-react'
+import { Activity, Plus, Download, Target, TrendingDown, TrendingUp, FileSpreadsheet, CheckCircle, XCircle } from 'lucide-react'
 import KpiCard from '@/components/ui/KpiCard'
 import DataTable from '@/components/ui/DataTable'
 import ChartWrapper from '@/components/ui/ChartWrapper'
@@ -180,17 +180,43 @@ export default function RatingNegatifPage() {
 
   // Calculate YTD (latest cumulative)
   let ytdRealisasi = 0;
+  let lastMonth = 0;
   if (data.cumulative && data.cumulative.length > 0) {
       const validCums = data.cumulative.filter(c => c.cumulativeReal !== null);
       if (validCums.length > 0) {
           ytdRealisasi = validCums[validCums.length - 1].cumulativeReal;
+          lastMonth = validCums[validCums.length - 1].bulan;
       }
   }
 
+  let targetYtd = null;
+  if (data.target_tahunan) {
+      targetYtd = 0;
+      const mKeys = ['jan', 'feb', 'mar', 'apr', 'mei', 'jun', 'jul', 'agu', 'sep', 'okt', 'nov', 'des'];
+      for (let i = 0; i < lastMonth; i++) {
+          const val = data.target_tahunan[`target_${mKeys[i]}`];
+          if (val !== null && val !== undefined) {
+              targetYtd += Number(val);
+          }
+      }
+      if (targetYtd === 0 && lastMonth > 0) {
+          // Fallback if targets are not set correctly for months
+          targetYtd = 0;
+      }
+  } else {
+      targetYtd = 0;
+  }
+
+  // Calculate percentage using negative polarity formula: (2 - Realisasi / Target) * 100
+  let persentase = 0;
+  if (targetYtd !== null && targetYtd > 0) {
+      persentase = (2 - (ytdRealisasi / targetYtd)) * 100;
+  }
+  
+  // For negative rating, lower is better. So if ytdRealisasi <= targetYtd, it's good (green).
+  const isGood = targetYtd !== null ? ytdRealisasi <= targetYtd : true;
+
   const targetValue = data.target || 0;
-  const persentase = targetValue > 0 ? (ytdRealisasi / targetValue) * 100 : 0;
-  // For negative rating, lower is better. So if ytdRealisasi <= target, it's good (green).
-  const isGood = ytdRealisasi <= targetValue;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--page-gap, 20px)' }} className="animate-fade-in">
@@ -304,37 +330,31 @@ export default function RatingNegatifPage() {
       <TargetWarning up3={filters.up3} year={filters.year} isVisible={!loading && targetValue === 0} />
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <KpiCard
           title="Realisasi YTD"
           value={ytdRealisasi.toLocaleString('id-ID')}
           unit="Kali"
-          achievement={isGood ? 100 : 0}
+          trend={isGood ? 'good' : 'bad'}
           icon={Activity}
           color="blue"
           isInverse
           loading={loading}
         />
         <KpiCard
-          title="Target Tahunan"
-          value={targetValue.toLocaleString('id-ID')}
+          title="Target YTD"
+          value={targetYtd !== null ? targetYtd.toLocaleString('id-ID') : '-'}
           unit="Kali"
           icon={Target}
           color="blue"
           loading={loading}
         />
         <KpiCard
-          title="% vs Target"
-          value={persentase.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%'}
-          icon={isGood ? TrendingDown : TrendingUp}
-          color={isGood ? 'green' : 'red'}
-          loading={loading}
-        />
-        <KpiCard
           title="Status Kinerja"
-          value={isGood ? 'Tercapai' : 'Tidak Tercapai'}
-          icon={Activity}
+          value={isGood ? 'TERCAPAI' : 'TIDAK TERCAPAI'}
+          icon={isGood ? CheckCircle : XCircle}
           color={isGood ? 'green' : 'red'}
+          badgeText={`Pencapaian: ${persentase.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`}
           loading={loading}
         />
       </div>
@@ -476,7 +496,17 @@ export default function RatingNegatifPage() {
             { key: 'realisasi', label: 'Realisasi (Kali)', align: 'center', render: (v, row) => {
                 const monthNum = MONTHS_FULL.indexOf(row.bulan) + 1;
                 const detail = data?.monthly?.find(m => m.bulan === monthNum);
-                return <span className="text-slate-700">{detail && detail.jml_rating_negatif !== null ? `${Number(detail.jml_rating_negatif).toLocaleString('id-ID')} Kali` : '-'}</span>;
+                
+                if (!detail || detail.jml_rating_negatif === null || detail.jml_rating_negatif === undefined) {
+                    return <span className="text-slate-700">-</span>;
+                }
+                
+                let textColor = 'text-slate-700';
+                if (detail.target !== null && detail.target !== undefined) {
+                    textColor = detail.jml_rating_negatif <= detail.target ? 'text-green-600' : 'text-red-600';
+                }
+                
+                return <span className={`font-bold ${textColor}`}>{`${Number(detail.jml_rating_negatif).toLocaleString('id-ID')} Kali`}</span>;
             }},
             ...rekapData.map(up3Data => ({
               key: up3Data.up3,
@@ -517,30 +547,7 @@ export default function RatingNegatifPage() {
                 )
               }
             })),
-            { 
-              key: 'status', label: 'Status', align: 'center',
-              render: (v, row) => {
-                const monthNum = MONTHS_FULL.indexOf(row.bulan) + 1;
-                const detail = data?.monthly?.find(m => m.bulan === monthNum);
-                
-                if (!detail || detail.target === null || detail.target === undefined || detail.jml_rating_negatif === null || detail.jml_rating_negatif === undefined) {
-                  return <span style={{ color: 'var(--text-muted)' }}>-</span>;
-                }
 
-                const isAman = detail.jml_rating_negatif <= detail.target;
-
-                return (
-                  <div style={{
-                    padding: '4px 8px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 700,
-                    display: 'inline-block',
-                    background: isAman ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                    color: isAman ? '#10b981' : '#ef4444'
-                  }}>
-                    {isAman ? 'TERCAPAI' : 'TIDAK TERCAPAI'}
-                  </div>
-                )
-              }
-            }
           ]}
           data={pivotedData}
           paginated={false}

@@ -28,7 +28,7 @@ export default function MvodDetailModal({ open, onOpenChange, rowData, tahun, up
   const [saving, setSaving] = useState(false)
   
   const [form, setForm] = useState({
-    total_lama_padam_menit: '',
+    rata_rata_lama_padam_menit: '',
     kali_padam: ''
   })
 
@@ -41,7 +41,7 @@ export default function MvodDetailModal({ open, onOpenChange, rowData, tahun, up
       setEditingTipe(null)
       setDeletingTipe(null)
       setRecords({ GI: null, JTM: null, GD: null })
-      setForm({ total_lama_padam_menit: '', kali_padam: '' })
+      setForm({ rata_rata_lama_padam_menit: '', kali_padam: '' })
     }
   }, [open, rowData, tahun])
 
@@ -68,16 +68,14 @@ export default function MvodDetailModal({ open, onOpenChange, rowData, tahun, up
   }
 
   const startEdit = (tipe) => {
-    const record = records[tipe]
-    if (record) {
+    const rec = records[tipe]
+    if (rec) {
       setForm({
-        total_lama_padam_menit: record.total_lama_padam_menit !== undefined 
-          ? record.total_lama_padam_menit.toString() 
-          : (record.total_lama_padam_jam * 60).toString(),
-        kali_padam: record.kali_padam.toString()
+        rata_rata_lama_padam_menit: rec.rata_rct_menit || '',
+        kali_padam: rec.kali_padam || ''
       })
     } else {
-      setForm({ total_lama_padam_menit: '', kali_padam: '' })
+      setForm({ rata_rata_lama_padam_menit: '', kali_padam: '' })
     }
     setEditingTipe(tipe)
     setDeletingTipe(null)
@@ -93,7 +91,7 @@ export default function MvodDetailModal({ open, onOpenChange, rowData, tahun, up
         tahun: Number(tahun),
         bulan: Number(bulanNum),
         tipe_rct: editingTipe,
-        total_lama_padam_jam: Number(form.total_lama_padam_menit) / 60,
+        total_lama_padam_jam: (Number(form.rata_rata_lama_padam_menit) * Number(form.kali_padam)) / 60,
         kali_padam: Number(form.kali_padam)
       }
       
@@ -272,15 +270,15 @@ export default function MvodDetailModal({ open, onOpenChange, rowData, tahun, up
                     <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
                       <div style={{ flex: 1 }}>
                         <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 8 }}>
-                          Total Lama Padam (Menit)
+                          Rata-rata Lama Padam (Menit)
                         </label>
                         <input
                           type="number"
                           min="0"
                           step="0.01"
                           placeholder="Cth: 150"
-                          value={form.total_lama_padam_menit}
-                          onChange={(e) => setForm({ ...form, total_lama_padam_menit: e.target.value })}
+                          value={form.rata_rata_lama_padam_menit}
+                          onChange={(e) => setForm({ ...form, rata_rata_lama_padam_menit: e.target.value })}
                           style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: 6, fontSize: 14 }}
                           disabled={saving}
                         />

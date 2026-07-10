@@ -4,7 +4,7 @@ import {
   ComposedChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer
 } from 'recharts'
-import { Activity, Clock, FileSpreadsheet, Plus, AlertCircle, TrendingUp, TrendingDown, Target, Users } from 'lucide-react'
+import { Activity, Clock, FileSpreadsheet, Plus, AlertCircle, TrendingUp, TrendingDown, Target, Users, CheckCircle, XCircle } from 'lucide-react'
 import ChartWrapper from '@/components/ui/ChartWrapper'
 import KpiCard from '@/components/ui/KpiCard'
 import DataTable from '@/components/ui/DataTable'
@@ -165,21 +165,19 @@ export default function RptGangguanPage() {
     { 
       label: 'Rata-rata RPT', 
       key: 'rpt_realisasi',
-      render: (v, row) => row.rpt_realisasi != null ? <span className="font-semibold">{row.rpt_realisasi} mnt</span> : '—'
+      render: (v, row) => {
+        if (row.rpt_realisasi == null) return '—';
+        let textColor = 'text-slate-800';
+        if (row.target_menit != null) {
+          textColor = row.rpt_realisasi <= row.target_menit ? 'text-green-600' : 'text-red-600';
+        }
+        return <span className={`font-semibold ${textColor}`}>{row.rpt_realisasi} mnt</span>;
+      }
     },
     { 
       label: 'Target Maksimum', 
       key: 'target_menit',
-      render: (v, row) => row.target_menit != null ? <span className="text-rose-500 font-semibold">{row.target_menit} mnt</span> : '—'
-    },
-    { 
-      label: 'Status', 
-      key: 'status',
-      render: (v, row) => (
-        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${row.status === 'AMAN' ? 'bg-emerald-100 text-emerald-700' : (row.status === '-' ? 'bg-slate-100 text-slate-500' : 'bg-rose-100 text-rose-700')}`}>
-          {row.status}
-        </span>
-      )
+      render: (v, row) => row.target_menit != null ? <span className="text-slate-600 font-semibold">{row.target_menit} mnt</span> : '—'
     }
   ];
 
@@ -208,27 +206,25 @@ export default function RptGangguanPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <KpiCard
-          title="RPT Bulan Ini"
-          value={`${summary.rpt_bulan_ini} mnt`}
-          subtitle={`vs Target: ${summary.target_menit} mnt`}
+          title="Realisasi YTD"
+          value={`${summary.rpt_rata_ytd} mnt`}
           icon={Activity}
-          status={isAman ? 'good' : 'bad'}
+          status={summary.rpt_rata_ytd <= summary.target_menit ? 'good' : 'bad'}
+          color="blue"
+          isInverse={true}
+        />
+        <KpiCard
+          title="Target YTD"
+          value={`${summary.target_menit} mnt`}
+          icon={Target}
           color="blue"
         />
         <KpiCard
-          title="Rata-rata RPT YTD"
-          value={`${summary.rpt_rata_ytd} mnt`}
-          subtitle="Rata-rata s.d. bulan ini"
-          icon={Target}
-          status={summary.rpt_rata_ytd <= summary.target_menit ? 'good' : 'bad'}
-          color="indigo"
-        />
-        <KpiCard
-          title="Total Gangguan YTD"
-          value={`${summary.total_gangguan_ytd} Kali`}
-          subtitle={`Total durasi: ${summary.total_durasi_ytd} mnt`}
-          icon={AlertCircle}
-          color="amber"
+          title="Status Kinerja"
+          value={summary.rpt_rata_ytd <= summary.target_menit ? 'TERCAPAI' : 'TIDAK TERCAPAI'}
+          icon={summary.rpt_rata_ytd <= summary.target_menit ? CheckCircle : XCircle}
+          color={summary.rpt_rata_ytd <= summary.target_menit ? 'green' : 'red'}
+          badgeText={summary.target_menit > 0 ? `Pencapaian: ${Math.max(0, ((2 - (summary.rpt_rata_ytd / summary.target_menit)) * 100)).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%` : null}
         />
       </div>
 
