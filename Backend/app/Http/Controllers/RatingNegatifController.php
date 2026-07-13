@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Constants\Up3Constants;
+
 use Illuminate\Http\Request;
 use App\Models\KinerjaJaringan;
 use App\Models\Periode;
@@ -17,7 +19,7 @@ class RatingNegatifController extends Controller
         $year = $request->query('tahun', date('Y'));
 
         $target = TargetTahunan::where('tahun', $year)
-            ->where('indikator', 'Rating Negatif')
+            ->where('indikator', 'Rating Negatif PLN Mobile')
             ->first();
 
         $periods = Periode::where('tahun', $year)->orderBy('bulan')->get();
@@ -37,6 +39,9 @@ class RatingNegatifController extends Controller
             $jmlWo = $k ? $k->jml_wo_pln_mobile : null;
             $persen = $k ? $k->persen_rating_negatif : null;
 
+            $monthAbbrev = strtolower($this->getBulanLabel($p->bulan));
+            $monthField = 'target_' . $monthAbbrev;
+
             $data[] = [
                 'id' => $k ? $k->id : null,
                 'bulan' => $p->bulan,
@@ -44,7 +49,7 @@ class RatingNegatifController extends Controller
                 'jml_rating_negatif' => $jmlNegatif,
                 'jml_wo_pln_mobile' => $jmlWo,
                 'realisasi' => $persen,
-                'target' => $target ? $target->target : null,
+                'target' => $target ? $target->{$monthField} : null,
             ];
             
             $cumulativeData[] = [
@@ -53,24 +58,45 @@ class RatingNegatifController extends Controller
             ];
         }
 
-        // Calculate cumulative
+        // Calculate cumulative (Dalam Kali)
         $sumNegatif = 0;
         $sumWo = 0;
         foreach ($data as $idx => $row) {
             if ($row['realisasi'] !== null) {
                 $sumNegatif += $row['jml_rating_negatif'];
                 $sumWo += $row['jml_wo_pln_mobile'];
-                $cumulativeData[$idx]['cumulativeReal'] = $sumWo > 0 ? ($sumNegatif / $sumWo) * 100 : 0;
+                $cumulativeData[$idx]['cumulativeReal'] = $sumNegatif;
             } else {
                 $cumulativeData[$idx]['cumulativeReal'] = null;
             }
-            $cumulativeData[$idx]['cumulativeTgt'] = $target ? $target->target : null;
+            
+            $monthAbbrev = strtolower($this->getBulanLabel($row['bulan']));
+            $monthField = 'target_' . $monthAbbrev;
+            $cumulativeData[$idx]['cumulativeTgt'] = $target ? $target->{$monthField} : null;
+        }
+
+        $calculatedYearlyTarget = null;
+        if ($target) {
+            $calculatedYearlyTarget = $target->target;
+            if ($calculatedYearlyTarget === null) {
+                $calculatedYearlyTarget = 0;
+                $months = ['jan', 'feb', 'mar', 'apr', 'mei', 'jun', 'jul', 'agu', 'sep', 'okt', 'nov', 'des'];
+                $hasAny = false;
+                foreach ($months as $m) {
+                    if ($target->{"target_$m"} !== null) {
+                        $calculatedYearlyTarget += $target->{"target_$m"};
+                        $hasAny = true;
+                    }
+                }
+                if (!$hasAny) $calculatedYearlyTarget = null;
+                else $target->target = $calculatedYearlyTarget;
+            }
         }
 
         return response()->json([
             'monthly' => $data,
             'cumulative' => $cumulativeData,
-            'target' => $target ? $target->target : null,
+            'target' => $calculatedYearlyTarget,
             'target_tahunan' => $target,
         ]);
     }
@@ -80,13 +106,26 @@ class RatingNegatifController extends Controller
      */
     public function store(Request $request)
     {
+        $user = $request->user();
+        if ($user->role !== 'pic_jaringan' && $user->role !== 'admin') {
+            return response()->json([
+                'message' => 'Anda tidak berwenang mengelola data ini.'
+            ], 403);
+        }
+
         $request->validate([
-            'periode_id' => 'required|exists:periode,id',
+            'tahun' => 'required|integer',
+            'bulan' => 'required|integer',
             'jml_rating_negatif' => 'required|integer|min:0',
             'jml_wo_pln_mobile' => 'required|integer|min:1',
         ]);
 
-        $periodeId = $request->periode_id;
+        $periode = Periode::firstOrCreate([
+            'tahun' => $request->tahun,
+            'bulan' => $request->bulan
+        ]);
+
+        $periodeId = $periode->id;
         $jmlNegatif = $request->jml_rating_negatif;
         $jmlWo = $request->jml_wo_pln_mobile;
         
@@ -124,11 +163,11 @@ class RatingNegatifController extends Controller
         $kPrev = $pPrev ? KinerjaJaringan::where('periode_id', $pPrev->id)->first() : null;
 
         $target = TargetTahunan::where('tahun', $tahun)
-            ->where('indikator', 'Rating Negatif')
+            ->where('indikator', 'Rating Negatif PLN Mobile')
             ->first();
 
         return response()->json([
-            'up3' => 'UP3 Kebon Jeruk', // Hardcoded as per current DB structure
+            'up3' => Up3Constants::DEFAULT_UP3, // Hardcoded as per current DB structure
             'bulan' => $bulan,
             'tahun_curr' => $tahun,
             'tahun_prev' => $prevTahun,
@@ -151,30 +190,38 @@ class RatingNegatifController extends Controller
         $kinerja = KinerjaJaringan::whereIn('periode_id', $periodeIds)->get();
 
         $target = TargetTahunan::where('tahun', $year)
-            ->where('indikator', 'Rating Negatif')
+            ->where('indikator', 'Rating Negatif PLN Mobile')
             ->first();
 
         $monthlyData = [];
         $sumNegatif = 0;
         $sumWo = 0;
 
+        $latestMonth = null;
         foreach ($periods as $p) {
             $k = $kinerja->firstWhere('periode_id', $p->id);
             $monthlyData[$p->bulan] = $k ? $k->persen_rating_negatif : null;
             if ($k && $k->persen_rating_negatif !== null) {
                 $sumNegatif += $k->jml_rating_negatif;
                 $sumWo += $k->jml_wo_pln_mobile;
+                $latestMonth = $p->bulan;
             }
         }
 
-        $ytd = $sumWo > 0 ? ($sumNegatif / $sumWo) * 100 : null;
+        $ytd = $sumNegatif; // ytd dalam satuan Kali
+        
+        $ytdTarget = null;
+        if ($target && $latestMonth) {
+            $monthAbbrev = strtolower($this->getBulanLabel($latestMonth));
+            $ytdTarget = $target->{'target_' . $monthAbbrev};
+        }
 
         return response()->json([
             [
-                'up3' => 'UP3 Kebon Jeruk',
+                'up3' => Up3Constants::DEFAULT_UP3,
                 'monthly' => $monthlyData,
                 'ytd' => $ytd,
-                'target' => $target ? $target->target : null,
+                'target' => $ytdTarget,
             ]
         ]);
     }
@@ -186,5 +233,26 @@ class RatingNegatifController extends Controller
             9 => 'Sep', 10 => 'Okt', 11 => 'Nov', 12 => 'Des'
         ];
         return $labels[$bulan] ?? '';
+    }
+
+    public function destroy($id)
+    {
+        $user = auth()->user();
+        if ($user->role !== 'pic_jaringan' && $user->role !== 'admin') {
+            return response()->json([
+                'message' => 'Anda tidak berwenang mengelola data ini.'
+            ], 403);
+        }
+
+        try {
+            $data = KinerjaJaringan::find($id);
+            if (!$data) {
+                return response()->json(['message' => 'Data tidak ditemukan'], 404);
+            }
+            $data->delete();
+            return response()->json(['message' => 'Data berhasil dihapus']);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Gagal menghapus data: ' . $e->getMessage()], 500);
+        }
     }
 }

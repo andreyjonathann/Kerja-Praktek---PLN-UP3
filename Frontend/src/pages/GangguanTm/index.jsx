@@ -16,11 +16,13 @@ import api from '@/services/api'
 import { useFilter } from '@/context/FilterContext'
 import { useAuth } from '@/context/AuthContext'
 import * as XLSX from 'xlsx'
-import { Activity, Plus, FileSpreadsheet, Target, TrendingDown, TrendingUp, AlertTriangle } from 'lucide-react'
+import { Activity, Plus, FileSpreadsheet, Target, TrendingDown, TrendingUp, AlertTriangle, CheckCircle, XCircle } from 'lucide-react'
 import KpiCard from '@/components/ui/KpiCard'
 import TargetWarning from '@/components/ui/TargetWarning'
 import DataTable from '@/components/ui/DataTable'
 import ChartWrapper from '@/components/ui/ChartWrapper'
+import DetailGangguanTmModal from '@/components/ui/DetailGangguanTmModal'
+import DetailGangguanTmKurang5Modal from '@/components/ui/DetailGangguanTmKurang5Modal'
 
 const COLORS = {
   target: '#ef4444',
@@ -65,14 +67,17 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 export default function GangguanTmPage() {
-  const navigate = useNavigate()
   const { filters } = useFilter()
   const { isAdmin } = useAuth()
+  const navigate = useNavigate()
   
   const [activeTab, setActiveTab] = useState('semua')
+  const [chartView, setChartView] = useState('monthly')
   const [dataRekap, setDataRekap] = useState(null)
   const [dataUp3, setDataUp3] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [detailModalType, setDetailModalType] = useState(null); // 'lebih_5_mnt' or 'kurang_5_mnt'
+  const [selectedDetailMonth, setSelectedDetailMonth] = useState(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -101,24 +106,32 @@ export default function GangguanTmPage() {
   const processChartData = (tipeData) => {
     if (!tipeData) return [];
     let sumReal = 0;
+    let sumTgt = 0;
+    let anyTgt = false;
     return MONTHS_FULL.map((m, idx) => {
       const bulan = idx + 1;
-      const real = tipeData.monthly[bulan];
+      const monthlyInfo = tipeData.monthly[bulan] || {};
+      const real = typeof monthlyInfo === 'object' ? monthlyInfo.realisasi : monthlyInfo;
+      const ringkasanId = typeof monthlyInfo === 'object' ? monthlyInfo.id : null;
+      
       if (real !== null && real !== undefined) {
         sumReal += real;
       }
       
-      let targetKumulatif = null;
-      if (tipeData.target_tahunan) {
-        targetKumulatif = (tipeData.target_tahunan / 12) * bulan;
+      let targetBulanan = tipeData.target_bulanan ? tipeData.target_bulanan[bulan] : null;
+      if (targetBulanan !== null && targetBulanan !== undefined) {
+        sumTgt += Number(targetBulanan);
+        anyTgt = true;
       }
 
       return {
         bulan,
         label: m.substring(0, 3),
         realisasi: real,
+        id: ringkasanId,
+        targetBulanan: targetBulanan !== null && targetBulanan !== undefined ? Number(targetBulanan) : null,
         kumulatifReal: real !== null ? sumReal : null,
-        targetKumulatif: targetKumulatif
+        targetKumulatif: anyTgt ? sumTgt : null
       }
     });
   }
@@ -133,21 +146,21 @@ export default function GangguanTmPage() {
     if (tipe === 'semua') {
       ['lebih_5_mnt', 'kurang_5_mnt'].forEach(t => {
         if (dataRekap[t]) {
-          ytd += dataRekap[t].realisasi_ytd || 0;
-          if (dataRekap[t].target_tahunan) {
-            target = (target || 0) + dataRekap[t].target_tahunan;
+          ytd += (dataRekap[t].realisasi_ytd || 0);
+          if (dataRekap[t].target_ytd !== null && dataRekap[t].target_ytd !== undefined) {
+            target = (target || 0) + Number(dataRekap[t].target_ytd);
           }
         }
       });
     } else {
       if (dataRekap[tipe]) {
         ytd = dataRekap[tipe].realisasi_ytd || 0;
-        target = dataRekap[tipe].target_tahunan;
+        target = dataRekap[tipe].target_ytd;
       }
     }
 
     let sisa = target !== null ? target - ytd : null;
-    let persen = (target !== null && target > 0) ? (ytd / target) * 100 : null;
+    let persen = (target !== null && target > 0) ? (target / Math.max(0.001, ytd)) * 100 : null;
 
     return { ytd, target, sisa, persen };
   }
@@ -168,14 +181,13 @@ export default function GangguanTmPage() {
       wsData.push([`REKAPITULASI GANGGUAN TM ${title}`]);
       wsData.push([`TAHUN ${year}`]);
       wsData.push([]);
-      wsData.push(['Bulan', 'Realisasi Bulanan', 'Sisa', '% Pencapaian']);
+      wsData.push(['Bulan', 'Target Bulanan', 'Realisasi Bulanan']);
       
       chartData.forEach(row => {
         const rowData = [
           MONTHS_FULL[row.bulan - 1],
-          row.realisasi !== null ? row.realisasi : '-',
-          (row.targetKumulatif !== null && row.kumulatifReal !== null) ? (row.targetKumulatif - row.kumulatifReal).toFixed(2) : '-',
-          (row.targetKumulatif && row.kumulatifReal !== null) ? ((row.kumulatifReal / row.targetKumulatif) * 100).toFixed(2) + '%' : '-'
+          row.targetBulanan !== null ? row.targetBulanan : '-',
+          row.realisasi !== null ? row.realisasi : '-'
         ];
         wsData.push(rowData);
       });
@@ -237,23 +249,31 @@ export default function GangguanTmPage() {
             <Tooltip content={<CustomTooltip />} cursor={{fill: 'rgba(0,0,0,0.05)'}} />
             <Legend iconType="circle" wrapperStyle={{paddingTop: '20px', fontSize: '12px'}} />
             
-            <Bar 
-              yAxisId="left" 
-              dataKey="realisasi" 
-              name="Realisasi Bulanan" 
-              fill={COLORS.realisasi} 
-              radius={[4, 4, 0, 0]} 
-              maxBarSize={40}
-              onClick={(data) => {
-                if (tipe === 'lebih_5_mnt' && data && data.bulan) {
-                  const tahun = filters.year || new Date().getFullYear();
-                  navigate(`/jaringan/gangguan-tm/lebih-5-menit/detail/${tahun}/${data.bulan}`);
-                }
-              }}
-              style={{ cursor: tipe === 'lebih_5_mnt' ? 'pointer' : 'default' }}
-            />
-            <Line yAxisId="left" type="monotone" dataKey="kumulatifReal" name="Realisasi Kumulatif" stroke={COLORS.kumulatif} strokeWidth={3} dot={{r:4, fill:COLORS.kumulatif}} />
-            <Line yAxisId="left" type="stepAfter" strokeDasharray="5 5" dataKey="targetKumulatif" name="Target Kumulatif" stroke={COLORS.target} strokeWidth={2} dot={false} />
+            {chartView === 'monthly' ? (
+              <>
+                <Bar 
+                  yAxisId="left" 
+                  dataKey="realisasi" 
+                  name="Realisasi Bulanan" 
+                  fill={COLORS.realisasi} 
+                  radius={[4, 4, 0, 0]} 
+                  maxBarSize={40}
+                  onClick={(data) => {
+                    if (data && data.bulan) {
+                      setSelectedDetailMonth(data.bulan);
+                      setDetailModalType(tipe);
+                    }
+                  }}
+                  style={{ cursor: 'pointer' }}
+                />
+                <Line yAxisId="left" type="monotone" dataKey="targetBulanan" name="Target Bulanan" stroke={COLORS.target} strokeWidth={2} dot={{r:3, fill:COLORS.target}} strokeDasharray="4 4" />
+              </>
+            ) : (
+              <>
+                <Line yAxisId="left" type="monotone" dataKey="kumulatifReal" name="Realisasi Kumulatif" stroke={COLORS.kumulatif} strokeWidth={3} dot={{r:4, fill:COLORS.kumulatif}} />
+                <Line yAxisId="left" type="stepAfter" strokeDasharray="5 5" dataKey="targetKumulatif" name="Target Kumulatif" stroke={COLORS.target} strokeWidth={2} dot={false} />
+              </>
+            )}
           </ComposedChart>
         </ResponsiveContainer>
       </ChartWrapper>
@@ -271,6 +291,7 @@ export default function GangguanTmPage() {
       bulan: 'TOTAL',
       label: 'TOTAL',
       realisasi: sumReal,
+      targetBulanan: targetTahunan,
       kumulatifReal: sumReal,
       targetKumulatif: targetTahunan,
       isTotal: true
@@ -289,37 +310,32 @@ export default function GangguanTmPage() {
         </div>
         <DataTable
           searchable={false}
-          onRowClick={tipe === 'lebih_5_mnt' ? (row) => {
+          onRowClick={(row) => {
             if (!row.isTotal) {
-              const tahun = filters.year || new Date().getFullYear();
-              navigate(`/jaringan/gangguan-tm/lebih-5-menit/detail/${tahun}/${row.bulan}`);
+              setSelectedDetailMonth(row.bulan);
+              setDetailModalType(tipe);
             }
-          } : undefined}
+          }}
           columns={[
             { 
-              key: 'label', label: <span className="pl-6 block">Bulan</span>, align: 'left',
-              render: (v, item) => <span className={`pl-6 block font-semibold ${item.isTotal ? 'text-blue-700 uppercase' : 'text-slate-800'}`}>{item.isTotal ? 'TOTAL' : MONTHS_FULL[item.bulan-1]}</span>
+              key: 'label', label: 'Bulan', align: 'center',
+              render: (v, item) => <span className={`block font-semibold ${item.isTotal ? 'text-blue-700 uppercase' : 'text-slate-800'}`}>{item.isTotal ? 'TOTAL' : MONTHS_FULL[item.bulan-1]}</span>
+            },
+            { 
+              key: 'targetBulanan', label: 'Target Bulanan', align: 'center',
+              render: (v, item) => <span className={item.isTotal ? 'font-bold text-slate-700' : 'text-slate-600'}>{v !== null ? Number(v).toLocaleString('id-ID') : '-'}</span>
             },
             { 
               key: 'realisasi', label: 'Realisasi Bulanan', align: 'center',
-              render: (v, item) => <span className={item.isTotal ? 'font-bold text-blue-700' : 'text-slate-600'}>{v !== null ? Number(v).toLocaleString('id-ID') : '-'}</span>
-            },
-            { 
-              key: 'sisa', label: 'Sisa Kuota', align: 'center',
               render: (v, item) => {
-                if (item.targetKumulatif === null || item.kumulatifReal === null) return <span className="text-slate-400">-</span>;
-                const sisa = item.targetKumulatif - item.kumulatifReal;
-                return <span className={`font-bold ${sisa < 0 ? 'text-red-600' : 'text-green-600'}`}>{Number(sisa).toLocaleString('id-ID', {maximumFractionDigits:2})}</span>
+                if (v === null) return <span className="text-slate-400">-</span>;
+                let colorClass = item.isTotal ? 'text-blue-700' : 'text-slate-800';
+                if (item.targetBulanan !== null) {
+                  colorClass = v <= item.targetBulanan ? 'text-green-600' : 'text-red-600';
+                }
+                return <span className={`font-bold ${colorClass}`}>{Number(v).toLocaleString('id-ID')}</span>
               }
-            },
-            { 
-              key: 'persen', label: '% Pencapaian', align: 'center',
-              render: (v, item) => {
-                if (!item.targetKumulatif || item.kumulatifReal === null) return <span className="text-slate-400">-</span>;
-                const p = (item.kumulatifReal / item.targetKumulatif) * 100;
-                return <span className={`font-bold ${p > 100 ? 'text-red-600' : 'text-green-600'}`}>{Number(p).toLocaleString('id-ID', {maximumFractionDigits:2})}%</span>
-              }
-            },
+            }
           ]}
           data={tableData}
           paginated={false}
@@ -346,12 +362,12 @@ export default function GangguanTmPage() {
         <DataTable
           columns={[
             { key: 'up3', label: 'UP3', align: 'left', render: v => <span className="font-semibold text-slate-800">{v}</span> },
-            { key: 'target', label: 'Target Tahunan', align: 'center', render: v => <span className="font-bold text-red-600">{v !== null ? Number(v).toLocaleString('id-ID') : '-'}</span> },
+            { key: 'target', label: 'Target YTD', align: 'center', render: v => <span className="font-bold text-red-600">{v !== null ? Number(v).toLocaleString('id-ID') : '-'}</span> },
             { key: 'realisasi_ytd', label: 'Realisasi YTD', align: 'center', render: v => <span className="font-bold text-blue-600">{v !== null ? Number(v).toLocaleString('id-ID') : '-'}</span> },
             { 
               key: 'pencapaian', label: '% Pencapaian', align: 'center',
               render: v => v !== null ? (
-                <span className={`font-bold ${v > 100 ? 'text-red-600' : 'text-green-600'}`}>
+                <span className={`font-bold ${v < 100 ? 'text-red-600' : 'text-green-600'}`}>
                   {Number(v).toLocaleString('id-ID', {maximumFractionDigits:2})}%
                 </span>
               ) : '-'
@@ -365,7 +381,7 @@ export default function GangguanTmPage() {
                   background: v === 'AMAN' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
                   color: v === 'AMAN' ? '#10b981' : '#ef4444'
                 }}>
-                  {v}
+                  {v === 'AMAN' ? 'TERCAPAI' : 'TIDAK TERCAPAI'}
                 </div>
               ) : '-'
             },
@@ -469,43 +485,6 @@ export default function GangguanTmPage() {
               <Plus size={16} /> Input &gt; 5 Menit
             </button>
           </div>
-          
-          <div style={{
-            display: 'inline-flex',
-            background: 'rgba(16, 185, 129, 0.05)',
-            padding: 4,
-            borderRadius: 12,
-            border: '1px solid rgba(16, 185, 129, 0.15)',
-            cursor: 'pointer'
-          }}>
-            <button
-              onClick={exportToExcel}
-              style={{
-                padding: '6px 16px',
-                borderRadius: 9,
-                fontSize: '0.85rem',
-                fontWeight: 700,
-                transition: 'all 0.2s ease',
-                border: 'none',
-                cursor: 'pointer',
-                background: 'var(--bg-card)',
-                color: '#10B981',
-                boxShadow: '0 2px 8px rgba(16, 185, 129, 0.15)',
-                display: 'flex', alignItems: 'center', gap: '8px'
-              }}
-              title="Export ke Excel"
-              onMouseEnter={e => {
-                  e.currentTarget.style.background = '#10B981';
-                  e.currentTarget.style.color = '#FFFFFF';
-              }}
-              onMouseLeave={e => {
-                  e.currentTarget.style.background = 'var(--bg-card)';
-                  e.currentTarget.style.color = '#10B981';
-              }}
-            >
-              <FileSpreadsheet size={16} /> Export
-            </button>
-          </div>
         </div>
       </div>
 
@@ -529,7 +508,7 @@ export default function GangguanTmPage() {
       <TargetWarning up3={filters.up3} year={filters.year} isVisible={summary.target == null} />
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
         <KpiCard
           title="Realisasi YTD"
           value={Number(summary.ytd).toLocaleString('id-ID')}
@@ -539,7 +518,7 @@ export default function GangguanTmPage() {
           color="blue"
         />
         <KpiCard
-          title="Target Tahunan"
+          title="Target YTD"
           value={summary.target !== null ? Number(summary.target).toLocaleString('id-ID') : '-'}
           subtitle={summary.target === null ? 'Belum ada target' : undefined}
           unit={summary.target !== null ? "Kali" : ""}
@@ -547,21 +526,52 @@ export default function GangguanTmPage() {
           color="red"
         />
         <KpiCard
-          title="Sisa Kuota"
-          value={summary.sisa !== null ? Number(summary.sisa).toLocaleString('id-ID', {maximumFractionDigits: 1}) : '-'}
-          unit={summary.sisa !== null ? "Kali" : ""}
-          icon={summary.sisa !== null && summary.sisa < 0 ? TrendingUp : TrendingDown}
-          trend={summary.sisa !== null && summary.sisa < 0 ? 'bad' : 'good'}
-          color={summary.sisa !== null && summary.sisa < 0 ? 'red' : 'green'}
+          title="Status Kinerja"
+          value={summary.persen !== null ? (summary.persen >= 100 ? 'TERCAPAI' : 'TIDAK TERCAPAI') : '-'}
+          icon={summary.persen !== null ? (summary.persen >= 100 ? CheckCircle : XCircle) : Activity}
+          color={summary.persen !== null ? (summary.persen >= 100 ? 'green' : 'red') : 'blue'}
+          badgeText={summary.persen !== null ? `Pencapaian: ${Number(summary.persen).toLocaleString('id-ID', {maximumFractionDigits: 2})}%` : null}
         />
-        <KpiCard
-          title="% Pencapaian"
-          value={summary.persen !== null ? Number(summary.persen).toLocaleString('id-ID', {maximumFractionDigits: 2}) : '-'}
-          unit={summary.persen !== null ? "%" : ""}
-          icon={summary.persen !== null && summary.persen > 100 ? AlertTriangle : Activity}
-          trend={summary.persen !== null && summary.persen > 100 ? 'bad' : 'good'}
-          color={summary.persen !== null && summary.persen > 100 ? 'red' : 'green'}
-        />
+      </div>
+
+      {/* Toggle View */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+        marginBottom: '16px'
+      }}>
+        <div style={{
+          display: 'inline-flex',
+          background: 'rgba(0, 162, 185, 0.05)',
+          padding: 4,
+          borderRadius: 12,
+          border: '1px solid rgba(0, 162, 185, 0.08)',
+        }}>
+        {['monthly','cumulative'].map(t => {
+          const isActive = chartView === t
+          return (
+            <button
+              key={t}
+              onClick={() => setChartView(t)}
+              style={{
+                padding: '6px 16px',
+                borderRadius: 9,
+                fontSize: '0.85rem',
+                fontWeight: 700,
+                transition: 'all 0.2s ease',
+                border: 'none',
+                cursor: 'pointer',
+                background: isActive ? 'var(--bg-card)' : 'transparent',
+                color: isActive ? '#00A2B9' : 'var(--text-muted)',
+                boxShadow: isActive ? '0 2px 8px rgba(0, 162, 185, 0.12)' : 'none',
+              }}
+            >
+              {t === 'monthly' ? 'Bulanan' : 'Kumulatif'}
+            </button>
+          )
+        })}
+        </div>
       </div>
 
       {/* Charts & Tables */}
@@ -580,17 +590,33 @@ export default function GangguanTmPage() {
           {renderRekapTable(activeTab)}
           {renderUp3Table(activeTab)}
           
-          {/* FGTM Placeholder for > 5 Menit */}
-          {activeTab === 'lebih_5_mnt' && (
-            <div className="mt-6 card">
-              <div className="text-center text-gray-400 py-8">
-                Data panjang JTM belum tersedia.
-                Fitur FGTM akan aktif setelah data aset dikonfigurasi oleh Admin.
-              </div>
-            </div>
-          )}
+
         </div>
       )}
+      <DetailGangguanTmModal 
+        open={detailModalType === 'lebih_5_mnt'} 
+        onOpenChange={(open) => !open && setDetailModalType(null)} 
+        year={filters.year || new Date().getFullYear()} 
+        onSuccess={fetchData}
+        rowData={{
+          bulan: selectedDetailMonth,
+          id: dataRekap?.lebih_5_mnt?.monthly[selectedDetailMonth]?.id,
+          target_tahunan: dataRekap?.lebih_5_mnt?.target_tahunan,
+          realisasi: dataRekap?.lebih_5_mnt?.monthly[selectedDetailMonth]?.realisasi || 0
+        }}
+      />
+      <DetailGangguanTmKurang5Modal 
+        open={detailModalType === 'kurang_5_mnt'} 
+        onOpenChange={(open) => !open && setDetailModalType(null)} 
+        year={filters.year || new Date().getFullYear()} 
+        onSuccess={fetchData}
+        rowData={{
+          bulan: selectedDetailMonth,
+          id: dataRekap?.kurang_5_mnt?.monthly[selectedDetailMonth]?.id,
+          target_tahunan: dataRekap?.kurang_5_mnt?.target_tahunan,
+          realisasi: dataRekap?.kurang_5_mnt?.monthly[selectedDetailMonth]?.realisasi || 0
+        }}
+      />
     </div>
   )
 }

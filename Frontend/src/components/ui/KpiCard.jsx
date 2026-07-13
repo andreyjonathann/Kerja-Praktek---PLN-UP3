@@ -50,6 +50,7 @@ const getAchColors = (achKey, dark) => {
  */
 export default function KpiCard({
   title, value, unit = '', achievement, target, trend,
+  statusText, statusColor, badgeText, subText,
   icon: Icon, color = 'blue', isInverse = false, loading = false, onClick,
 }) {
   const { dark } = useTheme()
@@ -134,7 +135,8 @@ export default function KpiCard({
         <div style={{ flex:1, marginBottom:8 }}>
           <div style={{ display:'flex', alignItems:'baseline', gap:6 }}>
             <span style={{
-              fontSize: value && value.length > 7 ? '1.5rem' : '1.8rem', fontWeight:800, color:'var(--text-primary)',
+              fontSize: value && value.length > 7 ? '1.5rem' : '1.8rem', fontWeight:800, 
+              color: color === 'red' || color === 'green' ? c.accent : 'var(--text-primary)',
               lineHeight:1.1, letterSpacing:'-0.025em',
               fontFeatureSettings:'"tnum"',
             }}>
@@ -144,6 +146,11 @@ export default function KpiCard({
               <span style={{ fontSize:'0.88rem', fontWeight:600, color:'var(--text-muted)' }}>{unit}</span>
             )}
           </div>
+          {subText && (
+            <div style={{ fontSize:'0.75rem', color: dark ? '#D1D5DB' : '#111827', fontWeight: 600, marginTop: 4 }}>
+              {subText}
+            </div>
+          )}
         </div>
 
         {/* Footer */}
@@ -156,6 +163,28 @@ export default function KpiCard({
               background:ach.bg, color:ach.color, border:`1px solid ${ach.border}`,
             }}>
               {formatPercent(achievement, 1)} vs Target
+            </span>
+          )}
+          {badgeText != null && (
+            <span style={{
+              display:'inline-flex', alignItems:'center', gap:4,
+              padding:'3px 10px', borderRadius:99,
+              fontSize:'0.85rem', fontWeight:800,
+              background: c.bg, color: c.accent, border:`1px solid ${c.border}`,
+            }}>
+              {badgeText}
+            </span>
+          )}
+          {statusText != null && (
+            <span style={{
+              display:'inline-flex', alignItems:'center', gap:4,
+              padding:'3px 10px', borderRadius:99,
+              fontSize:'0.78rem', fontWeight:750,
+              background: getAchColors(statusColor === 'blue' ? 'good' : (statusColor === 'green' ? 'good' : (statusColor === 'red' ? 'bad' : 'warn')), dark).bg, 
+              color: getAchColors(statusColor === 'blue' ? 'good' : (statusColor === 'green' ? 'good' : (statusColor === 'red' ? 'bad' : 'warn')), dark).color, 
+              border:`1px solid ${getAchColors(statusColor === 'blue' ? 'good' : (statusColor === 'green' ? 'good' : (statusColor === 'red' ? 'bad' : 'warn')), dark).border}`,
+            }}>
+              {statusText}
             </span>
           )}
           {TrendIco && (

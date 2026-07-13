@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState } from 'react'
+import { DEFAULT_UP3 } from '@/constants/up3'
 
 const FilterContext = createContext(null)
 
@@ -9,7 +10,7 @@ export function FilterProvider({ children }) {
   const [filters, setFilters] = useState({
     year:       CURRENT_YEAR,
     month:      CURRENT_MONTH,
-    up3:        'Kebon Jeruk',
+    up3:        DEFAULT_UP3,
     category:   '',
     kpi:        '',
     region:     '',
@@ -25,7 +26,7 @@ export function FilterProvider({ children }) {
     setFilters({
       year:      CURRENT_YEAR,
       month:     CURRENT_MONTH,
-      up3:       'Kebon Jeruk',
+      up3:       DEFAULT_UP3,
       category:  '',
       kpi:       '',
       region:    '',

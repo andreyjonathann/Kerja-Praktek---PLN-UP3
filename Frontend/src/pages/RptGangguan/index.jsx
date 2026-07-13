@@ -4,7 +4,7 @@ import {
   ComposedChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer
 } from 'recharts'
-import { Activity, Clock, FileSpreadsheet, Plus, AlertCircle, TrendingUp, TrendingDown, Target, Users } from 'lucide-react'
+import { Activity, Clock, FileSpreadsheet, Plus, AlertCircle, TrendingUp, TrendingDown, Target, Users, CheckCircle, XCircle } from 'lucide-react'
 import ChartWrapper from '@/components/ui/ChartWrapper'
 import KpiCard from '@/components/ui/KpiCard'
 import DataTable from '@/components/ui/DataTable'
@@ -13,11 +13,12 @@ import PageHeader from '@/components/ui/PageHeader'
 import ActionButton from '@/components/ui/ActionButton'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { useFilter } from '@/context/FilterContext'
-import { MONTHS_SHORT } from '@/utils/formatters'
+import { MONTHS_ID } from '@/utils/formatters'
 import { CHART_COLORS, YEARS } from '@/utils/constants'
 import api from '@/services/api'
 import { useAuth } from '@/context/AuthContext'
 import * as XLSX from 'xlsx'
+import RptDetailModal from '@/components/ui/RptDetailModal'
 
 export default function RptGangguanPage() {
   const navigate = useNavigate()
@@ -26,6 +27,8 @@ export default function RptGangguanPage() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [selectedRow, setSelectedRow] = useState(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -51,23 +54,20 @@ export default function RptGangguanPage() {
   }, [fetchData])
 
   const exportExcel = () => {
-    if (!data?.per_up3) return;
+    if (!data?.trend_bulanan) return;
     
     const wsData = [
-      ['Data RPT Gangguan PLN UP3', filters.up3 || 'Semua UP3', 'Tahun', filters.year],
+      ['Data RPT Gangguan PLN UP3', filters.up3 || 'UP3 Kebon Jeruk', 'Tahun', filters.year],
       [],
-      ['UP3', 'RPT Bulan Ini (mnt)', 'Rata-rata YTD (mnt)', 'Target (mnt)', 'Pencapaian (%)', 'RPT Tahun Lalu (mnt)', 'Trend YoY', 'Status']
+      ['Bulan', 'Total Gangguan', 'Rata-rata RPT (mnt)', 'Target (mnt)', 'Status']
     ];
 
-    data.per_up3.forEach(row => {
+    tableDataBulan.forEach(row => {
       wsData.push([
-        row.up3,
-        row.rpt_bulan_ini,
-        row.rpt_rata_ytd,
-        row.target,
-        row.persen_pencapaian,
-        row.rpt_tahun_lalu,
-        row.trend_yoy,
+        row.bulan,
+        row.total_gangguan ?? '—',
+        row.rpt_realisasi ?? '—',
+        row.target_menit ?? '—',
         row.status
       ]);
     });
@@ -98,15 +98,18 @@ export default function RptGangguanPage() {
     )
   }
 
-  const { summary, trend_bulanan, per_up3 } = data;
+  const { summary, trend_bulanan } = data;
   const isAman = summary.status === 'AMAN';
 
-  const chartData = trend_bulanan.map(t => ({
-    name: MONTHS_SHORT[t.bulan],
-    'Realisasi (mnt)': t.realisasi_menit,
-    'Target (mnt)': t.target_menit,
-    'Status': t.status
-  }));
+  const chartData = trend_bulanan.map(t => {
+    const isAmanChart = t.rpt_realisasi <= t.target;
+    return {
+      name: MONTHS_ID[t.bulan],
+      'Realisasi (Menit)': t.rpt_realisasi,
+      'Target': t.target,
+      'Status': isAmanChart ? 'AMAN' : 'MELEWATI TARGET'
+    };
+  });
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
@@ -114,8 +117,8 @@ export default function RptGangguanPage() {
       return (
         <div className="bg-white p-3 rounded-lg shadow-lg border border-slate-100 text-sm">
           <p className="font-bold text-slate-800 mb-2">{label}</p>
-          <p className="text-slate-600 mb-1">Target Maksimal: <span className="font-semibold text-rose-500">{data['Target (mnt)']} menit</span></p>
-          <p className="text-slate-600 mb-1">Realisasi RPT: <span className="font-bold text-blue-600">{data['Realisasi (mnt)']} menit</span></p>
+          <p className="text-slate-600 mb-1">Target Maksimal: <span className="font-semibold text-rose-500">{data['Target']} menit</span></p>
+          <p className="text-slate-600 mb-1">Realisasi RPT: <span className="font-bold text-blue-600">{data['Realisasi (Menit)']} menit</span></p>
           <p className="text-xs text-slate-500 mt-2 border-t pt-2">
             Status: <span className={`font-bold ${data.Status === 'AMAN' ? 'text-emerald-600' : 'text-rose-600'}`}>{data.Status}</span>
           </p>
@@ -125,27 +128,56 @@ export default function RptGangguanPage() {
     return null;
   };
 
+  const tableDataBulan = Array.from({ length: 12 }, (_, i) => {
+    const bulanNum = i + 1;
+    const match = trend_bulanan.find(t => t.bulan === bulanNum);
+    
+    if (match) {
+      const isAman = match.rpt_realisasi <= match.target;
+      return {
+        id: match.id,
+        bulan: MONTHS_ID[bulanNum],
+        total_gangguan: match.jumlah_gangguan,
+        jumlah_gangguan: match.jumlah_gangguan, // duplicate just in case
+        total_durasi: match.total_durasi,
+        rpt_realisasi: match.rpt_realisasi,
+        target_menit: match.target,
+        status: isAman ? 'AMAN' : 'MELEWATI TARGET'
+      };
+    }
+    
+    return {
+      bulan: MONTHS_ID[bulanNum],
+      total_gangguan: null,
+      rpt_realisasi: null,
+      target_menit: null,
+      status: '-'
+    };
+  });
+
   const columns = [
-    { header: 'UP3', accessor: 'up3' },
+    { label: 'Bulan', key: 'bulan', render: (v) => <span className="font-semibold">{v}</span> },
     { 
-      header: 'Total Gangguan', 
-      accessor: (row) => <span className="text-slate-500">{row.total_gangguan} Kali</span> 
+      label: 'Total Gangguan', 
+      key: 'total_gangguan',
+      render: (v, row) => row.total_gangguan != null ? <span className="text-slate-500">{row.total_gangguan} Kali</span> : '—'
     },
     { 
-      header: 'Rata-rata RPT YTD', 
-      accessor: (row) => row.rpt_rata_ytd != null ? <span className="font-semibold">{row.rpt_rata_ytd} mnt</span> : '—'
+      label: 'Rata-rata RPT', 
+      key: 'rpt_realisasi',
+      render: (v, row) => {
+        if (row.rpt_realisasi == null) return '—';
+        let textColor = 'text-slate-800';
+        if (row.target_menit != null) {
+          textColor = row.rpt_realisasi <= row.target_menit ? 'text-green-600' : 'text-red-600';
+        }
+        return <span className={`font-semibold ${textColor}`}>{row.rpt_realisasi} mnt</span>;
+      }
     },
     { 
-      header: 'Target Maksimum', 
-      accessor: (row) => <span className="text-rose-500 font-semibold">{row.target_menit} mnt</span> 
-    },
-    { 
-      header: 'Status', 
-      accessor: (row) => (
-        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${row.status === 'AMAN' ? 'bg-emerald-100 text-emerald-700' : (row.status === '-' ? 'bg-slate-100 text-slate-500' : 'bg-rose-100 text-rose-700')}`}>
-          {row.status}
-        </span>
-      )
+      label: 'Target Maksimum', 
+      key: 'target_menit',
+      render: (v, row) => row.target_menit != null ? <span className="text-slate-600 font-semibold">{row.target_menit} mnt</span> : '—'
     }
   ];
 
@@ -174,27 +206,25 @@ export default function RptGangguanPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <KpiCard
-          title="RPT Bulan Ini"
-          value={`${summary.rpt_bulan_ini} mnt`}
-          subtitle={`vs Target: ${summary.target_menit} mnt`}
+          title="Realisasi YTD"
+          value={`${summary.rpt_rata_ytd} mnt`}
           icon={Activity}
-          status={isAman ? 'good' : 'bad'}
+          status={summary.rpt_rata_ytd <= summary.target_menit ? 'good' : 'bad'}
+          color="blue"
+          isInverse={true}
+        />
+        <KpiCard
+          title="Target YTD"
+          value={`${summary.target_menit} mnt`}
+          icon={Target}
           color="blue"
         />
         <KpiCard
-          title="Rata-rata RPT YTD"
-          value={`${summary.rpt_rata_ytd} mnt`}
-          subtitle="Rata-rata s.d. bulan ini"
-          icon={Target}
-          status={summary.rpt_rata_ytd <= summary.target_menit ? 'good' : 'bad'}
-          color="indigo"
-        />
-        <KpiCard
-          title="Total Gangguan YTD"
-          value={`${summary.total_gangguan_ytd} Kali`}
-          subtitle={`Total durasi: ${summary.total_durasi_ytd} mnt`}
-          icon={AlertCircle}
-          color="amber"
+          title="Status Kinerja"
+          value={summary.rpt_rata_ytd <= summary.target_menit ? 'TERCAPAI' : 'TIDAK TERCAPAI'}
+          icon={summary.rpt_rata_ytd <= summary.target_menit ? CheckCircle : XCircle}
+          color={summary.rpt_rata_ytd <= summary.target_menit ? 'green' : 'red'}
+          badgeText={summary.target_menit > 0 ? `Pencapaian: ${Math.max(0, ((2 - (summary.rpt_rata_ytd / summary.target_menit)) * 100)).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%` : null}
         />
       </div>
 
@@ -244,16 +274,32 @@ export default function RptGangguanPage() {
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+        <div className="px-6 py-5 border-b border-slate-100 flex justify-center items-center bg-slate-50/50">
           <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-            Perbandingan Antar UP3
+            Perbandingan Antar Bulan
           </h2>
         </div>
         <div className="p-0">
-          <DataTable columns={columns} data={per_up3} />
+          <DataTable 
+            columns={columns} 
+            data={tableDataBulan} 
+            paginated={false} 
+            searchable={false} 
+            onRowClick={(row) => {
+              setSelectedRow(row);
+              setIsModalOpen(true);
+            }}
+          />
         </div>
       </div>
 
+      <RptDetailModal
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        rowData={selectedRow}
+        year={filters.year}
+        onSuccess={fetchData}
+      />
     </div>
   )
 }

@@ -72,7 +72,7 @@ export default function DataTable({
               {columns.map(col => (
                 <th
                   key={col.key}
-                  style={{ width:col.width, textAlign: col.align==='right'?'right' : col.align==='center'?'center':'left' }}
+                  style={{ width:col.width, textAlign: col.align || 'center' }}
                 >
                   {col.label}
                 </th>
@@ -89,12 +89,12 @@ export default function DataTable({
             ) : (
               paged.map((row, idx) => (
                 <tr 
-                  key={row.id ?? idx} 
+                  key={row.id != null ? `db-${row.id}` : `idx-${idx}`} 
                   className={`animate-fade-in ${onRowClick ? 'cursor-pointer hover:bg-slate-50/80 transition-colors' : ''}`}
                   onClick={() => onRowClick && onRowClick(row, idx)}
                 >
                   {columns.map(col => (
-                    <td key={col.key} style={{ textAlign: col.align==='right'?'right' : col.align==='center'?'center':'left' }}>
+                    <td key={col.key} style={{ textAlign: col.align || 'center' }}>
                       {col.render ? col.render(row[col.key], row, idx) : (row[col.key] ?? '—')}
                     </td>
                   ))}

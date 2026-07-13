@@ -21,8 +21,11 @@ import { getDashboardData } from '@/services/dashboardDataService'
 import { useFilter } from '@/context/FilterContext'
 import { MONTHS } from '@/utils/constants'
 import * as XLSX from 'xlsx'
-import { Activity, AlertTriangle, Plus } from 'lucide-react'
+import { Activity, AlertTriangle, Plus, Target, CheckCircle, XCircle, TrendingDown, TrendingUp, Zap } from 'lucide-react'
 import EnsExportModal from './EnsExportModal'
+import EnsDetailModal from '../../components/ui/EnsDetailModal'
+import KpiCard from '@/components/ui/KpiCard'
+import DataTable from '@/components/ui/DataTable'
 
 // Custom colors for charts
 const COLORS = {
@@ -167,6 +170,7 @@ export default function EnsPage() {
   const [selectedDistribusi, setSelectedDistribusi] = useState(null)
   const [modalType, setModalType] = useState('bulanan') // 'bulanan' or 'kumulatif'
   const [selectedBulanBreakdown, setSelectedBulanBreakdown] = useState('')
+  const [tab, setTab] = useState('monthly')
 
   const fetchData = useCallback(async (isBackground = false) => {
     if (!isBackground) setLoading(true)
@@ -209,6 +213,7 @@ export default function EnsPage() {
         const k_pembangkit = hasKumulatif ? (d.kumulatif.pembangkit || 0) : 0
 
         const row = {
+          id: d.bulanan.id,
           label: d.label,
           bulan: d.bulan,
           b_target: d.bulanan.target,
@@ -301,38 +306,23 @@ export default function EnsPage() {
     )
   }
 
+  const filled = data.filter(d => d[`k_${filters.year}`] != null);
+  const lastMonth = filled[filled.length - 1];
+  const totalReal = lastMonth ? (lastMonth[`k_${filters.year}`] || 0) : 0;
+  const totalTgt = lastMonth ? lastMonth.k_target : null;
+  const achievement = (totalTgt !== null && totalTgt > 0) ? (totalTgt / Math.max(0.001, totalReal)) * 100 : 0;
+
   return (
     <div className="p-4 md:p-6 w-full animate-fade-in flex flex-col gap-8">
       
-      {/* Modal Detail Distribusi */}
-      {showModal && selectedDistribusi && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)' }}>
-          <div style={{ background: '#fff', padding: '24px', borderRadius: '12px', width: '90%', maxWidth: '400px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#1e293b' }}>Detail Distribusi {modalType === 'bulanan' ? '(Bulanan)' : '(Kumulatif)'} - {selectedDistribusi.label}</h3>
-              <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b' }}>&times;</button>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', background: '#f8fafc', borderRadius: '8px' }}>
-                <span style={{ fontWeight: 600, color: '#475569' }}>Tidak Terencana</span>
-                <span style={{ fontWeight: 'bold', color: '#0f172a' }}>{selectedDistribusi[modalType === 'bulanan' ? 'b_distribusi_padam_tidak_terencana' : 'k_distribusi_padam_tidak_terencana']?.toFixed(3) || '0.000'}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', background: '#f8fafc', borderRadius: '8px' }}>
-                <span style={{ fontWeight: 600, color: '#475569' }}>Terencana</span>
-                <span style={{ fontWeight: 'bold', color: '#0f172a' }}>{selectedDistribusi[modalType === 'bulanan' ? 'b_distribusi_padam_terencana' : 'k_distribusi_padam_terencana']?.toFixed(3) || '0.000'}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', background: '#f8fafc', borderRadius: '8px' }}>
-                <span style={{ fontWeight: 600, color: '#475569' }}>Bencana Alam</span>
-                <span style={{ fontWeight: 'bold', color: '#0f172a' }}>{selectedDistribusi[modalType === 'bulanan' ? 'b_distribusi_bencana_alam' : 'k_distribusi_bencana_alam']?.toFixed(3) || '0.000'}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', background: '#eff6ff', borderRadius: '8px', marginTop: '4px', border: '1px solid #bfdbfe' }}>
-                <span style={{ fontWeight: 700, color: '#035B71' }}>Total Distribusi</span>
-                <span style={{ fontWeight: 800, color: '#1e40af' }}>{selectedDistribusi[modalType === 'bulanan' ? 'b_distribusi_total' : 'k_distribusi_total']?.toFixed(3) || '0.000'}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <EnsDetailModal
+        open={showModal}
+        onOpenChange={setShowModal}
+        rowData={selectedDistribusi}
+        year={filters.year}
+        modalType={modalType}
+        onSuccess={() => fetchData()}
+      />
 
       {/* Header Section */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 card p-5">
@@ -395,7 +385,19 @@ export default function EnsPage() {
         </div>
       </div>
 
-
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <KpiCard title="Kumulatif Realisasi" value={Number(totalReal).toFixed(4)} unit="MWh" icon={Zap} color="blue" loading={loading} />
+        <KpiCard title="Target YTD" value={totalTgt !== null ? Number(totalTgt).toFixed(4) : '-'} unit={totalTgt !== null ? "MWh" : ""} icon={Target} color="blue" loading={loading} />
+        <KpiCard 
+          title="Status Kinerja" 
+          value={totalTgt !== null ? (totalReal <= totalTgt ? 'TERCAPAI' : 'TIDAK TERCAPAI') : '-'} 
+          icon={totalTgt !== null ? (totalReal <= totalTgt ? CheckCircle : XCircle) : Activity} 
+          color={totalTgt !== null ? (totalReal <= totalTgt ? 'green' : 'red') : 'blue'} 
+          badgeText={totalTgt !== null ? `Pencapaian: ${Number(achievement).toFixed(1)}%` : null}
+          loading={loading} 
+        />
+      </div>
 
       {/* Charts Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
@@ -545,6 +547,64 @@ export default function EnsPage() {
           </div>
         </div>
 
+      </div>
+
+      {/* Tabel */}
+      <div className="card p-5 mt-8">
+        <div className="flex justify-between items-center mb-4">
+          <h3 style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.01em', textAlign: 'center' }}>
+            Detail Data ENS {tab === 'monthly' ? 'Bulanan' : 'Kumulatif'}
+          </h3>
+          <div style={{ display: 'inline-flex', background: 'rgba(15,76,215,0.05)', padding: 4, borderRadius: 12, border: '1px solid rgba(15,76,215,0.08)' }}>
+            {['monthly', 'cumulative'].map(t => {
+              const isActive = tab === t
+              return (
+                <button
+                  key={t}
+                  onClick={() => setTab(t)}
+                  style={{
+                    padding: '6px 16px', borderRadius: 9, fontSize: '0.85rem', fontWeight: 700,
+                    transition: 'all 0.2s ease', border: 'none', cursor: 'pointer',
+                    background: isActive ? 'var(--bg-card)' : 'transparent',
+                    color: isActive ? 'var(--pln-blue)' : 'var(--text-muted)',
+                    boxShadow: isActive ? '0 2px 8px rgba(15,76,215,0.12)' : 'none',
+                  }}
+                  onMouseEnter={e => { if (!isActive) e.currentTarget.style.color = 'var(--text-primary)' }}
+                  onMouseLeave={e => { if (!isActive) e.currentTarget.style.color = 'var(--text-muted)' }}
+                >
+                  {t === 'monthly' ? 'Bulanan' : 'Kumulatif'}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+        <DataTable
+          columns={[
+            { 
+              key: 'label', label: 'Bulan', width: '100px', align: 'center',
+              render: v => ({
+                'Jan': 'Januari', 'Feb': 'Februari', 'Mar': 'Maret', 'Apr': 'April',
+                'Mei': 'Mei', 'Jun': 'Juni', 'Jul': 'Juli', 'Agu': 'Agustus', 'Ags': 'Agustus',
+                'Sep': 'September', 'Okt': 'Oktober', 'Nov': 'November', 'Des': 'Desember'
+              })[v] || v
+            },
+            {
+              key: tab === 'monthly' ? 'b_target' : 'k_target',
+              label: 'Target', align: 'center',
+              render: v => v != null ? v.toFixed(4) : '-',
+            },
+            {
+              key: tab === 'monthly' ? `b_${filters.year}` : `k_${filters.year}`,
+              label: 'Realisasi', align: 'center',
+              render: (v, row) => v != null
+                ? <span className={`font-bold ${v > (tab === 'monthly' ? row.b_target : row.k_target) ? 'text-red-500' : 'text-emerald-500'}`}>{v.toFixed(4)}</span>
+                : <span className="text-slate-400 text-xs font-bold">-</span>,
+            },
+          ]}
+          data={data}
+          paginated={false}
+          searchable={false}
+        />
       </div>
     </div>
   )

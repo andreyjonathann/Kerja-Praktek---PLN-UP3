@@ -13,8 +13,9 @@ import PageHeader from '@/components/ui/PageHeader'
 import ActionButton from '@/components/ui/ActionButton'
 import { useFilter } from '@/context/FilterContext'
 import { useAuth } from '@/context/AuthContext'
-import { MONTHS_SHORT } from '@/utils/formatters'
+import { MONTHS_ID } from '@/utils/formatters'
 import api from '@/services/api'
+import MttrDetailModal from '@/components/ui/MttrDetailModal'
 
 export default function MttrPage() {
   const navigate = useNavigate()
@@ -27,6 +28,9 @@ export default function MttrPage() {
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [selectedMonthData, setSelectedMonthData] = useState(null)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -54,62 +58,83 @@ export default function MttrPage() {
   const { summary, trend_bulanan, per_up3 } = data
 
   const chartData = trend_bulanan?.map(t => ({
-    name: MONTHS_SHORT[t.bulan],
+    name: MONTHS_ID[t.bulan],
     'Realisasi (%)': t.realisasi,
     'Target (%)': t.target,
     'Terpenuhi': t.terpenuhi,
-    'Total': t.total
+    'Total': t.total,
+    detail_aset: t.detail_aset
   })) || [];
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       const pointData = payload[0].payload;
+      const detail = pointData.detail_aset || {};
       return (
-        <div className="bg-white p-3 rounded-lg shadow-lg border border-slate-100 text-sm">
-          <p className="font-bold text-slate-800 mb-2">{label}</p>
-          <p className="text-slate-600 mb-1">Target Minimum: <span className="font-semibold text-rose-500">{pointData['Target (%)']?.toFixed(2)}%</span></p>
-          <p className="text-slate-600 mb-1">Realisasi MTTR: <span className="font-bold text-emerald-600">{pointData['Realisasi (%)']?.toFixed(2)}%</span></p>
-          <p className="text-xs text-slate-500 mt-2 border-t pt-2">
-            Terpenuhi: {pointData['Terpenuhi']} <br/>
-            Total Gangguan Siaga 1: {pointData['Total']}
-          </p>
+        <div className="bg-white p-3 rounded-lg shadow-lg border border-slate-100 text-sm min-w-[200px]">
+          <p className="font-bold text-slate-800 mb-2 border-b pb-1">{label}</p>
+          <div className="flex justify-between mb-1">
+            <span className="text-slate-600">Target Minimum:</span>
+            <span className="font-semibold text-rose-500">{pointData['Target (%)']?.toFixed(2)}%</span>
+          </div>
+          <div className="flex justify-between mb-2 pb-2 border-b border-dashed border-slate-200">
+            <span className="text-slate-600">Realisasi MTTR:</span>
+            <span className="font-bold text-emerald-600">{pointData['Realisasi (%)']?.toFixed(2)}%</span>
+          </div>
+          <div className="text-xs text-slate-600 mb-2">
+            <span className="font-semibold">Detail per Aset:</span>
+            {['SUTM', 'SKTM', 'PHBTM', 'TRAFO'].map(aset => {
+              const d = detail[aset];
+              if (!d) return null;
+              return (
+                <div key={aset} className="flex justify-between mt-1 pl-2">
+                  <span>- {aset}:</span>
+                  <span className="font-medium text-slate-700">{d.terpenuhi}/{d.total} ({d.persen}%)</span>
+                </div>
+              );
+            })}
+          </div>
+          <div className="text-xs text-slate-500 border-t pt-2 mt-2 flex justify-between">
+            <span>Total Gangguan:</span>
+            <span className="font-semibold text-slate-700">{pointData['Terpenuhi']} / {pointData['Total']}</span>
+          </div>
         </div>
       );
     }
     return null;
   };
 
+  const StatusBadge = ({ status }) => {
+    if (!status) return null;
+    return (
+      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${status === 'TERCAPAI' ? 'bg-emerald-100 text-emerald-700' : (status === '-' ? 'bg-slate-100 text-slate-500' : 'bg-rose-100 text-rose-700')}`}>
+        {status.replace('_', ' ')}
+      </span>
+    );
+  };
+
   const columns = [
-    { header: 'UP3', accessor: 'up3' },
+    { label: 'Bulan', key: 'bulan', render: (v) => <span className="font-semibold">{MONTHS_ID[v]}</span> },
     { 
-      header: 'Penyulang', 
-      accessor: (row) => <span className="text-slate-500">{row.penyulang}</span> 
+      label: 'MTTR Bulan Ini', 
+      key: 'realisasi_bulan_ini',
+      render: (v, row) => {
+        if (v == null) return '—';
+        const isMeet = row.target != null && v >= row.target;
+        return <span className={`font-semibold ${isMeet ? 'text-emerald-600' : 'text-rose-500'}`}>{v}%</span>;
+      }
     },
     { 
-      header: 'MTTR Bulan Ini', 
-      accessor: (row) => row.realisasi_bulan_ini != null ? <span className="font-semibold">{row.realisasi_bulan_ini}%</span> : '—'
-    },
-    { 
-      header: 'Rata-rata YTD', 
-      accessor: (row) => row.realisasi_ytd != null ? `${row.realisasi_ytd}%` : '—'
-    },
-    { 
-      header: 'Target Minimum', 
-      accessor: (row) => <span className="text-rose-500 font-semibold">{row.target}%</span> 
-    },
-    { 
-      header: 'Pencapaian', 
-      accessor: (row) => row.persen_pencapaian != null ? `${row.persen_pencapaian}%` : '—'
-    },
-    { 
-      header: 'Status', 
-      accessor: (row) => (
-        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${row.status === 'TERCAPAI' ? 'bg-emerald-100 text-emerald-700' : (row.status === '-' ? 'bg-slate-100 text-slate-500' : 'bg-rose-100 text-rose-700')}`}>
-          {row.status.replace('_', ' ')}
-        </span>
-      )
+      label: 'Target Minimum', 
+      key: 'target',
+      render: (v) => v != null ? <span className="font-semibold text-slate-500">{v}%</span> : '—'
     }
   ];
+
+  const handleRowClick = (row) => {
+    setSelectedMonthData(row)
+    setIsModalOpen(true)
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--page-gap, 20px)' }} className="animate-fade-in">
@@ -129,28 +154,28 @@ export default function MttrPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <KpiCard 
-          title="Realisasi Bulan Ini" 
-          value={summary?.realisasi_bulan_ini != null ? (summary.realisasi_bulan_ini).toFixed(2) : '—'} 
+          title="Realisasi YTD" 
+          value={summary?.realisasi_ytd != null ? (summary.realisasi_ytd).toFixed(2) : '—'} 
           unit="%" 
           icon={Activity} 
-          color="emerald" 
+          color={summary?.status === 'TERCAPAI' ? 'green' : (summary?.status === 'BELUM TERCAPAI' ? 'red' : 'blue')} 
           loading={loading}
-          achievement={summary?.pencapaian_bulan_ini}
         />
         <KpiCard 
-          title="Rata-rata YTD" 
-          value={summary?.rata_ytd != null ? (summary.rata_ytd).toFixed(2) : '—'} 
+          title="Target Minimum YTD" 
+          value={summary?.target_persen != null ? (summary.target_persen).toFixed(2) : '—'} 
           unit="%" 
-          icon={TrendingUp} 
-          color="emerald" 
+          icon={Target} 
+          color="blue" 
           loading={loading} 
         />
         <KpiCard 
-          title="Total Kejadian Siaga 1 YTD" 
-          value={summary?.total_kejadian_ytd || 0} 
-          unit="gangguan" 
-          icon={Clock} 
-          color="blue" 
+          title="Status Kinerja" 
+          value={summary?.status ? summary.status.replace('_', ' ') : '—'} 
+          unit="" 
+          icon={TrendingUp} 
+          color={summary?.status === 'TERCAPAI' ? 'green' : (summary?.status === 'BELUM TERCAPAI' ? 'red' : 'blue')} 
+          isInverse={summary?.status === 'TERCAPAI' || summary?.status === 'BELUM TERCAPAI'}
           loading={loading} 
         />
       </div>
@@ -176,7 +201,7 @@ export default function MttrPage() {
           <ActionButton 
             icon={Plus} 
             label="Input Realisasi" 
-            onClick={() => navigate('/jaringan/input-mttr')}
+            onClick={() => navigate('/jaringan/mttr-siaga1/input')}
             colorHex="#00A2B9"
             colorRgb="0, 162, 185"
           />
@@ -204,12 +229,30 @@ export default function MttrPage() {
       </ChartWrapper>
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mt-6">
-        <div className="p-5 border-b border-slate-200">
-          <h2 className="text-lg font-bold text-slate-800">Detail Pencapaian Per UP3</h2>
+        <div className="p-5 border-b border-slate-200 text-center">
+          <h2 className="text-lg font-bold text-slate-800">Perbandingan Antar Bulan (YTD)</h2>
+          <p className="text-sm text-slate-500 mt-1">Rekapitulasi performa {filters.up3 === 'Semua UP3' ? 'semua unit' : filters.up3} per bulan</p>
         </div>
-        <DataTable columns={columns} data={per_up3 || []} loading={loading} />
+        <DataTable 
+          columns={columns} 
+          data={data?.per_bulan || []} 
+          keyField="bulan" 
+          striped={true} 
+          loading={loading} 
+          searchable={false} 
+          paginated={false} 
+          onRowClick={handleRowClick}
+        />
       </div>
 
+      <MttrDetailModal 
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        rowData={selectedMonthData}
+        tahun={filters.year}
+        up3={filters.up3}
+        onSuccess={fetchData}
+      />
     </div>
   )
 }

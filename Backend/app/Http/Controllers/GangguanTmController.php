@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Constants\Up3Constants;
+
 use Illuminate\Http\Request;
 use App\Models\KinerjaJaringan;
 use App\Models\Periode;
@@ -16,9 +18,9 @@ class GangguanTmController extends Controller
     ];
 
     private $indikatorMap = [
-        'lebih_5_mnt' => 'ggn_tm_lebih_5_mnt',
-        'kurang_5_mnt' => 'ggn_tm_kurang_5_mnt',
-        'switching' => 'ggn_switching'
+        'lebih_5_mnt' => 'Gangguan TM > 5 Menit',
+        'kurang_5_mnt' => 'Gangguan TM < 5 Menit',
+        'switching' => 'Gangguan Switching'
     ];
 
     /**
@@ -40,7 +42,36 @@ class GangguanTmController extends Controller
             ->where('indikator', $indikator)
             ->first();
 
-        $targetTahunan = $target ? $target->target : null;
+        $monthlyTargets = [
+            1 => $target ? $target->target_jan : null,
+            2 => $target ? $target->target_feb : null,
+            3 => $target ? $target->target_mar : null,
+            4 => $target ? $target->target_apr : null,
+            5 => $target ? $target->target_mei : null,
+            6 => $target ? $target->target_jun : null,
+            7 => $target ? $target->target_jul : null,
+            8 => $target ? $target->target_agu : null,
+            9 => $target ? $target->target_sep : null,
+            10 => $target ? $target->target_okt : null,
+            11 => $target ? $target->target_nov : null,
+            12 => $target ? $target->target_des : null,
+        ];
+
+        // Target tahunan is sum of all monthly targets if they exist
+        $targetTahunan = null;
+        if ($target) {
+            $sumTgt = 0;
+            $hasAnyTarget = false;
+            foreach ($monthlyTargets as $mTarget) {
+                if ($mTarget !== null) {
+                    $sumTgt += $mTarget;
+                    $hasAnyTarget = true;
+                }
+            }
+            if ($hasAnyTarget) {
+                $targetTahunan = $sumTgt;
+            }
+        }
 
         $periods = Periode::where('tahun', $year)->orderBy('bulan')->get();
         $periodeIds = $periods->pluck('id');
@@ -53,6 +84,8 @@ class GangguanTmController extends Controller
         $cumulativeData = [];
 
         $sumReal = 0;
+        $sumTarget = 0;
+        $anyTargetFilled = false;
 
         foreach ($periods as $idx => $p) {
             $k = $kinerja->firstWhere('periode_id', $p->id);
@@ -62,10 +95,13 @@ class GangguanTmController extends Controller
                 $sumReal += $realisasiBulanIni;
             }
 
-            $targetKumulatif = null;
-            if ($targetTahunan !== null && $targetTahunan > 0) {
-                $targetKumulatif = ($targetTahunan / 12) * $p->bulan;
+            $tgtBulanIni = $monthlyTargets[$p->bulan];
+            if ($tgtBulanIni !== null) {
+                $sumTarget += $tgtBulanIni;
+                $anyTargetFilled = true;
             }
+
+            $targetKumulatif = $anyTargetFilled ? $sumTarget : null;
 
             $data[] = [
                 'id' => $k ? $k->id : null,
@@ -104,6 +140,11 @@ class GangguanTmController extends Controller
             'ggn_tm_kurang_5_mnt' => 'nullable|integer|min:0',
         ]);
 
+        $user = $request->user();
+        if (!$user || !in_array($user->role, ['pic_jaringan', 'admin'])) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
         $periode = \App\Models\Periode::firstOrCreate([
             'bulan' => $request->bulan,
             'tahun' => $request->tahun
@@ -139,6 +180,11 @@ class GangguanTmController extends Controller
             'ggn_tm_kurang_5_mnt' => 'required|integer|min:0',
         ]);
 
+        $user = $request->user();
+        if (!$user || !in_array($user->role, ['pic_jaringan', 'admin'])) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
         $periode = \App\Models\Periode::firstOrCreate([
             'bulan' => $request->bulan,
             'tahun' => $request->tahun
@@ -154,6 +200,44 @@ class GangguanTmController extends Controller
         ]);
     }
 
+    public function updateKurang5Mnt(Request $request, $id)
+    {
+        $request->validate([
+            'ggn_tm_kurang_5_mnt' => 'required|integer|min:0',
+        ]);
+
+        $user = $request->user();
+        if (!$user || !in_array($user->role, ['pic_jaringan', 'admin'])) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $kinerja = KinerjaJaringan::findOrFail($id);
+        $kinerja->ggn_tm_kurang_5_mnt = $request->ggn_tm_kurang_5_mnt;
+        $kinerja->save();
+
+        return response()->json([
+            'message' => 'Data Gangguan TM < 5 Menit berhasil diupdate',
+            'data' => $kinerja
+        ]);
+    }
+
+    public function deleteKurang5Mnt(Request $request, $id)
+    {
+        $user = $request->user();
+        if (!$user || !in_array($user->role, ['pic_jaringan', 'admin'])) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $kinerja = KinerjaJaringan::findOrFail($id);
+        $kinerja->ggn_tm_kurang_5_mnt = 0;
+        $kinerja->save();
+
+        return response()->json([
+            'message' => 'Data Gangguan TM < 5 Menit berhasil dihapus (direset ke 0)',
+            'data' => $kinerja
+        ]);
+    }
+
     public function storeLebih5Mnt(Request $request)
     {
         $request->validate([
@@ -164,6 +248,11 @@ class GangguanTmController extends Controller
             'kejadian.*.penyebab' => 'nullable|string',
             'kejadian.*.penyulang' => 'nullable|string',
         ]);
+
+        $user = $request->user();
+        if (!$user || !in_array($user->role, ['pic_jaringan', 'admin'])) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
 
         $periode = \App\Models\Periode::firstOrCreate([
             'bulan' => $request->bulan,
@@ -208,6 +297,61 @@ class GangguanTmController extends Controller
         ]);
     }
 
+    public function updateLebih5Mnt(Request $request, $tahun, $bulan)
+    {
+        $request->validate([
+            'kejadian' => 'array',
+            'kejadian.*.jumlah' => 'required|integer|min:1',
+            'kejadian.*.penyebab' => 'nullable|string',
+            'kejadian.*.penyulang' => 'nullable|string',
+        ]);
+
+        $user = $request->user();
+        if (!$user || !in_array($user->role, ['pic_jaringan', 'admin'])) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $up3 = $user->up3 ?: 'Semua UP3';
+        
+        // Hapus detail eksisting untuk bulan ini
+        \App\Models\DetailGangguanTmLebih5Mnt::where('bulan', $bulan)
+            ->where('tahun', $tahun)
+            ->where('up3', $up3)
+            ->delete();
+
+        $totalGangguan = 0;
+        
+        $kejadian = $request->input('kejadian', []);
+        
+        if (count($kejadian) > 0) {
+            foreach ($kejadian as $k) {
+                \App\Models\DetailGangguanTmLebih5Mnt::create([
+                    'up3' => $up3,
+                    'bulan' => $bulan,
+                    'tahun' => $tahun,
+                    'jumlah_gangguan' => $k['jumlah'],
+                    'penyebab' => $k['penyebab'] ?? null,
+                    'nama_penyulang' => $k['penyulang'] ?? null,
+                ]);
+                $totalGangguan += $k['jumlah'];
+            }
+        }
+
+        $periode = \App\Models\Periode::firstOrCreate([
+            'bulan' => $bulan,
+            'tahun' => $tahun
+        ]);
+
+        $kinerja = KinerjaJaringan::firstOrNew(['periode_id' => $periode->id]);
+        $kinerja->ggn_tm_lebih_5_mnt = $totalGangguan;
+        $kinerja->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data Gangguan TM > 5 Menit berhasil diupdate'
+        ]);
+    }
+
     public function detailLebih5Mnt(Request $request)
     {
         $tahun = $request->query('tahun');
@@ -215,11 +359,23 @@ class GangguanTmController extends Controller
 
         $query = \App\Models\DetailGangguanTmLebih5Mnt::query();
         
+        $ringkasanId = null;
+
         if ($tahun) {
             $query->where('tahun', $tahun);
         }
         if ($bulan) {
             $query->where('bulan', $bulan);
+        }
+
+        if ($tahun && $bulan) {
+            $periode = \App\Models\Periode::where('tahun', $tahun)->where('bulan', $bulan)->first();
+            if ($periode) {
+                $kinerja = \App\Models\KinerjaJaringan::where('periode_id', $periode->id)->first();
+                if ($kinerja) {
+                    $ringkasanId = $kinerja->id;
+                }
+            }
         }
 
         // Only UP3 logic if user is UP3, or show all for admin/pic
@@ -231,29 +387,67 @@ class GangguanTmController extends Controller
         $details = $query->orderBy('created_at', 'desc')->get();
 
         return response()->json([
+            'id' => $ringkasanId,
             'data' => $details
+        ]);
+    }
+
+    public function insertDetailLebih5Mnt(Request $request)
+    {
+        $request->validate([
+            'bulan' => 'required|integer|min:1|max:12',
+            'tahun' => 'required|integer|min:2000',
+            'jumlah_gangguan' => 'required|integer|min:1',
+            'penyebab' => 'nullable|string',
+            'nama_penyulang' => 'nullable|string',
+        ]);
+
+        $user = $request->user();
+        if (!$user || !in_array($user->role, ['pic_jaringan', 'admin'])) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $up3 = $user->role === 'admin' ? 'Semua UP3' : ($user->up3 ?: 'Semua UP3');
+
+        $detail = \App\Models\DetailGangguanTmLebih5Mnt::create([
+            'up3' => $up3,
+            'bulan' => $request->bulan,
+            'tahun' => $request->tahun,
+            'jumlah_gangguan' => $request->jumlah_gangguan,
+            'penyebab' => $request->penyebab,
+            'nama_penyulang' => $request->nama_penyulang,
+        ]);
+
+        $this->recalculateTotalLebih5Mnt($request->bulan, $request->tahun);
+
+        return response()->json([
+            'message' => 'Detail berhasil ditambahkan',
+            'data' => $detail
         ]);
     }
 
     public function updateDetailLebih5Mnt(Request $request, $id)
     {
         $request->validate([
-            'jumlah' => 'required|integer|min:1',
+            'jumlah_gangguan' => 'required|integer|min:1',
             'penyebab' => 'nullable|string',
-            'penyulang' => 'nullable|string',
+            'nama_penyulang' => 'nullable|string',
         ]);
 
         $detail = \App\Models\DetailGangguanTmLebih5Mnt::findOrFail($id);
         
         // Authorization check
         $user = $request->user();
-        if ($user && $user->role === 'up3' && $user->up3 !== $detail->up3) {
+        if (!$user || !in_array($user->role, ['pic_jaringan', 'admin'])) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
+        if ($user->role === 'pic_jaringan' && $user->up3 !== $detail->up3) {
+            return response()->json(['message' => 'Unauthorized UP3'], 403);
+        }
 
-        $detail->jumlah_gangguan = $request->jumlah;
+        $detail->jumlah_gangguan = $request->jumlah_gangguan;
         $detail->penyebab = $request->penyebab;
-        $detail->nama_penyulang = $request->penyulang;
+        $detail->nama_penyulang = $request->nama_penyulang;
         $detail->save();
 
         // Recalculate total for that month
@@ -271,8 +465,11 @@ class GangguanTmController extends Controller
         
         // Authorization check
         $user = $request->user();
-        if ($user && $user->role === 'up3' && $user->up3 !== $detail->up3) {
+        if (!$user || !in_array($user->role, ['pic_jaringan', 'admin'])) {
             return response()->json(['message' => 'Unauthorized'], 403);
+        }
+        if ($user->role === 'pic_jaringan' && $user->up3 !== $detail->up3) {
+            return response()->json(['message' => 'Unauthorized UP3'], 403);
         }
 
         $bulan = $detail->bulan;
@@ -310,6 +507,10 @@ class GangguanTmController extends Controller
     public function rekap(Request $request)
     {
         $year = $request->query('tahun', date('Y'));
+        
+        $bulanSekarang = date('n');
+        if ($year < date('Y')) $bulanSekarang = 12;
+        if ($year > date('Y')) $bulanSekarang = 0;
 
         $periods = Periode::where('tahun', $year)->orderBy('bulan')->get();
         $periodeIds = $periods->pluck('id');
@@ -326,25 +527,78 @@ class GangguanTmController extends Controller
         foreach ($this->tipeMap as $tipe => $dbField) {
             $indikator = $this->indikatorMap[$tipe];
             $targetObj = $targets->get($indikator);
-            $targetTahunan = $targetObj ? $targetObj->target : null;
-
+            
             $monthlyData = [];
             $sumReal = 0;
+            $latestMonth = 0;
 
             foreach ($periods as $p) {
                 $k = $kinerja->firstWhere('periode_id', $p->id);
                 $realisasi = $k ? $k->{$dbField} : null;
-                $monthlyData[$p->bulan] = $realisasi;
+                $monthlyData[$p->bulan] = [
+                    'id' => $k ? $k->id : null,
+                    'realisasi' => $realisasi
+                ];
                 
                 if ($realisasi !== null) {
                     $sumReal += $realisasi;
+                    $latestMonth = max($latestMonth, $p->bulan);
                 }
+            }
+
+            // Calculate sum of monthly targets
+            $targetTahunan = null;
+            $targetYtd = null;
+            if ($targetObj) {
+                $mTargets = [
+                    $targetObj->target_jan, $targetObj->target_feb, $targetObj->target_mar,
+                    $targetObj->target_apr, $targetObj->target_mei, $targetObj->target_jun,
+                    $targetObj->target_jul, $targetObj->target_agu, $targetObj->target_sep,
+                    $targetObj->target_okt, $targetObj->target_nov, $targetObj->target_des
+                ];
+                $sumTgt = 0;
+                $sumYtd = 0;
+                $hasAny = false;
+                foreach ($mTargets as $idx => $mt) {
+                    if ($mt !== null) { 
+                        $sumTgt += $mt; 
+                        $hasAny = true; 
+                        if (($idx + 1) <= $latestMonth) {
+                            $sumYtd += $mt;
+                        }
+                    }
+                }
+                if ($hasAny) {
+                    $targetTahunan = $sumTgt;
+                    $targetYtd = $latestMonth > 0 ? $sumYtd : null;
+                }
+            }
+
+            $targetBulanan = [];
+            for ($i=1; $i<=12; $i++) {
+                $targetBulanan[$i] = null;
+            }
+            if ($targetObj) {
+                $targetBulanan[1] = $targetObj->target_jan;
+                $targetBulanan[2] = $targetObj->target_feb;
+                $targetBulanan[3] = $targetObj->target_mar;
+                $targetBulanan[4] = $targetObj->target_apr;
+                $targetBulanan[5] = $targetObj->target_mei;
+                $targetBulanan[6] = $targetObj->target_jun;
+                $targetBulanan[7] = $targetObj->target_jul;
+                $targetBulanan[8] = $targetObj->target_agu;
+                $targetBulanan[9] = $targetObj->target_sep;
+                $targetBulanan[10] = $targetObj->target_okt;
+                $targetBulanan[11] = $targetObj->target_nov;
+                $targetBulanan[12] = $targetObj->target_des;
             }
 
             $rekapData[$tipe] = [
                 'target_tahunan' => $targetTahunan,
+                'target_ytd' => $targetYtd,
                 'realisasi_ytd' => $sumReal,
                 'monthly' => $monthlyData,
+                'target_bulanan' => $targetBulanan,
             ];
         }
 
@@ -357,6 +611,9 @@ class GangguanTmController extends Controller
     public function semuaUp3(Request $request)
     {
         $year = $request->query('tahun', date('Y'));
+        $bulanSekarang = date('n');
+        if ($year < date('Y')) $bulanSekarang = 12;
+        if ($year > date('Y')) $bulanSekarang = 0;
         
         $periods = Periode::where('tahun', $year)->get();
         $kinerja = KinerjaJaringan::whereIn('periode_id', $periods->pluck('id'))->get();
@@ -371,26 +628,56 @@ class GangguanTmController extends Controller
         foreach ($this->tipeMap as $tipe => $dbField) {
             $indikator = $this->indikatorMap[$tipe];
             $targetObj = $targets->get($indikator);
-            $targetTahunan = $targetObj ? $targetObj->target : null;
-
+            
             $sumReal = 0;
+            $latestMonth = 0;
             foreach ($kinerja as $k) {
                 if ($k->{$dbField} !== null) {
                     $sumReal += $k->{$dbField};
+                    $latestMonth = max($latestMonth, $k->periode->bulan);
                 }
             }
 
+            // Calculate sum of monthly targets
+            $targetTahunan = null;
+            $targetYtd = null;
+            if ($targetObj) {
+                $mTargets = [
+                    $targetObj->target_jan, $targetObj->target_feb, $targetObj->target_mar,
+                    $targetObj->target_apr, $targetObj->target_mei, $targetObj->target_jun,
+                    $targetObj->target_jul, $targetObj->target_agu, $targetObj->target_sep,
+                    $targetObj->target_okt, $targetObj->target_nov, $targetObj->target_des
+                ];
+                $sumTgt = 0;
+                $sumYtd = 0;
+                $hasAny = false;
+                foreach ($mTargets as $idx => $mt) {
+                    if ($mt !== null) { 
+                        $sumTgt += $mt; 
+                        $hasAny = true; 
+                        if (($idx + 1) <= $latestMonth) {
+                            $sumYtd += $mt;
+                        }
+                    }
+                }
+                if ($hasAny) {
+                    $targetTahunan = $sumTgt;
+                    $targetYtd = $latestMonth > 0 ? $sumYtd : null;
+                }
+            }
+
+
             $persen = null;
             $status = '-';
-            if ($targetTahunan !== null && $targetTahunan > 0) {
-                $persen = ($sumReal / $targetTahunan) * 100;
-                $status = $sumReal > $targetTahunan ? 'TERLAMPAUI' : 'AMAN';
+            if ($targetYtd !== null && $targetYtd > 0) {
+                $persen = ($targetYtd / max(0.001, $sumReal)) * 100;
+                $status = $sumReal > $targetYtd ? 'TERLAMPAUI' : 'AMAN';
             }
 
             $data[$tipe] = [
                 [
-                    'up3' => 'UP3 Kebon Jeruk',
-                    'target' => $targetTahunan,
+                    'up3' => Up3Constants::DEFAULT_UP3,
+                    'target' => $targetYtd,
                     'realisasi_ytd' => $sumReal,
                     'pencapaian' => $persen,
                     'status' => $status,

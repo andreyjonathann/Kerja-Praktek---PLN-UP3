@@ -1,54 +1,77 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { DEFAULT_UP3 } from '@/constants/up3'
+import { useNavigate, useLocation } from 'react-router-dom'
 import api from '@/services/api'
+import Swal from 'sweetalert2'
 import { useFilter } from '@/context/FilterContext'
 import { useAuth } from '@/context/AuthContext'
-import { Activity, ArrowLeft, Target, AlertTriangle, Save, Loader2, Info, Calendar, FileText } from 'lucide-react'
+import { Activity, ArrowLeft, Target, AlertTriangle, Save, Loader2, Info, Calendar, FileText, Trash2, CheckCircle } from 'lucide-react'
 import TargetWarning from '@/components/ui/TargetWarning'
 
 const MONTHS_FULL = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
-export default function InputGangguanSwitchingPage() {
+const TARGET_KEYS = [
+  'target_jan', 'target_feb', 'target_mar', 'target_apr', 
+  'target_mei', 'target_jun', 'target_jul', 'target_agu', 
+  'target_sep', 'target_okt', 'target_nov', 'target_des'
+];
+const getTargetFieldKey = (bulanStr) => {
+  if (!bulanStr) return null;
+  const index = parseInt(bulanStr, 10) - 1;
+  return TARGET_KEYS[index] || null;
+};
+export default function InputGangguanSwitchingPage({ isInline = false, inlineMonth = null, onSuccess, onCancel }) {
   const navigate = useNavigate()
+  const location = useLocation()
   const { filters } = useFilter()
   const { user } = useAuth()
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   
   // States
-  const up3 = user?.up3 || 'UP3 Kebon Jeruk';
+  const up3 = user?.up3 || DEFAULT_UP3;
   const year = filters.year || new Date().getFullYear();
   const currentMonthIndex = new Date().getMonth();
+  const initialMonth = isInline ? inlineMonth : (location.state?.initialMonth || '');
   
   const [target, setTarget] = useState(null)
   
   const [switchingForm, setSwitchingForm] = useState({
     tahun: '',
-    bulan: '',
+    bulan: initialMonth,
     details: [],
     existingId: null
   })
   
   const [notification, setNotification] = useState(null)
 
+  const showNotification = (type, message) => {
+    setNotification({ type, message });
+    setTimeout(() => setNotification(null), 3000);
+  };
+
   const fetchTargetAndData = useCallback(async () => {
+    if (switchingForm.tahun.toString().length !== 4 || !switchingForm.bulan) {
+      setTarget(null);
+      return;
+    }
     setLoading(true);
     try {
       // 1. Fetch Target
-      const resTarget = await api.get(`/v1/gangguan-switching/targets?tahun=${year}&up3=${up3}`);
-      if (resTarget.data?.data && resTarget.data.data.length > 0) {
-        setTarget(resTarget.data.data[0]);
+      const resTarget = await api.get(`/target/jaringan/${encodeURIComponent('Gangguan Switching')}?tahun=${switchingForm.tahun}`);
+      if (resTarget.data) {
+        setTarget(resTarget.data);
       } else {
         setTarget(null);
       }
 
       // 2. Fetch Existing Data for selected month
-      const resSw = await api.get(`/v1/gangguan-switching?tahun=${year}&up3=${up3}`);
+      const resSw = await api.get(`/v1/gangguan-switching?tahun=${switchingForm.tahun}&up3=${up3}`);
       
       const swData = resSw.data?.data || [];
       
       // Look for switching record for current selected month
-      const currentSw = swData.find(item => item.bulan === Number(switchingForm.bulan));
+      const currentSw = swData.find(item => Number(item.bulan) === Number(switchingForm.bulan));
       if (currentSw) {
         setSwitchingForm(prev => ({ ...prev, details: currentSw.details || [], existingId: currentSw.id }));
       } else {
@@ -61,16 +84,11 @@ export default function InputGangguanSwitchingPage() {
     } finally {
       setLoading(false);
     }
-  }, [year, up3, switchingForm.bulan]);
+  }, [switchingForm.tahun, switchingForm.bulan, up3]);
 
   useEffect(() => {
     fetchTargetAndData();
   }, [fetchTargetAndData]);
-
-  const showNotification = (type, message) => {
-    setNotification({ type, message });
-    setTimeout(() => setNotification(null), 3000);
-  };
 
   const handleSwitchingChange = (e) => {
     const { name, value } = e.target;
@@ -110,15 +128,27 @@ export default function InputGangguanSwitchingPage() {
         details: switchingForm.details
       };
       
+      let res;
       if (switchingForm.existingId) {
-        await api.put(`/v1/gangguan-switching/${switchingForm.existingId}`, payload);
+        showNotification('error', 'Data sudah ada! Tidak bisa mengedit dari halaman Tambah.');
+        setSaving(false);
+        return;
       } else {
-        await api.post(`/v1/gangguan-switching`, payload);
+        res = await api.post(`/v1/gangguan-switching`, payload);
       }
-      showNotification('success', 'Data Switching berhasil disimpan.');
-      setTimeout(() => {
-        navigate('/jaringan/gangguan-switching');
-      }, 1000);
+      if (res.data.success) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Berhasil!',
+          text: 'Data kejadian berhasil diupdate.',
+          timer: 1500,
+          showConfirmButton: false
+        })
+        setTimeout(() => {
+          if (isInline && onSuccess) onSuccess();
+          else navigate('/jaringan/gangguan-switching');
+        }, 1500)
+      }
     } catch (err) {
       console.error(err);
       showNotification('error', 'Gagal menyimpan data.');
@@ -127,222 +157,324 @@ export default function InputGangguanSwitchingPage() {
     }
   };
 
-  const isDuplicate = !!switchingForm.existingId;
+  const handleDeleteParent = async () => {
+    if (!switchingForm.existingId) return;
+    
+    const confirm = await Swal.fire({
+      title: 'Hapus Data Bulan Ini?',
+      text: `Semua data kejadian Switching bulan ${MONTHS_FULL[Number(switchingForm.bulan) - 1]} ${switchingForm.tahun} akan dihapus.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Ya, Hapus!',
+      cancelButtonText: 'Batal'
+    });
+
+    if (confirm.isConfirmed) {
+      try {
+        setSaving(true);
+        const res = await api.delete(`/v1/gangguan-switching/${switchingForm.existingId}`);
+        if (res.data.success) {
+          Swal.fire({
+            icon: 'success',
+            title: 'Terhapus!',
+            text: 'Data berhasil dihapus.',
+            timer: 1500,
+            showConfirmButton: false
+          });
+          setTimeout(() => {
+            if (isInline && onSuccess) onSuccess();
+            else navigate('/jaringan/gangguan-switching');
+          }, 1500);
+        }
+      } catch (err) {
+        console.error("Gagal menghapus:", err);
+        Swal.fire({
+          icon: 'error',
+          title: 'Gagal',
+          text: err.response?.data?.message || 'Terjadi kesalahan saat menghapus data'
+        });
+      } finally {
+        setSaving(false);
+      }
+    }
+  };
+
+  const isDuplicate = !!switchingForm.existingId && switchingForm.details.length > 0;
 
   return (
-    <div className="min-h-screen bg-slate-50/50 flex flex-col animate-fade-in">
-      {/* HEADER BAR (Identik dgn referensi SAIDI) */}
-      <div className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
-        <div className="w-full px-[32px] py-4">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-             {/* Left Header */}
-             <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-[#00A2B9] rounded-2xl flex items-center justify-center text-white shadow-lg shadow-teal-500/20">
-                  <Activity size={24} />
-                </div>
-                <div>
-                  <h1 className="text-xl font-extrabold text-slate-800 tracking-tight">Tambah Gangguan Switching</h1>
-                </div>
-             </div>
+    <div className={isInline ? "animate-fade-in" : "min-h-screen bg-slate-50 flex flex-col animate-fade-in py-12"}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 640, margin: '0 auto', width: '100%', padding: isInline ? '0' : '0 20px' }}>
+        
+        {/* HEADER */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button
+            type="button"
+            onClick={() => {
+              if (isInline && onCancel) onCancel();
+              else navigate(-1);
+            }}
+            title="Kembali"
+            style={{
+              width: 36, height: 36, borderRadius: 10,
+              border: '1px solid var(--border, #e2e8f0)',
+              background: 'var(--bg-card, #ffffff)', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'var(--text-secondary, #64748b)', flexShrink: 0,
+            }}
+          >
+            <ArrowLeft size={16} />
+          </button>
 
-             {/* Right Actions */}
-             <div className="flex items-center gap-3">
-               <div style={{
-                 display: 'inline-flex',
-                 background: 'transparent',
-                 padding: 4,
-                 borderRadius: 12,
-                 border: '1px solid #e2e8f0',
-                 cursor: 'pointer'
-               }}>
-                 <button 
-                    type="button"
-                    onClick={() => navigate('/jaringan/gangguan-switching')}
-                    style={{
-                      padding: '6px 16px',
-                      borderRadius: 9,
-                      fontSize: '0.85rem',
-                      fontWeight: 700,
-                      transition: 'all 0.2s ease',
-                      border: 'none',
-                      cursor: 'pointer',
-                      background: 'transparent',
-                      color: '#64748b',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px'
-                    }}
-                    onMouseEnter={e => {
-                         e.currentTarget.style.background = '#f1f5f9';
-                         e.currentTarget.style.color = '#334155';
-                    }}
-                    onMouseLeave={e => {
-                         e.currentTarget.style.background = 'transparent';
-                         e.currentTarget.style.color = '#64748b';
-                    }}
-                 >
-                    Batal
-                 </button>
-               </div>
-               <div style={{
-                 display: 'inline-flex',
-                 background: (saving || isDuplicate) ? '#93c5fd' : '#00A2B9',
-                 padding: 4,
-                 borderRadius: 12,
-                 border: 'none',
-                 cursor: (saving || isDuplicate) ? 'not-allowed' : 'pointer',
-                 opacity: (saving || isDuplicate) ? 0.6 : 1
-               }}>
-                 <button 
-                    type="button"
-                    onClick={submitSwitching}
-                    disabled={saving || isDuplicate}
-                    style={{
-                      padding: '6px 16px',
-                      borderRadius: 9,
-                      fontSize: '0.85rem',
-                      fontWeight: 700,
-                      transition: 'all 0.2s ease',
-                      border: 'none',
-                      cursor: (saving || isDuplicate) ? 'not-allowed' : 'pointer',
-                      background: (saving || isDuplicate) ? '#93c5fd' : '#00A2B9',
-                      color: '#ffffff',
-                      boxShadow: (saving || isDuplicate) ? 'none' : '0 4px 12px rgba(0, 162, 185, 0.3)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px'
-                    }}
-                 >
-                    {saving ? <div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" /> : <Save size={16} />}
-                    Simpan Realisasi
-                 </button>
-               </div>
-            </div>
+          <div style={{
+            width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+            background: `linear-gradient(135deg, #00A2B922, #00A2B90a)`,
+            border: `1px solid #00A2B930`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Activity size={17} style={{ color: '#00A2B9' }} />
+          </div>
+
+          <div>
+            <h1 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-primary, #1e293b)' }}>
+              Tambah Gangguan Switching — {switchingForm.bulan ? MONTHS_FULL[Number(switchingForm.bulan) - 1] : ''} {switchingForm.tahun}
+            </h1>
+            <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-muted, #94a3b8)', fontWeight: 500 }}>
+              Satuan: Kali
+            </p>
           </div>
         </div>
-      </div>
 
-      <div className="w-full px-[32px] py-4 md:py-8">
-        <div className="flex flex-col gap-6 pt-[28px] mb-[36px]">
-          
-          {notification && (
-            <div className={`px-5 py-4 border rounded-xl flex items-center gap-3 shadow-sm animate-fade-in ${notification.type === 'error' ? 'bg-red-50 border-red-200 text-red-700' : 'bg-emerald-50 border-emerald-200 text-emerald-700'}`}>
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${notification.type === 'error' ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}`}>
-                    <Activity size={20} />
-                </div>
-                <div>
-                    <h4 className="text-sm font-bold">{notification.type === 'error' ? 'Gagal' : 'Berhasil'}</h4>
-                    <p className="text-xs font-medium">{notification.message}</p>
-                </div>
+        {/* NOTIFICATION */}
+        {notification && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10,
+            padding: '11px 16px', borderRadius: 10,
+            background: notification.type === 'error' ? '#fef2f2' : '#f0fdf4',
+            border: `1px solid ${notification.type === 'error' ? '#fecaca' : '#bbf7d0'}`,
+            color: notification.type === 'error' ? '#dc2626' : '#16a34a',
+            fontWeight: 600, fontSize: '0.86rem',
+          }}>
+            {notification.type === 'error' ? <AlertTriangle size={16} /> : <CheckCircle size={16} />}
+            {notification.message}
+          </div>
+        )}
+
+        <TargetWarning 
+          up3={up3.replace(/^UP3\s+/i, '')} 
+          year={switchingForm.tahun || year} 
+          monthName={switchingForm.bulan ? MONTHS_FULL[Number(switchingForm.bulan) - 1] : null} 
+          isVisible={!!switchingForm.tahun && !!switchingForm.bulan && (target?.[getTargetFieldKey(switchingForm.bulan)] === null || target?.[getTargetFieldKey(switchingForm.bulan)] === undefined)}
+        />
+
+        {isDuplicate && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10,
+            padding: '11px 16px', borderRadius: 10,
+            background: '#fef2f2', border: `1px solid #fecaca`,
+            color: '#dc2626', fontWeight: 600, fontSize: '0.86rem',
+          }}>
+            <AlertTriangle size={16} />
+            Data untuk periode ini sudah ada. Anda tidak dapat mengubah data melalui halaman ini. Silakan gunakan fitur Edit.
+          </div>
+        )}
+
+        <div style={{ position: 'relative' }}>
+          {loading && (
+            <div style={{
+              position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+              background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(2px)',
+              zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              color: '#00A2B9', borderRadius: 12, gap: 8
+            }}>
+              <Loader2 size={32} style={{ animation: 'spin 1s linear infinite' }} />
+              <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>Memuat data...</span>
             </div>
           )}
-
-          <div className="mb-8 py-6">
-            <h3 className="text-xs font-bold text-slate-500 mb-3 uppercase tracking-wider mt-6">Pilih Periode</h3>
-            <div className="flex gap-4">
-               <div className="relative w-1/2">
-                  <select
-                    name="bulan"
-                    value={switchingForm.bulan}
-                    onChange={handleSwitchingChange}
-                    className="w-full px-4 py-2 pr-12 bg-white border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-sm cursor-pointer appearance-none shadow-sm text-gray-400 font-normal"
-                  >
-                    <option value="" disabled className="text-gray-400">Bulan</option>
-                    {MONTHS_FULL.map((m, i) => (
-                      <option key={i+1} value={i+1}>{m}</option>
-                    ))}
-                  </select>
-               </div>
-               
-               <div className="relative w-1/2">
-                  <input
-                    type="number"
-                    name="tahun"
-                    value={switchingForm.tahun}
-                    onChange={handleSwitchingChange}
-                    placeholder="Tahun"
-                    className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-sm placeholder:text-gray-400 text-gray-400 shadow-sm font-normal"
-                  />
-               </div>
+          <form style={{ display: 'flex', flexDirection: 'column', gap: 14 }} onSubmit={submitSwitching}>
+            
+            {/* TOTAL PREVIEW */}
+            <div style={{
+              padding: '13px 18px', borderRadius: 12,
+              background: `linear-gradient(135deg, #00A2B912, #00A2B905)`,
+              border: `1px solid #00A2B928`,
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            }}>
+              <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted, #64748b)' }}>
+                Total Gangguan (preview)
+              </span>
+              <span style={{ fontSize: '1.18rem', fontWeight: 800, color: '#00A2B9' }}>
+                {switchingForm.details.length}
+                <span style={{ fontSize: '0.73rem', color: 'var(--text-muted, #94a3b8)', marginLeft: 6, fontWeight: 600 }}>
+                  Kali
+                </span>
+              </span>
             </div>
-            {isDuplicate && (
-              <p className="text-red-500 text-sm mt-3 font-semibold">
-                Data untuk periode ini sudah diinput. Silakan pilih bulan/tahun lain.
-              </p>
-            )}
-          </div>
 
-          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden mb-8 p-6">
-               <h3 className="text-lg font-bold text-slate-800 mb-4">Daftar Alat yang Mengalami Gangguan</h3>
+            {/* CARD */}
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+              <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
+                    <Activity size={16} />
+                  </div>
+                  <h3 className="font-bold text-slate-800 text-sm tracking-wide">RINCIAN KEJADIAN</h3>
+                </div>
+              </div>
+              
+              <div className="p-5 flex flex-col gap-4">
+                {/* PILIH PERIODE */}
+                <div className="flex gap-4">
+                  <div className="w-1/2">
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#64748b', marginBottom: 5 }}>Bulan</label>
+                    <select
+                      name="bulan"
+                      value={switchingForm.bulan}
+                      onChange={handleSwitchingChange}
+                      required
+                      style={{
+                        width: '100%', padding: '10px 14px', borderRadius: 10,
+                        border: '1px solid #e2e8f0', background: '#f8fafc',
+                        fontSize: '0.9rem', color: '#334155', outline: 'none',
+                      }}
+                    >
+                      <option value="">Pilih Bulan</option>
+                      {MONTHS_FULL.map((m, i) => (
+                        <option key={i} value={i + 1}>{m}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="w-1/2">
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#64748b', marginBottom: 5 }}>Tahun</label>
+                    <input
+                      type="number"
+                      name="tahun"
+                      value={switchingForm.tahun}
+                      onChange={handleSwitchingChange}
+                      required
+                      style={{
+                        width: '100%', padding: '10px 14px', borderRadius: 10,
+                        border: '1px solid #e2e8f0', background: '#f8fafc',
+                        fontSize: '0.9rem', color: '#334155', outline: 'none',
+                      }}
+                      placeholder="Tahun"
+                    />
+                  </div>
+                </div>
+              </div>
 
-               <div className="flex flex-col mb-4">
-                 <p className="text-sm text-slate-500 mb-4">Total Gangguan: <span className="font-bold text-blue-600">{switchingForm.details.length} Kali</span></p>
-               </div>
-
-               <div className="space-y-4">
-                   {switchingForm.details.map((detail, index) => (
-                      <div key={index} className="p-4 border border-slate-200 rounded-xl bg-white shadow-sm flex items-start gap-4">
-                         <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
-                           <div>
-                             <label className="block text-sm font-bold text-slate-600 mb-2">Merek</label>
-                             <input
-                               type="text"
-                               placeholder="Cth: Schneider"
-                               value={detail.merek}
-                               onChange={(e) => handleDetailChange(index, 'merek', e.target.value)}
-                               className="w-full px-4 py-3 border border-slate-200 rounded-xl outline-none focus:border-blue-500 text-sm"
-                             />
-                           </div>
-                           <div>
-                             <label className="block text-sm font-bold text-slate-600 mb-2">Tahun Alat</label>
-                             <input
-                               type="text"
-                               placeholder="Cth: 2015"
-                               value={detail.tahun_alat}
-                               onChange={(e) => handleDetailChange(index, 'tahun_alat', e.target.value)}
-                               className="w-full px-4 py-3 border border-slate-200 rounded-xl outline-none focus:border-blue-500 text-sm"
-                             />
-                           </div>
-                           <div>
-                             <label className="block text-sm font-bold text-slate-600 mb-2">Nomor Seri</label>
-                             <input
-                               type="text"
-                               placeholder="Cth: SN-123456"
-                               value={detail.nomor_seri}
-                               onChange={(e) => handleDetailChange(index, 'nomor_seri', e.target.value)}
-                               className="w-full px-4 py-3 border border-slate-200 rounded-xl outline-none focus:border-blue-500 text-sm"
-                             />
-                           </div>
-                         </div>
-                         <button
-                           type="button"
-                           onClick={() => removeDetail(index)}
-                           className="p-3 text-slate-400 hover:bg-red-50 hover:text-red-500 rounded-xl transition-colors mt-8"
-                           title="Hapus baris ini"
-                         >
-                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                         </button>
+              {/* LIST ALAT */}
+              <div className="bg-slate-50/50 p-5 border-t border-slate-100">
+                <div className="space-y-4">
+                  {switchingForm.details.map((detail, index) => (
+                    <div key={index} className="p-4 border border-slate-200 rounded-xl bg-white flex items-start gap-4 shadow-sm">
+                      <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', marginBottom: 4 }}>Merek</label>
+                          <input
+                            type="text"
+                            placeholder="Cth: Schneider"
+                            value={detail.merek}
+                            onChange={(e) => handleDetailChange(index, 'merek', e.target.value)}
+                            style={{
+                              width: '100%', padding: '8px 10px', borderRadius: 8,
+                              border: '1px solid #e2e8f0', background: '#fff', color: '#334155',
+                              fontSize: '0.85rem', fontWeight: 500, outline: 'none'
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', marginBottom: 4 }}>Tahun Alat</label>
+                          <input
+                            type="text"
+                            placeholder="Cth: 2015"
+                            value={detail.tahun_alat}
+                            onChange={(e) => handleDetailChange(index, 'tahun_alat', e.target.value)}
+                            style={{
+                              width: '100%', padding: '8px 10px', borderRadius: 8,
+                              border: '1px solid #e2e8f0', background: '#fff', color: '#334155',
+                              fontSize: '0.85rem', fontWeight: 500, outline: 'none'
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', marginBottom: 4 }}>Nomor Seri</label>
+                          <input
+                            type="text"
+                            placeholder="Cth: SN-123456"
+                            value={detail.nomor_seri}
+                            onChange={(e) => handleDetailChange(index, 'nomor_seri', e.target.value)}
+                            style={{
+                              width: '100%', padding: '8px 10px', borderRadius: 8,
+                              border: '1px solid #e2e8f0', background: '#fff', color: '#334155',
+                              fontSize: '0.85rem', fontWeight: 500, outline: 'none'
+                            }}
+                          />
+                        </div>
                       </div>
-                   ))}
+                      <button
+                        type="button"
+                        onClick={() => removeDetail(index)}
+                        style={{
+                          marginTop: 20, padding: 8, color: '#94a3b8',
+                          background: 'transparent', border: 'none', cursor: 'pointer',
+                          transition: 'all 0.2s'
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.borderRadius = '8px' }}
+                        onMouseLeave={e => { e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.background = 'transparent' }}
+                        title="Hapus baris ini"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))}
 
-                   {switchingForm.details.length === 0 && (
-                     <div className="text-center py-10 bg-slate-50 border border-slate-200 border-dashed rounded-xl">
-                       <p className="text-base font-medium text-slate-500 mb-2">Belum ada data gangguan.</p>
-                       <p className="text-sm text-slate-400">Klik "Tambah Data" untuk menginput merek, tahun, dan nomor seri alat.</p>
-                     </div>
-                   )}
-                   
-                   <button
-                     type="button"
-                     onClick={addDetail}
-                     className="w-full py-4 mt-2 bg-blue-50 text-blue-600 rounded-xl text-sm font-bold hover:bg-blue-100 transition-colors flex items-center justify-center gap-2 border border-blue-100 shadow-sm"
-                   >
-                     + Tambah Kejadian
-                   </button>
-                 </div>
-               </div>
+                  {switchingForm.details.length === 0 && (
+                    <div className="text-center py-8 border border-slate-200 border-dashed rounded-xl">
+                      <p className="text-sm font-medium text-slate-500">Belum ada data gangguan.</p>
+                    </div>
+                  )}
+                  
+                  <button
+                    type="button"
+                    onClick={addDetail}
+                    style={{
+                      width: '100%', padding: '10px 0', marginTop: 4,
+                      background: '#f0f9ff', color: '#0284c7', border: '1px dashed #bae6fd',
+                      borderRadius: 10, fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#e0f2fe'}
+                    onMouseLeave={e => e.currentTarget.style.background = '#f0f9ff'}
+                  >
+                    + Tambah Kejadian
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
+
+            <div style={{ display: 'flex', gap: 12, marginTop: 10 }}>
+              <button
+                type="submit"
+                disabled={saving || loading || isDuplicate}
+                style={{
+                  width: '100%', padding: '14px', borderRadius: 12,
+                  background: (saving || loading || isDuplicate) ? '#93c5fd' : '#00A2B9', color: '#fff',
+                  fontSize: '0.95rem', fontWeight: 700, border: 'none', cursor: (saving || loading || isDuplicate) ? 'not-allowed' : 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  boxShadow: (saving || loading || isDuplicate) ? 'none' : '0 4px 14px rgba(0, 162, 185, 0.3)',
+                  transition: 'all 0.2s',
+                }}
+              >
+                {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+                {saving ? 'Menyimpan...' : (isDuplicate ? 'Data Sudah Ada' : 'Simpan Data')}
+              </button>
+            </div>
+            
+          </form>
         </div>
-  )
+      </div>
+    </div>
+  );
 }

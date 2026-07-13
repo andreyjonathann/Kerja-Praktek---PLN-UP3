@@ -45,9 +45,23 @@ export default function KelolaTargetPage() {
 
   // Grouping targets by Bidang
   const groupedTargets = targets.reduce((acc, curr) => {
+    // Sembunyikan sub-indikator dari indikator gabungan agar tidak muncul dobel di tabel master
+    if (curr.indikator === 'Gangguan TM > 5 Menit' || curr.indikator === 'Gangguan TM < 5 Menit' || curr.indikator === 'Gangguan Trafo' || curr.indikator === 'MVOD - SLA JTM' || curr.indikator === 'MVOD - SLA Gardu Distribusi') {
+      return acc;
+    }
     const b = (curr.bidang || '').toUpperCase();
     if (!acc[b]) acc[b] = [];
-    acc[b].push(curr);
+    
+    // Override label for combined indicators
+    let displayItem = { ...curr };
+    if (displayItem.indikator === 'Gangguan Switching') {
+      displayItem.indikator = 'Gangguan Switching & Trafo';
+    }
+    if (displayItem.indikator === 'MVOD - SLA Gardu Induk') {
+      displayItem.indikator = 'MVOD';
+    }
+    
+    acc[b].push(displayItem);
     return acc;
   }, {});
 

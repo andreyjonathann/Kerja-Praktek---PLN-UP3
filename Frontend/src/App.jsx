@@ -23,10 +23,13 @@ import GangguanTmPage from '@/pages/GangguanTm'
 import InputGangguanTmPage from '@/pages/InputGangguanTm'
 import InputGangguanTmKurang5Page from '@/pages/InputGangguanTmKurang5'
 import InputGangguanTmLebih5Page from '@/pages/InputGangguanTmLebih5'
-import DetailGangguanTmLebih5Page from '@/pages/DetailGangguanTmLebih5'
+import EditGangguanTmLebih5Page from '@/pages/EditGangguanTmLebih5'
+
 import GangguanSwitchingPage from '@/pages/GangguanSwitching'
 import InputGangguanSwitchingPage from '@/pages/InputGangguanSwitching'
 import InputGangguanTrafoPage from '@/pages/InputGangguanTrafo'
+import EditGangguanSwitchingPage from '@/pages/EditGangguanSwitching'
+import EditGangguanTrafoPage from '@/pages/EditGangguanTrafo'
 import TargetGangguanSwitchingPage from '@/pages/TargetGangguanSwitching'
 import RptGangguanPage from '@/pages/RptGangguan'
 import InputRptGangguanPage from '@/pages/InputRptGangguan'
@@ -45,6 +48,16 @@ import PenghapusanPrrPage from '@/pages/Niaga/PenghapusanPrr'
 import InputKinerjaPenghapusanPage from '@/pages/Niaga/InputKinerjaPenghapusan'
 import TindakLanjutLbkbPage from '@/pages/Niaga/TindakLanjutLbkb'
 import InputKinerjaLbkbPage from '@/pages/Niaga/InputKinerjaLbkb'
+
+import GantiMeterPage from '@/pages/GantiMeter'
+import InputKinerjaGantiMeterPage from '@/pages/InputKinerjaGantiMeter'
+import EditKinerjaGantiMeterPage from '@/pages/EditKinerjaGantiMeter'
+import SusutDistribusiPage from '@/pages/SusutDistribusiPage'
+import InputKinerjaSusutDistribusiPage from '@/pages/InputKinerjaSusutDistribusi'
+import EditKinerjaSusutDistribusiPage from '@/pages/EditKinerjaSusutDistribusi'
+import P2tlPage from '@/pages/P2tl'
+import InputKinerjaP2tlPage from '@/pages/InputKinerjaP2tl'
+import EditKinerjaP2tlPage from '@/pages/EditKinerjaP2tl'
 
 // Pemasaran Pages (legacy)
 import JumlahPelangganPage from '@/pages/Pemasaran/JumlahPelanggan'
@@ -286,11 +299,12 @@ export default function App() {
                 </InputProtectedRoute>
               } />
 
-              <Route path="/jaringan/gangguan-tm/lebih-5-menit/detail/:tahun/:bulan" element={
+              <Route path="/jaringan/gangguan-tm/edit-lebih-5-menit" element={
                 <ProtectedRoute>
-                  <DetailGangguanTmLebih5Page />
+                  <EditGangguanTmLebih5Page />
                 </ProtectedRoute>
               } />
+
 
               <Route path="/jaringan/gangguan-switching" element={
                 <ProtectedRoute>
@@ -304,10 +318,22 @@ export default function App() {
                 </InputProtectedRoute>
               } />
 
+              <Route path="/jaringan/edit-gangguan-switching" element={
+                <ProtectedRoute>
+                  <EditGangguanSwitchingPage />
+                </ProtectedRoute>
+              } />
+
               <Route path="/jaringan/input-gangguan-trafo" element={
                 <InputProtectedRoute>
                   <InputGangguanTrafoPage />
                 </InputProtectedRoute>
+              } />
+
+              <Route path="/jaringan/edit-gangguan-trafo" element={
+                <ProtectedRoute>
+                  <EditGangguanTrafoPage />
+                </ProtectedRoute>
               } />
 
               <Route path="/jaringan/rpt-gangguan" element={
@@ -334,7 +360,7 @@ export default function App() {
                 </ProtectedRoute>
               } />
 
-              <Route path="/jaringan/input-srdag" element={
+              <Route path="/jaringan/srdag/input" element={
                 <InputProtectedRoute>
                   <InputSrdagPage />
                 </InputProtectedRoute>
@@ -352,7 +378,7 @@ export default function App() {
                 </ProtectedRoute>
               } />
 
-              <Route path="/jaringan/input-mvod" element={
+              <Route path="/jaringan/mvod/input" element={
                 <InputProtectedRoute>
                   <InputMvodPage />
                 </InputProtectedRoute>
@@ -370,7 +396,7 @@ export default function App() {
                 </ProtectedRoute>
               } />
 
-              <Route path="/jaringan/input-mttr" element={
+              <Route path="/jaringan/mttr-siaga1/input" element={
                 <InputProtectedRoute>
                   <InputMttrPage />
                 </InputProtectedRoute>
@@ -431,17 +457,47 @@ export default function App() {
               <Route path="/pendapatan" element={<ProtectedRoute><PendapatanTLPage /></ProtectedRoute>} />
               <Route path="/susut" element={
                 <ProtectedRoute>
-                  <PlaceholderPage title="Susut Jaringan" />
+                  <SusutDistribusiPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/susut/input" element={
+                <ProtectedRoute>
+                  <InputKinerjaSusutDistribusiPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/susut/edit/:bulan/:tahun" element={
+                <ProtectedRoute>
+                  <EditKinerjaSusutDistribusiPage />
                 </ProtectedRoute>
               } />
               <Route path="/p2tl" element={
                 <ProtectedRoute>
-                  <PlaceholderPage title="P2TL Penertiban" />
+                  <P2tlPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/p2tl/input" element={
+                <ProtectedRoute>
+                  <InputKinerjaP2tlPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/p2tl/edit/:bulan/:tahun" element={
+                <ProtectedRoute>
+                  <EditKinerjaP2tlPage />
                 </ProtectedRoute>
               } />
               <Route path="/ganti-meter" element={
                 <ProtectedRoute>
-                  <PlaceholderPage title="Ganti Meter Kwh" />
+                  <GantiMeterPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/ganti-meter/input" element={
+                <ProtectedRoute>
+                  <InputKinerjaGantiMeterPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/ganti-meter/edit/:bulan/:tahun" element={
+                <ProtectedRoute>
+                  <EditKinerjaGantiMeterPage />
                 </ProtectedRoute>
               } />
               <Route path="/niaga" element={<Navigate to="/niaga/pelunasan" replace />} />
