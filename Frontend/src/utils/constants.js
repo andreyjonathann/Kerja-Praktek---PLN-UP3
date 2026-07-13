@@ -117,7 +117,7 @@ export const NAV_ITEMS = [
         items: [
           { key: 'input-kpi-te', label: 'INPUT KPI', path: '/input' },
           { key: 'susut', label: 'SUSUT (%)', path: '/susut' },
-          { key: 'kwh-p2tl', label: 'KwH P2TL', path: '/kwh-p2tl' },
+          { key: 'kwh-p2tl', label: 'KwH P2TL', path: '/p2tl' },
           { key: 'ganti-meter', label: 'Ganti Meter', path: '/ganti-meter' },
         ],
       },

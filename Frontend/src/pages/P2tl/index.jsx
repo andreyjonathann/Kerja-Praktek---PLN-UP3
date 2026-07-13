@@ -1,19 +1,18 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Activity, AlertCircle, FileSpreadsheet, Target, Plus } from 'lucide-react';
+import { Activity, AlertCircle, Target, Plus } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
 import KpiCard from '@/components/ui/KpiCard';
 import DataTable from '@/components/ui/DataTable';
-import ActionButton from '@/components/ui/ActionButton';
 import { useFilter } from '@/context/FilterContext';
 import { useAuth } from '@/context/AuthContext';
 import { MONTHS_ID } from '@/utils/formatters';
 import api from '@/services/api';
-import GantiMeterDetailModal from '@/components/ui/GantiMeterDetailModal';
+import P2tlDetailModal from '@/components/ui/P2tlDetailModal';
 import { useNavigate } from 'react-router-dom';
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import ChartWrapper from '@/components/ui/ChartWrapper';
 
-export default function GantiMeterPage() {
+export default function P2tlPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { filters } = useFilter();
@@ -42,15 +41,15 @@ export default function GantiMeterPage() {
       }
 
       const [listRes, dashRes] = await Promise.all([
-        api.get('/v1/ganti-meter', { params: paramsList }),
-        api.get('/v1/ganti-meter/dashboard', { params: paramsDash })
+        api.get('/v1/p2tl', { params: paramsList }),
+        api.get('/v1/p2tl/dashboard', { params: paramsDash })
       ]);
 
       setData(listRes.data.data);
       setDashboard(dashRes.data.data);
     } catch (err) {
-      console.error("Gagal memuat data Ganti Meter", err);
-      setError(err.message || "Gagal memuat data Ganti Meter");
+      console.error("Gagal memuat data P2TL", err);
+      setError(err.message || "Gagal memuat data P2TL");
     } finally {
       setLoading(false);
     }
@@ -108,6 +107,14 @@ export default function GantiMeterPage() {
     };
   });
 
+  const getLatestMonthData = () => {
+    if (!trendData) return null;
+    const validData = trendData.filter(d => d.realisasi != null);
+    if (validData.length === 0) return null;
+    return validData.reduce((prev, current) => (prev.bulan > current.bulan) ? prev : current);
+  };
+  const latestMonthData = getLatestMonthData();
+
   const CustomTooltip = ({ active, payload, label }) => {
     if (!active || !payload?.length) return null;
     return (
@@ -115,7 +122,7 @@ export default function GantiMeterPage() {
         <p style={{ fontWeight: 700, color: '#0f172a', marginBottom: 6, fontSize: 13 }}>{label}</p>
         {payload.map((p, i) => (
           <p key={i} style={{ fontSize: 12.5, color: p.color, fontWeight: 600, margin: '2px 0' }}>
-            {p.name}: {p.value != null ? Number(p.value).toLocaleString('id-ID') + ' Unit' : '—'}
+            {p.name}: {p.value != null ? Number(p.value).toLocaleString('id-ID') + ' kWh' : '—'}
           </p>
         ))}
       </div>
@@ -132,9 +139,7 @@ export default function GantiMeterPage() {
         id: match.id,
         bulan: MONTHS_ID[bulanNum],
         bulan_angka: bulanNum,
-        jumlah_app: match.jumlah_app,
-        jumlah_yantek: match.jumlah_yantek,
-        total: match.total,
+        realisasi_kwh: match.realisasi_kwh,
         keterangan: match.keterangan || '-',
       };
     }
@@ -143,9 +148,7 @@ export default function GantiMeterPage() {
       id: null,
       bulan: MONTHS_ID[bulanNum],
       bulan_angka: bulanNum,
-      jumlah_app: null,
-      jumlah_yantek: null,
-      total: null,
+      realisasi_kwh: null,
       keterangan: '-',
     };
   });
@@ -153,19 +156,9 @@ export default function GantiMeterPage() {
   const columns = [
     { label: 'Bulan', key: 'bulan', render: (v) => <span className="font-semibold">{v}</span> },
     { 
-      label: 'Jumlah APP', 
-      key: 'jumlah_app',
-      render: (v) => v != null ? <span className="text-slate-600">{Number(v).toLocaleString('id-ID')}</span> : '—'
-    },
-    { 
-      label: 'Jumlah Yantek', 
-      key: 'jumlah_yantek',
-      render: (v) => v != null ? <span className="text-slate-600">{Number(v).toLocaleString('id-ID')}</span> : '—'
-    },
-    { 
-      label: 'Total Realisasi', 
-      key: 'total',
-      render: (v) => v != null ? <span className="font-bold text-blue-600">{Number(v).toLocaleString('id-ID')} Unit</span> : '—'
+      label: 'Realisasi kWh P2TL', 
+      key: 'realisasi_kwh',
+      render: (v) => v != null ? <span className="font-bold text-blue-600">{Number(v).toLocaleString('id-ID')} kWh</span> : '—'
     },
     { 
       label: 'Keterangan', 
@@ -193,14 +186,14 @@ export default function GantiMeterPage() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--page-gap, 20px)' }} className="animate-fade-in">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
         <PageHeader 
-          title="Ganti Meter"
-          description={`Pemantauan Realisasi Ganti Meter kWh · Tahun ${filters.year || new Date().getFullYear()}`}
+          title="Perolehan kWh P2TL"
+          description={`Pemantauan Realisasi Perolehan kWh P2TL · Tahun ${filters.year || new Date().getFullYear()}`}
           icon={Activity}
           iconColor="#2563eb"
         />
         {!isViewer && (
           <button
-            onClick={() => navigate('/ganti-meter/input')}
+            onClick={() => navigate('/p2tl/input')}
             style={{
               padding: '10px 20px', borderRadius: 10, fontSize: '0.85rem', fontWeight: 700,
               transition: 'all 0.2s ease', border: '1.5px solid #2563eb', cursor: 'pointer',
@@ -215,10 +208,10 @@ export default function GantiMeterPage() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <KpiCard
           title="Realisasi YTD"
-          value={`${Number(dashboard?.realisasi_kumulatif_ytd || 0).toLocaleString('id-ID')} Unit`}
+          value={`${Number(dashboard?.realisasi_kumulatif_ytd || 0).toLocaleString('id-ID')} kWh`}
           subtitle={`Target YTD: ${Number(dashboard?.target_kumulatif_ytd || 0).toLocaleString('id-ID')}`}
           icon={Activity}
           color="blue"
@@ -235,22 +228,15 @@ export default function GantiMeterPage() {
           color={capai >= 100 ? 'emerald' : (capai >= 95 ? 'amber' : 'rose')}
         />
         <KpiCard
-          title="Breakdown YTD (APP)"
-          value={`${Number(dashboard?.breakdown_ytd?.jumlah_app || 0).toLocaleString('id-ID')} Unit`}
-          subtitle="Total pengerjaan oleh APP"
-          icon={FileSpreadsheet}
+          title="Data Bulan Terakhir"
+          value={latestMonthData ? `${Number(latestMonthData.realisasi).toLocaleString('id-ID')} kWh` : '—'}
+          subtitle={latestMonthData ? `Bulan: ${MONTHS_ID[latestMonthData.bulan]}` : 'Belum ada data'}
+          icon={Activity}
           color="indigo"
-        />
-        <KpiCard
-          title="Breakdown YTD (Yantek)"
-          value={`${Number(dashboard?.breakdown_ytd?.jumlah_yantek || 0).toLocaleString('id-ID')} Unit`}
-          subtitle="Total pengerjaan oleh Yantek"
-          icon={AlertCircle}
-          color="cyan"
         />
       </div>
 
-      <ChartWrapper title="Tren Ganti Meter" subtitle={`Realisasi vs Target · Tahun ${filters.year || new Date().getFullYear()}`} loading={loading} error={error} empty={!trendData} height={280} onRetry={fetchData}>
+      <ChartWrapper title="Tren Perolehan kWh P2TL" subtitle={`Realisasi vs Target · Tahun ${filters.year || new Date().getFullYear()}`} loading={loading} error={error} empty={!trendData} height={280} onRetry={fetchData}>
         <ResponsiveContainer width="100%" height={280}>
           <ComposedChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border, #e2e8f0)" />
@@ -280,7 +266,7 @@ export default function GantiMeterPage() {
         </div>
       </div>
 
-      <GantiMeterDetailModal
+      <P2tlDetailModal
         open={isModalOpen}
         onOpenChange={setIsModalOpen}
         rowData={selectedRow}

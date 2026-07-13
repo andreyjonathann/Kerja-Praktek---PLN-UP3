@@ -1,15 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Activity, AlertCircle, FileSpreadsheet, Target } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Activity, AlertCircle, FileSpreadsheet, Target, Plus } from 'lucide-react';
+import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import PageHeader from '@/components/ui/PageHeader';
 import KpiCard from '@/components/ui/KpiCard';
 import DataTable from '@/components/ui/DataTable';
+import ChartWrapper from '@/components/ui/ChartWrapper';
 import { useFilter } from '@/context/FilterContext';
 import { useAuth } from '@/context/AuthContext';
 import { MONTHS_ID } from '@/utils/formatters';
 import api from '@/services/api';
-import SusutDistribusiModal from '@/components/ui/SusutDistribusiModal';
+import SusutDistribusiDetailModal from '@/components/ui/SusutDistribusiDetailModal';
 
 export default function SusutDistribusiPage() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { filters } = useFilter();
   const [data, setData] = useState(null);
@@ -98,6 +102,19 @@ export default function SusutDistribusiPage() {
   const kwhNettoVal = summary?.raw_sums?.kwh_netto;
   const latestMonthVal = summary?.latest_month;
 
+  // Prepare chart data from dashboard?.trend
+  const trendData = dashboard?.trend;
+  const chartData = Array.from({ length: 12 }, (_, i) => {
+    const bulanNum = i + 1;
+    const realisasi = trendData?.realisasi?.[bulanNum] ?? null;
+    const target = trendData?.target?.[bulanNum] ?? null;
+    return {
+      label: MONTHS_ID[bulanNum]?.substring(0, 3) || `B${bulanNum}`,
+      realisasi: realisasi,
+      target: target,
+    };
+  });
+
   // Prepare table data (1-12 months)
   const tableDataBulan = Array.from({ length: 12 }, (_, i) => {
     const bulanNum = i + 1;
@@ -155,36 +172,61 @@ export default function SusutDistribusiPage() {
       key: 'aksi',
       render: (v, row) => {
         if (isViewer) return null;
-        if (!row.id) {
-          return (
-            <button 
-              onClick={(e) => { e.stopPropagation(); setSelectedRow(row); setIsModalOpen(true); }}
-              className="text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 py-1 px-3 rounded-md transition"
-            >
-              Tambah Data
-            </button>
-          );
-        }
         return (
           <button 
             onClick={(e) => { e.stopPropagation(); setSelectedRow(row); setIsModalOpen(true); }}
-            className="text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 py-1 px-3 rounded-md transition"
+            className="text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 py-1 px-3 rounded-md transition"
           >
-            Lihat / Edit
+            Lihat Detail
           </button>
         );
       }
     }
   ];
 
+  // Custom Tooltip for chart
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (!active || !payload?.length) return null;
+    return (
+      <div style={{
+        background: '#ffffff', borderRadius: 10, padding: '12px 16px',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.12)', border: '1px solid #e2e8f0',
+      }}>
+        <p style={{ fontWeight: 700, color: '#0f172a', marginBottom: 6, fontSize: 13 }}>{label}</p>
+        {payload.map((p, i) => (
+          <p key={i} style={{ fontSize: 12.5, color: p.color, fontWeight: 600, margin: '2px 0' }}>
+            {p.name}: {p.value != null ? Number(p.value).toFixed(4) + '%' : '—'}
+          </p>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--page-gap, 20px)' }} className="animate-fade-in">
-      <PageHeader 
-        title="Susut Distribusi"
-        description={`Pemantauan Realisasi Susut Distribusi · Tahun ${filters.year || new Date().getFullYear()}`}
-        icon={Activity}
-        iconColor="#2563eb"
-      />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
+        <PageHeader 
+          title="Susut Distribusi"
+          description={`Pemantauan Realisasi Susut Distribusi · Tahun ${filters.year || new Date().getFullYear()}`}
+          icon={Activity}
+          iconColor="#2563eb"
+        />
+        {!isViewer && (
+          <button
+            onClick={() => navigate('/susut/input')}
+            style={{
+              padding: '10px 20px', borderRadius: 10, fontSize: '0.85rem', fontWeight: 700,
+              transition: 'all 0.2s ease', border: '1.5px solid #2563eb', cursor: 'pointer',
+              background: 'transparent', color: '#2563eb',
+              display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0,
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#2563eb'; e.currentTarget.style.color = '#FFFFFF' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#2563eb' }}
+          >
+            <Plus size={16} /> Tambah Data
+          </button>
+        )}
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <KpiCard
@@ -221,6 +263,37 @@ export default function SusutDistribusiPage() {
         />
       </div>
 
+      {/* Chart Realisasi vs Target */}
+      <ChartWrapper
+        title="Tren Susut Distribusi"
+        subtitle={`Realisasi vs Target · Tahun ${filters.year || new Date().getFullYear()}`}
+        loading={loading}
+        error={error}
+        empty={!trendData}
+        height={280}
+        onRetry={fetchData}
+      >
+        <ResponsiveContainer width="100%" height={280}>
+          <ComposedChart data={chartData}>
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border, #e2e8f0)" />
+            <XAxis dataKey="label" tick={{ fontSize: 12.5, fontWeight: 650 }} />
+            <YAxis tick={{ fontSize: 12.5, fontWeight: 650 }} unit="%" />
+            <Tooltip content={<CustomTooltip />} />
+            <Legend wrapperStyle={{ fontSize: 13, fontWeight: 600 }} />
+            <Bar dataKey="realisasi" name="Realisasi" fill="#2563eb" radius={[4, 4, 0, 0]} />
+            <Line
+              dataKey="target"
+              name="Target"
+              stroke="#EF4444"
+              strokeWidth={2}
+              strokeDasharray="5 5"
+              dot={{ r: 4, fill: '#EF4444' }}
+            />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </ChartWrapper>
+
+      {/* Table */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mt-2">
         <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
           <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
@@ -237,7 +310,7 @@ export default function SusutDistribusiPage() {
         </div>
       </div>
 
-      <SusutDistribusiModal
+      <SusutDistribusiDetailModal
         open={isModalOpen}
         onOpenChange={setIsModalOpen}
         rowData={selectedRow}

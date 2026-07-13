@@ -111,6 +111,13 @@ Route::middleware('api')->group(function () {
         Route::get('/mttr/targets', [\App\Http\Controllers\Api\MttrController::class, 'targets']);
         Route::post('/mttr/targets', [\App\Http\Controllers\Api\MttrController::class, 'storeTargets']);
 
+        // Perolehan kWh P2TL
+        Route::get('/p2tl', [\App\Http\Controllers\Api\RealisasiP2tlController::class, 'index']);
+        Route::post('/p2tl', [\App\Http\Controllers\Api\RealisasiP2tlController::class, 'store']);
+        Route::get('/p2tl/dashboard', [\App\Http\Controllers\Api\RealisasiP2tlController::class, 'dashboard']);
+        Route::put('/p2tl/{id}', [\App\Http\Controllers\Api\RealisasiP2tlController::class, 'update']);
+        Route::delete('/p2tl/{id}', [\App\Http\Controllers\Api\RealisasiP2tlController::class, 'destroy']);
+
         // Ganti Meter
         Route::get('/ganti-meter', [\App\Http\Controllers\Api\RealisasiGantiMeterController::class, 'index']);
         Route::post('/ganti-meter', [\App\Http\Controllers\Api\RealisasiGantiMeterController::class, 'store']);

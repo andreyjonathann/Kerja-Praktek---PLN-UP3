@@ -50,7 +50,14 @@ import TindakLanjutLbkbPage from '@/pages/Niaga/TindakLanjutLbkb'
 import InputKinerjaLbkbPage from '@/pages/Niaga/InputKinerjaLbkb'
 
 import GantiMeterPage from '@/pages/GantiMeter'
+import InputKinerjaGantiMeterPage from '@/pages/InputKinerjaGantiMeter'
+import EditKinerjaGantiMeterPage from '@/pages/EditKinerjaGantiMeter'
 import SusutDistribusiPage from '@/pages/SusutDistribusiPage'
+import InputKinerjaSusutDistribusiPage from '@/pages/InputKinerjaSusutDistribusi'
+import EditKinerjaSusutDistribusiPage from '@/pages/EditKinerjaSusutDistribusi'
+import P2tlPage from '@/pages/P2tl'
+import InputKinerjaP2tlPage from '@/pages/InputKinerjaP2tl'
+import EditKinerjaP2tlPage from '@/pages/EditKinerjaP2tl'
 
 // Pemasaran Pages (legacy)
 import JumlahPelangganPage from '@/pages/Pemasaran/JumlahPelanggan'
@@ -424,14 +431,44 @@ export default function App() {
                   <SusutDistribusiPage />
                 </ProtectedRoute>
               } />
+              <Route path="/susut/input" element={
+                <ProtectedRoute>
+                  <InputKinerjaSusutDistribusiPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/susut/edit/:bulan/:tahun" element={
+                <ProtectedRoute>
+                  <EditKinerjaSusutDistribusiPage />
+                </ProtectedRoute>
+              } />
               <Route path="/p2tl" element={
                 <ProtectedRoute>
-                  <PlaceholderPage title="P2TL Penertiban" />
+                  <P2tlPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/p2tl/input" element={
+                <ProtectedRoute>
+                  <InputKinerjaP2tlPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/p2tl/edit/:bulan/:tahun" element={
+                <ProtectedRoute>
+                  <EditKinerjaP2tlPage />
                 </ProtectedRoute>
               } />
               <Route path="/ganti-meter" element={
                 <ProtectedRoute>
                   <GantiMeterPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/ganti-meter/input" element={
+                <ProtectedRoute>
+                  <InputKinerjaGantiMeterPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/ganti-meter/edit/:bulan/:tahun" element={
+                <ProtectedRoute>
+                  <EditKinerjaGantiMeterPage />
                 </ProtectedRoute>
               } />
               <Route path="/niaga" element={<Navigate to="/niaga/pelunasan" replace />} />
