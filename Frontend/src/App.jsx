@@ -46,18 +46,8 @@ import PelunasanPrrPage from '@/pages/Niaga/PelunasanPrr'
 import InputKinerjaPelunasanPage from '@/pages/Niaga/InputKinerjaPelunasan'
 import PenghapusanPrrPage from '@/pages/Niaga/PenghapusanPrr'
 import InputKinerjaPenghapusanPage from '@/pages/Niaga/InputKinerjaPenghapusan'
-import TindakLanjutLbkbPage from '@/pages/Niaga/TindakLanjutLbkb'
-import InputKinerjaLbkbPage from '@/pages/Niaga/InputKinerjaLbkb'
-
-import GantiMeterPage from '@/pages/GantiMeter'
-import InputKinerjaGantiMeterPage from '@/pages/InputKinerjaGantiMeter'
-import EditKinerjaGantiMeterPage from '@/pages/EditKinerjaGantiMeter'
-import SusutDistribusiPage from '@/pages/SusutDistribusiPage'
-import InputKinerjaSusutDistribusiPage from '@/pages/InputKinerjaSusutDistribusi'
-import EditKinerjaSusutDistribusiPage from '@/pages/EditKinerjaSusutDistribusi'
-import P2tlPage from '@/pages/P2tl'
-import InputKinerjaP2tlPage from '@/pages/InputKinerjaP2tl'
-import EditKinerjaP2tlPage from '@/pages/EditKinerjaP2tl'
+import SaldoAkhirPage from '@/pages/Niaga/SaldoAkhir'
+import InputKinerjaSaldoAkhirPage from '@/pages/Niaga/InputKinerjaSaldoAkhir'
 
 // Pemasaran Pages (legacy)
 import JumlahPelangganPage from '@/pages/Pemasaran/JumlahPelanggan'
@@ -76,6 +66,17 @@ import PlnMobilePage     from '@/pages/Pemasaran/v2/PlnMobile'
 import EditKinerjaPermasaranPage from '@/pages/Pemasaran/v2/EditKinerjaPermasaranPage'
 import EditKinerjaPage from '@/pages/EditKinerja'
 import EditEnsPage from '@/pages/EditEns'
+
+// Transaksi Energi Pages
+import SusutDistribusiPage from '@/pages/SusutDistribusiPage'
+import InputKinerjaSusutDistribusiPage from '@/pages/InputKinerjaSusutDistribusi'
+import EditKinerjaSusutDistribusiPage from '@/pages/EditKinerjaSusutDistribusi'
+import P2tlPage from '@/pages/P2tl'
+import InputKinerjaP2tlPage from '@/pages/InputKinerjaP2tl'
+import EditKinerjaP2tlPage from '@/pages/EditKinerjaP2tl'
+import GantiMeterPage from '@/pages/GantiMeter'
+import InputKinerjaGantiMeterPage from '@/pages/InputKinerjaGantiMeter'
+import EditKinerjaGantiMeterPage from '@/pages/EditKinerjaGantiMeter'
 
 // Admin Pages
 import KelolaTargetPage from '@/pages/Admin/KelolaTarget'
@@ -141,6 +142,9 @@ function RoleBasedHome() {
   if (loading) return null
   if (user?.role === 'pic_pemasaran') {
     return <Navigate to="/pemasaran" replace />
+  }
+  if (user?.role === 'pic_transaksi_energi') {
+    return <Navigate to="/nko" replace />
   }
   return (
     <ProtectedRoute>
@@ -461,14 +465,14 @@ export default function App() {
                 </ProtectedRoute>
               } />
               <Route path="/susut/input" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <InputKinerjaSusutDistribusiPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
-              <Route path="/susut/edit/:bulan/:tahun" element={
-                <ProtectedRoute>
+              <Route path="/susut/edit/:id" element={
+                <InputProtectedRoute>
                   <EditKinerjaSusutDistribusiPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
               <Route path="/p2tl" element={
                 <ProtectedRoute>
@@ -476,14 +480,14 @@ export default function App() {
                 </ProtectedRoute>
               } />
               <Route path="/p2tl/input" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <InputKinerjaP2tlPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
-              <Route path="/p2tl/edit/:bulan/:tahun" element={
-                <ProtectedRoute>
+              <Route path="/p2tl/edit/:id" element={
+                <InputProtectedRoute>
                   <EditKinerjaP2tlPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
               <Route path="/ganti-meter" element={
                 <ProtectedRoute>
@@ -491,14 +495,14 @@ export default function App() {
                 </ProtectedRoute>
               } />
               <Route path="/ganti-meter/input" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <InputKinerjaGantiMeterPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
-              <Route path="/ganti-meter/edit/:bulan/:tahun" element={
-                <ProtectedRoute>
+              <Route path="/ganti-meter/edit/:id" element={
+                <InputProtectedRoute>
                   <EditKinerjaGantiMeterPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
               <Route path="/niaga" element={<Navigate to="/niaga/pelunasan" replace />} />
               <Route path="/niaga/pelunasan" element={
@@ -521,14 +525,14 @@ export default function App() {
                   <InputKinerjaPenghapusanPage />
                 </InputProtectedRoute>
               } />
-              <Route path="/niaga/lbkb" element={
+              <Route path="/niaga/saldo-akhir" element={
                 <ProtectedRoute>
-                  <TindakLanjutLbkbPage />
+                  <SaldoAkhirPage />
                 </ProtectedRoute>
               } />
-              <Route path="/niaga/lbkb/input" element={
+              <Route path="/niaga/saldo-akhir/input" element={
                 <InputProtectedRoute>
-                  <InputKinerjaLbkbPage />
+                  <InputKinerjaSaldoAkhirPage />
                 </InputProtectedRoute>
               } />
               <Route path="/skki" element={

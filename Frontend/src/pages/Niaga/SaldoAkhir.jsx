@@ -5,7 +5,7 @@ import {
   Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, ComposedChart
 } from 'recharts'
-import { Briefcase, TrendingUp, Plus, Activity } from 'lucide-react'
+import { Activity, TrendingUp, Plus } from 'lucide-react'
 import KpiCard from '@/components/ui/KpiCard'
 import ChartWrapper from '@/components/ui/ChartWrapper'
 import DataTable from '@/components/ui/DataTable'
@@ -33,11 +33,10 @@ const TOOLTIP = ({ active, payload, label }) => {
   )
 }
 
-export default function PelunasanPrrPage() {
+export default function SaldoAkhirPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const { filters } = useFilter()
-  const [tab, setTab] = useState('monthly')
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -47,7 +46,7 @@ export default function PelunasanPrrPage() {
     setError(null)
     try {
       const res = await getNiagaData(filters.year)
-      setData((res || []).filter(d => !d.isBaseline))
+      setData(res || [])
     } catch (e) {
       if (!bg) {
         setError('Gagal mengambil data dari server.')
@@ -70,52 +69,45 @@ export default function PelunasanPrrPage() {
     return () => window.removeEventListener('sigap:refresh', h)
   }, [fetchData])
 
-  const filled = data.filter(d => d.pelunasan_real !== null)
+  const filled = data.filter(d => d.saldo_akhir_real !== null && !d.isBaseline)
   const lastRow = filled[filled.length - 1]
-  const ytdReal = lastRow?.c_pelunasan_real ?? 0
-  const ytdTgt = lastRow?.c_pelunasan_target ?? 0
-  const lastReal = lastRow?.pelunasan_real ?? 0
-  const ach = ytdTgt > 0 ? (ytdReal / ytdTgt) * 100 : 0
+  const ytdReal = lastRow?.rata_rata_saldo ?? 0
+  const ytdTgt = lastRow?.saldo_akhir_target ?? 0
+  const lastReal = lastRow?.saldo_akhir_real ?? 0
+  const ach = lastRow?.saldo_akhir_ach ?? 0
 
-  const chartKey = tab === 'monthly' ? 'pelunasan_real' : 'c_pelunasan_real'
-  const tgtKey = tab === 'monthly' ? 'pelunasan_target' : 'c_pelunasan_target'
-  const tunaiKey = tab === 'monthly' ? 'tunai_prr' : 'c_tunai_prr'
-  const cicilKey = tab === 'monthly' ? 'cicil_prr' : 'c_cicil_prr'
-  const tsKey = tab === 'monthly' ? 'ts_prabayar' : 'c_ts_prabayar'
+  const chartKey = 'rata_rata_saldo'
+  const tgtKey = 'saldo_akhir_target'
 
   const prevLastRow = filled[filled.length - 2]
-  const trend = prevLastRow?.pelunasan_real
-    ? ((lastReal - prevLastRow.pelunasan_real) / prevLastRow.pelunasan_real) * 100
+  const trend = prevLastRow?.saldo_akhir_real
+    ? ((lastReal - prevLastRow.saldo_akhir_real) / prevLastRow.saldo_akhir_real) * 100
     : null
 
   const tableColumns = [
-    { key: 'label', label: 'Bulan', width: '72px', align: 'center' },
+    { key: 'label', label: 'Bulan', width: '90px', align: 'center' },
+    { key: 'pal_total', label: 'PAL (Rp)', align: 'right', render: v => v != null ? formatNumber(v) : '—' },
+    { key: 'ts_total', label: 'TS (Rp)', align: 'right', render: v => v != null ? formatNumber(v) : '—' },
+    { key: 'saldo_akhir_real', label: 'PAL + TS (Rp)', align: 'right', render: v => v != null ? formatNumber(v) : '—' },
+    { key: 'rata_rata_saldo', label: 'Rata-rata saldo (Rp)', align: 'right', render: v => v != null ? formatNumber(v) : '—' },
     { key: tgtKey, label: 'Target (Rp)', align: 'right', render: v => v != null ? formatNumber(v) : '—' },
-    { key: tunaiKey, label: 'Tunai PRR (Rp)', align: 'right', render: v => v != null ? formatNumber(v) : '—' },
-    { key: cicilKey, label: 'Cicil PRR (Rp)', align: 'right', render: v => v != null ? formatNumber(v) : '—' },
-    { key: tsKey, label: 'TS Prabayar (Rp)', align: 'right', render: v => v != null ? formatNumber(v) : '—' },
     {
-      key: chartKey, label: 'Total Realisasi (Rp)', align: 'right', render: (v, row) => v != null
-        ? <span className={`font-bold ${v < row[tgtKey] ? 'text-red-500' : 'text-emerald-500'}`}>{formatNumber(v)}</span>
-        : <span className="text-slate-400 text-xs font-bold">—</span>
-    },
-    {
-      key: '_ach', label: '% Pencapaian', align: 'center', render: (_, row) => {
-        const t = row[tgtKey]
-        const r = row[chartKey]
-        if (t === 0 || r == null) return '—'
-        const p = (r / t) * 100
+      key: 'saldo_akhir_ach', label: '% Pencapaian', align: 'center', render: (v) => {
+        if (v == null) return '—'
         return (
           <span style={{
             display: 'inline-flex', padding: '2px 10px', borderRadius: 99, fontSize: '0.78rem', fontWeight: 750,
-            background: p >= 100 ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)',
-            color: p >= 100 ? '#10B981' : '#EF4444',
-            border: `1px solid ${p >= 100 ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)'}`,
-          }}>{p.toFixed(1)}%</span>
+            background: v >= 100 ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)',
+            color: v >= 100 ? '#10B981' : '#EF4444',
+            border: `1px solid ${v >= 100 ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)'}`,
+          }}>{v.toFixed(2)}%</span>
         )
       }
     }
   ]
+
+  // Filter out baseline row for chart display
+  const chartData = data.filter(d => !d.isBaseline)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }} className="animate-fade-in">
@@ -125,70 +117,47 @@ export default function PelunasanPrrPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div className="icon-wrapper-interactive" style={{
             width: 34, height: 34, borderRadius: 10,
-            background: 'linear-gradient(135deg, rgba(79,70,229,0.2), rgba(79,70,229,0.08))',
-            border: '1px solid rgba(79,70,229,0.25)',
+            background: 'linear-gradient(135deg, rgba(6,182,212,0.2), rgba(6,182,212,0.08))',
+            border: '1px solid rgba(6,182,212,0.25)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
           }}>
-            <Briefcase size={16} style={{ color: '#4F46E5' }} />
+            <Activity size={16} style={{ color: '#06B6D4' }} />
           </div>
-          <h1 className="page-heading">Pelunasan PRR &amp; Piutang</h1>
+          <h1 className="page-heading">Saldo Akhir</h1>
         </div>
-        <p className="page-description">Realisasi pelunasan PRR dan piutang lancar/ragu-ragu · Tahun {filters.year}</p>
+        <p className="page-description">Realisasi saldo akhir PAL &amp; TS serta perhitungan rata-rata saldo · Tahun {filters.year}</p>
       </div>
 
       {/* ── KPI Cards ─────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-        <KpiCard title="Realisasi Rp YTD" value={formatNumber(ytdReal)} unit="Rp" icon={Briefcase} color="indigo" achievement={ach} loading={loading} />
-        <KpiCard title="Target Rp YTD" value={formatNumber(ytdTgt)} unit="Rp" icon={Briefcase} color="blue" loading={loading} />
-        <KpiCard title="Bulan Terakhir" value={formatNumber(lastReal)} unit="Rp" icon={Briefcase} color="yellow" trend={trend} loading={loading} />
-        <KpiCard title="Pencapaian" value={ach.toFixed(1) + '%'} icon={TrendingUp} color={ach >= 100 ? 'green' : ach >= 90 ? 'yellow' : 'red'} loading={loading} />
+        <KpiCard title="Rata-rata Saldo YTD" value={formatNumber(ytdReal)} unit="Rp" icon={Activity} color="cyan" achievement={ach} loading={loading} />
+        <KpiCard title="Target Saldo" value={formatNumber(ytdTgt)} unit="Rp" icon={Activity} color="blue" loading={loading} />
+        <KpiCard title="Bulan Terakhir" value={formatNumber(lastReal)} unit="Rp" icon={Activity} color="yellow" trend={trend} loading={loading} />
+        <KpiCard title="Pencapaian" value={ach.toFixed(2) + '%'} icon={TrendingUp} color={ach >= 100 ? 'green' : ach >= 90 ? 'yellow' : 'red'} loading={loading} />
       </div>
 
-      {/* ── Tab Toggle & Action Buttons ─────────────────────────────────── */}
+      {/* ── Action Buttons ─────────────────────────────────── */}
       <div style={{
         display: 'flex',
         flexWrap: 'wrap',
         alignItems: 'center',
-        justifyContent: 'space-between',
+        justifyContent: 'flex-end',
         gap: '16px',
         margin: '12px 0 16px',
       }}>
-        <div style={{
-          display: 'inline-flex', background: 'rgba(20, 162, 186,0.05)', padding: 4,
-          borderRadius: 12, border: '1px solid rgba(20, 162, 186,0.08)',
-        }}>
-          {['monthly', 'cumulative'].map(t => {
-            const active = tab === t
-            return (
-              <button key={t} onClick={() => setTab(t)} style={{
-                padding: '6px 16px', borderRadius: 9, fontSize: '0.85rem', fontWeight: 700,
-                transition: 'all 0.2s', border: 'none', cursor: 'pointer',
-                background: active ? 'var(--bg-card)' : 'transparent',
-                color: active ? 'var(--pln-blue)' : 'var(--text-muted)',
-                boxShadow: active ? '0 2px 8px rgba(20, 162, 186,0.12)' : 'none',
-              }}
-              onMouseEnter={e => { if (!active) e.currentTarget.style.color = 'var(--text-primary)' }}
-              onMouseLeave={e => { if (!active) e.currentTarget.style.color = 'var(--text-muted)' }}
-              >
-                {t === 'monthly' ? 'Bulanan' : 'Kumulatif'}
-              </button>
-            )
-          })}
-        </div>
-
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
-          <ExportModal kpiType="Pelunasan PRR" />
+          <ExportModal kpiType="Saldo Akhir" />
           {user?.role === 'pic_niaga' && (
             <div style={{
               display: 'inline-flex',
-              background: 'rgba(79, 70, 229, 0.05)',
+              background: 'rgba(6, 182, 212, 0.05)',
               padding: 4,
               borderRadius: 12,
-              border: '1px solid rgba(79, 70, 229, 0.15)',
+              border: '1px solid rgba(6, 182, 212, 0.15)',
               cursor: 'pointer'
             }}>
               <button
-                onClick={() => navigate('/niaga/pelunasan/input')}
+                onClick={() => navigate('/niaga/saldo-akhir/input')}
                 style={{
                   padding: '6px 16px',
                   borderRadius: 9,
@@ -198,19 +167,19 @@ export default function PelunasanPrrPage() {
                   border: 'none',
                   cursor: 'pointer',
                   background: 'var(--bg-card)',
-                  color: '#4F46E5',
-                  boxShadow: '0 2px 8px rgba(79, 70, 229, 0.15)',
+                  color: '#06B6D4',
+                  boxShadow: '0 2px 8px rgba(6, 182, 212, 0.15)',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px'
                 }}
                 onMouseEnter={e => {
-                   e.currentTarget.style.background = '#4F46E5';
+                   e.currentTarget.style.background = '#06B6D4';
                    e.currentTarget.style.color = '#FFFFFF';
                 }}
                 onMouseLeave={e => {
                    e.currentTarget.style.background = 'var(--bg-card)';
-                   e.currentTarget.style.color = '#4F46E5';
+                   e.currentTarget.style.color = '#06B6D4';
                 }}
               >
                 <Plus size={14} /> Input Data
@@ -223,19 +192,19 @@ export default function PelunasanPrrPage() {
       {/* ── Charts ─────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 gap-5">
         <ChartWrapper
-          title={tab === 'monthly' ? 'Pelunasan Bulanan' : 'Pelunasan Kumulatif'}
-          subtitle={`Target vs Realisasi (Rp) · ${filters.year}`}
-          loading={loading} error={error} empty={data.length === 0}
+          title="Grafik Saldo Akhir"
+          subtitle={`Rata-rata Saldo vs Target (Rp) · ${filters.year}`}
+          loading={loading} error={error} empty={chartData.length === 0}
           height={280} onRetry={fetchData}
         >
           <ResponsiveContainer width="100%" height={280}>
-            <ComposedChart data={data}>
+            <ComposedChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
               <XAxis dataKey="label" tick={{ fontSize: 12.5, fontWeight: 650 }} />
               <YAxis tick={{ fontSize: 12.5, fontWeight: 650 }} />
               <Tooltip content={<TOOLTIP />} />
               <Legend wrapperStyle={{ fontSize: 13, fontWeight: 600 }} />
-              <Bar dataKey={chartKey} name="Realisasi" fill="#4F46E5" radius={[4, 4, 0, 0]} />
+              <Bar dataKey={chartKey} name="Rata-rata Saldo" fill="#06B6D4" radius={[4, 4, 0, 0]} />
               <Line dataKey={tgtKey} name="Target" stroke="#EF4444" strokeWidth={2.5} strokeDasharray="5 5" dot={{ r: 4, fill: '#EF4444' }} />
             </ComposedChart>
           </ResponsiveContainer>
@@ -245,7 +214,7 @@ export default function PelunasanPrrPage() {
       {/* ── Detail Table ───────────────────────────────────────────────── */}
       <div className="card p-5">
         <h3 className="section-title mb-4">
-          Detail Data Pelunasan {tab === 'monthly' ? 'Bulanan' : 'Kumulatif'} (Rp)
+          Detail Data Saldo Akhir (Rp)
         </h3>
         <DataTable columns={tableColumns} data={data} paginated={false} searchable={false} />
       </div>

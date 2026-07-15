@@ -12,7 +12,7 @@ import { MONTHS } from '@/utils/constants'
 import {
   Activity, Save, ChevronDown,
   ShoppingCart, Users, Zap, Wallet, Plus, Trash2,
-  Copy, Download, ArrowLeft
+  Copy, Download, ArrowLeft, AlertTriangle
 } from 'lucide-react'
 import { toBlob, toPng } from 'html-to-image'
 import {
@@ -37,6 +37,28 @@ const getFormattedLabel = (key) => {
 const GOLONGAN_COLORS = {
   S: '#10b981', R: '#3b82f6', B: '#f59e0b', I: '#8b5cf6',
   P: '#ec4899', T: '#06b6d4', L: '#f43f5e', C: '#64748b'
+}
+
+const GOLONGAN_STYLES = {
+  s: { bg: '#e6fcf5', text: '#0ca678' }, // Sosial
+  r: { bg: '#e7f5ff', text: '#1c7ed6' }, // Rumah Tangga
+  b: { bg: '#fff9db', text: '#f59f00' }, // Bisnis
+  i: { bg: '#f3f0ff', text: '#7048e8' }, // Industri
+  p: { bg: '#fff0f6', text: '#d6336c' }, // Pemerintah
+  t: { bg: '#e3fafc', text: '#0c8599' }, // Traksi
+  l: { bg: '#fff5f5', text: '#f03e3e' }, // Layanan Khusus
+  c: { bg: '#f1f3f5', text: '#495057' }  // Curah
+}
+
+const PENDAPATAN_STYLES = {
+  pb: { bg: '#f3f0ff', text: '#7048e8' },
+  td: { bg: '#fff0f6', text: '#d6336c' }
+}
+
+const MOBILE_STYLES = {
+  usr: { bg: '#e3fafc', text: '#0c8599' },
+  trx: { bg: '#edf2ff', text: '#4263eb' },
+  val: { bg: '#e7f5ff', text: '#1c7ed6' }
 }
 
 const TYPE_CONFIG = {
@@ -96,7 +118,7 @@ export default function InputKinerjaPermasaranPage() {
 
   const sanitize = (val) => {
     if (val === '') return ''
-    let s = String(val)
+    let s = String(val).replace(/\./g, '')
     if (s.length > 1 && s.startsWith('0') && !s.startsWith('0.')) s = s.replace(/^0+/, '')
     return s === '' ? '' : Math.max(0, Number(s))
   }
@@ -296,51 +318,152 @@ export default function InputKinerjaPermasaranPage() {
     </div>
   ) : null
 
+  // Helper to format display values
+  const formatInputSeparator = (val) => {
+    if (val == null || val === '') return '';
+    let str = val.toString();
+    str = str.replace(/\./g, '');
+    let clean = str.replace(/[^0-9,]/g, '');
+    const commaIndex = clean.indexOf(',');
+    if (commaIndex !== -1) {
+      const beforeComma = clean.substring(0, commaIndex).replace(/,/g, '');
+      const afterComma = clean.substring(commaIndex + 1).replace(/,/g, '');
+      clean = beforeComma + ',' + afterComma;
+    }
+    const parts = clean.split(',');
+    let before = parts[0];
+    if (before !== '') {
+      before = parseInt(before, 10).toLocaleString('id-ID');
+    }
+    return parts.length > 1 ? before + ',' + parts[1] : before;
+  }
+
   // ── Shared: flat input rows ──
-  const renderFlatInputRows = (disabled = false) => (
-    <>
-      {['penjualan', 'pelanggan', 'daya'].includes(typeParam) && (
-        <div className="divide-y divide-slate-100">
+  const renderFlatInputRows = (disabled = false) => {
+    const fieldInputClass = `w-[140px] border border-gray-200 rounded-lg px-3 py-2 text-[13px] shadow-sm text-right outline-none focus:border-blue-500 ${disabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white font-semibold'}`;
+
+    if (['penjualan', 'pelanggan', 'daya'].includes(typeParam)) {
+      return (
+        <div className="flex flex-col gap-3">
           {TARIF_KEYS.map(k => {
             const val    = typeParam === 'penjualan' ? penjualanKwh[k] : typeParam === 'pelanggan' ? pelanggan[k] : dayaVa[k]
             const change = typeParam === 'penjualan' ? handleKwhChange : typeParam === 'pelanggan' ? handlePelangganChange : handleDayaChange
-            return <InputRow key={k} label={getFormattedLabel(k)} value={val} onChange={v => change(k, v)} disabled={disabled} placeholder="-" plClass="pl-6" isFormattedText={true} />
+            const displayValue = val != null && val !== '' ? formatInputSeparator(val) : '';
+            const style = GOLONGAN_STYLES[k] || { bg: '#f1f5f9', text: '#64748b' };
+
+            return (
+              <div key={k} className="flex items-center justify-between p-3 bg-white border border-[#f3f4f6] rounded-xl gap-4 hover:bg-slate-50 transition">
+                <div className="flex items-center gap-3 flex-1">
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center font-extrabold text-[13px] shadow-sm flex-shrink-0" style={{ backgroundColor: style.bg, color: style.text }}>
+                    {k.toUpperCase()}
+                  </div>
+                  <label className="font-semibold text-slate-700 text-[13px]">{getFormattedLabel(k)}</label>
+                </div>
+                <input 
+                  disabled={disabled} 
+                  type="text" 
+                  value={displayValue}
+                  onChange={e => change(k, e.target.value)}
+                  className={fieldInputClass}
+                  placeholder="-" 
+                />
+              </div>
+            )
           })}
         </div>
-      )}
-      {typeParam === 'pendapatan' && (
-        <div className="divide-y divide-slate-100">
-          <InputRow label="Biaya Pasang Baru (BP)" value={pendapatanPB} onChange={setPendapatanPB} disabled={disabled} placeholder="-" plClass="pl-6" isFormattedText={true} />
-          <InputRow label="Biaya Tambah Daya (TD)" value={pendapatanTD} onChange={setPendapatanTD} disabled={disabled} placeholder="-" plClass="pl-6" isFormattedText={true} />
+      );
+    }
+
+    if (typeParam === 'pendapatan') {
+      const items = [
+        { key: 'pb', label: 'Biaya Pasang Baru (BP)', value: pendapatanPB, change: setPendapatanPB, labelShort: 'BP' },
+        { key: 'td', label: 'Biaya Tambah Daya (TD)', value: pendapatanTD, change: setPendapatanTD, labelShort: 'TD' }
+      ];
+      return (
+        <div className="flex flex-col gap-3">
+          {items.map(item => {
+            const displayValue = item.value != null && item.value !== '' ? formatInputSeparator(item.value) : '';
+            const style = PENDAPATAN_STYLES[item.key] || { bg: '#f1f5f9', text: '#64748b' };
+            return (
+              <div key={item.key} className="flex items-center justify-between p-3 bg-white border border-[#f3f4f6] rounded-xl gap-4 hover:bg-slate-50 transition">
+                <div className="flex items-center gap-3 flex-1">
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center font-extrabold text-[13px] shadow-sm flex-shrink-0" style={{ backgroundColor: style.bg, color: style.text }}>
+                    {item.labelShort}
+                  </div>
+                  <label className="font-semibold text-slate-700 text-[13px]">{item.label}</label>
+                </div>
+                <input 
+                  disabled={disabled} 
+                  type="text" 
+                  value={displayValue}
+                  onChange={e => item.change(e.target.value)}
+                  className={fieldInputClass}
+                  placeholder="-" 
+                />
+              </div>
+            );
+          })}
         </div>
-      )}
-      {typeParam === 'pln_mobile' && (
-        <div className="divide-y divide-slate-100">
-          <InputRow label="Jumlah Pengguna PLN Mobile (Pelanggan)" value={mobilePengguna} onChange={setMobilePengguna} disabled={disabled} placeholder="-" plClass="pl-6" isFormattedText={true} />
-          <InputRow label="Jumlah Kali Transaksi Keuangan di PLN Mobile (Kali Transaksi)" value={mobileTransaksi} onChange={setMobileTransaksi} disabled={disabled} placeholder="-" plClass="pl-6" isFormattedText={true} />
-          <InputRow label="Jumlah Rupiah Transaksi Keuangan di PLN Mobile (Rp. Miliar)" value={mobileNilai} onChange={setMobileNilai} disabled={disabled} placeholder="-" plClass="pl-6" isFormattedText={true} />
+      );
+    }
+
+    if (typeParam === 'pln_mobile') {
+      const items = [
+        { key: 'usr', label: 'Jumlah Pengguna PLN Mobile (Pelanggan)', value: mobilePengguna, change: setMobilePengguna, labelShort: 'US' },
+        { key: 'trx', label: 'Jumlah Kali Transaksi Keuangan', value: mobileTransaksi, change: setMobileTransaksi, labelShort: 'TX' },
+        { key: 'val', label: 'Jumlah Rupiah Transaksi Keuangan (Rp. Miliar)', value: mobileNilai, change: setMobileNilai, labelShort: 'RP' }
+      ];
+      return (
+        <div className="flex flex-col gap-3">
+          {items.map(item => {
+            const displayValue = item.value != null && item.value !== '' ? formatInputSeparator(item.value) : '';
+            const style = MOBILE_STYLES[item.key] || { bg: '#f1f5f9', text: '#64748b' };
+            return (
+              <div key={item.key} className="flex items-center justify-between p-3 bg-white border border-[#f3f4f6] rounded-xl gap-4 hover:bg-slate-50 transition">
+                <div className="flex items-center gap-3 flex-1">
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center font-extrabold text-[13px] shadow-sm flex-shrink-0" style={{ backgroundColor: style.bg, color: style.text }}>
+                    {item.labelShort}
+                  </div>
+                  <label className="font-semibold text-slate-700 text-[13px]">{item.label}</label>
+                </div>
+                <input 
+                  disabled={disabled} 
+                  type="text" 
+                  value={displayValue}
+                  onChange={e => item.change(e.target.value)}
+                  className={fieldInputClass}
+                  placeholder="-" 
+                />
+              </div>
+            );
+          })}
         </div>
-      )}
-      {typeParam === 'program' && renderProgramRows(disabled)}
-    </>
-  )
+      );
+    }
+
+    if (typeParam === 'program') {
+      return renderProgramRows(disabled);
+    }
+
+    return null;
+  }
 
   const renderProgramRows = (disabled = false) => (
-    <div className="p-6 space-y-6">
+    <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between border-b border-slate-100 pb-4">
         <div>
-          <h3 className="text-sm font-bold text-slate-800">Daftar Program / Upaya Pemasaran</h3>
-          <p className="text-xs text-slate-400 font-semibold mt-0.5">Tambahkan program penambahan pelanggan dan target jumlah plg</p>
+          <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Daftar Program</h3>
+          <p className="text-[11px] text-slate-400 font-medium mt-0.5">Tambahkan program penambahan pelanggan dan target jumlah plg</p>
         </div>
         <button type="button" disabled={disabled}
           onClick={() => setPrograms(p => [...p, { nama: '', keterangan: '', jumlah: '' }])}
-          className="flex items-center gap-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all">
+          className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all">
           <Plus size={14} /> Tambah Program
         </button>
       </div>
       <div className="space-y-4">
         {programs.map((prog, idx) => (
-          <div key={idx} className="p-4 border border-slate-200 rounded-2xl bg-slate-50/50 flex flex-col md:flex-row gap-4">
+          <div key={idx} className="p-4 border border-slate-200 rounded-2xl bg-slate-50/50 flex flex-col gap-4 relative">
             <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
               {[['Nama Program','text','nama','Nama Program'],['Keterangan','text','keterangan','Keterangan'],['Jumlah Pelanggan','number','jumlah','Jumlah plg']].map(([lbl,type,field,ph]) => (
                 <div key={field} className="flex flex-col gap-1.5">
@@ -363,183 +486,107 @@ export default function InputKinerjaPermasaranPage() {
     </div>
   )
 
+  const inputStyle = (dis) => ({
+    width: '100%', padding: '10px 14px', borderRadius: 10,
+    border: '1px solid #e2e8f0', background: dis ? '#f1f5f9' : '#f8fafc',
+    fontSize: '0.9rem', color: dis ? '#94a3b8' : '#334155', outline: 'none',
+  });
 
-
-  // ════════════════════════════════════════════════════════════════════════
-  // TAMBAH MODE — pola SAIDI: header inline (title + Batal + Simpan), periode, detail komponen
-  // ════════════════════════════════════════════════════════════════════════
   return (
-    <div className="w-full flex flex-col gap-6 animate-fade-in">
+    <div className="min-h-screen bg-slate-50 flex flex-col animate-fade-in py-12">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 640, margin: '0 auto', width: '100%', padding: '0 20px' }}>
 
-      {/* Header — sama dengan Tambah SAIDI */}
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div style={{ width: 38, height: 38, borderRadius: 10, flexShrink: 0, background: `${cfg.color}18`, border: `1px solid ${cfg.color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <IconHeader size={18} style={{ color: cfg.color }} />
-          </div>
+        {/* HEADER */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button type="button" onClick={() => navigate(-1)}
+            style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 10, padding: '8px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', fontWeight: 600, color: '#64748b', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
+          >
+            <ArrowLeft size={16} /> Kembali
+          </button>
           <div>
-            <h1 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-              Tambah {cfg.label}{cfg.satuan ? ` (${cfg.satuan})` : ''}
+            <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#1e293b' }}>
+              Tambah {cfg.label}
             </h1>
+            <p style={{ margin: 0, fontSize: '0.78rem', color: '#94a3b8', fontWeight: 500 }}>
+              {bulan ? MONTHS.find(m => String(m.value) === String(bulan))?.label : ''} {tahun}
+            </p>
           </div>
         </div>
 
-        {/* Batal + Simpan Realisasi — pojok kanan atas persis seperti SAIDI */}
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            style={{ padding: '7px 18px', borderRadius: 9, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer' }}
-          >
-            Batal
-          </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saving || prefilled}
-            style={{ padding: '7px 18px', borderRadius: 9, border: 'none', background: (saving || prefilled) ? '#94a3b8' : '#00A2B9', color: '#fff', fontSize: '0.85rem', fontWeight: 700, cursor: (saving || prefilled) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 7, boxShadow: (saving || prefilled) ? 'none' : '0 4px 12px rgba(0, 162, 185, 0.25)', opacity: (saving || prefilled) ? 0.65 : 1 }}
-          >
-            {saving ? <div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" /> : <Save size={15} />}
-            Simpan Realisasi
-          </button>
-        </div>
-      </div>
+        {/* TOAST / BANNER */}
+        <ToastBanner />
 
-      <ToastBanner />
-
-      {/* Pilih Periode */}
-      <div>
-        <h3 className="text-xs font-bold text-slate-500 mb-3 uppercase tracking-wider">Pilih Periode</h3>
-        <div className="flex gap-4">
-          {/* Bulan */}
-          <div className="relative w-1/2">
-            <select value={bulan} onChange={e => setBulan(Number(e.target.value))}
-              className="w-full px-4 py-2.5 pr-10 bg-white border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 text-sm cursor-pointer appearance-none shadow-sm text-slate-700 font-semibold">
-              {MONTHS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-            </select>
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400"><ChevronDown size={18} /></div>
-          </div>
-          {/* Tahun */}
-          <div className="relative w-1/2">
-            <select value={tahun} onChange={e => setTahun(Number(e.target.value))}
-              className="w-full px-4 py-2.5 pr-10 bg-white border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 text-sm cursor-pointer appearance-none shadow-sm text-slate-700 font-semibold">
-              {[2024,2025,2026,2027,2028].map(y => <option key={y} value={y}>{y}</option>)}
-            </select>
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400"><ChevronDown size={18} /></div>
-          </div>
-        </div>
+        {/* DUPLICATE WARNING */}
         {prefilled && (
-          <p className="text-red-500 text-sm mt-3 font-semibold">
-            Data untuk periode ini sudah diinput. Silakan pilih bulan/tahun lain atau gunakan tombol Edit.
-          </p>
-        )}
-      </div>
-
-      {/* Detail Komponen heading */}
-      <div className="flex items-center gap-2">
-        <IconHeader size={22} style={{ color: cfg.color }} />
-        <h2 className="text-lg font-extrabold text-slate-800">Detail Komponen {cfg.label}</h2>
-      </div>
-
-      {/* Split-screen: input (kiri) + chart (kanan) */}
-      <div className="flex flex-col xl:flex-row gap-6 items-start w-full">
-
-        {/* LEFT — input card, full flex-1 */}
-        <div className="flex-1 w-full bg-white border border-slate-200 rounded-none overflow-hidden shadow-sm">
-          {renderFlatInputRows(prefilled)}
-        </div>
-
-        {/* RIGHT — chart card, fixed width on large screens */}
-        {typeParam !== 'program' && typeParam !== 'pln_mobile' && (
-          <div
-            id="target-chart-card"
-            className="w-full xl:w-[460px] 2xl:w-[520px] flex-shrink-0 bg-white border border-slate-200 rounded-none shadow-sm overflow-hidden p-5"
-          >
-            {/* Chart header */}
-            <div className="flex items-start justify-between pb-4 mb-4 border-b border-slate-100">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center text-slate-500 flex-shrink-0">
-                  <Activity size={17} />
-                </div>
-                <div>
-                  <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wide leading-tight">
-                    Analisis Pencapaian {cfg.label}
-                  </h3>
-                  <p className="text-[11px] text-slate-400 font-medium mt-0.5">Perbandingan Total Realisasi vs Total Target</p>
-                </div>
-              </div>
-              <div className="card-actions flex items-center gap-1 flex-shrink-0 ml-2">
-                <button type="button" onClick={handleCopyChart} title="Salin gambar" className="p-1.5 hover:bg-slate-100 text-slate-400 hover:text-slate-600 rounded-lg transition-all"><Copy size={14} /></button>
-                <button type="button" onClick={handleDownloadChart} title="Unduh gambar" className="p-1.5 hover:bg-slate-100 text-slate-400 hover:text-slate-600 rounded-lg transition-all"><Download size={14} /></button>
-              </div>
-            </div>
-
-            {/* Persentase + Status */}
-            <div className="flex items-start justify-between gap-3 mb-4" style={{ flexWrap: 'wrap' }}>
-              <div style={{ overflow: 'visible', flexShrink: 0 }}>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Persentase Pencapaian</span>
-                <span className={`text-3xl font-extrabold leading-none ${achieved ? 'text-emerald-600' : 'text-rose-600'}`}>
-                  {pct}%
-                </span>
-              </div>
-              <div style={{ textAlign: 'right', flexShrink: 0, whiteSpace: 'nowrap' }}>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Status Realisasi</span>
-                <span className={`inline-flex px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ${
-                  achieved ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'
-                }`}>
-                  {achieved ? 'Melampaui Target' : 'Kurang Dari Target'}
-                </span>
-              </div>
-            </div>
-
-            {/* Bar chart */}
-            <div style={{ width: '100%', height: 155, overflow: 'hidden', boxSizing: 'border-box' }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} layout="vertical" margin={{ top: 8, right: 24, left: 8, bottom: 4 }} barCategoryGap="25%">
-                  <XAxis type="number" domain={[0, chartMax]} hide />
-                  <YAxis type="category" dataKey="name" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} width={60} />
-                  <Tooltip cursor={{ fill: 'rgba(241,245,249,0.4)' }} content={<CustomTooltip unit={cfg.satuan} />} />
-                  <Bar dataKey="value" radius={[0, 6, 6, 0]} barSize={18}>
-                    {chartData.map((_, i) => (
-                      <Cell key={i} fill={i === 0 ? '#f1f5f9' : cfg.color} />
-                    ))}
-                  </Bar>
-                  {totals.tgt > 0 && <ReferenceLine x={totals.tgt} stroke="#ef4444" strokeDasharray="4 3" strokeWidth={1.5} />}
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Kontribusi per golongan */}
-            {contributionList.length > 0 && (
-              <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 mt-5 pt-4 border-t border-slate-100">
-                {contributionList.map(item => (
-                  <div key={item.key} className="flex items-center justify-between text-xs font-semibold text-slate-600 min-w-0">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: GOLONGAN_COLORS[item.key] }} />
-                      <span className="truncate">{item.name}</span>
-                    </div>
-                    <span className="font-bold text-slate-800 ml-2 flex-shrink-0">{item.pct}%</span>
-                  </div>
-                ))}
-              </div>
-            )}
-            {typeParam === 'pendapatan' && (
-              <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 mt-5 pt-4 border-t border-slate-100">
-                {[['bg-purple-500','Pasang Baru (PB)', pendapatanPB],['bg-pink-500','Tambah Daya (TD)', pendapatanTD]].map(([dot,label,val]) => (
-                  <div key={label} className="flex items-center justify-between text-xs font-semibold text-slate-600 min-w-0">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <span className={`w-2 h-2 rounded-full flex-shrink-0 ${dot}`} />
-                      <span className="truncate">{label}</span>
-                    </div>
-                    <span className="font-bold text-slate-800 ml-2 flex-shrink-0">
-                      {totalPendapatan > 0 ? Math.round((Number(val)||0)/totalPendapatan*100) : 0}%
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 16px', borderRadius: 10, background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 600, fontSize: '0.86rem' }}>
+            <AlertTriangle size={16} /> Data untuk periode ini sudah ada. Anda tidak dapat mengubah data melalui halaman ini. Silakan gunakan fitur Edit.
           </div>
         )}
+
+        {/* CARD PERIODE */}
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="p-4 border-b border-slate-100 flex items-center gap-2 bg-slate-50/50">
+            <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
+              <Activity size={16} />
+            </div>
+            <h3 className="font-bold text-slate-800 text-sm tracking-wide">PILIH PERIODE</h3>
+          </div>
+          <div className="p-5 flex flex-col gap-4">
+            <div className="flex gap-4">
+              <div className="w-1/2">
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#64748b', marginBottom: 5 }}>Bulan</label>
+                <select value={bulan} onChange={e => setBulan(Number(e.target.value))} style={inputStyle(false)}>
+                  {MONTHS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+                </select>
+              </div>
+              <div className="w-1/2">
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#64748b', marginBottom: 5 }}>Tahun</label>
+                <select value={tahun} onChange={e => setTahun(Number(e.target.value))} style={inputStyle(false)}>
+                  {[2024, 2025, 2026, 2027, 2028].map(y => <option key={y} value={y}>{y}</option>)}
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* CARD DETAIL KOMPONEN */}
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="p-4 border-b border-slate-100 flex items-center gap-2 bg-slate-50/50">
+            <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
+              <IconHeader size={16} />
+            </div>
+            <h3 className="font-bold text-slate-800 text-sm tracking-wide uppercase">
+              DETAIL KOMPONEN {cfg.label}
+            </h3>
+          </div>
+          <div className="p-5 flex flex-col gap-3">
+            {renderFlatInputRows(prefilled)}
+          </div>
+        </div>
+
+        {/* SUBMIT BUTTON */}
+        <button type="button" onClick={handleSave} disabled={saving || prefilled}
+          style={{
+            width: '100%',
+            padding: '14px',
+            borderRadius: 12,
+            background: (saving || prefilled) ? '#93c5fd' : '#3b82f6',
+            color: '#fff',
+            fontSize: '0.95rem',
+            fontWeight: 700,
+            border: 'none',
+            cursor: (saving || prefilled) ? 'not-allowed' : 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            boxShadow: (saving || prefilled) ? 'none' : '0 4px 14px rgba(59,130,246,0.3)',
+            transition: 'all 0.2s'
+          }}
+        >
+          {saving ? <div className="w-5 h-5 border-2 border-white/50 border-t-white rounded-full animate-spin" /> : <Save size={18} />}
+          {prefilled ? 'Data Sudah Ada' : 'Simpan Data'}
+        </button>
 
       </div>
     </div>

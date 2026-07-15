@@ -9,6 +9,7 @@ import { TrendingDown, TrendingUp, Plus, Activity } from 'lucide-react'
 import KpiCard from '@/components/ui/KpiCard'
 import ChartWrapper from '@/components/ui/ChartWrapper'
 import DataTable from '@/components/ui/DataTable'
+import ExportModal from '@/components/ui/ExportModal'
 import { useFilter } from '@/context/FilterContext'
 import { getNiagaData } from '@/services/niagaDataService'
 import { formatNumber } from '@/utils/formatters'
@@ -46,7 +47,7 @@ export default function PenghapusanPrrPage() {
     setError(null)
     try {
       const res = await getNiagaData(filters.year)
-      setData(res || [])
+      setData((res || []).filter(d => !d.isBaseline))
     } catch (e) {
       if (!bg) {
         setError('Gagal mengambil data dari server.')
@@ -170,6 +171,7 @@ export default function PenghapusanPrrPage() {
         </div>
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
+          <ExportModal kpiType="Penghapusan PRR" />
           {user?.role === 'pic_niaga' && (
             <div style={{
               display: 'inline-flex',

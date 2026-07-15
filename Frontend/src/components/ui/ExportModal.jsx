@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { X, Download, FileSpreadsheet } from 'lucide-react';
 import { getDashboardData } from '@/services/dashboardDataService';
+import { getNiagaData } from '@/services/niagaDataService';
 import { exportToExcel } from '@/utils/excelExport';
 
 export default function ExportModal({ kpiType }) {
@@ -19,10 +20,16 @@ export default function ExportModal({ kpiType }) {
     setLoading(true);
     try {
       const dataMap = {};
+      const isNiaga = ['pelunasan prr', 'penghapusan prr', 'saldo akhir'].includes(kpiType.toLowerCase());
       
       for (let y = startYear; y <= endYear; y++) {
-        const res = await getDashboardData(y);
-        dataMap[y] = res[kpiType.toLowerCase()] || [];
+        if (isNiaga) {
+          const res = await getNiagaData(y);
+          dataMap[y] = res || [];
+        } else {
+          const res = await getDashboardData(y);
+          dataMap[y] = res[kpiType.toLowerCase()] || [];
+        }
       }
       
       exportToExcel(kpiType, startYear, endYear, dataMap);

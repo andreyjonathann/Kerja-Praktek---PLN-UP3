@@ -110,6 +110,27 @@ Route::middleware('api')->group(function () {
         
         Route::get('/mttr/targets', [\App\Http\Controllers\Api\MttrController::class, 'targets']);
         Route::post('/mttr/targets', [\App\Http\Controllers\Api\MttrController::class, 'storeTargets']);
+
+        // Transaksi Energi - P2TL
+        Route::get('/p2tl', [\App\Http\Controllers\Api\RealisasiP2tlController::class, 'index']);
+        Route::get('/p2tl/dashboard', [\App\Http\Controllers\Api\RealisasiP2tlController::class, 'dashboard']);
+        Route::post('/p2tl', [\App\Http\Controllers\Api\RealisasiP2tlController::class, 'store']);
+        Route::put('/p2tl/{id}', [\App\Http\Controllers\Api\RealisasiP2tlController::class, 'update']);
+        Route::delete('/p2tl/{id}', [\App\Http\Controllers\Api\RealisasiP2tlController::class, 'destroy']);
+
+        // Transaksi Energi - Ganti Meter
+        Route::get('/ganti-meter', [\App\Http\Controllers\Api\RealisasiGantiMeterController::class, 'index']);
+        Route::get('/ganti-meter/dashboard', [\App\Http\Controllers\Api\RealisasiGantiMeterController::class, 'dashboard']);
+        Route::post('/ganti-meter', [\App\Http\Controllers\Api\RealisasiGantiMeterController::class, 'store']);
+        Route::put('/ganti-meter/{id}', [\App\Http\Controllers\Api\RealisasiGantiMeterController::class, 'update']);
+        Route::delete('/ganti-meter/{id}', [\App\Http\Controllers\Api\RealisasiGantiMeterController::class, 'destroy']);
+
+        // Transaksi Energi - Susut Distribusi
+        Route::get('/susut-distribusi', [\App\Http\Controllers\Api\RealisasiSusutDistribusiController::class, 'index']);
+        Route::get('/susut-distribusi/dashboard', [\App\Http\Controllers\Api\RealisasiSusutDistribusiController::class, 'dashboard']);
+        Route::post('/susut-distribusi', [\App\Http\Controllers\Api\RealisasiSusutDistribusiController::class, 'store']);
+        Route::put('/susut-distribusi/{id}', [\App\Http\Controllers\Api\RealisasiSusutDistribusiController::class, 'update']);
+        Route::delete('/susut-distribusi/{id}', [\App\Http\Controllers\Api\RealisasiSusutDistribusiController::class, 'destroy']);
     });
 
     // Read-only endpoints (protected by auth:sanctum)
@@ -135,14 +156,6 @@ Route::middleware('api')->group(function () {
         Route::get('/targets', [TargetTahunanController::class, 'index']);
         Route::get('/target/{bidang}/{indikator}', [TargetTahunanController::class, 'getMonthlyTarget']);
         Route::get('/kinerja/{bidang}', [KinerjaController::class, 'index']);
-
-        // Transaksi Energi Read-only Endpoints
-        Route::get('/p2tl', [\App\Http\Controllers\Api\RealisasiP2tlController::class, 'index']);
-        Route::get('/p2tl/dashboard', [\App\Http\Controllers\Api\RealisasiP2tlController::class, 'dashboard']);
-        Route::get('/ganti-meter', [\App\Http\Controllers\Api\RealisasiGantiMeterController::class, 'index']);
-        Route::get('/ganti-meter/dashboard', [\App\Http\Controllers\Api\RealisasiGantiMeterController::class, 'dashboard']);
-        Route::get('/susut-distribusi', [\App\Http\Controllers\Api\RealisasiSusutDistribusiController::class, 'index']);
-        Route::get('/susut-distribusi/dashboard', [\App\Http\Controllers\Api\RealisasiSusutDistribusiController::class, 'dashboard']);
     });
 
     // Write endpoints (protected by auth:sanctum and block_perencanaan)
@@ -178,19 +191,6 @@ Route::middleware('api')->group(function () {
         // Kinerja endpoints
         Route::post('/kinerja/{bidang}', [KinerjaController::class, 'store']);
         Route::delete('/kinerja/{bidang}', [KinerjaController::class, 'destroy']);
-
-        // Transaksi Energi Write Endpoints
-        Route::post('/p2tl', [\App\Http\Controllers\Api\RealisasiP2tlController::class, 'store']);
-        Route::put('/p2tl/{id}', [\App\Http\Controllers\Api\RealisasiP2tlController::class, 'update']);
-        Route::delete('/p2tl/{id}', [\App\Http\Controllers\Api\RealisasiP2tlController::class, 'destroy']);
-        
-        Route::post('/ganti-meter', [\App\Http\Controllers\Api\RealisasiGantiMeterController::class, 'store']);
-        Route::put('/ganti-meter/{id}', [\App\Http\Controllers\Api\RealisasiGantiMeterController::class, 'update']);
-        Route::delete('/ganti-meter/{id}', [\App\Http\Controllers\Api\RealisasiGantiMeterController::class, 'destroy']);
-        
-        Route::post('/susut-distribusi', [\App\Http\Controllers\Api\RealisasiSusutDistribusiController::class, 'store']);
-        Route::put('/susut-distribusi/{id}', [\App\Http\Controllers\Api\RealisasiSusutDistribusiController::class, 'update']);
-        Route::delete('/susut-distribusi/{id}', [\App\Http\Controllers\Api\RealisasiSusutDistribusiController::class, 'destroy']);
     });
 });
 
