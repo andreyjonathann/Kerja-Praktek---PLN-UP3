@@ -227,12 +227,18 @@ class DataJaringanController extends Controller
             $ytdTgtSaidiForOverview = $runningCumulativeTgtSaidi;
         }
 
+        $hitungSkorNegatif = function($realisasi, $target) {
+            if ($target === null || $target <= 0 || $realisasi === null) {
+                return null;
+            }
+            return min((2 - ($realisasi / $target)) * 100, 110);
+        };
+
         $result['overview'] = [
             'kpis' => [
-                'saidi' => ['val' => $totalSaidi, 'target' => $anySaidiTargetFilled ? $ytdTgtSaidiForOverview : null, 'isInverse' => true, 'unit' => 'mnt/plg'],
-                'saifi' => ['val' => $totalSaifi, 'target' => $anySaifiTargetFilled ? $ytdTgtSaifiForOverview : null, 'isInverse' => true, 'unit' => 'kali/plg'],
-                'ens'   => ['val' => $totalEns, 'target' => $anyEnsTargetFilled ? $runningCumulativeTgtEns : null, 'isInverse' => true, 'unit' => 'MWh'],
-
+                'saidi' => ['val' => $totalSaidi, 'target' => $anySaidiTargetFilled ? $ytdTgtSaidiForOverview : null, 'isInverse' => true, 'unit' => 'mnt/plg', 'persen_pencapaian' => $hitungSkorNegatif($totalSaidi, $anySaidiTargetFilled ? $ytdTgtSaidiForOverview : null)],
+                'saifi' => ['val' => $totalSaifi, 'target' => $anySaifiTargetFilled ? $ytdTgtSaifiForOverview : null, 'isInverse' => true, 'unit' => 'kali/plg', 'persen_pencapaian' => $hitungSkorNegatif($totalSaifi, $anySaifiTargetFilled ? $ytdTgtSaifiForOverview : null)],
+                'ens'   => ['val' => $totalEns, 'target' => $anyEnsTargetFilled ? $runningCumulativeTgtEns : null, 'isInverse' => true, 'unit' => 'MWh', 'persen_pencapaian' => $hitungSkorNegatif($totalEns, $anyEnsTargetFilled ? $runningCumulativeTgtEns : null)],
                 'losses' => ['val' => 5.5, 'target' => 6.0, 'isInverse' => true, 'unit' => '%'],
             ],
             'monthlyPerf' => array_map(function($sd, $sf) {

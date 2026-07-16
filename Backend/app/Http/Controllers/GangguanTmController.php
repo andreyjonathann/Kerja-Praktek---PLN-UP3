@@ -116,7 +116,7 @@ class GangguanTmController extends Controller
                 'cumulativeReal' => $realisasiBulanIni !== null ? $sumReal : null,
                 'cumulativeTgt' => $targetKumulatif,
                 'sisa' => ($targetKumulatif !== null && $realisasiBulanIni !== null) ? ($targetKumulatif - $sumReal) : null,
-                'persen' => ($targetKumulatif !== null && $targetKumulatif > 0 && $realisasiBulanIni !== null) ? ($sumReal / $targetKumulatif) * 100 : null
+                'persen' => ($targetKumulatif !== null && $targetKumulatif > 0 && $realisasiBulanIni !== null) ? min((2 - ($sumReal / max(0.001, $targetKumulatif))) * 100, 110) : null
             ];
         }
 
@@ -670,7 +670,7 @@ class GangguanTmController extends Controller
             $persen = null;
             $status = '-';
             if ($targetYtd !== null && $targetYtd > 0) {
-                $persen = ($targetYtd / max(0.001, $sumReal)) * 100;
+                $persen = min((2 - ($sumReal / max(0.001, $targetYtd))) * 100, 110);
                 $status = $sumReal > $targetYtd ? 'TERLAMPAUI' : 'AMAN';
             }
 

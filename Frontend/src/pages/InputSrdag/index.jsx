@@ -19,7 +19,7 @@ export default function InputSrdagPage() {
   const currentYear = new Date().getFullYear()
 
   const [saving, setSaving] = useState(false)
-  const [form, setForm] = useState({ tahun: currentYear, bulan: '', berhasil: '', total: '' })
+  const [form, setForm] = useState({ tahun: currentYear, bulan: '', berhasil: '', total: '', wo_marking_padam_meluas: '' })
   const [existingData, setExistingData] = useState([])
   const [isUpdateMode, setIsUpdateMode] = useState(false)
 
@@ -33,17 +33,19 @@ export default function InputSrdagPage() {
   }, [form.tahun, user?.up3]);
 
   React.useEffect(() => {
-    if (!form.bulan || !existingData.length) {
-      setIsUpdateMode(false);
-      return;
-    }
-    const match = existingData.find(d => String(d.bulan) === String(form.bulan));
+    if (!form.bulan) return;
+    const match = existingData.find(d => d.bulan == form.bulan);
     if (match && match.success_rate !== null) {
       setIsUpdateMode(true);
-      setForm(prev => ({ ...prev, berhasil: match.jumlah_berhasil, total: match.jumlah_total }));
+      setForm(prev => ({
+        ...prev,
+        berhasil: match.jumlah_dispatch_berhasil != null ? match.jumlah_dispatch_berhasil.toString() : '',
+        total: match.jumlah_total_gangguan != null ? match.jumlah_total_gangguan.toString() : '',
+        wo_marking_padam_meluas: match.wo_marking_padam_meluas != null ? match.wo_marking_padam_meluas.toString() : '0'
+      }));
     } else {
       setIsUpdateMode(false);
-      setForm(prev => ({ ...prev, berhasil: '', total: '' }));
+      setForm(prev => ({ ...prev, berhasil: '', total: '', wo_marking_padam_meluas: '' }));
     }
   }, [form.bulan, existingData]);
 
@@ -60,7 +62,8 @@ export default function InputSrdagPage() {
         tahun: Number(form.tahun),
         bulan: Number(form.bulan),
         jumlah_dispatch_berhasil: Number(form.berhasil),
-        jumlah_total_gangguan: Number(form.total)
+        jumlah_total_gangguan: Number(form.total),
+        wo_marking_padam_meluas: Number(form.wo_marking_padam_meluas) || 0
       }
       await api.post('/v1/srdag', payload)
       navigate('/jaringan/srdag')
@@ -160,6 +163,19 @@ export default function InputSrdagPage() {
                 </div>
                 <div className="w-[140px]">
                   <input type="number" min="0" className={fieldInputClass} placeholder="0" value={form.total} onChange={e => setForm({ ...form, total: e.target.value })} required />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-3 bg-white border border-[#f3f4f6] rounded-xl gap-4 hover:bg-slate-50 transition">
+                <div className="flex items-center gap-3 flex-1">
+                  <div className="w-9 h-9 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center flex-shrink-0"><Activity size={15} /></div>
+                  <div>
+                    <label className="font-semibold text-slate-700 text-[13px] block">WO Marking Padam Meluas (Kali, opsional)</label>
+                    <span className="text-[11px] text-slate-500">WO yang ditandai sebagai padam meluas, dikecualikan dari perhitungan Success Rate</span>
+                  </div>
+                </div>
+                <div className="w-[140px]">
+                  <input type="number" min="0" className={fieldInputClass} placeholder="0" value={form.wo_marking_padam_meluas} onChange={e => setForm({ ...form, wo_marking_padam_meluas: e.target.value })} />
                 </div>
               </div>
 

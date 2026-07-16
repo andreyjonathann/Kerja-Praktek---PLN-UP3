@@ -177,9 +177,9 @@ class MttrController extends Controller
     }
 
     // Bobot PLN: SUTM=2, SKTM=2, PHBTM=1, TRAFO=1 (total=6)
-    private function calcWeightedMttr($data)
+    private function calcWeightedMttr($data, $bobotAset)
     {
-        $bobot = ['SUTM' => 2, 'SKTM' => 2, 'PHBTM' => 1, 'TRAFO' => 1];
+        $bobot = $bobotAset;
         $total_bobot = 0;
         $weighted_sum = 0;
 
@@ -199,6 +199,24 @@ class MttrController extends Controller
 
     public function dashboard(Request $request)
     {
+        $bobotAset = ['SUTM' => 2, 'SKTM' => 2, 'PHBTM' => 1, 'TRAFO' => 1]; // fallback default
+        $mttrParent = \App\Models\NkoParameter::where('nama', 'MTTR Siaga 1 TM (Sesuai kewenangan)')->first();
+        if ($mttrParent) {
+            $children = \App\Models\NkoParameter::where('parent_id', $mttrParent->id)->get();
+            $sutmParam = $children->firstWhere('nama', 'MTTR - SUTM');
+            $sktmParam = $children->firstWhere('nama', 'MTTR - SKTM');
+            $phbtmParam = $children->firstWhere('nama', 'MTTR - PHBTM');
+            $trafoParam = $children->firstWhere('nama', 'MTTR - Trafo');
+            if ($sutmParam && $sktmParam && $phbtmParam && $trafoParam) {
+                $bobotAset = [
+                    'SUTM' => (float) $sutmParam->bobot,
+                    'SKTM' => (float) $sktmParam->bobot,
+                    'PHBTM' => (float) $phbtmParam->bobot,
+                    'TRAFO' => (float) $trafoParam->bobot,
+                ];
+            }
+        }
+
         $tahun = $request->tahun ?: date('Y');
         
         $up3Filter = $request->input('up3', null);
@@ -247,7 +265,7 @@ class MttrController extends Controller
             $persen_pencapaian = null;
 
             if ($b_data->count() > 0) {
-                $realisasi_bulan_ini = $this->calcWeightedMttr($b_data);
+                $realisasi_bulan_ini = $this->calcWeightedMttr($b_data, $bobotAset);
 
                 foreach (['SUTM', 'SKTM', 'PHBTM', 'TRAFO'] as $aset) {
                     $aset_data = $b_data->where('jenis_aset', $aset);
@@ -291,7 +309,7 @@ class MttrController extends Controller
             if ($b_data->count() > 0) {
                 $terpenuhi = $b_data->sum('jumlah_siaga1_terpenuhi');
                 $total = $b_data->sum('jumlah_siaga1_total');
-                $avg_realisasi = $this->calcWeightedMttr($b_data) ?? 0;
+                $avg_realisasi = $this->calcWeightedMttr($b_data, $bobotAset) ?? 0;
                 
                 $target_persen_b = null;
                 if ($targetMaster) {
@@ -335,11 +353,11 @@ class MttrController extends Controller
         $realisasi_bulan_ini_avg = null;
         if ($last_month_all) {
             $last_data = $realisasi->where('bulan', $last_month_all);
-            $realisasi_bulan_ini_avg = $this->calcWeightedMttr($last_data);
+            $realisasi_bulan_ini_avg = $this->calcWeightedMttr($last_data, $bobotAset);
         }
 
         // YTD: cumulative weighted across all months
-        $realisasi_ytd_avg = $this->calcWeightedMttr($realisasi);
+        $realisasi_ytd_avg = $this->calcWeightedMttr($realisasi, $bobotAset);
 
         $total_siaga1_ytd = $realisasi->sum('jumlah_siaga1_total');
         

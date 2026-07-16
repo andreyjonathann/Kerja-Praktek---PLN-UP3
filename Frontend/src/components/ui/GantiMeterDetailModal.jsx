@@ -70,21 +70,23 @@ export default function GantiMeterDetailModal({
       `
       document.body.appendChild(toast)
       setTimeout(() => toast.remove(), 4000)
+    } finally {
+      setDeletingId(null)
     }
   }
 
   const closeModal = () => {
     onOpenChange(false)
-    setShowConfirm(false)
+    setConfirmDeleteId(null)
   }
-
   const handleOverlayClick = (e) => {
     if (e.target === e.currentTarget) closeModal()
   }
-
   const handleKeyDown = (e) => {
     if (e.key === 'Escape') closeModal()
   }
+
+  const totalBulan = harianList.reduce((sum, r) => sum + (r.total || 0), 0)
 
   return createPortal(
     <div
@@ -93,43 +95,23 @@ export default function GantiMeterDetailModal({
       onKeyDown={handleKeyDown}
       onClick={handleOverlayClick}
       style={{
-        position: 'fixed',
-        inset: 0,
-        backgroundColor: 'rgba(0,0,0,0.45)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 9998,
-        animation: 'modalOverlayIn 0.15s ease',
+        position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.45)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        zIndex: 9998, animation: 'modalOverlayIn 0.15s ease',
       }}
     >
       <style>{`
-        @keyframes modalOverlayIn {
-          from { opacity: 0; }
-          to   { opacity: 1; }
-        }
-        @keyframes modalCardIn {
-          from { opacity: 0; transform: translateY(16px) scale(0.98); }
-          to   { opacity: 1; transform: translateY(0)    scale(1);    }
-        }
+        @keyframes modalOverlayIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes modalCardIn { from { opacity: 0; transform: translateY(16px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
       `}</style>
-
-      {/* Modal card */}
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: '#ffffff',
-          borderRadius: 12,
-          width: '100%',
-          maxWidth: 520,
-          padding: 28,
-          boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
-          animation: 'modalCardIn 0.2s ease',
-          maxHeight: '90vh',
-          overflowY: 'auto',
+          background: '#ffffff', borderRadius: 12, width: '100%', maxWidth: 560, padding: 28,
+          boxShadow: '0 20px 60px rgba(0,0,0,0.2)', animation: 'modalCardIn 0.2s ease',
+          maxHeight: '85vh', overflowY: 'auto',
         }}
       >
-        {/* ── HEADER ─────────────────────────────────────────────────── */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
           <div>
             <h2 style={{ fontSize: 20, fontWeight: 700, color: '#0f172a', margin: 0, lineHeight: 1.3 }}>

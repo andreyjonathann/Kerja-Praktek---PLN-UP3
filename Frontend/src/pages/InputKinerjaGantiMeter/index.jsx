@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import api from '@/services/api';
-import { MONTHS } from '@/utils/constants';
+
 import { CheckCircle, AlertCircle, Save, ArrowLeft, Activity, AlertTriangle, Zap } from 'lucide-react';
 
 export default function InputKinerjaGantiMeterPage() {
@@ -13,29 +13,25 @@ export default function InputKinerjaGantiMeterPage() {
 
   const { register, handleSubmit, formState: { errors }, control } = useForm({
     defaultValues: {
-      tahun: new Date().getFullYear(),
-      periode_id: '',
+      tanggal: new Date().toISOString().split('T')[0],
       jumlah_app: '',
       jumlah_yantek: '',
       keterangan: ''
     }
   });
-
-  const selectedMonth = useWatch({ control, name: 'periode_id' });
-  const selectedYear = useWatch({ control, name: 'tahun' });
+  const selectedTanggal = useWatch({ control, name: 'tanggal' });
   const jumlah_app = useWatch({ control, name: 'jumlah_app' });
   const jumlah_yantek = useWatch({ control, name: 'jumlah_yantek' });
-
   useEffect(() => {
-    if (selectedYear) {
-      api.get(`/v1/ganti-meter?tahun=${selectedYear}`)
+    if (selectedTanggal) {
+      const tahunDariTanggal = selectedTanggal.split('-')[0];
+      api.get(`/v1/ganti-meter?tahun=${tahunDariTanggal}`)
         .then(res => setExistingData(res.data?.data || []))
         .catch(err => console.error(err));
     }
-  }, [selectedYear]);
-
-  const currentMonthData = existingData.find(d => parseInt(d.bulan) === parseInt(selectedMonth));
-  const isDuplicate = !!(selectedMonth && currentMonthData && currentMonthData.id != null);
+  }, [selectedTanggal]);
+  const currentDateData = existingData.find(d => d.tanggal === selectedTanggal);
+  const isDuplicate = !!(selectedTanggal && currentDateData && currentDateData.id != null);
 
   const onSubmit = async (data) => {
     if (isDuplicate) {
@@ -46,8 +42,7 @@ export default function InputKinerjaGantiMeterPage() {
     setSuccess(false);
     try {
       await api.post('/v1/ganti-meter', {
-        tahun: data.tahun,
-        bulan: data.periode_id,
+        tanggal: data.tanggal,
         jumlah_app: parseInt(data.jumlah_app, 10),
         jumlah_yantek: parseInt(data.jumlah_yantek, 10),
         keterangan: data.keterangan
@@ -96,7 +91,7 @@ export default function InputKinerjaGantiMeterPage() {
           <div>
             <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#1e293b' }}>Tambah Ganti Meter</h1>
             <p style={{ margin: 0, fontSize: '0.78rem', color: '#94a3b8', fontWeight: 500 }}>
-              {selectedMonth ? MONTHS.find(m => String(m.value) === String(selectedMonth))?.label : ''} {selectedYear}
+              {selectedTanggal || ''}
             </p>
           </div>
         </div>
@@ -136,25 +131,16 @@ export default function InputKinerjaGantiMeterPage() {
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             <div className="p-4 border-b border-slate-100 flex items-center gap-2 bg-slate-50/50">
               <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center"><Activity size={16} /></div>
-              <h3 className="font-bold text-slate-800 text-sm tracking-wide">PILIH PERIODE</h3>
+              <h3 className="font-bold text-slate-800 text-sm tracking-wide">PILIH TANGGAL</h3>
             </div>
             <div className="p-5 flex flex-col gap-4">
-              <div className="flex gap-4">
-                <div className="w-1/2">
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#64748b', marginBottom: 5 }}>Bulan</label>
-                  <select {...register('periode_id', { required: true })} style={inputStyle(false)}>
-                    <option value="">Pilih Bulan</option>
-                    {MONTHS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-                  </select>
-                </div>
-                <div className="w-1/2">
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#64748b', marginBottom: 5 }}>Tahun</label>
-                  <input readOnly={isDuplicate} type="number" {...register('tahun', { required: true })} placeholder="Tahun" style={inputStyle(isDuplicate)} />
-                </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#64748b', marginBottom: 5 }}>Tanggal</label>
+                <input readOnly={isDuplicate} type="date" {...register('tanggal', { required: true })} style={inputStyle(isDuplicate)} />
               </div>
-              {(errors.periode_id || errors.tahun) && (
+              {errors.tanggal && (
                 <div style={{ fontSize: '0.8rem', color: '#ef4444', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <AlertCircle size={14} /> Wajib isi periode
+                  <AlertCircle size={14} /> Wajib isi tanggal
                 </div>
               )}
             </div>

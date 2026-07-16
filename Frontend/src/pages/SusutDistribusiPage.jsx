@@ -108,10 +108,13 @@ export default function SusutDistribusiPage() {
     const bulanNum = i + 1;
     const realisasi = trendData?.realisasi?.[bulanNum] ?? null;
     const target = trendData?.target?.[bulanNum] ?? null;
+    const rawMatch = data?.find(d => d.bulan === bulanNum);
     return {
       label: MONTHS_ID[bulanNum]?.substring(0, 3) || `B${bulanNum}`,
       realisasi: realisasi,
       target: target,
+      kwh_siap_jual: rawMatch?.kwh_siap_jual ?? null,
+      kwh_jual: rawMatch?.kwh_jual ?? null,
     };
   });
 
@@ -120,15 +123,16 @@ export default function SusutDistribusiPage() {
     const bulanNum = i + 1;
     const match = data?.find(d => d.bulan === bulanNum);
     
+    const targetVal = trendData?.target?.[bulanNum] ?? null;
     if (match) {
       return {
         id: match.id,
         bulan: MONTHS_ID[bulanNum],
         bulan_angka: bulanNum,
-        kwh_netto: match.kwh_netto,
-        pssd: match.pssd,
-        kwh_jual_309: match.kwh_jual_309,
+        kwh_siap_jual: match.kwh_siap_jual,
+        kwh_jual: match.kwh_jual,
         realisasi_persen: match.realisasi_persen,
+        target: targetVal,
         keterangan: match.keterangan || '-',
       };
     }
@@ -137,10 +141,10 @@ export default function SusutDistribusiPage() {
       id: null,
       bulan: MONTHS_ID[bulanNum],
       bulan_angka: bulanNum,
-      kwh_netto: null,
-      pssd: null,
-      kwh_jual_309: null,
+      kwh_siap_jual: null,
+      kwh_jual: null,
       realisasi_persen: null,
+      target: targetVal,
       keterangan: '-',
     };
   });
@@ -148,45 +152,39 @@ export default function SusutDistribusiPage() {
   const columns = [
     { label: 'Bulan', key: 'bulan', render: (v) => <span className="font-semibold">{v}</span> },
     { 
-      label: 'KWh Netto', 
-      key: 'kwh_netto',
+      label: 'KWh Siap Jual', 
+      key: 'kwh_siap_jual',
       render: (v) => v != null ? <span className="text-slate-600">{Number(v).toLocaleString('id-ID')}</span> : '—'
     },
     { 
-      label: 'PSSD', 
-      key: 'pssd',
-      render: (v) => v != null ? <span className="text-slate-600">{Number(v).toLocaleString('id-ID')}</span> : '—'
-    },
-    { 
-      label: 'KWh Jual 309 (Tanpa Emin)', 
-      key: 'kwh_jual_309',
+      label: 'KWh Jual', 
+      key: 'kwh_jual',
       render: (v) => v != null ? <span className="text-slate-600">{Number(v).toLocaleString('id-ID')}</span> : '—'
     },
     { 
       label: 'Realisasi Susut (%)', 
       key: 'realisasi_persen',
-      render: (v) => v != null ? <span className="font-bold text-blue-600">{Number(v).toFixed(4)}%</span> : '—'
-    },
-    {
-      label: 'Aksi',
-      key: 'aksi',
       render: (v, row) => {
-        if (isViewer) return null;
-        return (
-          <button 
-            onClick={(e) => { e.stopPropagation(); setSelectedRow(row); setIsModalOpen(true); }}
-            className="text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 py-1 px-3 rounded-md transition"
-          >
-            Lihat Detail
-          </button>
-        );
+        if (v == null) return '—';
+        const tgt = row.target;
+        let colorClass = 'text-slate-700';
+        if (tgt != null) {
+          colorClass = v <= tgt ? 'text-emerald-600' : 'text-rose-600';
+        }
+        return <span className={`font-bold ${colorClass}`}>{Number(v).toFixed(4)}%</span>;
       }
-    }
+    },
+    { 
+      label: 'Target (%)', 
+      key: 'target',
+      render: (v) => v != null ? <span className="font-semibold text-slate-500">{Number(v).toFixed(4)}%</span> : '—'
+    },
   ];
 
   // Custom Tooltip for chart
   const CustomTooltip = ({ active, payload, label }) => {
     if (!active || !payload?.length) return null;
+    const raw = payload[0]?.payload;
     return (
       <div style={{
         background: '#ffffff', borderRadius: 10, padding: '12px 16px',
@@ -198,6 +196,16 @@ export default function SusutDistribusiPage() {
             {p.name}: {p.value != null ? Number(p.value).toFixed(4) + '%' : '—'}
           </p>
         ))}
+        {(raw?.kwh_siap_jual != null || raw?.kwh_jual != null) && (
+          <div style={{ marginTop: 6, paddingTop: 6, borderTop: '1px dashed #e2e8f0' }}>
+            <p style={{ fontSize: 12, color: '#64748b', fontWeight: 600, margin: '2px 0' }}>
+              KWh Siap Jual: {raw?.kwh_siap_jual != null ? Number(raw.kwh_siap_jual).toLocaleString('id-ID') : '—'}
+            </p>
+            <p style={{ fontSize: 12, color: '#64748b', fontWeight: 600, margin: '2px 0' }}>
+              KWh Jual: {raw?.kwh_jual != null ? Number(raw.kwh_jual).toLocaleString('id-ID') : '—'}
+            </p>
+          </div>
+        )}
       </div>
     );
   };
@@ -302,10 +310,11 @@ export default function SusutDistribusiPage() {
         </div>
         <div className="p-0">
           <DataTable 
-            columns={isViewer ? columns.filter(c => c.key !== 'aksi') : columns} 
+            columns={columns} 
             data={tableDataBulan} 
             paginated={false} 
             searchable={false}
+            onRowClick={(row) => { setSelectedRow(row); setIsModalOpen(true); }}
           />
         </div>
       </div>

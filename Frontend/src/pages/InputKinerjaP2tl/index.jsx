@@ -3,7 +3,7 @@ import { useForm, useWatch } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import api from '@/services/api';
 import { MONTHS } from '@/utils/constants';
-import { CheckCircle, AlertCircle, Save, ArrowLeft, Activity, AlertTriangle } from 'lucide-react';
+import { CheckCircle, AlertCircle, Save, ArrowLeft, Activity, AlertTriangle, Users, Zap } from 'lucide-react';
 
 export default function InputKinerjaP2tlPage() {
   const navigate = useNavigate();
@@ -15,13 +15,26 @@ export default function InputKinerjaP2tlPage() {
     defaultValues: {
       tahun: new Date().getFullYear(),
       periode_id: '',
-      realisasi_kwh: '',
+      jml_plg_p1: '',
+      jml_plg_p2: '',
+      kwh_p2: '',
+      jml_plg_p3: '',
+      kwh_p3: '',
+      jml_plg_p4: '',
+      kwh_p4: '',
+      jml_plg_k2: '',
+      kwh_k2: '',
       keterangan: ''
     }
   });
 
   const selectedMonth = useWatch({ control, name: 'periode_id' });
   const selectedYear = useWatch({ control, name: 'tahun' });
+  const watchKwhP2 = useWatch({ control, name: 'kwh_p2' });
+  const watchKwhP3 = useWatch({ control, name: 'kwh_p3' });
+  const watchKwhP4 = useWatch({ control, name: 'kwh_p4' });
+  const watchKwhK2 = useWatch({ control, name: 'kwh_k2' });
+  const liveTotal = (parseFloat(watchKwhP2) || 0) + (parseFloat(watchKwhP3) || 0) + (parseFloat(watchKwhP4) || 0) + (parseFloat(watchKwhK2) || 0);
 
   useEffect(() => {
     if (selectedYear) {
@@ -45,7 +58,15 @@ export default function InputKinerjaP2tlPage() {
       await api.post('/v1/p2tl', {
         tahun: parseInt(data.tahun, 10),
         bulan: parseInt(data.periode_id, 10),
-        realisasi_kwh: parseFloat(data.realisasi_kwh),
+        jml_plg_p1: parseInt(data.jml_plg_p1, 10) || 0,
+        jml_plg_p2: parseInt(data.jml_plg_p2, 10) || 0,
+        kwh_p2: parseFloat(data.kwh_p2) || 0,
+        jml_plg_p3: parseInt(data.jml_plg_p3, 10) || 0,
+        kwh_p3: parseFloat(data.kwh_p3) || 0,
+        jml_plg_p4: parseInt(data.jml_plg_p4, 10) || 0,
+        kwh_p4: parseFloat(data.kwh_p4) || 0,
+        jml_plg_k2: parseInt(data.jml_plg_k2, 10) || 0,
+        kwh_k2: parseFloat(data.kwh_k2) || 0,
         keterangan: data.keterangan
       });
       setSuccess(true);
@@ -136,24 +157,84 @@ export default function InputKinerjaP2tlPage() {
               <h3 className="font-bold text-slate-800 text-sm tracking-wide">DETAIL REALISASI P2TL</h3>
             </div>
             <div className="p-5 flex flex-col gap-3">
-              
+              <p style={{ fontSize: '0.72rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', margin: 0 }}>Pelanggaran (P)</p>
+
               <div className="flex items-center justify-between p-3 bg-white border border-[#f3f4f6] rounded-xl gap-4 hover:bg-slate-50 transition">
                 <div className="flex items-center gap-3 flex-1">
-                  <label className="font-semibold text-slate-700 text-[13px]">Realisasi kWh P2TL</label>
+                  <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0"><Users size={15} /></div>
+                  <label className="font-semibold text-slate-700 text-[13px]">P1 — Jumlah Pelanggan</label>
                 </div>
-                <div className="flex flex-col items-end">
-                  <input 
-                    readOnly={isDuplicate} 
-                    type="number" 
-                    step="any" 
-                    {...register('realisasi_kwh', { required: 'Wajib diisi', min: { value: 0, message: 'Tidak boleh negatif' } })} 
-                    className={fieldInputClass} 
-                    placeholder="0" 
-                  />
-                  {errors.realisasi_kwh && <span className="text-xs text-red-500 mt-1 font-semibold">{errors.realisasi_kwh.message}</span>}
-                </div>
+                <input readOnly={isDuplicate} type="number" step="1" {...register('jml_plg_p1', { min: { value: 0, message: 'Tidak boleh negatif' } })} className={fieldInputClass} placeholder="-" />
               </div>
 
+              <div className="flex items-center justify-between p-3 bg-white border border-[#f3f4f6] rounded-xl gap-4 hover:bg-slate-50 transition">
+                <div className="flex items-center gap-3 flex-1">
+                  <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0"><Users size={15} /></div>
+                  <label className="font-semibold text-slate-700 text-[13px]">P2 — Jumlah Pelanggan</label>
+                </div>
+                <input readOnly={isDuplicate} type="number" step="1" {...register('jml_plg_p2', { min: { value: 0, message: 'Tidak boleh negatif' } })} className={fieldInputClass} placeholder="-" />
+              </div>
+              <div className="flex items-center justify-between p-3 bg-white border border-[#f3f4f6] rounded-xl gap-4 hover:bg-slate-50 transition">
+                <div className="flex items-center gap-3 flex-1">
+                  <div className="w-9 h-9 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center flex-shrink-0"><Zap size={15} /></div>
+                  <label className="font-semibold text-slate-700 text-[13px]">P2 — kWh</label>
+                </div>
+                <input readOnly={isDuplicate} type="number" step="any" {...register('kwh_p2', { min: { value: 0, message: 'Tidak boleh negatif' } })} className={fieldInputClass} placeholder="-" />
+              </div>
+
+              <div className="flex items-center justify-between p-3 bg-white border border-[#f3f4f6] rounded-xl gap-4 hover:bg-slate-50 transition">
+                <div className="flex items-center gap-3 flex-1">
+                  <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0"><Users size={15} /></div>
+                  <label className="font-semibold text-slate-700 text-[13px]">P3 — Jumlah Pelanggan</label>
+                </div>
+                <input readOnly={isDuplicate} type="number" step="1" {...register('jml_plg_p3', { min: { value: 0, message: 'Tidak boleh negatif' } })} className={fieldInputClass} placeholder="-" />
+              </div>
+              <div className="flex items-center justify-between p-3 bg-white border border-[#f3f4f6] rounded-xl gap-4 hover:bg-slate-50 transition">
+                <div className="flex items-center gap-3 flex-1">
+                  <div className="w-9 h-9 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center flex-shrink-0"><Zap size={15} /></div>
+                  <label className="font-semibold text-slate-700 text-[13px]">P3 — kWh</label>
+                </div>
+                <input readOnly={isDuplicate} type="number" step="any" {...register('kwh_p3', { min: { value: 0, message: 'Tidak boleh negatif' } })} className={fieldInputClass} placeholder="-" />
+              </div>
+
+              <div className="flex items-center justify-between p-3 bg-white border border-[#f3f4f6] rounded-xl gap-4 hover:bg-slate-50 transition">
+                <div className="flex items-center gap-3 flex-1">
+                  <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0"><Users size={15} /></div>
+                  <label className="font-semibold text-slate-700 text-[13px]">P4 — Jumlah Pelanggan</label>
+                </div>
+                <input readOnly={isDuplicate} type="number" step="1" {...register('jml_plg_p4', { min: { value: 0, message: 'Tidak boleh negatif' } })} className={fieldInputClass} placeholder="-" />
+              </div>
+              <div className="flex items-center justify-between p-3 bg-white border border-[#f3f4f6] rounded-xl gap-4 hover:bg-slate-50 transition">
+                <div className="flex items-center gap-3 flex-1">
+                  <div className="w-9 h-9 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center flex-shrink-0"><Zap size={15} /></div>
+                  <label className="font-semibold text-slate-700 text-[13px]">P4 — kWh</label>
+                </div>
+                <input readOnly={isDuplicate} type="number" step="any" {...register('kwh_p4', { min: { value: 0, message: 'Tidak boleh negatif' } })} className={fieldInputClass} placeholder="-" />
+              </div>
+
+              <div style={{ borderTop: '1px dashed #e2e8f0', margin: '4px 0' }} />
+              <p style={{ fontSize: '0.72rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', margin: 0 }}>Kelainan (K2)</p>
+
+              <div className="flex items-center justify-between p-3 bg-white border border-[#f3f4f6] rounded-xl gap-4 hover:bg-slate-50 transition">
+                <div className="flex items-center gap-3 flex-1">
+                  <div className="w-9 h-9 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center flex-shrink-0"><AlertTriangle size={15} /></div>
+                  <label className="font-semibold text-slate-700 text-[13px]">K2 — Jumlah Pelanggan</label>
+                </div>
+                <input readOnly={isDuplicate} type="number" step="1" {...register('jml_plg_k2', { min: { value: 0, message: 'Tidak boleh negatif' } })} className={fieldInputClass} placeholder="-" />
+              </div>
+              <div className="flex items-center justify-between p-3 bg-white border border-[#f3f4f6] rounded-xl gap-4 hover:bg-slate-50 transition">
+                <div className="flex items-center gap-3 flex-1">
+                  <div className="w-9 h-9 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center flex-shrink-0"><AlertTriangle size={15} /></div>
+                  <label className="font-semibold text-slate-700 text-[13px]">K2 — kWh</label>
+                </div>
+                <input readOnly={isDuplicate} type="number" step="any" {...register('kwh_k2', { min: { value: 0, message: 'Tidak boleh negatif' } })} className={fieldInputClass} placeholder="-" />
+              </div>
+
+              <div style={{ borderTop: '1px dashed #e2e8f0', margin: '4px 0' }} />
+              <div className="flex items-center justify-between p-3 bg-white border border-[#f3f4f6] rounded-xl gap-4">
+                <label className="font-bold text-slate-800 text-[13px]">Total Realisasi kWh (otomatis)</label>
+                <span className="font-bold text-blue-600 text-[14px]">{liveTotal.toLocaleString('id-ID')}</span>
+              </div>
             </div>
           </div>
 

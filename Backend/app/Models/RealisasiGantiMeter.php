@@ -11,6 +11,7 @@ class RealisasiGantiMeter extends Model
 
     protected $fillable = [
         'up3',
+        'tanggal',
         'tahun',
         'bulan',
         'jumlah_app',
@@ -18,6 +19,9 @@ class RealisasiGantiMeter extends Model
         'total',
         'keterangan',
         'created_by'
+    ];
+    protected $casts = [
+        'tanggal' => 'date:Y-m-d',
     ];
 
     public function creator()

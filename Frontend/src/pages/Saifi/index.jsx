@@ -205,7 +205,11 @@ export default function SaifiPage() {
           Rata-rata frekuensi pemadaman per pelanggan · Tahun {filters.year}
         </p>
       </div>
-      <TargetWarning up3={filters.up3} year={filters.year} isVisible={!loading && !data.some(d => d.target && d.target > 0)} />
+      <TargetWarning
+        up3={filters.up3}
+        year={filters.year}
+        isVisible={!loading && data.some(d => d.target == null || d.target === 0 || d.target === '')}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <KpiCard title="Kumulatif Realisasi" value={Number(totalReal).toFixed(4)} unit="kali/plg" icon={Zap} color="blue" loading={loading} />

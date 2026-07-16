@@ -207,12 +207,9 @@ export default function RatingNegatifPage() {
       targetYtd = 0;
   }
 
-  // Calculate percentage using negative polarity formula: (2 - Realisasi / Target) * 100
-  let persentase = 0;
-  if (targetYtd !== null && targetYtd > 0) {
-      persentase = (2 - (ytdRealisasi / targetYtd)) * 100;
-  }
-  
+  // Use NKO Score from backend
+  const persentase = data?.nko_score ?? 0;
+
   // For negative rating, lower is better. So if ytdRealisasi <= targetYtd, it's good (green).
   const isGood = targetYtd !== null ? ytdRealisasi <= targetYtd : true;
 
@@ -354,7 +351,7 @@ export default function RatingNegatifPage() {
           value={isGood ? 'TERCAPAI' : 'TIDAK TERCAPAI'}
           icon={isGood ? CheckCircle : XCircle}
           color={isGood ? 'green' : 'red'}
-          badgeText={`Pencapaian: ${persentase.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`}
+          badgeText={`Pencapaian: ${data?.nko_score != null ? data.nko_score.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%' : '-'}`}
           loading={loading}
         />
       </div>

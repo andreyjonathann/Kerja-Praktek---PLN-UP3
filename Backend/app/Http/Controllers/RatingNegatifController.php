@@ -61,6 +61,8 @@ class RatingNegatifController extends Controller
         // Calculate cumulative (Dalam Kali)
         $sumNegatif = 0;
         $sumWo = 0;
+        $sumTargetKumulatif = 0;
+        $hasAnyTarget = false;
         foreach ($data as $idx => $row) {
             if ($row['realisasi'] !== null) {
                 $sumNegatif += $row['jml_rating_negatif'];
@@ -72,7 +74,23 @@ class RatingNegatifController extends Controller
             
             $monthAbbrev = strtolower($this->getBulanLabel($row['bulan']));
             $monthField = 'target_' . $monthAbbrev;
-            $cumulativeData[$idx]['cumulativeTgt'] = $target ? $target->{$monthField} : null;
+            if ($target && $target->{$monthField} !== null) {
+                $sumTargetKumulatif += $target->{$monthField};
+                $hasAnyTarget = true;
+            }
+            $cumulativeData[$idx]['cumulativeTgt'] = $hasAnyTarget ? $sumTargetKumulatif : null;
+        }
+
+        $latestCumulative = null;
+        foreach ($cumulativeData as $row) {
+            if ($row['cumulativeReal'] !== null) {
+                $latestCumulative = $row;
+            }
+        }
+        $nkoScore = null;
+        if ($latestCumulative && $latestCumulative['cumulativeTgt'] !== null && $latestCumulative['cumulativeTgt'] > 0) {
+            $nkoScore = min((2 - ($latestCumulative['cumulativeReal'] / $latestCumulative['cumulativeTgt'])) * 100, 110);
+            $nkoScore = round($nkoScore, 2);
         }
 
         $calculatedYearlyTarget = null;
@@ -98,6 +116,7 @@ class RatingNegatifController extends Controller
             'cumulative' => $cumulativeData,
             'target' => $calculatedYearlyTarget,
             'target_tahunan' => $target,
+            'nko_score' => $nkoScore,
         ]);
     }
 
@@ -216,12 +235,19 @@ class RatingNegatifController extends Controller
             $ytdTarget = $target->{'target_' . $monthAbbrev};
         }
 
+        $nkoScore = null;
+        if ($ytdTarget !== null && $ytdTarget > 0 && $ytd !== null) {
+            $nkoScore = min((2 - ($ytd / $ytdTarget)) * 100, 110);
+            $nkoScore = round($nkoScore, 2);
+        }
+
         return response()->json([
             [
                 'up3' => Up3Constants::DEFAULT_UP3,
                 'monthly' => $monthlyData,
                 'ytd' => $ytd,
                 'target' => $ytdTarget,
+                'nko_score' => $nkoScore,
             ]
         ]);
     }

@@ -172,21 +172,6 @@ export default function GantiMeterPage() {
       key: 'keterangan',
       render: (v) => <span className="text-slate-500 text-sm max-w-[200px] truncate block" title={v}>{v}</span>
     },
-    {
-      label: 'Aksi',
-      key: 'aksi',
-      render: (v, row) => {
-        if (isViewer) return null;
-        return (
-          <button 
-            onClick={(e) => { e.stopPropagation(); setSelectedRow(row); setIsModalOpen(true); }}
-            className="text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 py-1 px-3 rounded-md transition"
-          >
-            Lihat Detail
-          </button>
-        );
-      }
-    }
   ];
 
   return (
@@ -258,7 +243,18 @@ export default function GantiMeterPage() {
             <YAxis tick={{ fontSize: 12.5, fontWeight: 650 }} />
             <Tooltip content={<CustomTooltip />} />
             <Legend wrapperStyle={{ fontSize: 13, fontWeight: 600 }} />
-            <Bar dataKey="realisasi" name="Realisasi" fill="#2563eb" radius={[4, 4, 0, 0]} />
+            <Bar
+              dataKey="realisasi"
+              name="Realisasi"
+              fill="#2563eb"
+              radius={[4, 4, 0, 0]}
+              style={{ cursor: 'pointer' }}
+              onClick={(barData) => {
+                const bulanNum = MONTHS_ID.findIndex((m, idx) => m?.substring(0, 3) === barData.label) ;
+                const matchedRow = tableDataBulan.find(r => r.bulan_angka === (bulanNum >= 0 ? bulanNum : null)) || tableDataBulan.find(r => r.bulan === barData.label);
+                if (matchedRow) { setSelectedRow(matchedRow); setIsModalOpen(true); }
+              }}
+            />
             <Line dataKey="target" name="Target" stroke="#EF4444" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 4, fill: '#EF4444' }} />
           </ComposedChart>
         </ResponsiveContainer>
@@ -272,10 +268,11 @@ export default function GantiMeterPage() {
         </div>
         <div className="p-0">
           <DataTable 
-            columns={isViewer ? columns.filter(c => c.key !== 'aksi') : columns} 
+            columns={columns} 
             data={tableDataBulan} 
             paginated={false} 
             searchable={false}
+            onRowClick={(row) => { setSelectedRow(row); setIsModalOpen(true); }}
           />
         </div>
       </div>

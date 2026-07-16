@@ -165,6 +165,20 @@ class MvodController extends Controller
 
     public function dashboard(Request $request)
     {
+        $bobotGi = 3; $bobotJtm = 2; $bobotGd = 1; // fallback default kalau data DB tidak lengkap
+        $mvodParent = \App\Models\NkoParameter::where('nama', 'MVOD (Sesuai kewenangan)')->first();
+        if ($mvodParent) {
+            $children = \App\Models\NkoParameter::where('parent_id', $mvodParent->id)->get();
+            $giParam = $children->firstWhere('nama', 'MVOD - SLA Gardu Induk');
+            $jtmParam = $children->firstWhere('nama', 'MVOD - SLA JTM');
+            $gdParam = $children->firstWhere('nama', 'MVOD - SLA Gardu Distribusi');
+            if ($giParam && $jtmParam && $gdParam) {
+                $bobotGi = (float) $giParam->bobot;
+                $bobotJtm = (float) $jtmParam->bobot;
+                $bobotGd = (float) $gdParam->bobot;
+            }
+        }
+
         $tahun = $request->tahun ?: date('Y');
         $up3 = $request->up3; // optional
 
@@ -255,13 +269,13 @@ class MvodController extends Controller
             $p_jtm = $avg_jtm !== null && $sla_jtm_b !== null ? $calcPersen($avg_jtm, $sla_jtm_b) : null;
             $p_gd = $avg_gd !== null && $sla_gd_b !== null ? $calcPersen($avg_gd, $sla_gd_b) : null;
 
-            // Gabungan: Bobot PLN → GI=3, JTM=2, GD=1 (total koefisien=6)
+            // Bobot diambil dari nko_parameters, fallback GI=3 JTM=2 GD=1
             $mvod_gabungan = null;
             $bobot_parts = [];
             $total_koef = 0;
-            if ($p_gi !== null)  { $bobot_parts[] = 3 * $p_gi;  $total_koef += 3; }
-            if ($p_jtm !== null) { $bobot_parts[] = 2 * $p_jtm; $total_koef += 2; }
-            if ($p_gd !== null)  { $bobot_parts[] = 1 * $p_gd;  $total_koef += 1; }
+            if ($p_gi !== null)  { $bobot_parts[] = $bobotGi * $p_gi;  $total_koef += $bobotGi; }
+            if ($p_jtm !== null) { $bobot_parts[] = $bobotJtm * $p_jtm; $total_koef += $bobotJtm; }
+            if ($p_gd !== null)  { $bobot_parts[] = $bobotGd * $p_gd;  $total_koef += $bobotGd; }
             if ($total_koef > 0) {
                 $mvod_gabungan = array_sum($bobot_parts) / $total_koef;
             }
@@ -349,7 +363,7 @@ class MvodController extends Controller
             }
         }
 
-        // Gabungan Summary: Bobot PLN → GI=3, JTM=2, GD=1 (total koefisien=6)
+        // Gabungan Summary: Bobot diambil dari nko_parameters, fallback GI=3 JTM=2 GD=1
         $mvod_gabungan = null;
         $p_gi = $summary['gi']['persen'] !== null ? $summary['gi']['persen'] / 100 : null;
         $p_jtm = $summary['jtm']['persen'] !== null ? $summary['jtm']['persen'] / 100 : null;
@@ -357,9 +371,9 @@ class MvodController extends Controller
 
         $bobot_parts = [];
         $total_koef = 0;
-        if ($p_gi !== null)  { $bobot_parts[] = 3 * $p_gi;  $total_koef += 3; }
-        if ($p_jtm !== null) { $bobot_parts[] = 2 * $p_jtm; $total_koef += 2; }
-        if ($p_gd !== null)  { $bobot_parts[] = 1 * $p_gd;  $total_koef += 1; }
+        if ($p_gi !== null)  { $bobot_parts[] = $bobotGi * $p_gi;  $total_koef += $bobotGi; }
+        if ($p_jtm !== null) { $bobot_parts[] = $bobotJtm * $p_jtm; $total_koef += $bobotJtm; }
+        if ($p_gd !== null)  { $bobot_parts[] = $bobotGd * $p_gd;  $total_koef += $bobotGd; }
         if ($total_koef > 0) {
             $mvod_gabungan = array_sum($bobot_parts) / $total_koef;
         }

@@ -466,7 +466,7 @@ export default function App() {
                   <InputKinerjaGantiMeterPage />
                 </ProtectedRoute>
               } />
-              <Route path="/ganti-meter/edit/:bulan/:tahun" element={
+              <Route path="/ganti-meter/edit/:id" element={
                 <ProtectedRoute>
                   <EditKinerjaGantiMeterPage />
                 </ProtectedRoute>

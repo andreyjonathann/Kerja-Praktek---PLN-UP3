@@ -36,6 +36,7 @@ class SrdagController extends Controller
             'bulan' => 'required|integer|min:1|max:12',
             'jumlah_dispatch_berhasil' => 'required|integer|min:0',
             'jumlah_total_gangguan' => 'required|integer|min:1',
+            'wo_marking_padam_meluas' => 'nullable|integer|min:0',
         ]);
 
         $user = auth()->user();
@@ -45,17 +46,30 @@ class SrdagController extends Controller
 
         $up3 = $user->role === 'admin' ? $request->up3 : $user->up3;
 
-        if ($request->jumlah_dispatch_berhasil > $request->jumlah_total_gangguan) {
+        $woMarking = $request->wo_marking_padam_meluas ?? 0;
+
+        if ($woMarking > $request->jumlah_total_gangguan) {
+            return response()->json(['success' => false, 'message' => 'WO Marking Padam Meluas tidak boleh lebih dari Jumlah Total Gangguan'], 422);
+        }
+
+        $denominator = $request->jumlah_total_gangguan - $woMarking;
+
+        if ($denominator <= 0) {
+            return response()->json(['success' => false, 'message' => 'Jumlah Total Gangguan dikurangi WO Marking Padam Meluas tidak boleh 0 atau negatif'], 422);
+        }
+
+        if ($request->jumlah_dispatch_berhasil > $denominator) {
             return response()->json(['success' => false, 'message' => 'Jumlah berhasil tidak boleh lebih dari total gangguan'], 422);
         }
 
-        $success_rate = $request->jumlah_dispatch_berhasil / $request->jumlah_total_gangguan;
+        $success_rate = $request->jumlah_dispatch_berhasil / $denominator;
 
         $record = SrdagRealisasi::updateOrCreate(
             ['up3' => $up3, 'tahun' => $request->tahun, 'bulan' => $request->bulan],
             [
                 'jumlah_dispatch_berhasil' => $request->jumlah_dispatch_berhasil,
                 'jumlah_total_gangguan' => $request->jumlah_total_gangguan,
+                'wo_marking_padam_meluas' => $woMarking,
                 'success_rate' => $success_rate,
                 'created_by' => $user->id
             ]
@@ -69,6 +83,7 @@ class SrdagController extends Controller
         $request->validate([
             'jumlah_dispatch_berhasil' => 'required|integer|min:0',
             'jumlah_total_gangguan' => 'required|integer|min:1',
+            'wo_marking_padam_meluas' => 'nullable|integer|min:0',
         ]);
 
         $record = SrdagRealisasi::findOrFail($id);
@@ -81,15 +96,28 @@ class SrdagController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized UP3'], 403);
         }
 
-        if ($request->jumlah_dispatch_berhasil > $request->jumlah_total_gangguan) {
+        $woMarking = $request->wo_marking_padam_meluas ?? 0;
+
+        if ($woMarking > $request->jumlah_total_gangguan) {
+            return response()->json(['success' => false, 'message' => 'WO Marking Padam Meluas tidak boleh lebih dari Jumlah Total Gangguan'], 422);
+        }
+
+        $denominator = $request->jumlah_total_gangguan - $woMarking;
+
+        if ($denominator <= 0) {
+            return response()->json(['success' => false, 'message' => 'Jumlah Total Gangguan dikurangi WO Marking Padam Meluas tidak boleh 0 atau negatif'], 422);
+        }
+
+        if ($request->jumlah_dispatch_berhasil > $denominator) {
             return response()->json(['success' => false, 'message' => 'Jumlah berhasil tidak boleh lebih dari total gangguan'], 422);
         }
 
-        $success_rate = $request->jumlah_dispatch_berhasil / $request->jumlah_total_gangguan;
+        $success_rate = $request->jumlah_dispatch_berhasil / $denominator;
 
         $record->update([
             'jumlah_dispatch_berhasil' => $request->jumlah_dispatch_berhasil,
             'jumlah_total_gangguan' => $request->jumlah_total_gangguan,
+            'wo_marking_padam_meluas' => $woMarking,
             'success_rate' => $success_rate,
         ]);
 
@@ -209,24 +237,24 @@ class SrdagController extends Controller
             'total_gangguan_ytd' => 0
         ];
 
-        $ytdRates = $ytdRecords->pluck('success_rate')->map(fn($v) => (float)$v)->toArray();
         $summary['total_gangguan_ytd'] = $ytdRecords->sum('jumlah_total_gangguan');
-
-        if (count($ytdRates) > 0) {
-            $summary['sr_rata_ytd'] = array_sum($ytdRates) / count($ytdRates);
+        $totalBerhasilYtd = $ytdRecords->sum('jumlah_dispatch_berhasil');
+        if ($summary['total_gangguan_ytd'] > 0) {
+            $summary['sr_rata_ytd'] = $totalBerhasilYtd / $summary['total_gangguan_ytd'];
         }
 
         if ($latestMonth > 0) {
             $bulanIniRecords = $realisasiRaw->where('bulan', $latestMonth);
-            $bulanIniRates = $bulanIniRecords->pluck('success_rate')->map(fn($v) => (float)$v)->toArray();
-            if (count($bulanIniRates) > 0) {
-                $summary['sr_bulan_ini'] = array_sum($bulanIniRates) / count($bulanIniRates);
+            $totalGangguanBulanIni = $bulanIniRecords->sum('jumlah_total_gangguan');
+            $totalBerhasilBulanIni = $bulanIniRecords->sum('jumlah_dispatch_berhasil');
+            if ($totalGangguanBulanIni > 0) {
+                $summary['sr_bulan_ini'] = $totalBerhasilBulanIni / $totalGangguanBulanIni;
             }
         }
 
-        // % Pencapaian — MAXIMIZE, tanpa capping
+        // % Pencapaian — MAXIMIZE, di-cap maksimal 110
         if ($targetRate > 0) {
-            $summary['persen_pencapaian'] = ($summary['sr_rata_ytd'] / $targetRate) * 100;
+            $summary['persen_pencapaian'] = min(($summary['sr_rata_ytd'] / $targetRate) * 100, 110);
             $summary['status'] = $summary['sr_rata_ytd'] >= $targetRate ? 'TERCAPAI' : 'BELUM_TERCAPAI';
         }
 
@@ -246,7 +274,7 @@ class SrdagController extends Controller
                     'target' => $monthTargetRate,
                     'jumlah_berhasil' => $monthData->sum('jumlah_dispatch_berhasil'),
                     'jumlah_total' => $monthData->sum('jumlah_total_gangguan'),
-                    'persen_pencapaian' => $monthTargetRate > 0 ? ($sr / $monthTargetRate) * 100 : 0
+                    'persen_pencapaian' => $monthTargetRate > 0 ? min(($sr / $monthTargetRate) * 100, 110) : 0
                 ];
             } else {
                 $trend_bulanan[] = [

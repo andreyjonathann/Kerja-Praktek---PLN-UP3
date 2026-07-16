@@ -15,18 +15,16 @@ export default function InputKinerjaSusutDistribusiPage() {
     defaultValues: {
       tahun: new Date().getFullYear(),
       periode_id: '',
-      kwh_netto: '',
-      pssd: '',
-      kwh_jual_309: '',
+      kwh_siap_jual: '',
+      kwh_jual: '',
       keterangan: ''
     }
   });
 
   const selectedMonth = useWatch({ control, name: 'periode_id' });
   const selectedYear = useWatch({ control, name: 'tahun' });
-  const kwh_netto = useWatch({ control, name: 'kwh_netto' });
-  const pssd = useWatch({ control, name: 'pssd' });
-  const kwh_jual_309 = useWatch({ control, name: 'kwh_jual_309' });
+  const kwh_siap_jual = useWatch({ control, name: 'kwh_siap_jual' });
+  const kwh_jual = useWatch({ control, name: 'kwh_jual' });
 
   useEffect(() => {
     if (selectedYear) {
@@ -50,9 +48,8 @@ export default function InputKinerjaSusutDistribusiPage() {
       await api.post('/v1/susut-distribusi', {
         tahun: data.tahun,
         bulan: data.periode_id,
-        kwh_netto: data.kwh_netto,
-        pssd: data.pssd,
-        kwh_jual_309: data.kwh_jual_309,
+        kwh_siap_jual: data.kwh_siap_jual,
+        kwh_jual: data.kwh_jual,
         keterangan: data.keterangan
       });
       setSuccess(true);
@@ -75,11 +72,10 @@ export default function InputKinerjaSusutDistribusiPage() {
 
   // Calculate Susut Preview
   let previewSusut = null;
-  const nettoVal = parseFloat(kwh_netto);
-  const pssdVal = parseFloat(pssd) || 0;
-  const jual309Val = parseFloat(kwh_jual_309) || 0;
-  if (!isNaN(nettoVal) && nettoVal > 0) {
-    previewSusut = ((nettoVal - pssdVal - jual309Val) / nettoVal) * 100;
+  const siapJualVal = parseFloat(kwh_siap_jual);
+  const jualVal = parseFloat(kwh_jual) || 0;
+  if (!isNaN(siapJualVal) && siapJualVal > 0) {
+    previewSusut = ((siapJualVal - jualVal) / siapJualVal) * 100;
   }
 
   return (
@@ -170,31 +166,20 @@ export default function InputKinerjaSusutDistribusiPage() {
               
               <div className="flex items-center justify-between p-3 bg-white border border-[#f3f4f6] rounded-xl gap-4 hover:bg-slate-50 transition">
                 <div className="flex items-center gap-3 flex-1">
-                  <label className="font-semibold text-slate-700 text-[13px]">KWH Netto (Terima UP3)</label>
+                  <label className="font-semibold text-slate-700 text-[13px]">KWh Siap Jual</label>
                 </div>
                 <div className="flex flex-col items-end">
-                  <input readOnly={isDuplicate} type="number" step="any" {...register('kwh_netto', { required: 'Wajib diisi', min: { value: 0.0001, message: '> 0' } })} className={fieldInputClass} placeholder="0" />
-                  {errors.kwh_netto && <span className="text-xs text-red-500 mt-1 font-semibold">{errors.kwh_netto.message}</span>}
+                  <input readOnly={isDuplicate} type="number" step="any" {...register('kwh_siap_jual', { required: 'Wajib diisi', min: { value: 0.0001, message: '> 0' } })} className={fieldInputClass} placeholder="0" />
+                  {errors.kwh_siap_jual && <span className="text-xs text-red-500 mt-1 font-semibold">{errors.kwh_siap_jual.message}</span>}
                 </div>
               </div>
-
               <div className="flex items-center justify-between p-3 bg-white border border-[#f3f4f6] rounded-xl gap-4 hover:bg-slate-50 transition">
                 <div className="flex items-center gap-3 flex-1">
-                  <label className="font-semibold text-slate-700 text-[13px]">Pemakaian Sendiri (PSSD)</label>
+                  <label className="font-semibold text-slate-700 text-[13px]">KWh Jual</label>
                 </div>
                 <div className="flex flex-col items-end">
-                  <input readOnly={isDuplicate} type="number" step="any" {...register('pssd', { required: 'Wajib diisi' })} className={fieldInputClass} placeholder="0" />
-                  {errors.pssd && <span className="text-xs text-red-500 mt-1 font-semibold">{errors.pssd.message}</span>}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-3 bg-white border border-[#f3f4f6] rounded-xl gap-4 hover:bg-slate-50 transition">
-                <div className="flex items-center gap-3 flex-1">
-                  <label className="font-semibold text-slate-700 text-[13px]">KWH Jual (Termasuk Toleransi 309)</label>
-                </div>
-                <div className="flex flex-col items-end">
-                  <input readOnly={isDuplicate} type="number" step="any" {...register('kwh_jual_309', { required: 'Wajib diisi' })} className={fieldInputClass} placeholder="0" />
-                  {errors.kwh_jual_309 && <span className="text-xs text-red-500 mt-1 font-semibold">{errors.kwh_jual_309.message}</span>}
+                  <input readOnly={isDuplicate} type="number" step="any" {...register('kwh_jual', { required: 'Wajib diisi', min: { value: 0, message: 'Tidak boleh negatif' } })} className={fieldInputClass} placeholder="0" />
+                  {errors.kwh_jual && <span className="text-xs text-red-500 mt-1 font-semibold">{errors.kwh_jual.message}</span>}
                 </div>
               </div>
 

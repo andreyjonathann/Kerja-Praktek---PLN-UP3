@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
-import { X, Edit2, Trash2, Plus } from 'lucide-react'
+import { X, Edit2, Trash2, Plus, Users, Zap, AlertTriangle } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { MONTHS_ID } from '@/utils/formatters'
 import { useAuth } from '@/context/AuthContext'
@@ -166,12 +166,54 @@ export default function P2tlDetailModal({
           <>
             {/* Detail rows */}
             <div style={{ marginBottom: 28 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '14px 0', borderBottom: '1px solid #f3f4f6' }}>
-                <span style={{ fontWeight: 600, fontSize: 14, color: '#0f172a' }}>Realisasi kWh P2TL</span>
+              <p style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 8px' }}>Pelanggaran (P)</p>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #f3f4f6' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600, fontSize: 13.5, color: '#0f172a' }}><Users size={14} style={{ color: '#2563eb' }} /> P1 — Jumlah Pelanggan</span>
+                <span style={{ fontWeight: 700, fontSize: 13.5, color: '#334155' }}>{fmt(rowData.jml_plg_p1)}</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #f3f4f6' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600, fontSize: 13.5, color: '#0f172a' }}><Users size={14} style={{ color: '#2563eb' }} /> P2 — Jumlah Pelanggan</span>
+                <span style={{ fontWeight: 700, fontSize: 13.5, color: '#334155' }}>{fmt(rowData.jml_plg_p2)}</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #f3f4f6' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600, fontSize: 13.5, color: '#0f172a' }}><Zap size={14} style={{ color: '#d97706' }} /> P2 — kWh</span>
+                <span style={{ fontWeight: 700, fontSize: 13.5, color: '#334155' }}>{fmt(rowData.kwh_p2)}</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #f3f4f6' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600, fontSize: 13.5, color: '#0f172a' }}><Users size={14} style={{ color: '#2563eb' }} /> P3 — Jumlah Pelanggan</span>
+                <span style={{ fontWeight: 700, fontSize: 13.5, color: '#334155' }}>{fmt(rowData.jml_plg_p3)}</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #f3f4f6' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600, fontSize: 13.5, color: '#0f172a' }}><Zap size={14} style={{ color: '#d97706' }} /> P3 — kWh</span>
+                <span style={{ fontWeight: 700, fontSize: 13.5, color: '#334155' }}>{fmt(rowData.kwh_p3)}</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #f3f4f6' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600, fontSize: 13.5, color: '#0f172a' }}><Users size={14} style={{ color: '#2563eb' }} /> P4 — Jumlah Pelanggan</span>
+                <span style={{ fontWeight: 700, fontSize: 13.5, color: '#334155' }}>{fmt(rowData.jml_plg_p4)}</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #f3f4f6' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600, fontSize: 13.5, color: '#0f172a' }}><Zap size={14} style={{ color: '#d97706' }} /> P4 — kWh</span>
+                <span style={{ fontWeight: 700, fontSize: 13.5, color: '#334155' }}>{fmt(rowData.kwh_p4)}</span>
+              </div>
+
+              <p style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '16px 0 8px' }}>Kelainan (K2)</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #f3f4f6' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600, fontSize: 13.5, color: '#0f172a' }}><Users size={14} style={{ color: '#e11d48' }} /> K2 — Jumlah Pelanggan</span>
+                <span style={{ fontWeight: 700, fontSize: 13.5, color: '#334155' }}>{fmt(rowData.jml_plg_k2)}</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #f3f4f6' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600, fontSize: 13.5, color: '#0f172a' }}><AlertTriangle size={14} style={{ color: '#e11d48' }} /> K2 — kWh</span>
+                <span style={{ fontWeight: 700, fontSize: 13.5, color: '#334155' }}>{fmt(rowData.kwh_k2)}</span>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '14px 0 0', marginTop: 4 }}>
+                <span style={{ fontWeight: 700, fontSize: 14, color: '#0f172a' }}>Total Realisasi kWh</span>
                 <span style={{ fontWeight: 700, fontSize: 14, color: '#2563eb' }}>{fmt(rowData.realisasi_kwh)}</span>
               </div>
+
               {rowData.keterangan && rowData.keterangan !== '-' && (
-                <div style={{ padding: '14px 0', borderBottom: '1px solid #f3f4f6' }}>
+                <div style={{ padding: '14px 0 0' }}>
                   <span style={{ display: 'block', fontWeight: 600, fontSize: 14, color: '#0f172a', marginBottom: 4 }}>Keterangan</span>
                   <span style={{ fontWeight: 400, fontSize: 14, color: '#475569' }}>{rowData.keterangan}</span>
                 </div>

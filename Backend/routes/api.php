@@ -122,6 +122,7 @@ Route::middleware('api')->group(function () {
         Route::get('/ganti-meter', [\App\Http\Controllers\Api\RealisasiGantiMeterController::class, 'index']);
         Route::post('/ganti-meter', [\App\Http\Controllers\Api\RealisasiGantiMeterController::class, 'store']);
         Route::get('/ganti-meter/dashboard', [\App\Http\Controllers\Api\RealisasiGantiMeterController::class, 'dashboard']);
+        Route::get('/ganti-meter/dashboard-harian', [\App\Http\Controllers\Api\RealisasiGantiMeterController::class, 'dashboardHarian']);
         Route::put('/ganti-meter/{id}', [\App\Http\Controllers\Api\RealisasiGantiMeterController::class, 'update']);
         Route::delete('/ganti-meter/{id}', [\App\Http\Controllers\Api\RealisasiGantiMeterController::class, 'destroy']);
 

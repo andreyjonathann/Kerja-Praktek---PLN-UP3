@@ -44,16 +44,13 @@ class RealisasiGantiMeterController extends Controller
         if ($user->role !== 'pic_transaksi_energi' && $user->role !== 'admin') {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
-
         $validator = Validator::make($request->all(), [
-            'tahun' => 'required|integer',
-            'bulan' => 'required|integer|min:1|max:12',
+            'tanggal' => 'required|date',
             'jumlah_app' => 'required|integer|min:0',
             'jumlah_yantek' => 'required|integer|min:0',
             'up3' => 'nullable|string',
             'keterangan' => 'nullable|string'
         ]);
-
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
@@ -61,36 +58,29 @@ class RealisasiGantiMeterController extends Controller
                 'errors' => $validator->errors()
             ], 422);
         }
-
         $up3 = $request->up3 ?? $user->up3 ?? Up3Constants::DEFAULT_UP3;
-
-        // Cek duplikasi
+        $tanggal = \Carbon\Carbon::parse($request->tanggal);
+        // Cek duplikasi per tanggal
         $exists = RealisasiGantiMeter::where('up3', $up3)
-            ->where('tahun', $request->tahun)
-            ->where('bulan', $request->bulan)
+            ->where('tanggal', $tanggal->format('Y-m-d'))
             ->first();
-
         if ($exists) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data untuk bulan ini sudah pernah diinput, gunakan fitur edit'
+                'message' => 'Data untuk tanggal ini sudah pernah diinput, gunakan fitur edit'
             ], 422);
         }
-
         $realisasi = new RealisasiGantiMeter();
         $realisasi->up3 = $up3;
-        $realisasi->tahun = $request->tahun;
-        $realisasi->bulan = $request->bulan;
+        $realisasi->tanggal = $tanggal->format('Y-m-d');
+        $realisasi->tahun = $tanggal->year;
+        $realisasi->bulan = $tanggal->month;
         $realisasi->jumlah_app = $request->jumlah_app;
         $realisasi->jumlah_yantek = $request->jumlah_yantek;
-        
-        // Total HARUS dihitung di controller
         $realisasi->total = $request->jumlah_app + $request->jumlah_yantek;
-        
         $realisasi->keterangan = $request->keterangan;
         $realisasi->created_by = $user->id;
         $realisasi->save();
-
         return response()->json([
             'success' => true,
             'message' => 'Data berhasil disimpan',
@@ -107,18 +97,15 @@ class RealisasiGantiMeterController extends Controller
         if ($user->role !== 'pic_transaksi_energi' && $user->role !== 'admin') {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
-
         $realisasi = RealisasiGantiMeter::find($id);
         if (!$realisasi) {
             return response()->json(['success' => false, 'message' => 'Data tidak ditemukan'], 404);
         }
-
         $validator = Validator::make($request->all(), [
             'jumlah_app' => 'required|integer|min:0',
             'jumlah_yantek' => 'required|integer|min:0',
             'keterangan' => 'nullable|string'
         ]);
-
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
@@ -126,16 +113,11 @@ class RealisasiGantiMeterController extends Controller
                 'errors' => $validator->errors()
             ], 422);
         }
-
         $realisasi->jumlah_app = $request->jumlah_app;
         $realisasi->jumlah_yantek = $request->jumlah_yantek;
-        
-        // Total HARUS dihitung di controller
         $realisasi->total = $request->jumlah_app + $request->jumlah_yantek;
-        
         $realisasi->keterangan = $request->keterangan;
         $realisasi->save();
-
         return response()->json([
             'success' => true,
             'message' => 'Data berhasil diupdate',
@@ -245,6 +227,25 @@ class RealisasiGantiMeterController extends Controller
                 'pencapaian' => round($pencapaian, 2),
                 'trend' => $trend,
             ]
+        ]);
+    }
+
+    /**
+     * Detail harian untuk drill-down satu bulan tertentu.
+     */
+    public function dashboardHarian(Request $request)
+    {
+        $tahun = $request->tahun ?? date('Y');
+        $bulan = $request->bulan ?? date('m');
+        $up3 = $request->up3;
+        $query = RealisasiGantiMeter::where('tahun', $tahun)->where('bulan', $bulan);
+        if ($up3) {
+            $query->where('up3', $up3);
+        }
+        $data = $query->orderBy('tanggal', 'asc')->get();
+        return response()->json([
+            'success' => true,
+            'data' => $data
         ]);
     }
 }
