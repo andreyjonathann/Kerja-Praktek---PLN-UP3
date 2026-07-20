@@ -5,23 +5,39 @@ export default function TargetWarning({ up3, year, isVisible, monthName }) {
   if (!isVisible) return null;
 
   return (
-    <div className="bg-orange-50 border-l-4 border-orange-500 p-4 rounded-r-lg shadow-sm">
-      <div className="flex">
-        <div className="flex-shrink-0">
-          <AlertTriangle className="h-5 w-5 text-orange-400" />
+    <div 
+      className="fixed top-24 right-8 p-4 rounded-lg shadow-lg border-l-4 z-50 max-w-md" 
+      style={{ 
+        backgroundColor: 'rgba(239, 68, 68, 0.1)', // Light Red Background
+        borderColor: '#EF4444', // Solid Red Border
+        backdropFilter: 'blur(8px)',
+        animation: 'slideInRight 0.3s ease-out forwards'
+      }}
+    >
+      <div className="flex items-start">
+        <div className="flex-shrink-0 mt-0.5">
+          <AlertTriangle className="h-5 w-5" style={{ color: '#EF4444' }} />
         </div>
         <div className="ml-3">
-          <h3 className="text-sm font-medium text-orange-800">Peringatan: Target belum ditetapkan</h3>
-          <div className="mt-2 text-sm text-orange-700">
+          <h3 className="text-sm font-bold tracking-wide uppercase" style={{ color: '#DC2626' }}>
+            Target Belum Lengkap / Ditetapkan
+          </h3>
+          <div className="mt-1 text-xs font-medium leading-relaxed" style={{ color: '#B91C1C' }}>
             <p>
               {monthName 
-                ? `Target untuk UP3 ${up3} bulan ${monthName} tahun ${year} belum ditetapkan oleh Admin. Harap hubungi Admin untuk mengatur target bulan ini.`
-                : `Target tahunan untuk UP3 ${up3} tahun ${year} belum ditetapkan oleh Admin. Harap hubungi Admin untuk mengatur target tahun ini.`
+                ? `Target bulan ${monthName} ${year} belum lengkap. Harap hubungi Admin.`
+                : `Data target tahun ${year} belum lengkap/ditetapkan seluruhnya. Harap hubungi Admin.`
               }
             </p>
           </div>
         </div>
       </div>
+      <style>{`
+        @keyframes slideInRight {
+          from { opacity: 0; transform: translateX(20px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+      `}</style>
     </div>
   )
 }

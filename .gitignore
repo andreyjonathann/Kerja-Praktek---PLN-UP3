@@ -1,2 +1,12 @@
-
 *.backup
+
+Backend/*.sql
+Backend/*.dump
+Backend/test.php
+Backend/scratch.php
+Backend/query_susut.php
+Backend/test_susut_post.php
+Backend/test_tinker.php
+Backend/targets.json
+Backend/targets_output.txt
+backup_pln_dashboard.sql

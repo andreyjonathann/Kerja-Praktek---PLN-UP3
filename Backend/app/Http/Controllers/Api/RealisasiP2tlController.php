@@ -53,7 +53,15 @@ class RealisasiP2tlController extends Controller
         $validator = Validator::make($request->all(), [
             'tahun' => 'required|integer',
             'bulan' => 'required|integer|min:1|max:12',
-            'realisasi_kwh' => 'required|numeric|min:0',
+            'jml_plg_p1' => 'nullable|integer|min:0',
+            'jml_plg_p2' => 'nullable|integer|min:0',
+            'kwh_p2' => 'nullable|numeric|min:0',
+            'jml_plg_p3' => 'nullable|integer|min:0',
+            'kwh_p3' => 'nullable|numeric|min:0',
+            'jml_plg_p4' => 'nullable|integer|min:0',
+            'kwh_p4' => 'nullable|numeric|min:0',
+            'jml_plg_k2' => 'nullable|integer|min:0',
+            'kwh_k2' => 'nullable|numeric|min:0',
             'up3' => 'nullable|string',
             'keterangan' => 'nullable|string'
         ]);
@@ -89,7 +97,16 @@ class RealisasiP2tlController extends Controller
         $realisasi->up3 = $up3;
         $realisasi->tahun = $request->tahun;
         $realisasi->bulan = $request->bulan;
-        $realisasi->realisasi_kwh = $request->realisasi_kwh;
+        $realisasi->jml_plg_p1 = $request->jml_plg_p1 ?? 0;
+        $realisasi->jml_plg_p2 = $request->jml_plg_p2 ?? 0;
+        $realisasi->kwh_p2 = $request->kwh_p2 ?? 0;
+        $realisasi->jml_plg_p3 = $request->jml_plg_p3 ?? 0;
+        $realisasi->kwh_p3 = $request->kwh_p3 ?? 0;
+        $realisasi->jml_plg_p4 = $request->jml_plg_p4 ?? 0;
+        $realisasi->kwh_p4 = $request->kwh_p4 ?? 0;
+        $realisasi->jml_plg_k2 = $request->jml_plg_k2 ?? 0;
+        $realisasi->kwh_k2 = $request->kwh_k2 ?? 0;
+        $realisasi->realisasi_kwh = ($request->kwh_p2 ?? 0) + ($request->kwh_p3 ?? 0) + ($request->kwh_p4 ?? 0) + ($request->kwh_k2 ?? 0);
         $realisasi->keterangan = $request->keterangan;
         $realisasi->created_by = $user->id;
         $realisasi->save();
@@ -121,7 +138,15 @@ class RealisasiP2tlController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'realisasi_kwh' => 'required|numeric|min:0',
+            'jml_plg_p1' => 'nullable|integer|min:0',
+            'jml_plg_p2' => 'nullable|integer|min:0',
+            'kwh_p2' => 'nullable|numeric|min:0',
+            'jml_plg_p3' => 'nullable|integer|min:0',
+            'kwh_p3' => 'nullable|numeric|min:0',
+            'jml_plg_p4' => 'nullable|integer|min:0',
+            'kwh_p4' => 'nullable|numeric|min:0',
+            'jml_plg_k2' => 'nullable|integer|min:0',
+            'kwh_k2' => 'nullable|numeric|min:0',
             'keterangan' => 'nullable|string'
         ]);
 
@@ -133,7 +158,16 @@ class RealisasiP2tlController extends Controller
             ], 422);
         }
 
-        $realisasi->realisasi_kwh = $request->realisasi_kwh;
+        $realisasi->jml_plg_p1 = $request->jml_plg_p1 ?? 0;
+        $realisasi->jml_plg_p2 = $request->jml_plg_p2 ?? 0;
+        $realisasi->kwh_p2 = $request->kwh_p2 ?? 0;
+        $realisasi->jml_plg_p3 = $request->jml_plg_p3 ?? 0;
+        $realisasi->kwh_p3 = $request->kwh_p3 ?? 0;
+        $realisasi->jml_plg_p4 = $request->jml_plg_p4 ?? 0;
+        $realisasi->kwh_p4 = $request->kwh_p4 ?? 0;
+        $realisasi->jml_plg_k2 = $request->jml_plg_k2 ?? 0;
+        $realisasi->kwh_k2 = $request->kwh_k2 ?? 0;
+        $realisasi->realisasi_kwh = ($request->kwh_p2 ?? 0) + ($request->kwh_p3 ?? 0) + ($request->kwh_p4 ?? 0) + ($request->kwh_k2 ?? 0);
         $realisasi->keterangan = $request->keterangan;
         $realisasi->save();
 

@@ -133,13 +133,25 @@ export default function P2tlPage() {
   const tableDataBulan = Array.from({ length: 12 }, (_, i) => {
     const bulanNum = i + 1;
     const match = data?.find(d => d.bulan === bulanNum);
+    const trendMatch = trendData?.find(t => t.bulan === bulanNum);
+    const targetVal = trendMatch?.target ?? null;
     
     if (match) {
       return {
         id: match.id,
         bulan: MONTHS_ID[bulanNum],
         bulan_angka: bulanNum,
+        jml_plg_p1: match.jml_plg_p1,
+        jml_plg_p2: match.jml_plg_p2,
+        kwh_p2: match.kwh_p2,
+        jml_plg_p3: match.jml_plg_p3,
+        kwh_p3: match.kwh_p3,
+        jml_plg_p4: match.jml_plg_p4,
+        kwh_p4: match.kwh_p4,
+        jml_plg_k2: match.jml_plg_k2,
+        kwh_k2: match.kwh_k2,
         realisasi_kwh: match.realisasi_kwh,
+        target: targetVal,
         keterangan: match.keterangan || '-',
       };
     }
@@ -148,7 +160,17 @@ export default function P2tlPage() {
       id: null,
       bulan: MONTHS_ID[bulanNum],
       bulan_angka: bulanNum,
+      jml_plg_p1: null,
+      jml_plg_p2: null,
+      kwh_p2: null,
+      jml_plg_p3: null,
+      kwh_p3: null,
+      jml_plg_p4: null,
+      kwh_p4: null,
+      jml_plg_k2: null,
+      kwh_k2: null,
       realisasi_kwh: null,
+      target: targetVal,
       keterangan: '-',
     };
   });
@@ -161,25 +183,10 @@ export default function P2tlPage() {
       render: (v) => v != null ? <span className="font-bold text-blue-600">{Number(v).toLocaleString('id-ID')} kWh</span> : '—'
     },
     { 
-      label: 'Keterangan', 
-      key: 'keterangan',
-      render: (v) => <span className="text-slate-500 text-sm max-w-[200px] truncate block" title={v}>{v}</span>
+      label: 'Target kWh P2TL', 
+      key: 'target',
+      render: (v) => v != null ? <span className="font-semibold text-slate-500">{Number(v).toLocaleString('id-ID')} kWh</span> : '—'
     },
-    {
-      label: 'Aksi',
-      key: 'aksi',
-      render: (v, row) => {
-        if (isViewer) return null;
-        return (
-          <button 
-            onClick={(e) => { e.stopPropagation(); setSelectedRow(row); setIsModalOpen(true); }}
-            className="text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 py-1 px-3 rounded-md transition"
-          >
-            Lihat Detail
-          </button>
-        );
-      }
-    }
   ];
 
   return (
@@ -258,10 +265,11 @@ export default function P2tlPage() {
         </div>
         <div className="p-0">
           <DataTable 
-            columns={isViewer ? columns.filter(c => c.key !== 'aksi') : columns} 
+            columns={columns} 
             data={tableDataBulan} 
             paginated={false} 
             searchable={false}
+            onRowClick={(row) => { setSelectedRow(row); setIsModalOpen(true); }}
           />
         </div>
       </div>

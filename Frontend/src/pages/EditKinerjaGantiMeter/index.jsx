@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '@/services/api';
-import { MONTHS } from '@/utils/constants';
+
 import { useAuth } from '@/context/AuthContext';
 import { CheckCircle, AlertCircle, Save, ArrowLeft, Activity, Loader2 } from 'lucide-react';
 
 export default function EditKinerjaGantiMeterPage() {
   const navigate = useNavigate();
-  const { bulan, tahun } = useParams(); // route: /ganti-meter/edit/:bulan/:tahun
+  const { id } = useParams(); // route: /ganti-meter/edit/:id
   const { user } = useAuth();
 
   const [loadingData, setLoadingData] = useState(true);
@@ -28,7 +28,7 @@ export default function EditKinerjaGantiMeterPage() {
   const jumlah_app = useWatch({ control, name: 'jumlah_app' });
   const jumlah_yantek = useWatch({ control, name: 'jumlah_yantek' });
 
-  const bulanName = MONTHS[parseInt(bulan) - 1]?.label || `Bulan ${bulan}`;
+  const [tanggalRecord, setTanggalRecord] = useState('');
 
   // Calculate Realisasi Preview (real-time dari field form, untuk visual saja)
   let previewRealisasi = null;
@@ -42,23 +42,21 @@ export default function EditKinerjaGantiMeterPage() {
     previewRealisasi = yantekVal;
   }
 
-  // Fetch existing data
   useEffect(() => {
-    if (!bulan || !tahun) return;
+    if (!id) return;
     setLoadingData(true);
-    api.get(`/v1/ganti-meter?tahun=${tahun}`)
+    api.get(`/v1/ganti-meter`)
       .then(res => {
         const records = res.data?.data || [];
-        const row = records.find(d => parseInt(d.bulan) === parseInt(bulan));
-
-        if (!row || row.id == null) {
+        const row = records.find(d => String(d.id) === String(id));
+        if (!row) {
           setStatus('not_found');
-          setStatusMsg('Data untuk periode ini belum ada, silakan gunakan halaman Tambah Data.');
+          setStatusMsg('Data tidak ditemukan.');
           setLoadingData(false);
           return;
         }
-
         setRecordId(row.id);
+        setTanggalRecord(row.tanggal);
         reset({
           jumlah_app: row.jumlah_app != null ? row.jumlah_app : '',
           jumlah_yantek: row.jumlah_yantek != null ? row.jumlah_yantek : '',
@@ -71,7 +69,7 @@ export default function EditKinerjaGantiMeterPage() {
         setStatusMsg('Gagal memuat data existing. Periksa koneksi server.');
       })
       .finally(() => setLoadingData(false));
-  }, [bulan, tahun]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Guard: viewer tidak boleh mengedit data (ditaruh SETELAH semua hooks)
   if (user?.role === 'viewer') {
@@ -156,7 +154,7 @@ export default function EditKinerjaGantiMeterPage() {
 
           <div>
             <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#1e293b' }}>
-              Edit Ganti Meter — {bulanName} {tahun}
+              Edit Ganti Meter — {tanggalRecord}
             </h1>
             <p style={{ margin: 0, fontSize: '0.78rem', color: '#94a3b8', fontWeight: 500 }}>
               Satuan: Unit

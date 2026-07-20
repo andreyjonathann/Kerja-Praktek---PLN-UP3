@@ -211,7 +211,7 @@ export default function SaidiPage() {
       <TargetWarning
         up3={filters.up3}
         year={filters.year}
-        isVisible={!loading && !data.some(d => d.target && d.target > 0)}
+        isVisible={!loading && data.some(d => d.target == null || d.target === 0 || d.target === '')}
       />
 
       {/* KPI Cards */}

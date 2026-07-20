@@ -28,7 +28,8 @@ export default function SrdagDetailModal({ open, onOpenChange, rowData, tahun, u
   
   const [form, setForm] = useState({
     jumlah_dispatch_berhasil: '',
-    jumlah_total_gangguan: ''
+    jumlah_total_gangguan: '',
+    wo_marking_padam_meluas: ''
   })
 
   // Fetch Data on Open
@@ -40,7 +41,7 @@ export default function SrdagDetailModal({ open, onOpenChange, rowData, tahun, u
       setIsEditing(false)
       setIsDeleting(false)
       setRecord(null)
-      setForm({ jumlah_dispatch_berhasil: '', jumlah_total_gangguan: '' })
+      setForm({ jumlah_dispatch_berhasil: '', jumlah_total_gangguan: '', wo_marking_padam_meluas: '' })
     }
   }, [open, rowData, tahun])
 
@@ -55,11 +56,12 @@ export default function SrdagDetailModal({ open, onOpenChange, rowData, tahun, u
         setRecord(current)
         setForm({
           jumlah_dispatch_berhasil: current.jumlah_dispatch_berhasil.toString(),
-          jumlah_total_gangguan: current.jumlah_total_gangguan.toString()
+          jumlah_total_gangguan: current.jumlah_total_gangguan.toString(),
+          wo_marking_padam_meluas: current.wo_marking_padam_meluas != null ? current.wo_marking_padam_meluas.toString() : '0'
         })
       } else {
         setRecord(null)
-        setForm({ jumlah_dispatch_berhasil: '', jumlah_total_gangguan: '' })
+        setForm({ jumlah_dispatch_berhasil: '', jumlah_total_gangguan: '', wo_marking_padam_meluas: '' })
       }
     } catch (error) {
       console.error('Failed to fetch SRDAG data:', error)
@@ -76,7 +78,8 @@ export default function SrdagDetailModal({ open, onOpenChange, rowData, tahun, u
         tahun: Number(tahun),
         bulan: Number(bulanNum),
         jumlah_dispatch_berhasil: Number(form.jumlah_dispatch_berhasil),
-        jumlah_total_gangguan: Number(form.jumlah_total_gangguan)
+        jumlah_total_gangguan: Number(form.jumlah_total_gangguan),
+        wo_marking_padam_meluas: Number(form.wo_marking_padam_meluas) || 0
       }
       
       if (record?.id) {
@@ -206,6 +209,18 @@ export default function SrdagDetailModal({ open, onOpenChange, rowData, tahun, u
             </span>
           </div>
 
+          <div style={{
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            paddingTop: 14, paddingBottom: 14, borderBottom: '1px solid #f3f4f6',
+          }}>
+            <span style={{ fontWeight: 600, fontSize: 14, color: '#0f172a' }}>WO MARKING PADAM MELUAS</span>
+            <span style={{ fontWeight: 500, fontSize: 14, color: '#0f172a' }}>
+              {loading ? <Loader2 size={14} className="animate-spin inline-block" /> : (
+                record ? `${fmt(record.wo_marking_padam_meluas || 0)}` : '0'
+              )}
+            </span>
+          </div>
+
           {/* SRDAG INLINE UI */}
           {loading ? null : isDeleting ? (
             <div style={{ padding: '16px', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, marginTop: 12, animation: 'modalCardIn 0.2s ease' }}>
@@ -254,6 +269,19 @@ export default function SrdagDetailModal({ open, onOpenChange, rowData, tahun, u
                     min="1"
                     value={form.jumlah_total_gangguan}
                     onChange={(e) => setForm({ ...form, jumlah_total_gangguan: e.target.value })}
+                    style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: 6, fontSize: 14 }}
+                    disabled={saving}
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 8 }}>
+                    WO Marking Padam Meluas (Kali)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={form.wo_marking_padam_meluas}
+                    onChange={(e) => setForm({ ...form, wo_marking_padam_meluas: e.target.value })}
                     style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: 6, fontSize: 14 }}
                     disabled={saving}
                   />
