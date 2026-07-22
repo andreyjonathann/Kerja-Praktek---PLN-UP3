@@ -52,7 +52,11 @@ export default function KelolaPaguAnggaran() {
     e.preventDefault();
     setErrorMsg('');
 
-    if (!nominal || isNaN(nominal) || Number(nominal) <= 0) {
+    // Convert Indonesian number string to a standard numeric format (replace dot separator and convert comma to dot)
+    const cleanNominalStr = nominal.replace(/\./g, '').replace(/,/g, '.');
+    const numericNominal = parseFloat(cleanNominalStr);
+
+    if (isNaN(numericNominal) || numericNominal <= 0) {
       setErrorMsg('Masukkan nominal anggaran yang valid (> 0)');
       return;
     }
@@ -67,7 +71,7 @@ export default function KelolaPaguAnggaran() {
         skko_skki: katObj.skko_skki,
         klasifikasi: katObj.klasifikasi,
         jenis_transaksi: jenisTx,
-        nominal: Number(nominal),
+        nominal: numericNominal,
         keterangan: keterangan || (jenisTx === 'awal' ? 'Pagu Anggaran Awal Tahun' : 'Penambahan / Top-up Anggaran'),
       });
 
@@ -111,7 +115,12 @@ export default function KelolaPaguAnggaran() {
     }
   };
 
-  const fmtRp = (val) => val ? `Rp ${formatNumber(val, 0)}` : 'Rp 0';
+  const fmtRp = (val) => {
+    if (val === null || val === undefined || val === '') return 'Rp 0';
+    // Format to Indonesian style: thousands with dot, decimals with comma (up to 2 decimals)
+    const num = Number(val);
+    return 'Rp ' + num.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  };
 
   const cardHeaderStyle = {
     padding: '16px',
@@ -247,11 +256,30 @@ export default function KelolaPaguAnggaran() {
             <div>
               <label style={labelStyle}>Nominal Anggaran (Rp) *</label>
               <input
-                type="number"
-                step="1"
+                type="text"
                 placeholder="Masukkan jumlah dana..."
                 value={nominal}
-                onChange={e => setNominal(e.target.value)}
+                onChange={e => {
+                  let val = e.target.value;
+                  // Allow only digits, dots, and a single comma
+                  val = val.replace(/[^0-9.,]/g, '');
+                  
+                  // Normalize dots and commas to compute formatting
+                  // Clean existing thousands separator dots first
+                  let cleanVal = val.replace(/\./g, '');
+                  
+                  // Split integer and decimal parts
+                  let parts = cleanVal.split(',');
+                  
+                  // Format the integer part with thousands separators (.)
+                  if (parts[0]) {
+                    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                  }
+                  
+                  // Rejoin with comma
+                  e.target.value = parts.join(',');
+                  setNominal(e.target.value);
+                }}
                 style={inputStyle}
               />
             </div>

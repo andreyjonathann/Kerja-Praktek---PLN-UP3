@@ -9,12 +9,6 @@ use Illuminate\Support\Facades\Validator;
 
 class PaguAnggaranController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware(\App\Http\Middleware\RestrictPengadaanWrites::class)
-             ->only(['store', 'destroy']);
-    }
-
     public function index(Request $request)
     {
         $year = $request->input('tahun', date('Y'));

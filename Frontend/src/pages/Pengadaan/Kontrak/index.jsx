@@ -142,11 +142,9 @@ export default function KontrakPage() {
 
   /* ── helpers ── */
   const fmtRp = (val) => {
-    if (val === null || val === undefined || isNaN(val)) return '—'
-    const n = Number(val)
-    if (Math.abs(n) >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(2)} M`
-    if (Math.abs(n) >= 1_000_000)     return `${(n / 1_000_000).toFixed(2)} Jt`
-    return formatNumber(n)
+    if (val === null || val === undefined || isNaN(val)) return '—';
+    const n = Number(val);
+    return 'Rp ' + n.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
   }
   const fmtDate = (val) =>
     val ? new Date(val).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'

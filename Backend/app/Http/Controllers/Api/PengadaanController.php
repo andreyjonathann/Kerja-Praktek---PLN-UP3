@@ -10,12 +10,6 @@ use Carbon\Carbon;
 
 class PengadaanController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware(\App\Http\Middleware\RestrictPengadaanWrites::class)
-             ->only(['store', 'update', 'destroy', 'updateStatus', 'deleteFile']);
-    }
-
     public function index(Request $request)
     {
         $query = Pengadaan::query();
