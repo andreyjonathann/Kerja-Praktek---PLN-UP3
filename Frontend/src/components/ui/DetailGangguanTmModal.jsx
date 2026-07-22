@@ -1,3 +1,4 @@
+import notify from '@/utils/notify';
 import React, { useState, useEffect } from 'react';
 import { Calendar, Edit2, Trash2, X, Plus, Save } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
@@ -81,7 +82,7 @@ export default function DetailGangguanTmModal({ open, onOpenChange, rowData, yea
       if (onSuccess) onSuccess();
     } catch (error) {
       console.error('Error adding detail', error);
-      alert('Gagal menambah data');
+      notify.error('Gagal menambah data');
     } finally {
       setIsSubmitting(false);
     }
@@ -101,7 +102,7 @@ export default function DetailGangguanTmModal({ open, onOpenChange, rowData, yea
       if (onSuccess) onSuccess();
     } catch (error) {
       console.error('Error updating detail', error);
-      alert('Gagal update data');
+      notify.error('Gagal update data');
     } finally {
       setIsSubmitting(false);
     }
@@ -116,7 +117,7 @@ export default function DetailGangguanTmModal({ open, onOpenChange, rowData, yea
       if (onSuccess) onSuccess();
     } catch (error) {
       console.error('Error deleting detail', error);
-      alert('Gagal menghapus data');
+      notify.error('Gagal menghapus data');
     } finally {
       setIsSubmitting(false);
     }

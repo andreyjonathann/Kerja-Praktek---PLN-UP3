@@ -1,3 +1,4 @@
+import notify from '@/utils/notify';
 import React, { useState } from 'react'
 import { DEFAULT_UP3 } from '@/constants/up3'
 import { useNavigate } from 'react-router-dom'
@@ -30,9 +31,9 @@ export default function InputMttrPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!form.tahun || !form.bulan || !form.jenis_aset || form.terpenuhi === '' || form.total === '') return alert('Semua field wajib diisi!')
-    if (Number(form.terpenuhi) < 0 || Number(form.total) < 0) return alert('Angka tidak boleh negatif!')
-    if (Number(form.terpenuhi) > Number(form.total)) return alert('Jumlah terpenuhi tidak boleh lebih besar dari jumlah total!')
+    if (!form.tahun || !form.bulan || !form.jenis_aset || form.terpenuhi === '' || form.total === '') return notify.warning('Semua field wajib diisi!')
+    if (Number(form.terpenuhi) < 0 || Number(form.total) < 0) return notify.warning('Angka tidak boleh negatif!')
+    if (Number(form.terpenuhi) > Number(form.total)) return notify.warning('Jumlah terpenuhi tidak boleh lebih besar dari jumlah total!')
 
     setSaving(true)
     try {
@@ -51,7 +52,7 @@ export default function InputMttrPage() {
       await api.post('/v1/mttr', payload)
       navigate('/jaringan/mttr-siaga1')
     } catch (err) {
-      alert(err.response?.data?.message || 'Terjadi kesalahan saat menyimpan data.')
+      notify.error(err.response?.data?.message || 'Terjadi kesalahan saat menyimpan data.')
     } finally {
       setSaving(false)
     }

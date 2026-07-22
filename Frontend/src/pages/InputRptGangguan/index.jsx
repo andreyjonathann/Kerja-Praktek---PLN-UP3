@@ -1,3 +1,4 @@
+import notify from '@/utils/notify';
 import React, { useState, useEffect } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
@@ -64,11 +65,11 @@ export default function InputRptGangguanPage() {
     setSuccess(false);
     try {
       if (parseFloat(data.rata_rata_rpt) < 0) {
-        alert('Rata-rata RPT tidak boleh kurang dari 0.');
+        notify.warning('Rata-rata RPT tidak boleh kurang dari 0.');
         return;
       }
       if (parseInt(data.jumlah_gangguan) <= 0) {
-        alert('Jumlah gangguan tidak boleh 0 atau kurang.');
+        notify.warning('Jumlah gangguan tidak boleh 0 atau kurang.');
         return;
       }
       
@@ -87,7 +88,7 @@ export default function InputRptGangguanPage() {
         navigate('/jaringan/rpt-gangguan');
       }, 1500);
     } catch (err) {
-      alert('Error: ' + (err.response?.data?.message || err.message));
+      notify.error(err.response?.data?.message || err.message);
     } finally {
       setLoading(false);
     }

@@ -1,3 +1,4 @@
+import notify from '@/utils/notify';
 import React, { useState, useEffect } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
@@ -79,7 +80,7 @@ export default function InputGangguanTmKurang5Page() {
     setLoading(true);
     setSuccess(false);
     if (isDuplicate) {
-      alert('Data sudah ada! Tidak bisa mengedit dari halaman Tambah.');
+      notify.warning('Data sudah ada! Tidak bisa mengedit dari halaman Tambah.');
       setLoading(false);
       if(typeof setSaving !== 'undefined') setSaving(false);
       return;
@@ -98,7 +99,7 @@ export default function InputGangguanTmKurang5Page() {
         navigate('/jaringan/gangguan-tm');
       }, 2000);
     } catch (err) {
-      alert("Error: " + (err.response?.data?.message || err.message));
+      notify.error(err.response?.data?.message || err.message);
     } finally {
       setLoading(false);
     }

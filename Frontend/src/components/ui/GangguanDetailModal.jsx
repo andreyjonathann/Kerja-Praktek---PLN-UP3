@@ -1,3 +1,4 @@
+import notify from '@/utils/notify';
 import React, { useState, useEffect } from 'react'
 import { DEFAULT_UP3 } from '@/constants/up3'
 import { createPortal } from 'react-dom'
@@ -146,7 +147,7 @@ export default function GangguanDetailModal({
       return true
     } catch (err) {
       console.error('Failed to save Switching row:', err)
-      alert('Gagal menyimpan data baris')
+      notify.error('Gagal menyimpan data baris')
       return false
     } finally {
       setSavingSwitching(false)
@@ -172,7 +173,7 @@ export default function GangguanDetailModal({
       fetchSwitchingData() // Refresh list
     } catch (err) {
       console.error('Failed to delete Switching row:', err)
-      alert('Gagal menghapus baris')
+      notify.error('Gagal menghapus baris')
     } finally {
       setSavingSwitching(false)
     }
@@ -201,7 +202,7 @@ export default function GangguanDetailModal({
       return true
     } catch (err) {
       console.error('Failed to save Trafo row:', err)
-      alert('Gagal menyimpan data baris')
+      notify.error('Gagal menyimpan data baris')
       return false
     } finally {
       setSavingTrafo(false)
@@ -227,7 +228,7 @@ export default function GangguanDetailModal({
       fetchTrafoData() // Refresh list
     } catch (err) {
       console.error('Failed to delete Trafo row:', err)
-      alert('Gagal menghapus baris')
+      notify.error('Gagal menghapus baris')
     } finally {
       setSavingTrafo(false)
     }

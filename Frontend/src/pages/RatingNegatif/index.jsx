@@ -1,3 +1,4 @@
+import notify from '@/utils/notify';
 import React, { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -534,7 +535,7 @@ export default function RatingNegatifPage() {
                         setSelectedMonthDetails(detail);
                         setDetailModalOpen(true);
                       } else {
-                        alert('Data detail tidak ditemukan!');
+                        notify.warning('Data detail tidak ditemukan!');
                       }
                     }}
                     className={`font-bold cursor-pointer hover:underline ${textColor}`}

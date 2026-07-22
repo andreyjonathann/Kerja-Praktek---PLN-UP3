@@ -1,3 +1,4 @@
+import notify from '@/utils/notify';
 import React, { useState, useEffect } from 'react'
 import { DEFAULT_UP3 } from '@/constants/up3'
 import { createPortal } from 'react-dom'
@@ -111,7 +112,7 @@ export default function MttrDetailModal({ open, onOpenChange, rowData, tahun, up
       fetchData()
     } catch (err) {
       console.error('Failed to save MTTR:', err)
-      alert(err.response?.data?.message || 'Gagal menyimpan data MTTR')
+      notify.error(err.response?.data?.message || 'Gagal menyimpan data MTTR')
     } finally {
       setSaving(false)
     }
@@ -128,7 +129,7 @@ export default function MttrDetailModal({ open, onOpenChange, rowData, tahun, up
       fetchData()
     } catch (err) {
       console.error('Failed to delete MTTR:', err)
-      alert('Gagal menghapus data')
+      notify.error('Gagal menghapus data')
     } finally {
       setSaving(false)
     }

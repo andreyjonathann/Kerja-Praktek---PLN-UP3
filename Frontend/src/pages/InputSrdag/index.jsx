@@ -1,3 +1,4 @@
+import notify from '@/utils/notify';
 import React, { useState } from 'react'
 import { DEFAULT_UP3 } from '@/constants/up3'
 import { useNavigate } from 'react-router-dom'
@@ -51,9 +52,9 @@ export default function InputSrdagPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!form.tahun || !form.bulan || form.berhasil === '' || form.total === '') return alert('Semua field wajib diisi!')
-    if (Number(form.berhasil) < 0 || Number(form.total) < 0) return alert('Angka tidak boleh negatif!')
-    if (Number(form.berhasil) > Number(form.total)) return alert('Jumlah berhasil tidak boleh lebih besar dari total gangguan!')
+    if (!form.tahun || !form.bulan || form.berhasil === '' || form.total === '') return notify.warning('Semua field wajib diisi!')
+    if (Number(form.berhasil) < 0 || Number(form.total) < 0) return notify.warning('Angka tidak boleh negatif!')
+    if (Number(form.berhasil) > Number(form.total)) return notify.warning('Jumlah berhasil tidak boleh lebih besar dari total gangguan!')
 
     setSaving(true)
     try {
@@ -68,7 +69,7 @@ export default function InputSrdagPage() {
       await api.post('/v1/srdag', payload)
       navigate('/jaringan/srdag')
     } catch (err) {
-      alert(err.response?.data?.message || 'Terjadi kesalahan saat menyimpan data.')
+      notify.error(err.response?.data?.message || 'Terjadi kesalahan saat menyimpan data.')
     } finally {
       setSaving(false)
     }

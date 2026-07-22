@@ -1,3 +1,4 @@
+import notify from '@/utils/notify';
 import React, { useState, useEffect } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
@@ -41,7 +42,7 @@ export default function InputSaifiPage() {
 
   const onSubmit = async (data) => {
     if (isDuplicate) {
-      alert('Data sudah ada! Tidak bisa menginput dari halaman Tambah.');
+      notify.warning('Data sudah ada! Tidak bisa menginput dari halaman Tambah.');
       return;
     }
     setLoading(true);
@@ -52,7 +53,7 @@ export default function InputSaifiPage() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       setTimeout(() => navigate('/saifi'), 2000);
     } catch (err) {
-      alert('Error: ' + err.message);
+      notify.error(err.response?.data?.message || err.message);
     } finally {
       setLoading(false);
     }

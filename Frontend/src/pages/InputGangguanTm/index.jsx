@@ -1,3 +1,4 @@
+import notify from '@/utils/notify';
 import React, { useState, useEffect } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
@@ -106,7 +107,7 @@ export default function InputGangguanTmPage() {
         navigate('/jaringan/gangguan-tm');
       }, 1000);
     } catch (err) {
-      alert("Error: " + (err.response?.data?.message || err.message));
+      notify.error(err.response?.data?.message || err.message);
     } finally {
       setLoading(false);
     }

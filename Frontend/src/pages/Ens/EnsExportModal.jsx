@@ -1,3 +1,4 @@
+import notify from '@/utils/notify';
 import React, { useState } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import { X, Download, FileSpreadsheet } from 'lucide-react'
@@ -20,7 +21,7 @@ export default function EnsExportModal() {
     const startVal = startYear * 12 + startMonth
     const endVal = endYear * 12 + endMonth
     if (startVal > endVal) {
-      alert("Rentang waktu awal tidak boleh lebih besar dari waktu akhir")
+      notify.warning("Rentang waktu awal tidak boleh lebih besar dari waktu akhir")
       return
     }
 
@@ -75,7 +76,7 @@ export default function EnsExportModal() {
       setOpen(false)
     } catch (err) {
       console.error(err)
-      alert("Gagal mengekspor data: " + err.message)
+      notify.error(err.message, 'Gagal mengekspor data')
     } finally {
       setLoading(false)
     }

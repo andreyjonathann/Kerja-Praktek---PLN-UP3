@@ -1,3 +1,4 @@
+import notify from '@/utils/notify';
 import React, { useState, useEffect } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -63,7 +64,7 @@ export default function InputRatingNegatifPage() {
         navigate('/jaringan/rating-negatif');
       }, 1500);
     } catch (err) {
-      alert('Error: ' + err.message);
+      notify.error(err.response?.data?.message || err.message);
     } finally {
       setLoading(false);
     }

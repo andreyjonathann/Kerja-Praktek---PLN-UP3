@@ -1,3 +1,4 @@
+import notify from '@/utils/notify';
 import React, { useState } from 'react'
 import { DEFAULT_UP3 } from '@/constants/up3'
 import { useNavigate } from 'react-router-dom'
@@ -29,9 +30,9 @@ export default function InputMvodPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!form.tahun || !form.bulan || !form.tipe_rct || form.rata_rata === '' || form.kali === '') return alert('Semua field wajib diisi!')
-    if (Number(form.rata_rata) < 0 || Number(form.kali) < 0) return alert('Angka tidak boleh negatif!')
-    if (Number(form.kali) < 1) return alert('Kali padam minimal 1!')
+    if (!form.tahun || !form.bulan || !form.tipe_rct || form.rata_rata === '' || form.kali === '') return notify.warning('Semua field wajib diisi!')
+    if (Number(form.rata_rata) < 0 || Number(form.kali) < 0) return notify.warning('Angka tidak boleh negatif!')
+    if (Number(form.kali) < 1) return notify.warning('Kali padam minimal 1!')
 
     setSaving(true)
     try {
@@ -47,7 +48,7 @@ export default function InputMvodPage() {
       await api.post('/v1/mvod', payload)
       navigate('/jaringan/mvod')
     } catch (err) {
-      alert(err.response?.data?.message || 'Terjadi kesalahan saat menyimpan data.')
+      notify.error(err.response?.data?.message || 'Terjadi kesalahan saat menyimpan data.')
     } finally {
       setSaving(false)
     }

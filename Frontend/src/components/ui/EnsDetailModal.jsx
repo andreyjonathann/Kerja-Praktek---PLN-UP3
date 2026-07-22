@@ -1,3 +1,4 @@
+import notify from '@/utils/notify';
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Edit2, Trash2, Save, Loader2, Activity } from 'lucide-react';
@@ -83,7 +84,7 @@ export default function EnsDetailModal({
       if (onSuccess) onSuccess();
       closeModal();
     } catch (err) {
-      alert('Gagal menyimpan data: ' + (err.response?.data?.message || err.message));
+      notify.error(err.response?.data?.message || err.message, 'Gagal menyimpan data');
     } finally {
       setLoading(false);
     }
@@ -97,7 +98,7 @@ export default function EnsDetailModal({
       if (onSuccess) onSuccess();
       closeModal();
     } catch (err) {
-      alert('Gagal menghapus data: ' + (err.response?.data?.message || err.message));
+      notify.error(err.response?.data?.message || err.message, 'Gagal menghapus data');
     } finally {
       setLoading(false);
     }

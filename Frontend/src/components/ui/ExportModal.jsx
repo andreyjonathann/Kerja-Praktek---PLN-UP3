@@ -1,3 +1,4 @@
+import notify from '@/utils/notify';
 import React, { useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { X, Download, FileSpreadsheet } from 'lucide-react';
@@ -12,7 +13,7 @@ export default function ExportModal({ kpiType }) {
 
   const handleExport = async () => {
     if (startYear > endYear) {
-      alert("Tahun awal tidak boleh lebih besar dari tahun akhir");
+      notify.warning("Tahun awal tidak boleh lebih besar dari tahun akhir");
       return;
     }
     
@@ -29,7 +30,7 @@ export default function ExportModal({ kpiType }) {
       setOpen(false);
     } catch (err) {
       console.error(err);
-      alert("Gagal mengekspor data: " + err.message);
+      notify.error(err.message, 'Gagal mengekspor data');
     } finally {
       setLoading(false);
     }

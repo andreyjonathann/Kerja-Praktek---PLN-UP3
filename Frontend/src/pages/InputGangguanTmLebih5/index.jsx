@@ -1,3 +1,4 @@
+import notify from '@/utils/notify';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm, useFieldArray } from 'react-hook-form';
@@ -62,7 +63,7 @@ export default function InputGangguanTmLebih5Page() {
 
   const onSubmit = async (data) => {
     if (isDuplicate) {
-      alert('Data untuk periode ini sudah ada! Tidak bisa mengedit dari halaman Tambah.');
+      notify.warning('Data untuk periode ini sudah ada! Tidak bisa mengedit dari halaman Tambah.');
       return;
     }
     setLoading(true);
@@ -86,7 +87,7 @@ export default function InputGangguanTmLebih5Page() {
       }, 2000);
     } catch (err) {
       console.error(err);
-      alert('Gagal menyimpan data.');
+      notify.error('Gagal menyimpan data.');
     } finally {
       setLoading(false);
     }

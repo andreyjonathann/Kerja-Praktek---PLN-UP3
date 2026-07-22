@@ -1,3 +1,4 @@
+import notify from '@/utils/notify';
 import React, { useState, useEffect } from 'react'
 import { DEFAULT_UP3 } from '@/constants/up3'
 import { createPortal } from 'react-dom'
@@ -93,7 +94,7 @@ export default function SrdagDetailModal({ open, onOpenChange, rowData, tahun, u
       fetchData()
     } catch (err) {
       console.error('Failed to save SRDAG:', err)
-      alert(err.response?.data?.message || 'Gagal menyimpan data SRDAG')
+      notify.error(err.response?.data?.message || 'Gagal menyimpan data SRDAG')
     } finally {
       setSaving(false)
     }
@@ -109,7 +110,7 @@ export default function SrdagDetailModal({ open, onOpenChange, rowData, tahun, u
       fetchData()
     } catch (err) {
       console.error('Failed to delete SRDAG:', err)
-      alert('Gagal menghapus data')
+      notify.error('Gagal menghapus data')
     } finally {
       setSaving(false)
     }
