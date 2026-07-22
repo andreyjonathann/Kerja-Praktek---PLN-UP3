@@ -79,6 +79,10 @@ import InputKinerjaGantiMeterPage from '@/pages/InputKinerjaGantiMeter'
 import EditKinerjaGantiMeterPage from '@/pages/EditKinerjaGantiMeter'
 
 // Admin Pages
+import KontrakPage from '@/pages/Pengadaan/Kontrak'
+import InputPengadaanPage from '@/pages/Pengadaan/InputPengadaan'
+import UbahStatusPengadaanPage from '@/pages/Pengadaan/UbahStatusPengadaan'
+import KelolaPaguAnggaranPage from '@/pages/Pengadaan/KelolaPaguAnggaran'
 import KelolaTargetPage from '@/pages/Admin/KelolaTarget'
 import KelolaTargetBulananPage from '@/pages/Admin/KelolaTargetBulanan'
 
@@ -136,6 +140,35 @@ function InputProtectedRoute({ children }) {
   return <Layout>{children}</Layout>
 }
 
+// Pengadaan Write Protected Route Wrapper: Redirect anyone except pic_pengadaan back to /pengadaan/kontrak
+function PengadaanProtectedRoute({ children }) {
+  const { user, loading } = useAuth()
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center dark:bg-slate-900 bg-slate-50">
+        <div className="flex flex-col items-center gap-3">
+          <svg className="animate-spin h-8 w-8 text-pln-blue-mid" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+          </svg>
+          <span className="text-xs text-slate-500 font-semibold animate-pulse">Menghubungkan ke SIGAP...</span>
+        </div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />
+  }
+
+  if (user.role !== 'pic_pengadaan') {
+    return <Navigate to="/pengadaan/kontrak" replace />
+  }
+
+  return <Layout>{children}</Layout>
+}
+
 // Role-based home: pic_pemasaran → /pemasaran, lainnya → Overview biasa
 function RoleBasedHome() {
   const { user, loading } = useAuth()
@@ -145,6 +178,9 @@ function RoleBasedHome() {
   }
   if (user?.role === 'pic_transaksi_energi') {
     return <Navigate to="/nko" replace />
+  }
+  if (user?.role === 'pic_pengadaan') {
+    return <Navigate to="/pengadaan/kontrak" replace />
   }
   return (
     <ProtectedRoute>
@@ -259,6 +295,36 @@ export default function App() {
                 <ProtectedRoute>
                   <SaidiPage />
                 </ProtectedRoute>
+              } />
+
+              <Route path="/pengadaan/kontrak" element={
+                <ProtectedRoute>
+                  <KontrakPage />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/pengadaan/input" element={
+                <PengadaanProtectedRoute>
+                  <InputPengadaanPage />
+                </PengadaanProtectedRoute>
+              } />
+
+              <Route path="/pengadaan/edit/:id" element={
+                <PengadaanProtectedRoute>
+                  <InputPengadaanPage />
+                </PengadaanProtectedRoute>
+              } />
+
+              <Route path="/pengadaan/status/:id" element={
+                <PengadaanProtectedRoute>
+                  <UbahStatusPengadaanPage />
+                </PengadaanProtectedRoute>
+              } />
+
+              <Route path="/pengadaan/pagu" element={
+                <PengadaanProtectedRoute>
+                  <KelolaPaguAnggaranPage />
+                </PengadaanProtectedRoute>
               } />
 
               <Route path="/saifi" element={

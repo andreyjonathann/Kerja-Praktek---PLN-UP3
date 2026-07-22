@@ -147,7 +147,7 @@ export default function KpiCard({
             )}
           </div>
           {subText && (
-            <div style={{ fontSize:'0.75rem', color: dark ? '#D1D5DB' : '#111827', fontWeight: 600, marginTop: 4 }}>
+            <div style={{ fontSize:'0.75rem', color: dark ? '#D1D5DB' : '#111827', fontWeight: 600, marginTop: 4, whiteSpace: 'pre-line' }}>
               {subText}
             </div>
           )}

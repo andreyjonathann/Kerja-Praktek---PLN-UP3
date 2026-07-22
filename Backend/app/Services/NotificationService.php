@@ -16,7 +16,7 @@ class NotificationService
             'JARINGAN' => 'pic_jaringan',
             'PEMASARAN' => 'pic_pemasaran',
             'TRANSAKSI ENERGI' => 'pic_transaksi_energi',
-            'ASET' => 'pic_aset',
+            'ASET' => 'pic_pengadaan',
             'NIAGA' => 'pic_niaga',
             'KEUANGAN' => 'pic_keuangan',
         ];

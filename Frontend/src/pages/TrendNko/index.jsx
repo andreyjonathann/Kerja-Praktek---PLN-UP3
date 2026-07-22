@@ -251,8 +251,8 @@ export default function TrendNkoPage() {
       if (userRole === 'pic_niaga' || userRole === 'niaga') {
         return parentName.includes('NIAGA');
       }
-      if (userRole === 'pic_aset' || userRole === 'aset') {
-        return parentName.includes('ASET');
+      if (userRole === 'pic_aset' || userRole === 'aset' || userRole === 'pic_pengadaan' || userRole === 'pengadaan') {
+        return parentName.includes('ASET') || parentName.includes('PENGADAAN');
       }
       if (userRole === 'pic_transaksi_energi' || userRole === 'transaksi_energi' || userRole === 'transaksi energi') {
         return parentName.includes('TRANSAKSI');
@@ -281,8 +281,8 @@ export default function TrendNkoPage() {
     if (userRole === 'pic_niaga' || userRole === 'niaga') {
       return parentName.includes('NIAGA');
     }
-    if (userRole === 'pic_aset' || userRole === 'aset') {
-      return parentName.includes('ASET');
+    if (userRole === 'pic_aset' || userRole === 'aset' || userRole === 'pic_pengadaan' || userRole === 'pengadaan') {
+      return parentName.includes('ASET') || parentName.includes('PENGADAAN');
     }
     if (userRole === 'pic_transaksi_energi' || userRole === 'transaksi_energi' || userRole === 'transaksi energi') {
       return parentName.includes('TRANSAKSI');

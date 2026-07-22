@@ -133,9 +133,9 @@ export const NAV_ITEMS = [
       },
       {
         type: 'subgroup',
-        group: 'ASET',
+        group: 'PENGADAAN',
         items: [
-          { key: 'input-kpi-aset', label: 'INPUT KPI', path: '/input' },
+          { key: 'pengadaan-kontrak', label: 'KONTRAK', path: '/pengadaan/kontrak', icon: 'FileText' },
         ],
       },
       {

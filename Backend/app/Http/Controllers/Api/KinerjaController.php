@@ -52,7 +52,7 @@ class KinerjaController extends Controller
         if (!$modelClass) return response()->json(['error' => 'Bidang not found'], 404);
 
         $roleMap = [
-            'aset' => 'pic_aset',
+            'aset' => 'pic_pengadaan',
             'jaringan' => 'pic_jaringan',
             'transaksi_energi' => 'pic_transaksi_energi',
             'niaga' => 'pic_niaga',
@@ -156,7 +156,7 @@ class KinerjaController extends Controller
         if (!$modelClass) return response()->json(['error' => 'Bidang not found'], 404);
 
         $roleMap = [
-            'aset' => 'pic_aset',
+            'aset' => 'pic_pengadaan',
             'jaringan' => 'pic_jaringan',
             'transaksi_energi' => 'pic_transaksi_energi',
             'niaga' => 'pic_niaga',

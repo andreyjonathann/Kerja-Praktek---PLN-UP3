@@ -367,6 +367,52 @@ html, body, button, input, select, textarea, optgroup, option {
   .btn-ghost { background: transparent; color: var(--text-primary); }
   .btn-ghost:hover { background: rgba(255,255,255,0.12); color: var(--text-primary); }
 
+  .btn-custom-export {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 24px;
+    border-radius: 9999px;
+    background: #ffffff;
+    color: #10B981;
+    font-weight: 700;
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    border: 1.5px solid rgba(16, 185, 129, 0.35);
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.08);
+    outline: none;
+    line-height: 1;
+  }
+  .btn-custom-export:hover {
+    border-color: #10B981;
+    box-shadow: 0 0 0 5px rgba(16, 185, 129, 0.16);
+  }
+
+  .btn-custom-input {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 24px;
+    border-radius: 9999px;
+    background: #ffffff;
+    color: #4F46E5;
+    font-weight: 700;
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    border: 1.5px solid rgba(79, 70, 229, 0.35);
+    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.08);
+    outline: none;
+    line-height: 1;
+  }
+  .btn-custom-input:hover {
+    border-color: #4F46E5;
+    box-shadow: 0 0 0 5px rgba(79, 70, 229, 0.16);
+  }
+
   .input, .select {
     width: 100%;
     border-radius: var(--radius-md);

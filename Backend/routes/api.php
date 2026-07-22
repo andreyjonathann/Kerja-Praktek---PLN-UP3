@@ -132,6 +132,21 @@ Route::middleware('api')->group(function () {
         Route::post('/susut-distribusi', [\App\Http\Controllers\Api\RealisasiSusutDistribusiController::class, 'store']);
         Route::put('/susut-distribusi/{id}', [\App\Http\Controllers\Api\RealisasiSusutDistribusiController::class, 'update']);
         Route::delete('/susut-distribusi/{id}', [\App\Http\Controllers\Api\RealisasiSusutDistribusiController::class, 'destroy']);
+
+        // Pengadaan / Kontrak
+        Route::get('/pengadaan/dashboard', [\App\Http\Controllers\Api\PengadaanController::class, 'dashboard']);
+        Route::get('/pengadaan', [\App\Http\Controllers\Api\PengadaanController::class, 'index']);
+        Route::post('/pengadaan', [\App\Http\Controllers\Api\PengadaanController::class, 'store']);
+        Route::get('/pengadaan/{id}', [\App\Http\Controllers\Api\PengadaanController::class, 'show']);
+        Route::put('/pengadaan/{id}', [\App\Http\Controllers\Api\PengadaanController::class, 'update']);
+        Route::patch('/pengadaan/{id}/status', [\App\Http\Controllers\Api\PengadaanController::class, 'updateStatus']);
+        Route::delete('/pengadaan/{id}', [\App\Http\Controllers\Api\PengadaanController::class, 'destroy']);
+        Route::delete('/pengadaan/{id}/file/{fileIndex}', [\App\Http\Controllers\Api\PengadaanController::class, 'deleteFile']);
+
+        // Pagu Anggaran SKKO / SKKI
+        Route::get('/pagu-anggaran', [\App\Http\Controllers\Api\PaguAnggaranController::class, 'index']);
+        Route::post('/pagu-anggaran', [\App\Http\Controllers\Api\PaguAnggaranController::class, 'store']);
+        Route::delete('/pagu-anggaran/{id}', [\App\Http\Controllers\Api\PaguAnggaranController::class, 'destroy']);
     });
 
     // Read-only endpoints (protected by auth:sanctum)

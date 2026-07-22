@@ -9,7 +9,8 @@ use App\Models\TargetTahunan;
 class TargetTahunanController extends Controller
 {
     private $roleMap = [
-        'aset' => 'pic_aset',
+        'aset' => 'pic_pengadaan',
+        'pengadaan' => 'pic_pengadaan',
         'jaringan' => 'pic_jaringan',
         'transaksi_energi' => 'pic_transaksi_energi',
         'niaga' => 'pic_niaga',
@@ -20,6 +21,7 @@ class TargetTahunanController extends Controller
     // Reverse map: role -> bidang name as stored in DB (capitalized)
     private $roleToBidang = [
         'pic_aset' => 'Aset',
+        'pic_pengadaan' => 'Aset',
         'pic_jaringan' => 'Jaringan',
         'pic_transaksi_energi' => 'Transaksi Energi',
         'pic_niaga' => 'Niaga',

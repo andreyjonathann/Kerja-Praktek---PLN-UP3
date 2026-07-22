@@ -193,8 +193,8 @@ class NkoRealizationController extends Controller
         if ($userRole === 'pic_niaga' || $userRole === 'niaga') {
             return str_contains($parentName, 'NIAGA');
         }
-        if ($userRole === 'pic_aset' || $userRole === 'aset') {
-            return str_contains($parentName, 'ASET');
+        if ($userRole === 'pic_aset' || $userRole === 'aset' || $userRole === 'pic_pengadaan' || $userRole === 'pengadaan') {
+            return str_contains($parentName, 'ASET') || str_contains($parentName, 'PENGADAAN');
         }
         if ($userRole === 'pic_transaksi_energi' || $userRole === 'transaksi_energi' || $userRole === 'transaksi energi') {
             return str_contains($parentName, 'TRANSAKSI');

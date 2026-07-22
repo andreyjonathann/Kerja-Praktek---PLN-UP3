@@ -12,7 +12,7 @@ import {
 // ─── Konfigurasi SAIDI / SAIFI ─────────────────────────────────────────────────
 const CONFIG = {
   saidi: {
-    label: 'SAIDI',
+    label: 'SAIDI', 
     unit: 'Menit/Pelanggan',
     icon: Clock,
     color: '#00A2B9',
