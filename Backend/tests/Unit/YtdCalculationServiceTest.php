@@ -104,4 +104,13 @@ class YtdCalculationServiceTest extends TestCase
         $this->assertNull($result['nko_score']);
         $this->assertEmpty($result['raw_sums']);
     }
+
+    public function test_calculate_nko_score_polaritas_negatif_extreme()
+    {
+        // Realisasi jauh lebih besar (buruk) dari target untuk polaritas NEGATIF
+        // (2 - (33.33 / 3)) * 100 = (2 - 11.11) * 100 = -911
+        // Seharusnya mengembalikan 0 (berkat max(0, ...))
+        $result = YtdCalculationService::calculateNkoScore(33.33, 3, 'NEGATIF');
+        $this->assertEquals(0, $result);
+    }
 }

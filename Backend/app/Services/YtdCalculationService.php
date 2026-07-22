@@ -66,9 +66,9 @@ class YtdCalculationService
         }
 
         if ($polaritas === 'POSITIF') {
-            return min(($realisasi / $target) * 100, 110);
+            return max(0, min(($realisasi / $target) * 100, 110));
         } elseif ($polaritas === 'NEGATIF') {
-            return min((2 - ($realisasi / $target)) * 100, 110);
+            return max(0, min((2 - ($realisasi / $target)) * 100, 110));
         }
 
         throw new InvalidArgumentException("Polaritas tidak valid. Gunakan 'POSITIF' atau 'NEGATIF'.");
