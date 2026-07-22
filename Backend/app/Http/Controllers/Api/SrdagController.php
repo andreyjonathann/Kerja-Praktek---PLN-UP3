@@ -158,6 +158,10 @@ class SrdagController extends Controller
 
     public function storeTargets(Request $request)
     {
+        $user = $request->user();
+        if ($user->role !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Hanya Admin yang berwenang mengatur target.'], 403);
+        }
         $request->validate([
             'tahun' => 'required|integer',
             'targets' => 'required|array',

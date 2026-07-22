@@ -357,6 +357,10 @@ class DataJaringanController extends Controller
 
     public function saveGangguan(Request $request)
     {
+        $user = auth()->user();
+        if (!$user || !in_array($user->role, ['pic_jaringan', 'admin'])) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
         $request->validate(['periode_id' => 'required']);
         $gg = GangguanBulanan::firstOrNew(['periode_id' => $request->periode_id]);
         $gg->fill($request->all());
@@ -366,6 +370,10 @@ class DataJaringanController extends Controller
 
     public function saveGangguanList(Request $request)
     {
+        $user = auth()->user();
+        if (!$user || !in_array($user->role, ['pic_jaringan', 'admin'])) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
         $request->validate([
             'tahun' => 'required',
             'bulan' => 'required',
@@ -385,6 +393,10 @@ class DataJaringanController extends Controller
 
     public function deleteGangguanList($id)
     {
+        $user = auth()->user();
+        if (!$user || !in_array($user->role, ['pic_jaringan', 'admin'])) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
         GangguanList::destroy($id);
         return response()->json(['message' => 'Data terhapus']);
     }

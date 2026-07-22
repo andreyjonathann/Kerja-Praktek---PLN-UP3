@@ -136,6 +136,10 @@ class MvodController extends Controller
 
     public function storeTargets(Request $request)
     {
+        $user = $request->user();
+        if ($user->role !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Hanya Admin yang berwenang mengatur target.'], 403);
+        }
         $validator = Validator::make($request->all(), [
             'tahun' => 'required|integer',
             'targets' => 'required|array',
