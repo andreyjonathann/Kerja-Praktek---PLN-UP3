@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Activity, AlertCircle, FileSpreadsheet, Target, Plus } from 'lucide-react';
+import { Activity, AlertCircle, Target, Plus, Zap, CheckCircle2 } from 'lucide-react';
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import PageHeader from '@/components/ui/PageHeader';
 import KpiCard from '@/components/ui/KpiCard';
@@ -98,9 +98,6 @@ export default function SusutDistribusiPage() {
     nkoBadge = 'MASALAH';
     nkoColor = 'bg-rose-100 text-rose-700';
   }
-
-  const kwhNettoVal = summary?.raw_sums?.kwh_netto;
-  const latestMonthVal = summary?.latest_month;
 
   // Prepare chart data from dashboard?.trend
   const trendData = dashboard?.trend;
@@ -236,38 +233,30 @@ export default function SusutDistribusiPage() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <KpiCard
+          title="Target (%) YTD"
+          value={summary?.target_ytd != null ? Number(summary.target_ytd).toFixed(4) : '-'}
+          unit="%"
+          subText={`Target batas maksimal Susut`}
+          icon={Target}
+          color="teal"
+        />
         <KpiCard
           title="Realisasi Susut YTD"
-          value={`${Number(summary?.realisasi_ytd ?? 0).toFixed(2)}%`}
-          subtitle={`Target YTD: ${Number(summary?.target_ytd ?? 0).toFixed(2)}%`}
-          icon={Activity}
+          value={`${Number(summary?.realisasi_ytd ?? 0).toFixed(4)}`}
+          unit="%"
+          subText={summary?.target_ytd != null ? `dari target ${Number(summary.target_ytd).toFixed(4)}%` : 'Target belum ditetapkan'}
+          icon={Zap}
           color="blue"
         />
         <KpiCard
-          title="Skor NKO"
-          value={`${nkoScore != null ? nkoScore.toFixed(1) : '-'}`}
-          subtitle={
-            <span className={`inline-flex mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${nkoColor}`}>
-              {nkoBadge}
-            </span>
-          }
-          icon={Target}
-          color={nkoScore >= 100 ? 'emerald' : (nkoScore >= 95 ? 'amber' : 'rose')}
-        />
-        <KpiCard
-          title="Total KWh Netto (YTD)"
-          value={kwhNettoVal != null ? `${Number(kwhNettoVal).toLocaleString('id-ID')} KWh` : '0 KWh'}
-          subtitle="Akumulasi KWh Netto"
-          icon={FileSpreadsheet}
-          color="indigo"
-        />
-        <KpiCard
-          title="Data Bulan Terakhir"
-          value={latestMonthVal ? MONTHS_ID[latestMonthVal] : 'Belum ada data'}
-          subtitle="Update data terakhir"
-          icon={Target}
-          color="cyan"
+          title="Pencapaian"
+          value={`${nkoScore != null ? nkoScore.toFixed(2) : '-'}`}
+          unit="%"
+          subText={`Polaritas: NEGATIF (Lower is Better)`}
+          icon={CheckCircle2}
+          color={nkoScore >= 100 ? 'green' : (nkoScore >= 95 ? 'yellow' : 'red')}
         />
       </div>
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Activity, AlertCircle, Target, Plus } from 'lucide-react';
+import { Activity, AlertCircle, Target, Plus, Zap, TrendingUp } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
 import KpiCard from '@/components/ui/KpiCard';
 import DataTable from '@/components/ui/DataTable';
@@ -107,14 +107,6 @@ export default function P2tlPage() {
     };
   });
 
-  const getLatestMonthData = () => {
-    if (!trendData) return null;
-    const validData = trendData.filter(d => d.realisasi != null);
-    if (validData.length === 0) return null;
-    return validData.reduce((prev, current) => (prev.bulan > current.bulan) ? prev : current);
-  };
-  const latestMonthData = getLatestMonthData();
-
   const CustomTooltip = ({ active, payload, label }) => {
     if (!active || !payload?.length) return null;
     return (
@@ -217,29 +209,28 @@ export default function P2tlPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <KpiCard
-          title="Realisasi YTD"
-          value={`${Number(dashboard?.realisasi_kumulatif_ytd || 0).toLocaleString('id-ID')} kWh`}
-          subtitle={`Target YTD: ${Number(dashboard?.target_kumulatif_ytd || 0).toLocaleString('id-ID')}`}
-          icon={Activity}
+          title="Target (YTD)"
+          value={dashboard?.target_kumulatif_ytd != null ? Number(dashboard.target_kumulatif_ytd).toLocaleString('id-ID') : '-'}
+          unit="kWh"
+          subText={`Jan - ${MONTHS_ID[new Date().getMonth()]} ${filters.year || new Date().getFullYear()}`}
+          icon={Target}
+          color="teal"
+        />
+        <KpiCard
+          title="Realisasi (YTD)"
+          value={`${Number(dashboard?.realisasi_kumulatif_ytd || 0).toLocaleString('id-ID')}`}
+          unit="kWh"
+          subText={`dari target ${dashboard?.target_kumulatif_ytd != null ? Number(dashboard.target_kumulatif_ytd).toLocaleString('id-ID') + ' kWh' : 'belum ditetapkan'}`}
+          icon={Zap}
           color="blue"
         />
         <KpiCard
           title="Pencapaian"
-          value={`${dashboard?.pencapaian || 0}%`}
-          subtitle={
-            <span className={`inline-flex mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${statusColor}`}>
-              {statusBadge}
-            </span>
-          }
-          icon={Target}
-          color={capai >= 100 ? 'emerald' : (capai >= 95 ? 'amber' : 'rose')}
-        />
-        <KpiCard
-          title="Data Bulan Terakhir"
-          value={latestMonthData ? `${Number(latestMonthData.realisasi).toLocaleString('id-ID')} kWh` : '—'}
-          subtitle={latestMonthData ? `Bulan: ${MONTHS_ID[latestMonthData.bulan]}` : 'Belum ada data'}
-          icon={Activity}
-          color="indigo"
+          value={`${dashboard?.pencapaian || 0}`}
+          unit="%"
+          achievement={Number(dashboard?.pencapaian || 0)}
+          icon={TrendingUp}
+          color={capai >= 100 ? 'green' : (capai >= 95 ? 'yellow' : 'red')}
         />
       </div>
 

@@ -6,6 +6,7 @@ use App\Constants\Up3Constants;
 use App\Http\Controllers\Controller;
 use App\Models\RealisasiP2tl;
 use App\Models\TargetTahunan;
+use App\Services\YtdCalculationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -232,8 +233,9 @@ class RealisasiP2tlController extends Controller
             10 => 'target_okt', 11 => 'target_nov', 12 => 'target_des',
         ];
 
-        $target_kumulatif_ytd = 0;
+        $target_kumulatif_ytd = null;
         if ($targetRow) {
+            $target_kumulatif_ytd = 0;
             for ($i = 1; $i <= $bulan; $i++) {
                 $col = $monthMap[$i];
                 $target_kumulatif_ytd += $targetRow->$col;
@@ -250,11 +252,12 @@ class RealisasiP2tlController extends Controller
 
         $realisasi_kumulatif_ytd = $realisasiYtdQuery->sum('realisasi_kwh');
 
-        // Pencapaian (Max 110%)
-        $pencapaian = 0;
-        if ($target_kumulatif_ytd > 0) {
-            $pencapaian = min(($realisasi_kumulatif_ytd / $target_kumulatif_ytd) * 100, 110);
-        }
+        // Pencapaian (menggunakan service tersentralisasi YtdCalculationService, konsisten dgn modul lain)
+        $pencapaian = YtdCalculationService::calculateNkoScore(
+            $realisasi_kumulatif_ytd,
+            $target_kumulatif_ytd,
+            'POSITIF'
+        ) ?? 0;
 
         // Build trend array (bulan 1-12)
         $realisasiAllQuery = RealisasiP2tl::where('tahun', $tahun);
@@ -272,7 +275,7 @@ class RealisasiP2tlController extends Controller
             $trend[] = [
                 'bulan' => $m,
                 'realisasi' => $realisasiPerBulan->has($m) ? (float) $realisasiPerBulan[$m] : null,
-                'target' => $targetRow ? (float) $targetRow->$col : null,
+                'target' => ($targetRow && !is_null($targetRow->$col)) ? (float) $targetRow->$col : null,
             ];
         }
 
