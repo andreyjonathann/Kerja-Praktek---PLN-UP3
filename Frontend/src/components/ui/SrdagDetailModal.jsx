@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom'
 import { X, Edit2, Trash2, Loader2, Save } from 'lucide-react'
 import api from '../../services/api'
 import { useAuth } from '../../context/AuthContext'
+import useDirtyFormGuard from '@/hooks/useDirtyFormGuard'
 
 const MONTHS_ID = [
   '', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
@@ -33,6 +34,13 @@ export default function SrdagDetailModal({ open, onOpenChange, rowData, tahun, u
     wo_marking_padam_meluas: ''
   })
 
+  const { isDirty, setIsDirty, guardedNavigate } = useDirtyFormGuard();
+
+  const handleFieldChange = (field, value) => {
+    setForm(prev => ({ ...prev, [field]: value }));
+    setIsDirty(true);
+  };
+
   // Fetch Data on Open
   useEffect(() => {
     if (open && rowData && bulanNum) {
@@ -43,6 +51,7 @@ export default function SrdagDetailModal({ open, onOpenChange, rowData, tahun, u
       setIsDeleting(false)
       setRecord(null)
       setForm({ jumlah_dispatch_berhasil: '', jumlah_total_gangguan: '', wo_marking_padam_meluas: '' })
+      setIsDirty(false)
     }
   }, [open, rowData, tahun])
 
@@ -90,6 +99,7 @@ export default function SrdagDetailModal({ open, onOpenChange, rowData, tahun, u
       }
       
       setIsEditing(false)
+      setIsDirty(false)
       if (onSuccess) onSuccess()
       fetchData()
     } catch (err) {
@@ -121,7 +131,26 @@ export default function SrdagDetailModal({ open, onOpenChange, rowData, tahun, u
     return Number(v).toLocaleString('id-ID')
   }
 
-  const closeModal = () => {
+  const cancelEdit = () => {
+    if (record) {
+      setForm({
+        jumlah_dispatch_berhasil: record.jumlah_dispatch_berhasil.toString(),
+        jumlah_total_gangguan: record.jumlah_total_gangguan.toString(),
+        wo_marking_padam_meluas: record.wo_marking_padam_meluas != null ? record.wo_marking_padam_meluas.toString() : '0'
+      });
+    } else {
+      setForm({ jumlah_dispatch_berhasil: '', jumlah_total_gangguan: '', wo_marking_padam_meluas: '' });
+    }
+    setIsDirty(false);
+    setIsEditing(false);
+  };
+
+  const closeModal = async () => {
+    if (isEditing && isDirty) {
+      const result = await notify.confirmLeave();
+      if (!result.isConfirmed) return;
+    }
+    setIsDirty(false)
     onOpenChange(false)
   }
 
@@ -256,7 +285,7 @@ export default function SrdagDetailModal({ open, onOpenChange, rowData, tahun, u
                     type="number"
                     min="0"
                     value={form.jumlah_dispatch_berhasil}
-                    onChange={(e) => setForm({ ...form, jumlah_dispatch_berhasil: e.target.value })}
+                    onChange={(e) => handleFieldChange('jumlah_dispatch_berhasil', e.target.value)}
                     style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: 6, fontSize: 14 }}
                     disabled={saving}
                   />
@@ -269,7 +298,7 @@ export default function SrdagDetailModal({ open, onOpenChange, rowData, tahun, u
                     type="number"
                     min="1"
                     value={form.jumlah_total_gangguan}
-                    onChange={(e) => setForm({ ...form, jumlah_total_gangguan: e.target.value })}
+                    onChange={(e) => handleFieldChange('jumlah_total_gangguan', e.target.value)}
                     style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: 6, fontSize: 14 }}
                     disabled={saving}
                   />
@@ -282,7 +311,7 @@ export default function SrdagDetailModal({ open, onOpenChange, rowData, tahun, u
                     type="number"
                     min="0"
                     value={form.wo_marking_padam_meluas}
-                    onChange={(e) => setForm({ ...form, wo_marking_padam_meluas: e.target.value })}
+                    onChange={(e) => handleFieldChange('wo_marking_padam_meluas', e.target.value)}
                     style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: 6, fontSize: 14 }}
                     disabled={saving}
                   />
@@ -300,7 +329,7 @@ export default function SrdagDetailModal({ open, onOpenChange, rowData, tahun, u
                   </button>
                 )}
                 <button
-                  onClick={() => setIsEditing(false)}
+                  onClick={cancelEdit}
                   disabled={saving}
                   style={{ padding: '6px 12px', fontSize: 13, fontWeight: 600, color: '#475569', background: '#fff', border: '1px solid #cbd5e1', borderRadius: 6, cursor: 'pointer' }}
                 >

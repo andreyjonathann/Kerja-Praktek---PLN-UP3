@@ -1,8 +1,10 @@
+import notify from '@/utils/notify';
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import api from '@/services/api';
-import { ArrowLeft, Save, Edit2, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Save, Edit2, CheckCircle, Calendar, RefreshCw } from 'lucide-react';
+import TargetGantiMeterHarianModal from '@/components/ui/TargetGantiMeterHarianModal';
 
 const MONTHS = [
   { key: 'target_jan', label: 'Januari' },
@@ -24,6 +26,13 @@ function TargetSection({ bidang, indikator, tahun, isDecimal }) {
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [isEditing, setIsEditing] = useState(false);
+  const [isOverride, setIsOverride] = useState({});
+  const [harianModalOpen, setHarianModalOpen] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState(null);
+
+  const { isAdmin } = useAuth();
+  const isGantiMeter = String(indikator).toUpperCase() === 'GANTI METER';
+
   const [originalForm, setOriginalForm] = useState({});
   const [form, setForm] = useState({
     target_jan: '', target_feb: '', target_mar: '', target_apr: '', target_mei: '', target_jun: '',
@@ -45,6 +54,7 @@ function TargetSection({ bidang, indikator, tahun, isDecimal }) {
         });
         setForm(newForm);
         setOriginalForm(newForm);
+        setIsOverride(data.is_override || {});
         setIsEditing(false);
       } catch (err) {
         console.error('Failed to fetch target:', err);
@@ -71,11 +81,45 @@ function TargetSection({ bidang, indikator, tahun, isDecimal }) {
       setIsEditing(false);
       setOriginalForm({...form});
       setTimeout(() => setSuccessMsg(''), 3000);
+      // Refresh to get the latest is_override state and calculated values
+      const res = await api.get(`/target/${bidang}/${encodeURIComponent(indikator)}?tahun=${tahun}`);
+      setIsOverride(res.data.is_override || {});
     } catch (err) {
-      alert('Gagal menyimpan target: ' + (err.response?.data?.message || err.message));
+      notify.error(err.response?.data?.message || err.message, 'Gagal menyimpan target');
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleResetToAuto = async (bulanKey) => {
+    try {
+      setLoading(true);
+      await api.put(`/target/reset-auto/${bidang}/${encodeURIComponent(indikator)}/${tahun}`, {
+        bulan: bulanKey
+      });
+      setSuccessMsg(`Target berhasil di-reset ke otomatis!`);
+      setTimeout(() => setSuccessMsg(''), 3000);
+      
+      // Refresh data
+      const res = await api.get(`/target/${bidang}/${encodeURIComponent(indikator)}?tahun=${tahun}`);
+      const data = res.data;
+      const newForm = {};
+      MONTHS.forEach(m => {
+        newForm[m.key] = data[m.key] !== null && data[m.key] !== undefined ? String(data[m.key]) : '';
+      });
+      setForm(newForm);
+      setOriginalForm(newForm);
+      setIsOverride(data.is_override || {});
+    } catch (err) {
+      notify.error(err.response?.data?.message || err.message, 'Gagal reset target');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOpenHarian = (m) => {
+    setSelectedMonth(m);
+    setHarianModalOpen(true);
   };
 
   return (
@@ -97,7 +141,7 @@ function TargetSection({ bidang, indikator, tahun, isDecimal }) {
             <h2 className="font-extrabold text-lg text-slate-800 tracking-tight text-center">Target {indikator} — {tahun}</h2>
             
             <div className="absolute right-6 flex items-center gap-2">
-             {!isEditing ? (
+             {!isAdmin ? null : !isEditing ? (
                <div style={{
                  display: 'inline-flex',
                  background: '#00A2B9',
@@ -220,12 +264,24 @@ function TargetSection({ bidang, indikator, tahun, isDecimal }) {
                 </tr>
               </thead>
               <tbody>
-                {MONTHS.map((m) => {
+                {MONTHS.map((m, index) => {
                   const isFilled = form[m.key] !== '';
+                  const shortKey = m.key.replace('target_', '');
+                  const manualOverride = isOverride[shortKey] === true;
+                  const monthNum = index + 1;
+
                   return (
                     <tr key={m.key} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
                       <td className="py-4 px-6 text-sm font-semibold text-slate-800 align-middle text-center">
-                        {m.label}
+                        <div className="flex items-center justify-center gap-2">
+                          {m.label}
+                          {isGantiMeter && manualOverride && (
+                             <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-100 text-yellow-700 uppercase">Manual</span>
+                          )}
+                          {isGantiMeter && !manualOverride && (
+                             <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 uppercase">Otomatis</span>
+                          )}
+                        </div>
                       </td>
                       <td className="py-3 px-6 align-middle text-center">
                         <input
@@ -243,15 +299,40 @@ function TargetSection({ bidang, indikator, tahun, isDecimal }) {
                         />
                       </td>
                       <td className="py-4 px-6 align-middle text-center">
-                        {isFilled ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">
-                            ✓ Terisi
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-slate-100 text-slate-500 border border-slate-200">
-                            — Kosong
-                          </span>
-                        )}
+                        <div className="flex items-center justify-center gap-2">
+                          {isFilled ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">
+                              ✓ Terisi
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-slate-100 text-slate-500 border border-slate-200">
+                              — Kosong
+                            </span>
+                          )}
+
+                          {isAdmin && isGantiMeter && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenHarian(m)}
+                                className="ml-2 inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-md transition-colors"
+                              >
+                                <Calendar size={12} />
+                                Detail Harian
+                              </button>
+                              {manualOverride && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleResetToAuto(shortKey)}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-md transition-colors"
+                                  title="Reset ke kalkulasi otomatis dari data harian"
+                                >
+                                  <RefreshCw size={12} />
+                                </button>
+                              )}
+                            </>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -260,6 +341,24 @@ function TargetSection({ bidang, indikator, tahun, isDecimal }) {
             </table>
           </div>
         </div>
+      )}
+
+      {selectedMonth && (
+        <TargetGantiMeterHarianModal
+          open={harianModalOpen}
+          onOpenChange={setHarianModalOpen}
+          bulanStr={selectedMonth.label}
+          bulanNum={MONTHS.findIndex(x => x.key === selectedMonth.key) + 1}
+          tahun={tahun}
+          isManual={isOverride[selectedMonth.key.replace('target_', '')] === true}
+          onSuccess={() => {
+            setHarianModalOpen(false);
+            setSuccessMsg(`Target harian berhasil disimpan!`);
+            setTimeout(() => setSuccessMsg(''), 3000);
+            handleResetToAuto(null); // Just refresh the data without resetting a specific month
+          }}
+          onReset={() => handleResetToAuto(selectedMonth.key.replace('target_', ''))}
+        />
       )}
     </div>
   );
@@ -281,9 +380,8 @@ export default function KelolaTargetBulananPage() {
   const isDecimal = ['SAIDI', 'SAIFI', 'ENS'].includes(displayIndikator);
 
   if (authLoading) return null;
-  if (!isAdmin) {
-    return <Navigate to="/" replace />;
-  }
+  // If not admin, we no longer redirect. They can view the read-only inputs!
+  // Removed: if (!isAdmin) { return <Navigate to="/" replace />; }
 
   const indikatorList = displayIndikator === 'GANGGUAN TM' 
     ? ['Gangguan TM > 5 Menit', 'Gangguan TM < 5 Menit'] 

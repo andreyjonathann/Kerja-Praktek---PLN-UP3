@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react'
 import { DEFAULT_UP3 } from '@/constants/up3'
 import { createPortal } from 'react-dom'
 import { X, Edit2, Trash2, Loader2, Save } from 'lucide-react'
+import useDirtyFormGuard from '@/hooks/useDirtyFormGuard'
 import { useNavigate } from 'react-router-dom'
 import { MONTHS_ID } from '@/utils/formatters'
 import { useAuth } from '@/context/AuthContext'
@@ -41,6 +42,13 @@ export default function GangguanDetailModal({
   const [editingRowId, setEditingRowId] = useState(null)
   const [deletingRowId, setDeletingRowId] = useState(null)
   const [editRowForm, setEditRowForm] = useState({ merek: '', tahun_alat: '', nomor_seri: '' })
+
+  const { isDirty, setIsDirty } = useDirtyFormGuard();
+  const handleFieldChange = (field, value) => {
+    setEditRowForm(prev => ({ ...prev, [field]: value }));
+    setIsDirty(true);
+  };
+
   const [savingSwitching, setSavingSwitching] = useState(false)
 
   const bulanNum  = rowData?.bulan ?? 0
@@ -141,6 +149,7 @@ export default function GangguanDetailModal({
         await api.put(`/v1/gangguan-switching/detail/${editingRowId}`, editRowForm)
       }
       
+      setIsDirty(false)
       setEditingRowId(null)
       if (onSuccess) onSuccess()
       fetchSwitchingData() // Refresh list
@@ -196,6 +205,7 @@ export default function GangguanDetailModal({
         await api.put(`/v1/gangguan-trafo/detail/${editingRowId}`, editRowForm)
       }
       
+      setIsDirty(false)
       setEditingRowId(null)
       if (onSuccess) onSuccess()
       fetchTrafoData() // Refresh list
@@ -238,16 +248,23 @@ export default function GangguanDetailModal({
   const startEditRow = (det) => {
     setEditingRowId(det.id)
     setEditRowForm({ merek: det.merek || '', tahun_alat: det.tahun_alat || '', nomor_seri: det.nomor_seri || '' })
+    setIsDirty(false)
     setDeletingRowId(null)
   }
 
   const startAddRow = () => {
     setEditingRowId('new')
     setEditRowForm({ merek: '', tahun_alat: '', nomor_seri: '' })
+    setIsDirty(false)
     setDeletingRowId(null)
   }
 
-  const closeModal = () => {
+  const closeModal = async () => {
+    if (editingRowId && isDirty) {
+      const result = await notify.confirmLeave();
+      if (!result.isConfirmed) return;
+    }
+    setIsDirty(false)
     onOpenChange(false)
   }
 
@@ -368,15 +385,15 @@ export default function GangguanDetailModal({
                         <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
                           <div style={{ flex: 1 }}>
                             <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#64748b', marginBottom: 4 }}>Merek</label>
-                            <input type="text" placeholder="Cth: Schneider" value={editRowForm.merek} onChange={(e) => setEditRowForm({ ...editRowForm, merek: e.target.value })} style={{ width: '100%', padding: '6px 10px', fontSize: 13, border: '1px solid #cbd5e1', borderRadius: 6 }} disabled={savingSwitching} />
+                            <input type="text" placeholder="Cth: Schneider" value={editRowForm.merek} onChange={(e) => handleFieldChange('merek', e.target.value)} style={{ width: '100%', padding: '6px 10px', fontSize: 13, border: '1px solid #cbd5e1', borderRadius: 6 }} disabled={savingSwitching} />
                           </div>
                           <div style={{ flex: 1 }}>
                             <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#64748b', marginBottom: 4 }}>Tahun Alat</label>
-                            <input type="text" placeholder="Cth: 2015" value={editRowForm.tahun_alat} onChange={(e) => setEditRowForm({ ...editRowForm, tahun_alat: e.target.value })} style={{ width: '100%', padding: '6px 10px', fontSize: 13, border: '1px solid #cbd5e1', borderRadius: 6 }} disabled={savingSwitching} />
+                            <input type="text" placeholder="Cth: 2015" value={editRowForm.tahun_alat} onChange={(e) => handleFieldChange('tahun_alat', e.target.value)} style={{ width: '100%', padding: '6px 10px', fontSize: 13, border: '1px solid #cbd5e1', borderRadius: 6 }} disabled={savingSwitching} />
                           </div>
                           <div style={{ flex: 1 }}>
                             <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#64748b', marginBottom: 4 }}>Nomor Seri</label>
-                            <input type="text" placeholder="Cth: SN-123" value={editRowForm.nomor_seri} onChange={(e) => setEditRowForm({ ...editRowForm, nomor_seri: e.target.value })} style={{ width: '100%', padding: '6px 10px', fontSize: 13, border: '1px solid #cbd5e1', borderRadius: 6 }} disabled={savingSwitching} />
+                            <input type="text" placeholder="Cth: SN-123" value={editRowForm.nomor_seri} onChange={(e) => handleFieldChange('nomor_seri', e.target.value)} style={{ width: '100%', padding: '6px 10px', fontSize: 13, border: '1px solid #cbd5e1', borderRadius: 6 }} disabled={savingSwitching} />
                           </div>
                         </div>
                         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
@@ -431,15 +448,15 @@ export default function GangguanDetailModal({
                     <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
                       <div style={{ flex: 1 }}>
                         <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#64748b', marginBottom: 4 }}>Merek</label>
-                        <input type="text" placeholder="Cth: Schneider" value={editRowForm.merek} onChange={(e) => setEditRowForm({ ...editRowForm, merek: e.target.value })} style={{ width: '100%', padding: '6px 10px', fontSize: 13, border: '1px solid #cbd5e1', borderRadius: 6 }} disabled={savingSwitching} />
+                        <input type="text" placeholder="Cth: Schneider" value={editRowForm.merek} onChange={(e) => handleFieldChange('merek', e.target.value)} style={{ width: '100%', padding: '6px 10px', fontSize: 13, border: '1px solid #cbd5e1', borderRadius: 6 }} disabled={savingSwitching} />
                       </div>
                       <div style={{ flex: 1 }}>
                         <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#64748b', marginBottom: 4 }}>Tahun Alat</label>
-                        <input type="text" placeholder="Cth: 2015" value={editRowForm.tahun_alat} onChange={(e) => setEditRowForm({ ...editRowForm, tahun_alat: e.target.value })} style={{ width: '100%', padding: '6px 10px', fontSize: 13, border: '1px solid #cbd5e1', borderRadius: 6 }} disabled={savingSwitching} />
+                        <input type="text" placeholder="Cth: 2015" value={editRowForm.tahun_alat} onChange={(e) => handleFieldChange('tahun_alat', e.target.value)} style={{ width: '100%', padding: '6px 10px', fontSize: 13, border: '1px solid #cbd5e1', borderRadius: 6 }} disabled={savingSwitching} />
                       </div>
                       <div style={{ flex: 1 }}>
                         <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#64748b', marginBottom: 4 }}>Nomor Seri</label>
-                        <input type="text" placeholder="Cth: SN-123" value={editRowForm.nomor_seri} onChange={(e) => setEditRowForm({ ...editRowForm, nomor_seri: e.target.value })} style={{ width: '100%', padding: '6px 10px', fontSize: 13, border: '1px solid #cbd5e1', borderRadius: 6 }} disabled={savingSwitching} />
+                        <input type="text" placeholder="Cth: SN-123" value={editRowForm.nomor_seri} onChange={(e) => handleFieldChange('nomor_seri', e.target.value)} style={{ width: '100%', padding: '6px 10px', fontSize: 13, border: '1px solid #cbd5e1', borderRadius: 6 }} disabled={savingSwitching} />
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
@@ -533,15 +550,15 @@ export default function GangguanDetailModal({
                         <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
                           <div style={{ flex: 1 }}>
                             <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#64748b', marginBottom: 4 }}>Merek</label>
-                            <input type="text" placeholder="Cth: Schneider" value={editRowForm.merek} onChange={(e) => setEditRowForm({ ...editRowForm, merek: e.target.value })} style={{ width: '100%', padding: '6px 10px', fontSize: 13, border: '1px solid #cbd5e1', borderRadius: 6 }} disabled={savingTrafo} />
+                            <input type="text" placeholder="Cth: Schneider" value={editRowForm.merek} onChange={(e) => handleFieldChange('merek', e.target.value)} style={{ width: '100%', padding: '6px 10px', fontSize: 13, border: '1px solid #cbd5e1', borderRadius: 6 }} disabled={savingTrafo} />
                           </div>
                           <div style={{ flex: 1 }}>
                             <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#64748b', marginBottom: 4 }}>Tahun Alat</label>
-                            <input type="text" placeholder="Cth: 2015" value={editRowForm.tahun_alat} onChange={(e) => setEditRowForm({ ...editRowForm, tahun_alat: e.target.value })} style={{ width: '100%', padding: '6px 10px', fontSize: 13, border: '1px solid #cbd5e1', borderRadius: 6 }} disabled={savingTrafo} />
+                            <input type="text" placeholder="Cth: 2015" value={editRowForm.tahun_alat} onChange={(e) => handleFieldChange('tahun_alat', e.target.value)} style={{ width: '100%', padding: '6px 10px', fontSize: 13, border: '1px solid #cbd5e1', borderRadius: 6 }} disabled={savingTrafo} />
                           </div>
                           <div style={{ flex: 1 }}>
                             <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#64748b', marginBottom: 4 }}>Nomor Seri</label>
-                            <input type="text" placeholder="Cth: SN-123" value={editRowForm.nomor_seri} onChange={(e) => setEditRowForm({ ...editRowForm, nomor_seri: e.target.value })} style={{ width: '100%', padding: '6px 10px', fontSize: 13, border: '1px solid #cbd5e1', borderRadius: 6 }} disabled={savingTrafo} />
+                            <input type="text" placeholder="Cth: SN-123" value={editRowForm.nomor_seri} onChange={(e) => handleFieldChange('nomor_seri', e.target.value)} style={{ width: '100%', padding: '6px 10px', fontSize: 13, border: '1px solid #cbd5e1', borderRadius: 6 }} disabled={savingTrafo} />
                           </div>
                         </div>
                         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
@@ -596,15 +613,15 @@ export default function GangguanDetailModal({
                     <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
                       <div style={{ flex: 1 }}>
                         <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#64748b', marginBottom: 4 }}>Merek</label>
-                        <input type="text" placeholder="Cth: Schneider" value={editRowForm.merek} onChange={(e) => setEditRowForm({ ...editRowForm, merek: e.target.value })} style={{ width: '100%', padding: '6px 10px', fontSize: 13, border: '1px solid #cbd5e1', borderRadius: 6 }} disabled={savingTrafo} />
+                        <input type="text" placeholder="Cth: Schneider" value={editRowForm.merek} onChange={(e) => handleFieldChange('merek', e.target.value)} style={{ width: '100%', padding: '6px 10px', fontSize: 13, border: '1px solid #cbd5e1', borderRadius: 6 }} disabled={savingTrafo} />
                       </div>
                       <div style={{ flex: 1 }}>
                         <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#64748b', marginBottom: 4 }}>Tahun Alat</label>
-                        <input type="text" placeholder="Cth: 2015" value={editRowForm.tahun_alat} onChange={(e) => setEditRowForm({ ...editRowForm, tahun_alat: e.target.value })} style={{ width: '100%', padding: '6px 10px', fontSize: 13, border: '1px solid #cbd5e1', borderRadius: 6 }} disabled={savingTrafo} />
+                        <input type="text" placeholder="Cth: 2015" value={editRowForm.tahun_alat} onChange={(e) => handleFieldChange('tahun_alat', e.target.value)} style={{ width: '100%', padding: '6px 10px', fontSize: 13, border: '1px solid #cbd5e1', borderRadius: 6 }} disabled={savingTrafo} />
                       </div>
                       <div style={{ flex: 1 }}>
                         <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#64748b', marginBottom: 4 }}>Nomor Seri</label>
-                        <input type="text" placeholder="Cth: SN-123" value={editRowForm.nomor_seri} onChange={(e) => setEditRowForm({ ...editRowForm, nomor_seri: e.target.value })} style={{ width: '100%', padding: '6px 10px', fontSize: 13, border: '1px solid #cbd5e1', borderRadius: 6 }} disabled={savingTrafo} />
+                        <input type="text" placeholder="Cth: SN-123" value={editRowForm.nomor_seri} onChange={(e) => handleFieldChange('nomor_seri', e.target.value)} style={{ width: '100%', padding: '6px 10px', fontSize: 13, border: '1px solid #cbd5e1', borderRadius: 6 }} disabled={savingTrafo} />
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>

@@ -278,6 +278,9 @@ class SrdagController extends Controller
                     'target' => $monthTargetRate,
                     'jumlah_berhasil' => $monthData->sum('jumlah_dispatch_berhasil'),
                     'jumlah_total' => $monthData->sum('jumlah_total_gangguan'),
+                    'jumlah_dispatch_berhasil' => $monthData->sum('jumlah_dispatch_berhasil'),
+                    'jumlah_total_gangguan' => $monthData->sum('jumlah_total_gangguan'),
+                    'wo_marking_padam_meluas' => $monthData->sum('wo_marking_padam_meluas'),
                     'persen_pencapaian' => $monthTargetRate > 0 ? min(($sr / $monthTargetRate) * 100, 110) : 0
                 ];
             } else {
@@ -287,6 +290,9 @@ class SrdagController extends Controller
                     'target' => $monthTargetRate,
                     'jumlah_berhasil' => null,
                     'jumlah_total' => null,
+                    'jumlah_dispatch_berhasil' => null,
+                    'jumlah_total_gangguan' => null,
+                    'wo_marking_padam_meluas' => null,
                     'persen_pencapaian' => null
                 ];
             }

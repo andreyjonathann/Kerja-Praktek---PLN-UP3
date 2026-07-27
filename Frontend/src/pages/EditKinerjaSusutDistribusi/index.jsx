@@ -245,8 +245,9 @@ export default function EditKinerjaSusutDistribusiPage() {
                 <div className="p-5 flex flex-col gap-3">
                   
                   <div className="flex items-center justify-between p-3 bg-white border border-[#f3f4f6] rounded-xl gap-4 hover:bg-slate-50 transition">
-                    <div className="flex items-center gap-3 flex-1">
+                    <div className="flex flex-col flex-1">
                       <label className="font-semibold text-slate-700 text-[13px]">KWh Siap Jual</label>
+                      <span className="text-[11px] text-slate-400">(Siap Salur setelah dikurangi PSSD)</span>
                     </div>
                     <div className="flex flex-col items-end">
                       <input type="number" step="any" {...register('kwh_siap_jual', { required: 'Wajib diisi', min: { value: 0.0001, message: '> 0' } })} className={fieldInputClass} placeholder="0" />
@@ -254,11 +255,19 @@ export default function EditKinerjaSusutDistribusiPage() {
                     </div>
                   </div>
                   <div className="flex items-center justify-between p-3 bg-white border border-[#f3f4f6] rounded-xl gap-4 hover:bg-slate-50 transition">
-                    <div className="flex items-center gap-3 flex-1">
+                    <div className="flex flex-col flex-1">
                       <label className="font-semibold text-slate-700 text-[13px]">KWh Jual</label>
+                      <span className="text-[11px] text-slate-400">(Total gabungan 309TR + 309TM + EMIN)</span>
                     </div>
                     <div className="flex flex-col items-end">
-                      <input type="number" step="any" {...register('kwh_jual', { required: 'Wajib diisi', min: { value: 0, message: 'Tidak boleh negatif' } })} className={fieldInputClass} placeholder="0" />
+                      <input type="number" step="any" {...register('kwh_jual', { 
+                        required: 'Wajib diisi', 
+                        min: { value: 0, message: 'Tidak boleh negatif' },
+                        validate: (value) => {
+                          const siapJual = parseFloat(kwh_siap_jual) || 0;
+                          return parseFloat(value) <= siapJual || 'KWh Jual tidak boleh melebihi KWh Siap Jual';
+                        }
+                      })} className={fieldInputClass} placeholder="0" />
                       {errors.kwh_jual && <span className="text-xs text-red-500 mt-1 font-semibold">{errors.kwh_jual.message}</span>}
                     </div>
                   </div>

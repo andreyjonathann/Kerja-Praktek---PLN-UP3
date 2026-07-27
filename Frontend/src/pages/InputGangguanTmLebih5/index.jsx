@@ -14,7 +14,7 @@ export default function InputGangguanTmLebih5Page() {
   const [success, setSuccess] = useState(false);
   const [existingData, setExistingData] = useState({ lebih: false });
 
-  const { register, handleSubmit, formState: { errors }, control, watch } = useForm({
+  const { register, handleSubmit, formState: { errors }, control, watch, reset } = useForm({
       defaultValues: {
           tahun: '',
           bulan: '',
@@ -60,6 +60,30 @@ export default function InputGangguanTmLebih5Page() {
   }, [selectedYear, selectedMonth]);
 
   const isDuplicate = existingData.lebih;
+
+  useEffect(() => {
+    if (!isDuplicate || !selectedYear || !selectedMonth) return;
+    const fetchDetail = async () => {
+      try {
+        const res = await api.get('/jaringan/gangguan-tm/lebih-5/detail', { params: { tahun: selectedYear, bulan: selectedMonth } });
+        const details = res.data?.data || [];
+        if (details.length > 0) {
+          reset({
+            tahun: selectedYear,
+            bulan: selectedMonth,
+            kejadian: details.map(d => ({
+              jumlah: d.jumlah_gangguan?.toString() || '',
+              penyebab: d.penyebab || '',
+              penyulang: d.nama_penyulang || ''
+            }))
+          });
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchDetail();
+  }, [isDuplicate, selectedYear, selectedMonth, reset]);
 
   const onSubmit = async (data) => {
     if (isDuplicate) {

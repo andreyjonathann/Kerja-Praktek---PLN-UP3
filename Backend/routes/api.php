@@ -176,6 +176,10 @@ Route::middleware('api')->group(function () {
         Route::post('/targets', [TargetTahunanController::class, 'store']);
         Route::get('/target/{bidang}/{indikator}', [TargetTahunanController::class, 'getMonthlyTarget']);
         Route::put('/target/{bidang}/{indikator}/{tahun}', [TargetTahunanController::class, 'updateMonthlyTarget']);
+        Route::put('/target/reset-auto/{bidang}/{indikator}/{tahun}', [TargetTahunanController::class, 'resetToAuto']);
+
+        Route::get('/target-ganti-meter-harian', [\App\Http\Controllers\Api\TargetGantiMeterHarianController::class, 'index']);
+        Route::post('/target-ganti-meter-harian/bulk', [\App\Http\Controllers\Api\TargetGantiMeterHarianController::class, 'storeBulk']);
     });
 });
 

@@ -7,6 +7,7 @@ use App\Constants\Up3Constants;
 use App\Http\Controllers\Controller;
 use App\Models\RealisasiGantiMeter;
 use App\Models\TargetTahunan;
+use App\Services\YtdCalculationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -46,8 +47,7 @@ class RealisasiGantiMeterController extends Controller
         }
         $validator = Validator::make($request->all(), [
             'tanggal' => 'required|date',
-            'jumlah_app' => 'required|integer|min:0',
-            'jumlah_yantek' => 'required|integer|min:0',
+            'jumlah_unit' => 'required|integer|min:0',
             'up3' => 'nullable|string',
             'keterangan' => 'nullable|string'
         ]);
@@ -75,9 +75,7 @@ class RealisasiGantiMeterController extends Controller
         $realisasi->tanggal = $tanggal->format('Y-m-d');
         $realisasi->tahun = $tanggal->year;
         $realisasi->bulan = $tanggal->month;
-        $realisasi->jumlah_app = $request->jumlah_app;
-        $realisasi->jumlah_yantek = $request->jumlah_yantek;
-        $realisasi->total = $request->jumlah_app + $request->jumlah_yantek;
+        $realisasi->jumlah_unit = $request->jumlah_unit;
         $realisasi->keterangan = $request->keterangan;
         $realisasi->created_by = $user->id;
         $realisasi->save();
@@ -102,8 +100,7 @@ class RealisasiGantiMeterController extends Controller
             return response()->json(['success' => false, 'message' => 'Data tidak ditemukan'], 404);
         }
         $validator = Validator::make($request->all(), [
-            'jumlah_app' => 'required|integer|min:0',
-            'jumlah_yantek' => 'required|integer|min:0',
+            'jumlah_unit' => 'required|integer|min:0',
             'keterangan' => 'nullable|string'
         ]);
         if ($validator->fails()) {
@@ -113,9 +110,7 @@ class RealisasiGantiMeterController extends Controller
                 'errors' => $validator->errors()
             ], 422);
         }
-        $realisasi->jumlah_app = $request->jumlah_app;
-        $realisasi->jumlah_yantek = $request->jumlah_yantek;
-        $realisasi->total = $request->jumlah_app + $request->jumlah_yantek;
+        $realisasi->jumlah_unit = $request->jumlah_unit;
         $realisasi->keterangan = $request->keterangan;
         $realisasi->save();
         return response()->json([
@@ -169,8 +164,9 @@ class RealisasiGantiMeterController extends Controller
             10 => 'target_okt', 11 => 'target_nov', 12 => 'target_des',
         ];
 
-        $target_kumulatif_ytd = 0;
+        $target_kumulatif_ytd = null;
         if ($targetRow) {
+            $target_kumulatif_ytd = 0;
             for ($i = 1; $i <= $bulan; $i++) {
                 $col = $monthMap[$i];
                 $target_kumulatif_ytd += $targetRow->$col;
@@ -185,15 +181,14 @@ class RealisasiGantiMeterController extends Controller
             $realisasiYtdQuery->where('up3', $up3);
         }
 
-        $realisasi_kumulatif_ytd = $realisasiYtdQuery->sum('total');
-        $jumlah_app_ytd = $realisasiYtdQuery->sum('jumlah_app');
-        $jumlah_yantek_ytd = $realisasiYtdQuery->sum('jumlah_yantek');
+        $realisasi_kumulatif_ytd = $realisasiYtdQuery->sum('jumlah_unit');
 
-        // Pencapaian (Max 110%)
-        $pencapaian = 0;
-        if ($target_kumulatif_ytd > 0) {
-            $pencapaian = min(($realisasi_kumulatif_ytd / $target_kumulatif_ytd) * 100, 110);
-        }
+        // Pencapaian (menggunakan service tersentralisasi YtdCalculationService, konsisten dgn modul lain)
+        $pencapaian = YtdCalculationService::calculateNkoScore(
+            $realisasi_kumulatif_ytd,
+            $target_kumulatif_ytd,
+            'POSITIF'
+        ) ?? 0;
 
         // Build trend array (bulan 1-12)
         $realisasiAllQuery = RealisasiGantiMeter::where('tahun', $tahun);
@@ -201,7 +196,7 @@ class RealisasiGantiMeterController extends Controller
             $realisasiAllQuery->where('up3', $up3);
         }
         $realisasiPerBulan = $realisasiAllQuery
-            ->selectRaw('bulan, SUM(total) as total_realisasi')
+            ->selectRaw('bulan, SUM(jumlah_unit) as total_realisasi')
             ->groupBy('bulan')
             ->pluck('total_realisasi', 'bulan');
 
@@ -211,7 +206,7 @@ class RealisasiGantiMeterController extends Controller
             $trend[] = [
                 'bulan' => $m,
                 'realisasi' => $realisasiPerBulan->has($m) ? (float) $realisasiPerBulan[$m] : null,
-                'target' => $targetRow ? (float) $targetRow->$col : null,
+                'target' => ($targetRow && !is_null($targetRow->$col)) ? (float) $targetRow->$col : null,
             ];
         }
 
@@ -220,10 +215,6 @@ class RealisasiGantiMeterController extends Controller
             'data' => [
                 'target_kumulatif_ytd' => $target_kumulatif_ytd,
                 'realisasi_kumulatif_ytd' => $realisasi_kumulatif_ytd,
-                'breakdown_ytd' => [
-                    'jumlah_app' => $jumlah_app_ytd,
-                    'jumlah_yantek' => $jumlah_yantek_ytd,
-                ],
                 'pencapaian' => round($pencapaian, 2),
                 'trend' => $trend,
             ]
@@ -242,7 +233,32 @@ class RealisasiGantiMeterController extends Controller
         if ($up3) {
             $query->where('up3', $up3);
         }
-        $data = $query->orderBy('tanggal', 'asc')->get();
+        $realisasi = $query->get()->keyBy(function($item) {
+            return \Carbon\Carbon::parse($item->tanggal)->format('Y-m-d');
+        });
+
+        $targets = \App\Models\TargetGantiMeterHarian::whereYear('tanggal', $tahun)
+            ->whereMonth('tanggal', $bulan)
+            ->get()->keyBy(function($item) {
+                return \Carbon\Carbon::parse($item->tanggal)->format('Y-m-d');
+            });
+
+        $allDates = $realisasi->keys()->merge($targets->keys())->unique()->sort()->values();
+
+        $data = [];
+        foreach ($allDates as $date) {
+            $r = $realisasi->get($date);
+            $t = $targets->get($date);
+            
+            $data[] = [
+                'tanggal' => $date,
+                'realisasi_id' => $r ? $r->id : null,
+                'target_id' => $t ? $t->id : null,
+                'jumlah_unit' => $r ? $r->jumlah_unit : null,
+                'target_unit' => $t ? $t->target_unit : null,
+            ];
+        }
+
         return response()->json([
             'success' => true,
             'data' => $data

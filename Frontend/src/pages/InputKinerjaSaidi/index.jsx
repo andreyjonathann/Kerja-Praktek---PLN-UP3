@@ -14,7 +14,7 @@ export default function InputKinerjaSaidiPage() {
   const [success, setSuccess] = useState(false);
   const [dashboardData, setDashboardData] = useState(null);
 
-  const { register, handleSubmit, formState: { errors }, control } = useForm({
+  const { register, handleSubmit, formState: { errors }, control, setValue } = useForm({
     defaultValues: {
       tahun: '', periode_id: '',
       saidi_distribusi_padam_tidak_terencana: '',
@@ -39,6 +39,16 @@ export default function InputKinerjaSaidiPage() {
   const saidiData = dashboardData?.saidi || [];
   const currentMonthData = saidiData.find(d => parseInt(d.bulan) === parseInt(selectedMonth));
   const isDuplicate = !!(selectedMonth && currentMonthData && currentMonthData.realisasi != null);
+
+  useEffect(() => {
+    if (isDuplicate && currentMonthData) {
+      setValue('saidi_distribusi_padam_tidak_terencana', currentMonthData.distribusi_padam_tidak_terencana ?? '');
+      setValue('saidi_distribusi_padam_terencana', currentMonthData.distribusi_padam_terencana ?? '');
+      setValue('saidi_distribusi_bencana_alam', currentMonthData.distribusi_bencana_alam ?? '');
+      setValue('saidi_transmisi', currentMonthData.transmisi ?? '');
+      setValue('saidi_pembangkit', currentMonthData.pembangkit ?? '');
+    }
+  }, [isDuplicate, currentMonthData, setValue]);
 
   const onSubmit = async (data) => {
     if (isDuplicate) {

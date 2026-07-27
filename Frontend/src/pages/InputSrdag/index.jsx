@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Save, Activity, Calendar } from 'lucide-react'
 import api from '@/services/api'
 import { useAuth } from '@/context/AuthContext'
+import useDirtyFormGuard from '@/hooks/useDirtyFormGuard'
 
 const MONTHS = [
   { value: 1, label: 'Januari' }, { value: 2, label: 'Februari' }, { value: 3, label: 'Maret' },
@@ -23,6 +24,13 @@ export default function InputSrdagPage() {
   const [form, setForm] = useState({ tahun: currentYear, bulan: '', berhasil: '', total: '', wo_marking_padam_meluas: '' })
   const [existingData, setExistingData] = useState([])
   const [isUpdateMode, setIsUpdateMode] = useState(false)
+
+  const { isDirty, setIsDirty, guardedNavigate } = useDirtyFormGuard();
+
+  const handleFieldChange = (field, value) => {
+    setForm(prev => ({ ...prev, [field]: value }));
+    setIsDirty(true);
+  };
 
   React.useEffect(() => {
     if (!form.tahun) return;
@@ -67,6 +75,7 @@ export default function InputSrdagPage() {
         wo_marking_padam_meluas: Number(form.wo_marking_padam_meluas) || 0
       }
       await api.post('/v1/srdag', payload)
+      setIsDirty(false)
       navigate('/jaringan/srdag')
     } catch (err) {
       notify.error(err.response?.data?.message || 'Terjadi kesalahan saat menyimpan data.')
@@ -89,7 +98,7 @@ export default function InputSrdagPage() {
 
         {/* HEADER */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button type="button" onClick={() => navigate(-1)}
+          <button type="button" onClick={() => guardedNavigate(() => navigate(-1), isUpdateMode)}
             style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 10, padding: '8px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', fontWeight: 600, color: '#64748b', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
           >
             <ArrowLeft size={16} /> Kembali
@@ -118,7 +127,7 @@ export default function InputSrdagPage() {
               <div className="flex gap-4">
                 <div className="w-1/2">
                   <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#64748b', marginBottom: 5 }}>Bulan <span className="text-rose-500">*</span></label>
-                  <select value={form.bulan} onChange={e => setForm({ ...form, bulan: e.target.value })} style={inputStyle} required>
+                  <select value={form.bulan} onChange={e => handleFieldChange('bulan', e.target.value)} style={inputStyle} required>
                     <option value="">Pilih Bulan</option>
                     {MONTHS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
                   </select>
@@ -130,7 +139,7 @@ export default function InputSrdagPage() {
                     min="2000" 
                     placeholder={currentYear.toString()} 
                     value={form.tahun} 
-                    onChange={e => setForm({ ...form, tahun: e.target.value })} 
+                    onChange={e => handleFieldChange('tahun', e.target.value)} 
                     style={inputStyle} 
                     required 
                   />
@@ -153,7 +162,7 @@ export default function InputSrdagPage() {
                   <label className="font-semibold text-slate-700 text-[13px]">Jumlah Dispatch Berhasil <span className="text-rose-500">*</span></label>
                 </div>
                 <div className="w-[140px]">
-                  <input type="number" min="0" className={fieldInputClass} placeholder="0" value={form.berhasil} onChange={e => setForm({ ...form, berhasil: e.target.value })} required />
+                  <input type="number" min="0" className={fieldInputClass} placeholder="0" value={form.berhasil} onChange={e => handleFieldChange('berhasil', e.target.value)} required />
                 </div>
               </div>
 
@@ -163,7 +172,7 @@ export default function InputSrdagPage() {
                   <label className="font-semibold text-slate-700 text-[13px]">Jumlah Total Gangguan <span className="text-rose-500">*</span></label>
                 </div>
                 <div className="w-[140px]">
-                  <input type="number" min="0" className={fieldInputClass} placeholder="0" value={form.total} onChange={e => setForm({ ...form, total: e.target.value })} required />
+                  <input type="number" min="0" className={fieldInputClass} placeholder="0" value={form.total} onChange={e => handleFieldChange('total', e.target.value)} required />
                 </div>
               </div>
 
@@ -176,7 +185,7 @@ export default function InputSrdagPage() {
                   </div>
                 </div>
                 <div className="w-[140px]">
-                  <input type="number" min="0" className={fieldInputClass} placeholder="0" value={form.wo_marking_padam_meluas} onChange={e => setForm({ ...form, wo_marking_padam_meluas: e.target.value })} />
+                  <input type="number" min="0" className={fieldInputClass} placeholder="0" value={form.wo_marking_padam_meluas} onChange={e => handleFieldChange('wo_marking_padam_meluas', e.target.value)} />
                 </div>
               </div>
 

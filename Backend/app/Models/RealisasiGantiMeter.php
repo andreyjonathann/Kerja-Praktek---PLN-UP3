@@ -14,9 +14,7 @@ class RealisasiGantiMeter extends Model
         'tanggal',
         'tahun',
         'bulan',
-        'jumlah_app',
-        'jumlah_yantek',
-        'total',
+        'jumlah_unit',
         'keterangan',
         'created_by'
     ];

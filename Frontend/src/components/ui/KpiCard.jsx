@@ -51,14 +51,18 @@ const getAchColors = (achKey, dark) => {
 export default function KpiCard({
   title, value, unit = '', achievement, target, trend,
   statusText, statusColor, badgeText, subText,
-  icon: Icon, color = 'blue', isInverse = false, loading = false, onClick,
+  icon: Icon, color = 'blue', isInverse = false, polarity = 'higher_is_better', loading = false, onClick,
 }) {
   const { dark } = useTheme()
   const c = getColors(color, dark)
 
   let achKey = 'good'
   if (achievement != null) {
-    if (isInverse) {
+    if (polarity === 'lower_is_better') {
+      if (achievement <= 100) achKey = 'good'
+      else if (achievement <= 105) achKey = 'warn'
+      else achKey = 'bad'
+    } else if (isInverse) {
       achKey = achievement >= 100 ? 'good' : 'bad'
     } else {
       if (achievement < 70) achKey = 'bad'

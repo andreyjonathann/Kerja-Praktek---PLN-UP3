@@ -1,3 +1,4 @@
+import notify from '@/utils/notify';
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { useFilter } from '@/context/FilterContext'
@@ -527,7 +528,7 @@ export default function TrendNkoPage() {
   const handleSaveParameter = async (e) => {
     e.preventDefault()
     if (!paramName.trim()) {
-      alert('Nama parameter wajib diisi.')
+      notify.warning('Nama parameter wajib diisi.')
       return
     }
 
@@ -577,7 +578,7 @@ export default function TrendNkoPage() {
       fetchData()
       window.dispatchEvent(new CustomEvent('sigap:refresh'))
     } catch (err) {
-      alert(err.response?.data?.message || 'Gagal menyimpan parameter.')
+      notify.error(err.response?.data?.message || 'Gagal menyimpan parameter.')
     }
   }
 
@@ -600,7 +601,7 @@ export default function TrendNkoPage() {
       fetchData()
       window.dispatchEvent(new CustomEvent('sigap:refresh'))
     } catch (err) {
-      alert(err.response?.data?.message || 'Gagal menghapus parameter.')
+      notify.error(err.response?.data?.message || 'Gagal menghapus parameter.')
     }
   }
 

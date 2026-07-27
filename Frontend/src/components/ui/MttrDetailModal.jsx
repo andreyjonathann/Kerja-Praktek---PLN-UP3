@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react'
 import { DEFAULT_UP3 } from '@/constants/up3'
 import { createPortal } from 'react-dom'
 import { X, Edit2, Trash2, Loader2, Save } from 'lucide-react'
+import useDirtyFormGuard from '@/hooks/useDirtyFormGuard'
 import api from '../../services/api'
 import { useAuth } from '../../context/AuthContext'
 
@@ -31,6 +32,12 @@ export default function MttrDetailModal({ open, onOpenChange, rowData, tahun, up
     terpenuhi: '',
     total: ''
   })
+
+  const { isDirty, setIsDirty } = useDirtyFormGuard();
+  const handleFieldChange = (field, value) => {
+    setForm(prev => ({ ...prev, [field]: value }));
+    setIsDirty(true);
+  };
 
   useEffect(() => {
     if (open && rowData && bulanNum) {
@@ -77,6 +84,7 @@ export default function MttrDetailModal({ open, onOpenChange, rowData, tahun, up
     }
     setEditingAset(aset)
     setDeletingAset(null)
+    setIsDirty(false);
   }
 
   const handleSave = async () => {
@@ -107,6 +115,7 @@ export default function MttrDetailModal({ open, onOpenChange, rowData, tahun, up
         await api.post(`/v1/mttr`, payload)
       }
       
+      setIsDirty(false);
       setEditingAset(null)
       if (onSuccess) onSuccess()
       fetchData()
@@ -135,7 +144,12 @@ export default function MttrDetailModal({ open, onOpenChange, rowData, tahun, up
     }
   }
 
-  const closeModal = () => {
+  const closeModal = async () => {
+    if (editingAset && isDirty) {
+      const result = await notify.confirmLeave();
+      if (!result.isConfirmed) return;
+    }
+    setIsDirty(false)
     onOpenChange(false)
   }
 
@@ -266,7 +280,7 @@ export default function MttrDetailModal({ open, onOpenChange, rowData, tahun, up
                           min="0"
                           placeholder="Cth: 5"
                           value={form.terpenuhi}
-                          onChange={(e) => setForm({ ...form, terpenuhi: e.target.value })}
+                          onChange={(e) => handleFieldChange('terpenuhi', e.target.value)}
                           style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: 6, fontSize: 14 }}
                           disabled={saving}
                         />
@@ -280,7 +294,7 @@ export default function MttrDetailModal({ open, onOpenChange, rowData, tahun, up
                           min="1"
                           placeholder="Cth: 5"
                           value={form.total}
-                          onChange={(e) => setForm({ ...form, total: e.target.value })}
+                          onChange={(e) => handleFieldChange('total', e.target.value)}
                           style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: 6, fontSize: 14 }}
                           disabled={saving}
                         />

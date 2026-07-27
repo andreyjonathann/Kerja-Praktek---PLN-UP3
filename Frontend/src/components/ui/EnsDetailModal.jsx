@@ -2,6 +2,7 @@ import notify from '@/utils/notify';
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Edit2, Trash2, Save, Loader2, Activity } from 'lucide-react';
+import useDirtyFormGuard from '@/hooks/useDirtyFormGuard'
 import { useAuth } from '@/context/AuthContext';
 import api from '@/services/api';
 
@@ -27,6 +28,12 @@ export default function EnsDetailModal({
     pembangkit: ''
   });
 
+  const { isDirty, setIsDirty } = useDirtyFormGuard();
+  const handleFieldChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    setIsDirty(true);
+  };
+
   if (!open || !rowData) return null;
 
   const bulanName = rowData.label || '';
@@ -50,7 +57,12 @@ export default function EnsDetailModal({
     return Number(v).toLocaleString('id-ID', { minimumFractionDigits: 3, maximumFractionDigits: 4 });
   };
 
-  const closeModal = () => {
+  const closeModal = async () => {
+    if (showEditForm && isDirty) {
+      const result = await notify.confirmLeave();
+      if (!result.isConfirmed) return;
+    }
+    setIsDirty(false);
     setShowEditForm(false);
     setShowConfirm(false);
     onOpenChange(false);
@@ -67,6 +79,7 @@ export default function EnsDetailModal({
       transmisi: rowData.b_transmisi ?? 0,
       pembangkit: rowData.b_pembangkit ?? 0
     });
+    setIsDirty(false);
     setShowEditForm(true);
   };
 
@@ -80,6 +93,7 @@ export default function EnsDetailModal({
         transmisi: parseFloat(formData.transmisi || 0),
         pembangkit: parseFloat(formData.pembangkit || 0)
       });
+      setIsDirty(false);
       setShowEditForm(false);
       if (onSuccess) onSuccess();
       closeModal();
@@ -267,7 +281,7 @@ export default function EnsDetailModal({
                     <input 
                       type="number" step="0.0001"
                       value={formData.distribusi_padam_tidak_terencana}
-                      onChange={(e) => setFormData({...formData, distribusi_padam_tidak_terencana: e.target.value})}
+                      onChange={(e) => handleFieldChange('distribusi_padam_tidak_terencana', e.target.value)}
                       style={{ width: '100%', border: '1px solid #e2e8f0', borderRadius: 8, padding: '8px 12px', fontSize: 14, outline: 'none' }} 
                     />
                   </div>
@@ -278,7 +292,7 @@ export default function EnsDetailModal({
                     <input 
                       type="number" step="0.0001"
                       value={formData.distribusi_padam_terencana}
-                      onChange={(e) => setFormData({...formData, distribusi_padam_terencana: e.target.value})}
+                      onChange={(e) => handleFieldChange('distribusi_padam_terencana', e.target.value)}
                       style={{ width: '100%', border: '1px solid #e2e8f0', borderRadius: 8, padding: '8px 12px', fontSize: 14, outline: 'none' }} 
                     />
                   </div>
@@ -289,7 +303,7 @@ export default function EnsDetailModal({
                     <input 
                       type="number" step="0.0001"
                       value={formData.distribusi_bencana_alam}
-                      onChange={(e) => setFormData({...formData, distribusi_bencana_alam: e.target.value})}
+                      onChange={(e) => handleFieldChange('distribusi_bencana_alam', e.target.value)}
                       style={{ width: '100%', border: '1px solid #e2e8f0', borderRadius: 8, padding: '8px 12px', fontSize: 14, outline: 'none' }} 
                     />
                   </div>
@@ -300,7 +314,7 @@ export default function EnsDetailModal({
                     <input 
                       type="number" step="0.0001"
                       value={formData.transmisi}
-                      onChange={(e) => setFormData({...formData, transmisi: e.target.value})}
+                      onChange={(e) => handleFieldChange('transmisi', e.target.value)}
                       style={{ width: '100%', border: '1px solid #e2e8f0', borderRadius: 8, padding: '8px 12px', fontSize: 14, outline: 'none' }} 
                     />
                   </div>
@@ -311,7 +325,7 @@ export default function EnsDetailModal({
                     <input 
                       type="number" step="0.0001"
                       value={formData.pembangkit}
-                      onChange={(e) => setFormData({...formData, pembangkit: e.target.value})}
+                      onChange={(e) => handleFieldChange('pembangkit', e.target.value)}
                       style={{ width: '100%', border: '1px solid #e2e8f0', borderRadius: 8, padding: '8px 12px', fontSize: 14, outline: 'none' }} 
                     />
                   </div>

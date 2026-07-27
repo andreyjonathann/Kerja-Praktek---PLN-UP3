@@ -137,7 +137,42 @@ class TargetTahunanController extends Controller
             'target_apr' => $target->target_apr, 'target_mei' => $target->target_mei, 'target_jun' => $target->target_jun,
             'target_jul' => $target->target_jul, 'target_agu' => $target->target_agu, 'target_sep' => $target->target_sep,
             'target_okt' => $target->target_okt, 'target_nov' => $target->target_nov, 'target_des' => $target->target_des,
+            'is_override' => $target->is_override ?? [],
         ]);
+    }
+
+    public function resetToAuto(Request $request, $bidang, $indikator, $tahun)
+    {
+        $user = $request->user();
+        if ($user->role !== 'admin') {
+            return response()->json(['message' => 'Hanya Admin yang berwenang mengatur target.'], 403);
+        }
+
+        $bulan = $request->input('bulan'); // e.g. 'jan', 'feb', or 'tahunan'
+        
+        $bidangStr = urldecode($bidang);
+        $indikatorStr = urldecode($indikator);
+
+        $existing = TargetTahunan::whereRaw('LOWER(bidang) = ?', [strtolower($bidangStr)])
+            ->whereRaw('LOWER(indikator) = ?', [strtolower($indikatorStr)])
+            ->where('tahun', $tahun)
+            ->first();
+
+        if ($existing) {
+            $overrides = $existing->is_override ?? [];
+            if ($bulan) {
+                $overrides[$bulan] = false;
+            }
+            $existing->is_override = $overrides;
+            $existing->save();
+
+            // Trigger recalculation if it's Ganti Meter
+            if (strtolower($indikatorStr) === 'ganti meter') {
+                app(\App\Services\TargetGantiMeterService::class)->recalculateTarget($tahun);
+            }
+        }
+
+        return response()->json(['message' => 'Target berhasil di-reset ke otomatis.']);
     }
 
     public function updateMonthlyTarget(Request $request, $bidang, $indikator, $tahun)
@@ -175,20 +210,33 @@ class TargetTahunanController extends Controller
             ->where('tahun', $tahun)
             ->first();
 
+        $months = [
+            'jan', 'feb', 'mar', 'apr', 'mei', 'jun', 
+            'jul', 'agu', 'sep', 'okt', 'nov', 'des'
+        ];
+
         if ($existing) {
+            $overrides = $existing->is_override ?? [];
+            foreach ($months as $m) {
+                if (array_key_exists("target_$m", $validated) && $validated["target_$m"] !== null) {
+                    $overrides[$m] = true;
+                }
+            }
+            $existing->is_override = $overrides;
+
             $existing->update([
-                'target_jan' => $validated['target_jan'] ?? null,
-                'target_feb' => $validated['target_feb'] ?? null,
-                'target_mar' => $validated['target_mar'] ?? null,
-                'target_apr' => $validated['target_apr'] ?? null,
-                'target_mei' => $validated['target_mei'] ?? null,
-                'target_jun' => $validated['target_jun'] ?? null,
-                'target_jul' => $validated['target_jul'] ?? null,
-                'target_agu' => $validated['target_agu'] ?? null,
-                'target_sep' => $validated['target_sep'] ?? null,
-                'target_okt' => $validated['target_okt'] ?? null,
-                'target_nov' => $validated['target_nov'] ?? null,
-                'target_des' => $validated['target_des'] ?? null,
+                'target_jan' => $validated['target_jan'] ?? $existing->target_jan,
+                'target_feb' => $validated['target_feb'] ?? $existing->target_feb,
+                'target_mar' => $validated['target_mar'] ?? $existing->target_mar,
+                'target_apr' => $validated['target_apr'] ?? $existing->target_apr,
+                'target_mei' => $validated['target_mei'] ?? $existing->target_mei,
+                'target_jun' => $validated['target_jun'] ?? $existing->target_jun,
+                'target_jul' => $validated['target_jul'] ?? $existing->target_jul,
+                'target_agu' => $validated['target_agu'] ?? $existing->target_agu,
+                'target_sep' => $validated['target_sep'] ?? $existing->target_sep,
+                'target_okt' => $validated['target_okt'] ?? $existing->target_okt,
+                'target_nov' => $validated['target_nov'] ?? $existing->target_nov,
+                'target_des' => $validated['target_des'] ?? $existing->target_des,
             ]);
             $target = $existing;
         } else {
@@ -196,10 +244,18 @@ class TargetTahunanController extends Controller
             // they don't have polaritas, satuan, bobot, etc.
             // Ideally, TargetTahunan is seeded, so it SHOULD exist. 
             // If not, we just create it with empty defaults.
+            $overrides = [];
+            foreach ($months as $m) {
+                if (array_key_exists("target_$m", $validated) && $validated["target_$m"] !== null) {
+                    $overrides[$m] = true;
+                }
+            }
+
             $target = TargetTahunan::create([
                 'bidang' => ucwords($bidangStr), // basic formatting
                 'indikator' => $indikatorStr,
                 'tahun' => $tahun,
+                'is_override' => $overrides,
                 'target_jan' => $validated['target_jan'] ?? null,
                 'target_feb' => $validated['target_feb'] ?? null,
                 'target_mar' => $validated['target_mar'] ?? null,
@@ -213,6 +269,11 @@ class TargetTahunanController extends Controller
                 'target_nov' => $validated['target_nov'] ?? null,
                 'target_des' => $validated['target_des'] ?? null,
             ]);
+        }
+
+        // Trigger recalculation if it's Ganti Meter
+        if (strtolower($indikatorStr) === 'ganti meter') {
+            app(\App\Services\TargetGantiMeterService::class)->recalculateTarget($tahun);
         }
 
         return response()->json(['message' => 'Target Bulanan berhasil disimpan', 'data' => $target]);

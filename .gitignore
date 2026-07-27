@@ -10,3 +10,10 @@ Backend/test_tinker.php
 Backend/targets.json
 Backend/targets_output.txt
 backup_pln_dashboard.sql
+
+# Scratch & debug files
+test_*.php
+scratch_*.php
+temp_*.json
+*.diff
+cleanup.php

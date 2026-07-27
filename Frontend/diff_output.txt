@@ -1,0 +1,220 @@
+diff --git a/Frontend/src/components/ui/MttrDetailModal.jsx b/Frontend/src/components/ui/MttrDetailModal.jsx
+index 8bb987b..b5a4dfe 100644
+--- a/Frontend/src/components/ui/MttrDetailModal.jsx
++++ b/Frontend/src/components/ui/MttrDetailModal.jsx
+@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react'
+ import { DEFAULT_UP3 } from '@/constants/up3'
+ import { createPortal } from 'react-dom'
+ import { X, Edit2, Trash2, Loader2, Save } from 'lucide-react'
++import useDirtyFormGuard from '@/hooks/useDirtyFormGuard'
+ import api from '../../services/api'
+ import { useAuth } from '../../context/AuthContext'
+ 
+@@ -32,6 +33,12 @@ export default function MttrDetailModal({ open, onOpenChange, rowData, tahun, up
+     total: ''
+   })
+ 
++  const { isDirty, setIsDirty } = useDirtyFormGuard();
++  const handleFieldChange = (field, value) => {
++    setForm(prev => ({ ...prev, [field]: value }));
++    setIsDirty(true);
++  };
++
+   useEffect(() => {
+     if (open && rowData && bulanNum) {
+       fetchData()
+@@ -77,6 +84,7 @@ export default function MttrDetailModal({ open, onOpenChange, rowData, tahun, up
+     }
+     setEditingAset(aset)
+     setDeletingAset(null)
++    setIsDirty(false);
+   }
+ 
+   const handleSave = async () => {
+@@ -107,6 +115,7 @@ export default function MttrDetailModal({ open, onOpenChange, rowData, tahun, up
+         await api.post(`/v1/mttr`, payload)
+       }
+       
++      setIsDirty(false);
+       setEditingAset(null)
+       if (onSuccess) onSuccess()
+       fetchData()
+@@ -135,7 +144,12 @@ export default function MttrDetailModal({ open, onOpenChange, rowData, tahun, up
+     }
+   }
+ 
+-  const closeModal = () => {
++  const closeModal = async () => {
++    if (editingAset && isDirty) {
++      const result = await notify.confirmLeave();
++      if (!result.isConfirmed) return;
++    }
++    setIsDirty(false)
+     onOpenChange(false)
+   }
+ 
+@@ -266,7 +280,7 @@ export default function MttrDetailModal({ open, onOpenChange, rowData, tahun, up
+                           min="0"
+                           placeholder="Cth: 5"
+                           value={form.terpenuhi}
+-                          onChange={(e) => setForm({ ...form, terpenuhi: e.target.value })}
++                          onChange={(e) => handleFieldChange('terpenuhi', e.target.value)}
+                           style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: 6, fontSize: 14 }}
+                           disabled={saving}
+                         />
+@@ -280,7 +294,7 @@ export default function MttrDetailModal({ open, onOpenChange, rowData, tahun, up
+                           min="1"
+                           placeholder="Cth: 5"
+                           value={form.total}
+-                          onChange={(e) => setForm({ ...form, total: e.target.value })}
++                          onChange={(e) => handleFieldChange('total', e.target.value)}
+                           style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: 6, fontSize: 14 }}
+                           disabled={saving}
+                         />
+diff --git a/Frontend/src/components/ui/MvodDetailModal.jsx b/Frontend/src/components/ui/MvodDetailModal.jsx
+index f53dd8a..1eda58b 100644
+--- a/Frontend/src/components/ui/MvodDetailModal.jsx
++++ b/Frontend/src/components/ui/MvodDetailModal.jsx
+@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react'
+ import { DEFAULT_UP3 } from '@/constants/up3'
+ import { createPortal } from 'react-dom'
+ import { X, Edit2, Trash2, Loader2, Save } from 'lucide-react'
++import useDirtyFormGuard from '@/hooks/useDirtyFormGuard'
+ import api from '../../services/api'
+ import { useAuth } from '../../context/AuthContext'
+ 
+@@ -33,6 +34,12 @@ export default function MvodDetailModal({ open, onOpenChange, rowData, tahun, up
+     kali_padam: ''
+   })
+ 
++  const { isDirty, setIsDirty } = useDirtyFormGuard();
++  const handleFieldChange = (field, value) => {
++    setForm(prev => ({ ...prev, [field]: value }));
++    setIsDirty(true);
++  };
++
+   // Fetch Data on Open
+   useEffect(() => {
+     if (open && rowData && bulanNum) {
+@@ -80,6 +87,7 @@ export default function MvodDetailModal({ open, onOpenChange, rowData, tahun, up
+     }
+     setEditingTipe(tipe)
+     setDeletingTipe(null)
++    setIsDirty(false);
+   }
+ 
+   const handleSave = async () => {
+@@ -102,6 +110,7 @@ export default function MvodDetailModal({ open, onOpenChange, rowData, tahun, up
+         await api.post(`/v1/mvod`, payload)
+       }
+       
++      setIsDirty(false);
+       setEditingTipe(null)
+       if (onSuccess) onSuccess()
+       fetchData()
+@@ -135,7 +144,12 @@ export default function MvodDetailModal({ open, onOpenChange, rowData, tahun, up
+     return Number(v).toLocaleString('id-ID', { maximumFractionDigits: 2 })
+   }
+ 
+-  const closeModal = () => {
++  const closeModal = async () => {
++    if (editingTipe && isDirty) {
++      const result = await notify.confirmLeave();
++      if (!result.isConfirmed) return;
++    }
++    setIsDirty(false)
+     onOpenChange(false)
+   }
+ 
+@@ -279,7 +293,7 @@ export default function MvodDetailModal({ open, onOpenChange, rowData, tahun, up
+                           step="0.01"
+                           placeholder="Cth: 150"
+                           value={form.rata_rata_lama_padam_menit}
+-                          onChange={(e) => setForm({ ...form, rata_rata_lama_padam_menit: e.target.value })}
++                          onChange={(e) => handleFieldChange('rata_rata_lama_padam_menit', e.target.value)}
+                           style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: 6, fontSize: 14 }}
+                           disabled={saving}
+                         />
+@@ -293,7 +307,7 @@ export default function MvodDetailModal({ open, onOpenChange, rowData, tahun, up
+                           min="1"
+                           placeholder="Cth: 1"
+                           value={form.kali_padam}
+-                          onChange={(e) => setForm({ ...form, kali_padam: e.target.value })}
++                          onChange={(e) => handleFieldChange('kali_padam', e.target.value)}
+                           style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: 6, fontSize: 14 }}
+                           disabled={saving}
+                         />
+diff --git a/Frontend/src/components/ui/RptDetailModal.jsx b/Frontend/src/components/ui/RptDetailModal.jsx
+index e4bb9d2..40a11b2 100644
+--- a/Frontend/src/components/ui/RptDetailModal.jsx
++++ b/Frontend/src/components/ui/RptDetailModal.jsx
+@@ -2,6 +2,8 @@ import React, { useState } from 'react';
+ import { createPortal } from 'react-dom';
+ import { X, Edit2, Trash2, Save, Loader2 } from 'lucide-react';
+ import Swal from 'sweetalert2';
++import useDirtyFormGuard from '@/hooks/useDirtyFormGuard';
++import notify from '@/utils/notify';
+ import { useAuth } from '@/context/AuthContext';
+ import api from '@/services/api';
+ 
+@@ -17,6 +19,12 @@ export default function RptDetailModal({
+   const [loading, setLoading] = useState(false);
+   const [formData, setFormData] = useState({ durasi: '', gangguan: '' });
+ 
++  const { isDirty, setIsDirty } = useDirtyFormGuard();
++  const handleFieldChange = (field, value) => {
++    setFormData(prev => ({ ...prev, [field]: value }));
++    setIsDirty(true);
++  };
++
+   if (!open || !rowData) return null;
+ 
+   const bulanName = rowData.bulan || '';
+@@ -33,7 +41,12 @@ export default function RptDetailModal({
+     return Number(v).toLocaleString('id-ID');
+   };
+ 
+-  const closeModal = () => {
++  const closeModal = async () => {
++    if (showEditForm && isDirty) {
++      const result = await notify.confirmLeave();
++      if (!result.isConfirmed) return;
++    }
++    setIsDirty(false);
+     setShowEditForm(false);
+     onOpenChange(false);
+   };
+@@ -45,6 +58,7 @@ export default function RptDetailModal({
+       durasi: rowData.total_durasi ?? '',
+       gangguan: rowData.jumlah_gangguan ?? ''
+     });
++    setIsDirty(false);
+     setShowEditForm(true);
+   };
+ 
+@@ -60,6 +74,7 @@ export default function RptDetailModal({
+         jumlah_gangguan: parseInt(formData.gangguan)
+       });
+       Swal.fire({ icon: 'success', title: 'Berhasil', text: 'Data RPT berhasil diupdate', timer: 1500, showConfirmButton: false });
++      setIsDirty(false);
+       setShowEditForm(false);
+       if (onSuccess) onSuccess();
+       closeModal();
+@@ -171,7 +186,7 @@ export default function RptDetailModal({
+                   type="number" 
+                   step="0.01"
+                   value={formData.durasi}
+-                  onChange={(e) => setFormData({...formData, durasi: e.target.value})}
++                  onChange={(e) => handleFieldChange('durasi', e.target.value)}
+                   style={{ width: '100%', border: '1px solid #e2e8f0', borderRadius: 8, padding: '8px 12px', fontSize: 14, outline: 'none' }} 
+                   placeholder="Masukkan total durasi"
+                 />
+@@ -183,7 +198,7 @@ export default function RptDetailModal({
+                 <input 
+                   type="number" 
+                   value={formData.gangguan}
+-                  onChange={(e) => setFormData({...formData, gangguan: e.target.value})}
++                  onChange={(e) => handleFieldChange('gangguan', e.target.value)}
+                   style={{ width: '100%', border: '1px solid #e2e8f0', borderRadius: 8, padding: '8px 12px', fontSize: 14, outline: 'none' }} 
+                   placeholder="Masukkan jumlah gangguan"
+                 />

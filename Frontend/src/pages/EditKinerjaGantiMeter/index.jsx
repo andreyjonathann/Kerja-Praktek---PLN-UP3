@@ -19,27 +19,20 @@ export default function EditKinerjaGantiMeterPage() {
 
   const { register, handleSubmit, reset, control, formState: { errors } } = useForm({
     defaultValues: {
-      jumlah_app: '',
-      jumlah_yantek: '',
+      jumlah_unit: '',
       keterangan: ''
     }
   });
 
-  const jumlah_app = useWatch({ control, name: 'jumlah_app' });
-  const jumlah_yantek = useWatch({ control, name: 'jumlah_yantek' });
+  const jumlah_unit = useWatch({ control, name: 'jumlah_unit' });
 
   const [tanggalRecord, setTanggalRecord] = useState('');
 
   // Calculate Realisasi Preview (real-time dari field form, untuk visual saja)
   let previewRealisasi = null;
-  const appVal = parseInt(jumlah_app, 10);
-  const yantekVal = parseInt(jumlah_yantek, 10);
-  if (!isNaN(appVal) && !isNaN(yantekVal)) {
-    previewRealisasi = appVal + yantekVal;
-  } else if (!isNaN(appVal)) {
-    previewRealisasi = appVal;
-  } else if (!isNaN(yantekVal)) {
-    previewRealisasi = yantekVal;
+  const unitVal = parseInt(jumlah_unit, 10);
+  if (!isNaN(unitVal)) {
+    previewRealisasi = unitVal;
   }
 
   useEffect(() => {
@@ -58,8 +51,7 @@ export default function EditKinerjaGantiMeterPage() {
         setRecordId(row.id);
         setTanggalRecord(row.tanggal);
         reset({
-          jumlah_app: row.jumlah_app != null ? row.jumlah_app : '',
-          jumlah_yantek: row.jumlah_yantek != null ? row.jumlah_yantek : '',
+          jumlah_unit: row.jumlah_unit != null ? row.jumlah_unit : '',
           keterangan: row.keterangan || ''
         });
       })
@@ -113,8 +105,7 @@ export default function EditKinerjaGantiMeterPage() {
     setStatus(null);
     try {
       await api.put(`/v1/ganti-meter/${recordId}`, {
-        jumlah_app: parseInt(data.jumlah_app, 10),
-        jumlah_yantek: parseInt(data.jumlah_yantek, 10),
+        jumlah_unit: parseInt(data.jumlah_unit, 10),
         keterangan: data.keterangan
       });
       setStatus('success');
@@ -248,21 +239,11 @@ export default function EditKinerjaGantiMeterPage() {
                   
                   <div className="flex items-center justify-between p-3 bg-white border border-[#f3f4f6] rounded-xl gap-4 hover:bg-slate-50 transition">
                     <div className="flex items-center gap-3 flex-1">
-                      <label className="font-semibold text-slate-700 text-[13px]">Jumlah APP (Unit)</label>
+                      <label className="font-semibold text-slate-700 text-[13px]">Jumlah Pergantian Meter (Unit)</label>
                     </div>
                     <div className="flex flex-col items-end">
-                      <input type="number" step="1" {...register('jumlah_app', { required: 'Wajib diisi', min: { value: 0, message: 'Tidak boleh negatif' } })} className={fieldInputClass} placeholder="0" />
-                      {errors.jumlah_app && <span className="text-xs text-red-500 mt-1 font-semibold">{errors.jumlah_app.message}</span>}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between p-3 bg-white border border-[#f3f4f6] rounded-xl gap-4 hover:bg-slate-50 transition">
-                    <div className="flex items-center gap-3 flex-1">
-                      <label className="font-semibold text-slate-700 text-[13px]">Jumlah Yantek (Unit)</label>
-                    </div>
-                    <div className="flex flex-col items-end">
-                      <input type="number" step="1" {...register('jumlah_yantek', { required: 'Wajib diisi', min: { value: 0, message: 'Tidak boleh negatif' } })} className={fieldInputClass} placeholder="0" />
-                      {errors.jumlah_yantek && <span className="text-xs text-red-500 mt-1 font-semibold">{errors.jumlah_yantek.message}</span>}
+                      <input type="number" step="1" {...register('jumlah_unit', { required: 'Wajib diisi', min: { value: 0, message: 'Tidak boleh negatif' } })} className={fieldInputClass} placeholder="0" />
+                      {errors.jumlah_unit && <span className="text-xs text-red-500 mt-1 font-semibold">{errors.jumlah_unit.message}</span>}
                     </div>
                   </div>
 

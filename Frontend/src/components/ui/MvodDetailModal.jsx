@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react'
 import { DEFAULT_UP3 } from '@/constants/up3'
 import { createPortal } from 'react-dom'
 import { X, Edit2, Trash2, Loader2, Save } from 'lucide-react'
+import useDirtyFormGuard from '@/hooks/useDirtyFormGuard'
 import api from '../../services/api'
 import { useAuth } from '../../context/AuthContext'
 
@@ -32,6 +33,12 @@ export default function MvodDetailModal({ open, onOpenChange, rowData, tahun, up
     rata_rata_lama_padam_menit: '',
     kali_padam: ''
   })
+
+  const { isDirty, setIsDirty } = useDirtyFormGuard();
+  const handleFieldChange = (field, value) => {
+    setForm(prev => ({ ...prev, [field]: value }));
+    setIsDirty(true);
+  };
 
   // Fetch Data on Open
   useEffect(() => {
@@ -80,6 +87,7 @@ export default function MvodDetailModal({ open, onOpenChange, rowData, tahun, up
     }
     setEditingTipe(tipe)
     setDeletingTipe(null)
+    setIsDirty(false);
   }
 
   const handleSave = async () => {
@@ -102,6 +110,7 @@ export default function MvodDetailModal({ open, onOpenChange, rowData, tahun, up
         await api.post(`/v1/mvod`, payload)
       }
       
+      setIsDirty(false);
       setEditingTipe(null)
       if (onSuccess) onSuccess()
       fetchData()
@@ -135,7 +144,12 @@ export default function MvodDetailModal({ open, onOpenChange, rowData, tahun, up
     return Number(v).toLocaleString('id-ID', { maximumFractionDigits: 2 })
   }
 
-  const closeModal = () => {
+  const closeModal = async () => {
+    if (editingTipe && isDirty) {
+      const result = await notify.confirmLeave();
+      if (!result.isConfirmed) return;
+    }
+    setIsDirty(false)
     onOpenChange(false)
   }
 
@@ -279,7 +293,7 @@ export default function MvodDetailModal({ open, onOpenChange, rowData, tahun, up
                           step="0.01"
                           placeholder="Cth: 150"
                           value={form.rata_rata_lama_padam_menit}
-                          onChange={(e) => setForm({ ...form, rata_rata_lama_padam_menit: e.target.value })}
+                          onChange={(e) => handleFieldChange('rata_rata_lama_padam_menit', e.target.value)}
                           style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: 6, fontSize: 14 }}
                           disabled={saving}
                         />
@@ -293,7 +307,7 @@ export default function MvodDetailModal({ open, onOpenChange, rowData, tahun, up
                           min="1"
                           placeholder="Cth: 1"
                           value={form.kali_padam}
-                          onChange={(e) => setForm({ ...form, kali_padam: e.target.value })}
+                          onChange={(e) => handleFieldChange('kali_padam', e.target.value)}
                           style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: 6, fontSize: 14 }}
                           disabled={saving}
                         />
