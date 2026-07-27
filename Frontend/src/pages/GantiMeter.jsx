@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Activity, AlertCircle, FileSpreadsheet, Target, Plus } from 'lucide-react';
+import { Activity, AlertCircle, FileSpreadsheet, Target, Plus, CheckCircle2, TrendingUp } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
 import KpiCard from '@/components/ui/KpiCard';
 import DataTable from '@/components/ui/DataTable';
@@ -12,6 +12,7 @@ import GantiMeterDetailModal from '@/components/ui/GantiMeterDetailModal';
 import { useNavigate } from 'react-router-dom';
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import ChartWrapper from '@/components/ui/ChartWrapper';
+import TargetWarning from '@/components/ui/TargetWarning';
 
 export default function GantiMeterPage() {
   const navigate = useNavigate();
@@ -126,15 +127,16 @@ export default function GantiMeterPage() {
   const tableDataBulan = Array.from({ length: 12 }, (_, i) => {
     const bulanNum = i + 1;
     const match = data?.find(d => d.bulan === bulanNum);
+    const trendMatch = trendData?.find(t => t.bulan === bulanNum);
     
     if (match) {
       return {
         id: match.id,
         bulan: MONTHS_ID[bulanNum],
         bulan_angka: bulanNum,
-        jumlah_app: match.jumlah_app,
-        jumlah_yantek: match.jumlah_yantek,
-        total: match.total,
+        jumlah_unit: match.jumlah_unit,
+        target_unit: trendMatch?.target ?? null,
+        total: match.jumlah_unit,
         keterangan: match.keterangan || '-',
       };
     }
@@ -143,8 +145,8 @@ export default function GantiMeterPage() {
       id: null,
       bulan: MONTHS_ID[bulanNum],
       bulan_angka: bulanNum,
-      jumlah_app: null,
-      jumlah_yantek: null,
+      jumlah_unit: null,
+      target_unit: trendMatch?.target ?? null,
       total: null,
       keterangan: '-',
     };
@@ -153,18 +155,13 @@ export default function GantiMeterPage() {
   const columns = [
     { label: 'Bulan', key: 'bulan', render: (v) => <span className="font-semibold">{v}</span> },
     { 
-      label: 'Jumlah APP', 
-      key: 'jumlah_app',
-      render: (v) => v != null ? <span className="text-slate-600">{Number(v).toLocaleString('id-ID')}</span> : '—'
+      label: 'Target Bulanan', 
+      key: 'target_unit',
+      render: (v) => v != null ? <span className="font-bold text-slate-600">{Number(v).toLocaleString('id-ID')} Unit</span> : '—'
     },
     { 
-      label: 'Jumlah Yantek', 
-      key: 'jumlah_yantek',
-      render: (v) => v != null ? <span className="text-slate-600">{Number(v).toLocaleString('id-ID')}</span> : '—'
-    },
-    { 
-      label: 'Total Realisasi', 
-      key: 'total',
+      label: 'Realisasi (Unit)', 
+      key: 'jumlah_unit',
       render: (v) => v != null ? <span className="font-bold text-blue-600">{Number(v).toLocaleString('id-ID')} Unit</span> : '—'
     },
     { 
@@ -200,38 +197,36 @@ export default function GantiMeterPage() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <TargetWarning 
+        up3={filters.up3} 
+        year={filters.year} 
+        isVisible={!loading && dashboard?.target_kumulatif_ytd == null} 
+      />
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <KpiCard
-          title="Realisasi YTD"
-          value={`${Number(dashboard?.realisasi_kumulatif_ytd || 0).toLocaleString('id-ID')} Unit`}
-          subtitle={`Target YTD: ${Number(dashboard?.target_kumulatif_ytd || 0).toLocaleString('id-ID')}`}
-          icon={Activity}
+          title="Target (YTD)"
+          value={dashboard?.target_kumulatif_ytd != null ? Number(dashboard.target_kumulatif_ytd).toLocaleString('id-ID') : '-'}
+          unit="Unit"
+          subText={`Jan - ${MONTHS_ID[new Date().getMonth()]} ${filters.year || new Date().getFullYear()}`}
+          icon={Target}
+          color="teal"
+        />
+        <KpiCard
+          title="Realisasi (YTD)"
+          value={`${Number(dashboard?.realisasi_kumulatif_ytd || 0).toLocaleString('id-ID')}`}
+          unit="Unit"
+          subText={`dari target ${dashboard?.target_kumulatif_ytd != null ? Number(dashboard.target_kumulatif_ytd).toLocaleString('id-ID') + ' Unit' : 'belum ditetapkan'}`}
+          icon={CheckCircle2}
           color="blue"
         />
         <KpiCard
           title="Pencapaian"
-          value={`${dashboard?.pencapaian || 0}%`}
-          subtitle={
-            <span className={`inline-flex mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${statusColor}`}>
-              {statusBadge}
-            </span>
-          }
-          icon={Target}
-          color={capai >= 100 ? 'emerald' : (capai >= 95 ? 'amber' : 'rose')}
-        />
-        <KpiCard
-          title="Breakdown YTD (APP)"
-          value={`${Number(dashboard?.breakdown_ytd?.jumlah_app || 0).toLocaleString('id-ID')} Unit`}
-          subtitle="Total pengerjaan oleh APP"
-          icon={FileSpreadsheet}
-          color="indigo"
-        />
-        <KpiCard
-          title="Breakdown YTD (Yantek)"
-          value={`${Number(dashboard?.breakdown_ytd?.jumlah_yantek || 0).toLocaleString('id-ID')} Unit`}
-          subtitle="Total pengerjaan oleh Yantek"
-          icon={AlertCircle}
-          color="cyan"
+          value={`${dashboard?.pencapaian || 0}`}
+          unit="%"
+          achievement={Number(dashboard?.pencapaian || 0)}
+          icon={TrendingUp}
+          color={capai >= 100 ? 'green' : (capai >= 95 ? 'yellow' : 'red')}
         />
       </div>
 

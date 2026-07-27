@@ -11,6 +11,7 @@ import P2tlDetailModal from '@/components/ui/P2tlDetailModal';
 import { useNavigate } from 'react-router-dom';
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import ChartWrapper from '@/components/ui/ChartWrapper';
+import TargetWarning from '@/components/ui/TargetWarning';
 
 export default function P2tlPage() {
   const navigate = useNavigate();
@@ -206,6 +207,12 @@ export default function P2tlPage() {
           </button>
         )}
       </div>
+
+      <TargetWarning 
+        up3={filters.up3} 
+        year={filters.year} 
+        isVisible={!loading && dashboard?.target_kumulatif_ytd == null} 
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <KpiCard

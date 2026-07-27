@@ -6,6 +6,7 @@ import PageHeader from '@/components/ui/PageHeader';
 import KpiCard from '@/components/ui/KpiCard';
 import DataTable from '@/components/ui/DataTable';
 import ChartWrapper from '@/components/ui/ChartWrapper';
+import TargetWarning from '@/components/ui/TargetWarning';
 import { useFilter } from '@/context/FilterContext';
 import { useAuth } from '@/context/AuthContext';
 import { MONTHS_ID } from '@/utils/formatters';
@@ -232,6 +233,12 @@ export default function SusutDistribusiPage() {
           </button>
         )}
       </div>
+
+      <TargetWarning 
+        up3={filters.up3} 
+        year={filters.year} 
+        isVisible={!loading && summary?.target_ytd == null} 
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <KpiCard
