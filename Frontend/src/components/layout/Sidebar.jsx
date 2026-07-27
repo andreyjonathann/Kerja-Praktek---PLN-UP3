@@ -30,11 +30,12 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
       'pic_jaringan': 'JARINGAN',
       'pic_pemasaran': 'PEMASARAN',
       'pic_transaksi_energi': 'TRANSAKSI ENERGI',
-      'pic_aset': 'ASET',
+      'pic_pengadaan': 'PENGADAAN',
       'pic_niaga': 'NIAGA',
       'pic_keuangan': 'KEUANGAN'
     };
     
+    const isPerencanaan = user?.role === 'perencanaan';
     const userGroup = user ? roleMap[user.role] : null;
     
     return NAV_ITEMS.flatMap(item => {
@@ -42,13 +43,24 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
       if (item.key === 'home') return [item];
       
       if (item.group === 'NKO') {
-         if (user && user.role === 'pic_jaringan') return [];
+         // Hide NKO for roles that only have their own specific page
+         if (user && (user.role === 'pic_jaringan' || user.role === 'pic_pengadaan')) return [];
          const filteredItems = item.items.filter(i => i.group !== 'KELOLA TARGET');
          return [{ ...item, items: filteredItems }];
+      }
+
+      if (item.group === 'PEGAWAI') {
+         // Only admin and perencanaan see PEGAWAI
+         if (user && !isAdmin && !isPerencanaan) return [];
+         return [item];
       }
       
       // Flatten the specific KINERJA subgroup into top-level items
       if (item.group === 'KINERJA') {
+         if (isPerencanaan) {
+            return [item]; // Keep KINERJA nested subgroups just like Admin
+         }
+         
          if (!userGroup) return [];
          const matchingSubgroup = item.items.find(sub => sub.group === userGroup);
          if (!matchingSubgroup) return [];

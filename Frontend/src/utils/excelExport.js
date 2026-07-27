@@ -9,7 +9,8 @@ const kpiConfig = {
     cumRealKey: 'cumulativeReal',
     detailHeaders: ["Bulan", "Tidak Terencana", "Terencana", "Bencana Alam", "Transmisi", "Pembangkit", "Total Realisasi"],
     detailKeys: ['distribusi_padam_tidak_terencana', 'distribusi_padam_terencana', 'distribusi_bencana_alam', 'transmisi', 'pembangkit', 'realisasi'],
-    format: "0.0000"
+    format: "0.0000",
+    isInverse: true
   },
   saifi: {
     unit: 'Kali/Plgn',
@@ -19,7 +20,8 @@ const kpiConfig = {
     cumRealKey: 'cumulativeReal',
     detailHeaders: ["Bulan", "Tidak Terencana", "Terencana", "Bencana Alam", "Transmisi", "Pembangkit", "Total Realisasi"],
     detailKeys: ['distribusi_padam_tidak_terencana', 'distribusi_padam_terencana', 'distribusi_bencana_alam', 'transmisi', 'pembangkit', 'realisasi'],
-    format: "0.0000"
+    format: "0.0000",
+    isInverse: true
   },
   penjualan: {
     unit: 'kWh',
@@ -83,6 +85,37 @@ const kpiConfig = {
     cumRealKey: 'c_pln_mobile_transaksi',
     detailHeaders: ["Bulan", "Pengguna Aktif", "Jumlah Transaksi", "Nilai Transaksi (Juta Rp)"],
     detailKeys: ['pln_mobile_pengguna', 'pln_mobile_transaksi', 'pln_mobile_nilai']
+  },
+  pelunasan_prr: {
+    unit: 'Rp',
+    monthlyTargetKey: 'pelunasan_target',
+    monthlyRealKey: 'pelunasan_real',
+    cumTargetKey: 'c_pelunasan_target',
+    cumRealKey: 'c_pelunasan_real',
+    detailHeaders: ["Bulan", "Target (Rp)", "Tunai PRR (Rp)", "Cicil PRR (Rp)", "TS Prabayar (Rp)", "Total Realisasi (Rp)"],
+    detailKeys: ['pelunasan_target', 'tunai_prr', 'cicil_prr', 'ts_prabayar', 'pelunasan_real'],
+    format: "#,##0"
+  },
+  penghapusan_prr: {
+    unit: 'Rp M',
+    monthlyTargetKey: 'penghapusan_target',
+    monthlyRealKey: 'penghapusan_real',
+    cumTargetKey: 'c_penghapusan_target',
+    cumRealKey: 'c_penghapusan_real',
+    detailHeaders: ["Bulan", "Target (Rp Miliar)", "Realisasi (Rp Miliar)"],
+    detailKeys: ['penghapusan_target', 'penghapusan_real'],
+    format: "#,##0.00"
+  },
+  saldo_akhir: {
+    unit: 'Rp',
+    monthlyTargetKey: 'saldo_akhir_target',
+    monthlyRealKey: 'saldo_akhir_real',
+    cumTargetKey: 'saldo_akhir_target',
+    cumRealKey: 'rata_rata_saldo',
+    detailHeaders: ["Bulan", "Target (Rp)", "PAL (Rp)", "TS (Rp)", "Realisasi Saldo Akhir (Rp)", "Rata-rata Saldo (Rp)"],
+    detailKeys: ['saldo_akhir_target', 'pal_total', 'ts_total', 'saldo_akhir_real', 'rata_rata_saldo'],
+    format: "#,##0",
+    isMinimize: true
   }
 };
 
@@ -137,8 +170,14 @@ export const exportToExcel = (kpiType, startYear, endYear, dataMap) => {
       const real = endYearData[cfg.cumRealKey] ?? endYearData[cfg.monthlyRealKey] ?? 0;
       const tgt = endYearData[cfg.cumTargetKey] ?? endYearData[cfg.monthlyTargetKey] ?? 0;
       if (tgt > 0) {
-        // Formatted as decimal representing percentage
-        pencapaian = real / tgt;
+        if (cfg.isInverse) {
+          pencapaian = real > 0 ? (tgt / real) : 0;
+        } else if (cfg.isMinimize) {
+          pencapaian = 2 - (real / tgt);
+        } else {
+          // Formatted as decimal representing percentage
+          pencapaian = real / tgt;
+        }
       }
     }
     

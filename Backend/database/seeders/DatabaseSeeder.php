@@ -23,11 +23,11 @@ class DatabaseSeeder extends Seeder
                 'is_active' => true,
             ],
             [
-                'name' => 'PIC Aset',
-                'username' => 'pic_aset',
-                'email' => 'aset@pln.co.id',
+                'name' => 'PIC Pengadaan',
+                'username' => 'pic_pengadaan',
+                'email' => 'pengadaan@pln.co.id',
                 'password' => Hash::make('password'),
-                'role' => 'pic_aset',
+                'role' => 'pic_pengadaan',
                 'up3' => 'UP3 Kebon Jeruk',
                 'is_active' => true,
             ],
@@ -96,5 +96,6 @@ class DatabaseSeeder extends Seeder
         $this->call(TargetTahunanSeeder::class);
         $this->call(TargetTahunanRatingNegatifSeeder::class);
         $this->call(NkoParameterSeeder::class);
+        $this->call(PengadaanSeeder::class);
     }
 }

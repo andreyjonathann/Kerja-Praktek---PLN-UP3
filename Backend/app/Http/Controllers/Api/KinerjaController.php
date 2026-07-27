@@ -25,22 +25,6 @@ class KinerjaController extends Controller
     public function index($bidang, Request $request)
     {
         $user = $request->user();
-        if ($user->role !== 'admin' && $user->role !== 'viewer') {
-            $roleMap = [
-                'aset' => 'pic_aset',
-                'jaringan' => 'pic_jaringan',
-                'transaksi_energi' => 'pic_transaksi_energi',
-                'niaga' => 'pic_niaga',
-                'pemasaran' => 'pic_pemasaran',
-                'keuangan' => 'pic_keuangan',
-            ];
-            $allowedRole = $roleMap[strtolower($bidang)] ?? null;
-            if ($user->role !== $allowedRole) {
-                return response()->json([
-                    'message' => 'Anda tidak berwenang membaca data bidang ini.'
-                ], 403);
-            }
-        }
 
         $modelClass = $this->getModelClass($bidang);
         if (!$modelClass) return response()->json(['error' => 'Bidang not found'], 404);
@@ -68,7 +52,7 @@ class KinerjaController extends Controller
         if (!$modelClass) return response()->json(['error' => 'Bidang not found'], 404);
 
         $roleMap = [
-            'aset' => 'pic_aset',
+            'aset' => 'pic_pengadaan',
             'jaringan' => 'pic_jaringan',
             'transaksi_energi' => 'pic_transaksi_energi',
             'niaga' => 'pic_niaga',
@@ -172,7 +156,7 @@ class KinerjaController extends Controller
         if (!$modelClass) return response()->json(['error' => 'Bidang not found'], 404);
 
         $roleMap = [
-            'aset' => 'pic_aset',
+            'aset' => 'pic_pengadaan',
             'jaringan' => 'pic_jaringan',
             'transaksi_energi' => 'pic_transaksi_energi',
             'niaga' => 'pic_niaga',

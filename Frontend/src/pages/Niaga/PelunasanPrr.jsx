@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '@/context/AuthContext'
 import {
   Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, ComposedChart
@@ -8,6 +9,7 @@ import { Briefcase, TrendingUp, Plus, Activity } from 'lucide-react'
 import KpiCard from '@/components/ui/KpiCard'
 import ChartWrapper from '@/components/ui/ChartWrapper'
 import DataTable from '@/components/ui/DataTable'
+import ExportModal from '@/components/ui/ExportModal'
 import { useFilter } from '@/context/FilterContext'
 import { getNiagaData } from '@/services/niagaDataService'
 import { formatNumber } from '@/utils/formatters'
@@ -32,6 +34,7 @@ const TOOLTIP = ({ active, payload, label }) => {
 }
 
 export default function PelunasanPrrPage() {
+  const { user } = useAuth()
   const navigate = useNavigate()
   const { filters } = useFilter()
   const [tab, setTab] = useState('monthly')
@@ -44,7 +47,7 @@ export default function PelunasanPrrPage() {
     setError(null)
     try {
       const res = await getNiagaData(filters.year)
-      setData(res || [])
+      setData((res || []).filter(d => !d.isBaseline))
     } catch (e) {
       if (!bg) {
         setError('Gagal mengambil data dari server.')
@@ -76,6 +79,9 @@ export default function PelunasanPrrPage() {
 
   const chartKey = tab === 'monthly' ? 'pelunasan_real' : 'c_pelunasan_real'
   const tgtKey = tab === 'monthly' ? 'pelunasan_target' : 'c_pelunasan_target'
+  const tunaiKey = tab === 'monthly' ? 'tunai_prr' : 'c_tunai_prr'
+  const cicilKey = tab === 'monthly' ? 'cicil_prr' : 'c_cicil_prr'
+  const tsKey = tab === 'monthly' ? 'ts_prabayar' : 'c_ts_prabayar'
 
   const prevLastRow = filled[filled.length - 2]
   const trend = prevLastRow?.pelunasan_real
@@ -84,9 +90,12 @@ export default function PelunasanPrrPage() {
 
   const tableColumns = [
     { key: 'label', label: 'Bulan', width: '72px', align: 'center' },
-    { key: tgtKey, label: 'Target (Rp M)', align: 'right', render: v => v != null ? formatNumber(v) : '—' },
+    { key: tgtKey, label: 'Target (Rp)', align: 'right', render: v => v != null ? formatNumber(v) : '—' },
+    { key: tunaiKey, label: 'Tunai PRR (Rp)', align: 'right', render: v => v != null ? formatNumber(v) : '—' },
+    { key: cicilKey, label: 'Cicil PRR (Rp)', align: 'right', render: v => v != null ? formatNumber(v) : '—' },
+    { key: tsKey, label: 'TS Prabayar (Rp)', align: 'right', render: v => v != null ? formatNumber(v) : '—' },
     {
-      key: chartKey, label: 'Realisasi (Rp M)', align: 'right', render: (v, row) => v != null
+      key: chartKey, label: 'Total Realisasi (Rp)', align: 'right', render: (v, row) => v != null
         ? <span className={`font-bold ${v < row[tgtKey] ? 'text-red-500' : 'text-emerald-500'}`}>{formatNumber(v)}</span>
         : <span className="text-slate-400 text-xs font-bold">—</span>
     },
@@ -129,9 +138,9 @@ export default function PelunasanPrrPage() {
 
       {/* ── KPI Cards ─────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-        <KpiCard title="Realisasi Rp YTD" value={formatNumber(ytdReal)} unit="Rp M" icon={Briefcase} color="indigo" achievement={ach} loading={loading} />
-        <KpiCard title="Target Rp YTD" value={formatNumber(ytdTgt)} unit="Rp M" icon={Briefcase} color="blue" loading={loading} />
-        <KpiCard title="Bulan Terakhir" value={formatNumber(lastReal)} unit="Rp M" icon={Briefcase} color="yellow" trend={trend} loading={loading} />
+        <KpiCard title="Realisasi Rp YTD" value={formatNumber(ytdReal)} unit="Rp" icon={Briefcase} color="indigo" achievement={ach} loading={loading} />
+        <KpiCard title="Target Rp YTD" value={formatNumber(ytdTgt)} unit="Rp" icon={Briefcase} color="blue" loading={loading} />
+        <KpiCard title="Bulan Terakhir" value={formatNumber(lastReal)} unit="Rp" icon={Briefcase} color="yellow" trend={trend} loading={loading} />
         <KpiCard title="Pencapaian" value={ach.toFixed(1) + '%'} icon={TrendingUp} color={ach >= 100 ? 'green' : ach >= 90 ? 'yellow' : 'red'} loading={loading} />
       </div>
 
@@ -168,43 +177,46 @@ export default function PelunasanPrrPage() {
         </div>
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
-          <div style={{
-            display: 'inline-flex',
-            background: 'rgba(79, 70, 229, 0.05)',
-            padding: 4,
-            borderRadius: 12,
-            border: '1px solid rgba(79, 70, 229, 0.15)',
-            cursor: 'pointer'
-          }}>
-            <button
-              onClick={() => navigate('/niaga/pelunasan/input')}
-              style={{
-                padding: '6px 16px',
-                borderRadius: 9,
-                fontSize: '0.85rem',
-                fontWeight: 700,
-                transition: 'all 0.2s ease',
-                border: 'none',
-                cursor: 'pointer',
-                background: 'var(--bg-card)',
-                color: '#4F46E5',
-                boxShadow: '0 2px 8px rgba(79, 70, 229, 0.15)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
-              onMouseEnter={e => {
-                 e.currentTarget.style.background = '#4F46E5';
-                 e.currentTarget.style.color = '#FFFFFF';
-              }}
-              onMouseLeave={e => {
-                 e.currentTarget.style.background = 'var(--bg-card)';
-                 e.currentTarget.style.color = '#4F46E5';
-              }}
-            >
-              <Plus size={14} /> Input Data
-            </button>
-          </div>
+          <ExportModal kpiType="Pelunasan PRR" />
+          {user?.role === 'pic_niaga' && (
+            <div style={{
+              display: 'inline-flex',
+              background: 'rgba(79, 70, 229, 0.05)',
+              padding: 4,
+              borderRadius: 12,
+              border: '1px solid rgba(79, 70, 229, 0.15)',
+              cursor: 'pointer'
+            }}>
+              <button
+                onClick={() => navigate('/niaga/pelunasan/input')}
+                style={{
+                  padding: '6px 16px',
+                  borderRadius: 9,
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  transition: 'all 0.2s ease',
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: 'var(--bg-card)',
+                  color: '#4F46E5',
+                  boxShadow: '0 2px 8px rgba(79, 70, 229, 0.15)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+                onMouseEnter={e => {
+                   e.currentTarget.style.background = '#4F46E5';
+                   e.currentTarget.style.color = '#FFFFFF';
+                }}
+                onMouseLeave={e => {
+                   e.currentTarget.style.background = 'var(--bg-card)';
+                   e.currentTarget.style.color = '#4F46E5';
+                }}
+              >
+                <Plus size={14} /> Input Data
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -212,7 +224,7 @@ export default function PelunasanPrrPage() {
       <div className="grid grid-cols-1 gap-5">
         <ChartWrapper
           title={tab === 'monthly' ? 'Pelunasan Bulanan' : 'Pelunasan Kumulatif'}
-          subtitle={`Target vs Realisasi (Rp M) · ${filters.year}`}
+          subtitle={`Target vs Realisasi (Rp) · ${filters.year}`}
           loading={loading} error={error} empty={data.length === 0}
           height={280} onRetry={fetchData}
         >
@@ -233,7 +245,7 @@ export default function PelunasanPrrPage() {
       {/* ── Detail Table ───────────────────────────────────────────────── */}
       <div className="card p-5">
         <h3 className="section-title mb-4">
-          Detail Data Pelunasan {tab === 'monthly' ? 'Bulanan' : 'Kumulatif'} (Rp Miliar)
+          Detail Data Pelunasan {tab === 'monthly' ? 'Bulanan' : 'Kumulatif'} (Rp)
         </h3>
         <DataTable columns={tableColumns} data={data} paginated={false} searchable={false} />
       </div>

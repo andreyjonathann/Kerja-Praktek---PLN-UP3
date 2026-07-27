@@ -88,16 +88,24 @@ export const NAV_ITEMS = [
         type: 'subgroup',
         group: 'JARINGAN',
         items: [
-          { key: 'saidi', label: 'SAIDI', path: '/saidi' },
-          { key: 'saifi', label: 'SAIFI', path: '/saifi' },
-          { key: 'ens', label: 'ENS', path: '/ens' },
-          { key: 'gangguan-tm', label: 'Gangguan TM', path: '/jaringan/gangguan-tm' },
-          { key: 'gangguan-switching', label: 'Gangguan Switching', path: '/jaringan/gangguan-switching' },
-          { key: 'rating-negatif', label: 'Rating Negatif', path: '/jaringan/rating-negatif' },
-          { key: 'rpt-g', label: 'RPT G (Tanpa CT)', path: '/jaringan/rpt-gangguan' },
-          { key: 'srdag', label: 'SRDAG', path: '/jaringan/srdag' },
-          { key: 'mvod', label: 'MVOD', path: '/jaringan/mvod' },
-          { key: 'mttr-siaga-1', label: 'MTTR Siaga 1', path: '/jaringan/mttr-siaga1' },
+
+          {
+            type: 'group',
+            group: 'REKAP JARINGAN',
+            icon: 'Activity',
+            items: [
+              { key: 'saidi', label: 'SAIDI', path: '/saidi' },
+              { key: 'saifi', label: 'SAIFI', path: '/saifi' },
+              { key: 'ens', label: 'ENS', path: '/ens' },
+              { key: 'gangguan-tm', label: 'Gangguan TM', path: '/jaringan/gangguan-tm' },
+              { key: 'gangguan-switching', label: 'Gangguan Switching', path: '/jaringan/gangguan-switching' },
+              { key: 'rating-negatif', label: 'Rating Negatif', path: '/jaringan/rating-negatif' },
+              { key: 'rpt-g', label: 'RPT G (Tanpa CT)', path: '/jaringan/rpt-gangguan' },
+              { key: 'srdag', label: 'SRDAG', path: '/jaringan/srdag' },
+              { key: 'mvod', label: 'MVOD', path: '/jaringan/mvod' },
+              { key: 'mttr-siaga-1', label: 'MTTR Siaga 1', path: '/jaringan/mttr-siaga1' },
+            ]
+          },
         ],
       },
       {
@@ -117,15 +125,15 @@ export const NAV_ITEMS = [
         items: [
           { key: 'input-kpi-te', label: 'INPUT KPI', path: '/input' },
           { key: 'susut', label: 'SUSUT (%)', path: '/susut' },
-          { key: 'kwh-p2tl', label: 'KwH P2TL', path: '/p2tl' },
+          { key: 'kwh-p2tl', label: 'KwH P2TL', path: '/kwh-p2tl' },
           { key: 'ganti-meter', label: 'Ganti Meter', path: '/ganti-meter' },
         ],
       },
       {
         type: 'subgroup',
-        group: 'ASET',
+        group: 'PENGADAAN',
         items: [
-          { key: 'input-kpi-aset', label: 'INPUT KPI', path: '/input' },
+          { key: 'pengadaan-kontrak', label: 'KONTRAK', path: '/pengadaan/kontrak', icon: 'FileText' },
         ],
       },
       {
@@ -134,7 +142,7 @@ export const NAV_ITEMS = [
         items: [
           { key: 'niaga-pelunasan',   label: 'PELUNASAN PRR',   path: '/niaga/pelunasan',   icon: 'Briefcase' },
           { key: 'niaga-penghapusan',  label: 'PENGHAPUSAN PRR',  path: '/niaga/penghapusan',  icon: 'TrendingDown' },
-          { key: 'niaga-lbkb',        label: 'TINDAK LANJUT LBKB', path: '/niaga/lbkb',        icon: 'Activity' },
+          { key: 'niaga-saldo-akhir',  label: 'SALDO AKHIR',        path: '/niaga/saldo-akhir',  icon: 'Activity' },
         ],
       },
       {

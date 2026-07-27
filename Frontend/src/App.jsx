@@ -46,18 +46,8 @@ import PelunasanPrrPage from '@/pages/Niaga/PelunasanPrr'
 import InputKinerjaPelunasanPage from '@/pages/Niaga/InputKinerjaPelunasan'
 import PenghapusanPrrPage from '@/pages/Niaga/PenghapusanPrr'
 import InputKinerjaPenghapusanPage from '@/pages/Niaga/InputKinerjaPenghapusan'
-import TindakLanjutLbkbPage from '@/pages/Niaga/TindakLanjutLbkb'
-import InputKinerjaLbkbPage from '@/pages/Niaga/InputKinerjaLbkb'
-
-import GantiMeterPage from '@/pages/GantiMeter'
-import InputKinerjaGantiMeterPage from '@/pages/InputKinerjaGantiMeter'
-import EditKinerjaGantiMeterPage from '@/pages/EditKinerjaGantiMeter'
-import SusutDistribusiPage from '@/pages/SusutDistribusiPage'
-import InputKinerjaSusutDistribusiPage from '@/pages/InputKinerjaSusutDistribusi'
-import EditKinerjaSusutDistribusiPage from '@/pages/EditKinerjaSusutDistribusi'
-import P2tlPage from '@/pages/P2tl'
-import InputKinerjaP2tlPage from '@/pages/InputKinerjaP2tl'
-import EditKinerjaP2tlPage from '@/pages/EditKinerjaP2tl'
+import SaldoAkhirPage from '@/pages/Niaga/SaldoAkhir'
+import InputKinerjaSaldoAkhirPage from '@/pages/Niaga/InputKinerjaSaldoAkhir'
 
 // Pemasaran Pages (legacy)
 import JumlahPelangganPage from '@/pages/Pemasaran/JumlahPelanggan'
@@ -77,7 +67,22 @@ import EditKinerjaPermasaranPage from '@/pages/Pemasaran/v2/EditKinerjaPermasara
 import EditKinerjaPage from '@/pages/EditKinerja'
 import EditEnsPage from '@/pages/EditEns'
 
+// Transaksi Energi Pages
+import SusutDistribusiPage from '@/pages/SusutDistribusiPage'
+import InputKinerjaSusutDistribusiPage from '@/pages/InputKinerjaSusutDistribusi'
+import EditKinerjaSusutDistribusiPage from '@/pages/EditKinerjaSusutDistribusi'
+import P2tlPage from '@/pages/P2tl'
+import InputKinerjaP2tlPage from '@/pages/InputKinerjaP2tl'
+import EditKinerjaP2tlPage from '@/pages/EditKinerjaP2tl'
+import GantiMeterPage from '@/pages/GantiMeter'
+import InputKinerjaGantiMeterPage from '@/pages/InputKinerjaGantiMeter'
+import EditKinerjaGantiMeterPage from '@/pages/EditKinerjaGantiMeter'
+
 // Admin Pages
+import KontrakPage from '@/pages/Pengadaan/Kontrak'
+import InputPengadaanPage from '@/pages/Pengadaan/InputPengadaan'
+import UbahStatusPengadaanPage from '@/pages/Pengadaan/UbahStatusPengadaan'
+import KelolaPaguAnggaranPage from '@/pages/Pengadaan/KelolaPaguAnggaran'
 import KelolaTargetPage from '@/pages/Admin/KelolaTarget'
 import KelolaTargetBulananPage from '@/pages/Admin/KelolaTargetBulanan'
 
@@ -106,12 +111,76 @@ function ProtectedRoute({ children }) {
   return <Layout>{children}</Layout>
 }
 
+// Input Protected Route Wrapper: Redirect Perencanaan role to home
+function InputProtectedRoute({ children }) {
+  const { user, loading } = useAuth()
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center dark:bg-slate-900 bg-slate-50">
+        <div className="flex flex-col items-center gap-3">
+          <svg className="animate-spin h-8 w-8 text-pln-blue-mid" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+          </svg>
+          <span className="text-xs text-slate-500 font-semibold animate-pulse">Menghubungkan ke SIGAP...</span>
+        </div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />
+  }
+
+  if (user.role === 'perencanaan') {
+    return <Navigate to="/" replace />
+  }
+
+  return <Layout>{children}</Layout>
+}
+
+// Pengadaan Write Protected Route Wrapper: Redirect anyone except pic_pengadaan back to /pengadaan/kontrak
+function PengadaanProtectedRoute({ children }) {
+  const { user, loading } = useAuth()
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center dark:bg-slate-900 bg-slate-50">
+        <div className="flex flex-col items-center gap-3">
+          <svg className="animate-spin h-8 w-8 text-pln-blue-mid" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+          </svg>
+          <span className="text-xs text-slate-500 font-semibold animate-pulse">Menghubungkan ke SIGAP...</span>
+        </div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />
+  }
+
+  if (user.role !== 'pic_pengadaan') {
+    return <Navigate to="/pengadaan/kontrak" replace />
+  }
+
+  return <Layout>{children}</Layout>
+}
+
 // Role-based home: pic_pemasaran → /pemasaran, lainnya → Overview biasa
 function RoleBasedHome() {
   const { user, loading } = useAuth()
   if (loading) return null
   if (user?.role === 'pic_pemasaran') {
     return <Navigate to="/pemasaran" replace />
+  }
+  if (user?.role === 'pic_transaksi_energi') {
+    return <Navigate to="/nko" replace />
+  }
+  if (user?.role === 'pic_pengadaan') {
+    return <Navigate to="/pengadaan/kontrak" replace />
   }
   return (
     <ProtectedRoute>
@@ -142,14 +211,14 @@ export default function App() {
 
               {/* ── Routes Pemasaran v2 (pola sama dengan Jaringan) ── */}
               <Route path="/pemasaran/input" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <InputKinerjaPemasaranPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
               <Route path="/pemasaran/edit/:type/:bulan/:tahun" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <EditKinerjaPermasaranPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
 
               <Route path="/pemasaran/penjualan" element={
@@ -182,50 +251,80 @@ export default function App() {
               <Route path="/input" element={<Navigate to="/" replace />} />
 
               <Route path="/saidi/input" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <InputKinerjaSaidiPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
 
               <Route path="/saifi/input" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <InputSaifiPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
 
               <Route path="/kelola-target" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <KelolaTargetPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
               
               <Route path="/kelola-target/:bidang/:indikator" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <KelolaTargetBulananPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
 
               <Route path="/:type/edit/:bulan/:tahun" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <EditKinerjaPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
               <Route path="/ens/edit/:bulan/:tahun" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <EditEnsPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
 
               <Route path="/ens/input" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <InputEnsPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
 
               <Route path="/saidi" element={
                 <ProtectedRoute>
                   <SaidiPage />
                 </ProtectedRoute>
+              } />
+
+              <Route path="/pengadaan/kontrak" element={
+                <ProtectedRoute>
+                  <KontrakPage />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/pengadaan/input" element={
+                <PengadaanProtectedRoute>
+                  <InputPengadaanPage />
+                </PengadaanProtectedRoute>
+              } />
+
+              <Route path="/pengadaan/edit/:id" element={
+                <PengadaanProtectedRoute>
+                  <InputPengadaanPage />
+                </PengadaanProtectedRoute>
+              } />
+
+              <Route path="/pengadaan/status/:id" element={
+                <PengadaanProtectedRoute>
+                  <UbahStatusPengadaanPage />
+                </PengadaanProtectedRoute>
+              } />
+
+              <Route path="/pengadaan/pagu" element={
+                <PengadaanProtectedRoute>
+                  <KelolaPaguAnggaranPage />
+                </PengadaanProtectedRoute>
               } />
 
               <Route path="/saifi" element={
@@ -241,9 +340,9 @@ export default function App() {
               } />
 
               <Route path="/jaringan/rating-negatif/input" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <InputRatingNegatifPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
 
               <Route path="/jaringan/gangguan-tm" element={
@@ -259,15 +358,15 @@ export default function App() {
               } />
 
               <Route path="/jaringan/gangguan-tm/input-kurang-5-menit" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <InputGangguanTmKurang5Page />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
 
               <Route path="/jaringan/gangguan-tm/input-lebih-5-menit" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <InputGangguanTmLebih5Page />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
 
               <Route path="/jaringan/gangguan-tm/edit-lebih-5-menit" element={
@@ -284,9 +383,9 @@ export default function App() {
               } />
 
               <Route path="/jaringan/input-gangguan-switching" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <InputGangguanSwitchingPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
 
               <Route path="/jaringan/edit-gangguan-switching" element={
@@ -296,9 +395,9 @@ export default function App() {
               } />
 
               <Route path="/jaringan/input-gangguan-trafo" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <InputGangguanTrafoPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
 
               <Route path="/jaringan/edit-gangguan-trafo" element={
@@ -314,9 +413,9 @@ export default function App() {
               } />
 
               <Route path="/jaringan/input-rpt-gangguan" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <InputRptGangguanPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
 
               <Route path="/jaringan/gangguan-switching/target" element={
@@ -332,9 +431,9 @@ export default function App() {
               } />
 
               <Route path="/jaringan/srdag/input" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <InputSrdagPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
 
               <Route path="/jaringan/srdag/target" element={
@@ -350,9 +449,9 @@ export default function App() {
               } />
 
               <Route path="/jaringan/mvod/input" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <InputMvodPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
 
               <Route path="/jaringan/mvod/target" element={
@@ -368,9 +467,9 @@ export default function App() {
               } />
 
               <Route path="/jaringan/mttr-siaga1/input" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <InputMttrPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
 
               <Route path="/jaringan/mttr-siaga1/target" element={
@@ -432,14 +531,14 @@ export default function App() {
                 </ProtectedRoute>
               } />
               <Route path="/susut/input" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <InputKinerjaSusutDistribusiPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
-              <Route path="/susut/edit/:bulan/:tahun" element={
-                <ProtectedRoute>
+              <Route path="/susut/edit/:id" element={
+                <InputProtectedRoute>
                   <EditKinerjaSusutDistribusiPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
               <Route path="/p2tl" element={
                 <ProtectedRoute>
@@ -447,14 +546,14 @@ export default function App() {
                 </ProtectedRoute>
               } />
               <Route path="/p2tl/input" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <InputKinerjaP2tlPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
-              <Route path="/p2tl/edit/:bulan/:tahun" element={
-                <ProtectedRoute>
+              <Route path="/p2tl/edit/:id" element={
+                <InputProtectedRoute>
                   <EditKinerjaP2tlPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
               <Route path="/ganti-meter" element={
                 <ProtectedRoute>
@@ -462,14 +561,14 @@ export default function App() {
                 </ProtectedRoute>
               } />
               <Route path="/ganti-meter/input" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <InputKinerjaGantiMeterPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
               <Route path="/ganti-meter/edit/:id" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <EditKinerjaGantiMeterPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
               <Route path="/niaga" element={<Navigate to="/niaga/pelunasan" replace />} />
               <Route path="/niaga/pelunasan" element={
@@ -478,9 +577,9 @@ export default function App() {
                 </ProtectedRoute>
               } />
               <Route path="/niaga/pelunasan/input" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <InputKinerjaPelunasanPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
               <Route path="/niaga/penghapusan" element={
                 <ProtectedRoute>
@@ -488,19 +587,19 @@ export default function App() {
                 </ProtectedRoute>
               } />
               <Route path="/niaga/penghapusan/input" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <InputKinerjaPenghapusanPage />
+                </InputProtectedRoute>
+              } />
+              <Route path="/niaga/saldo-akhir" element={
+                <ProtectedRoute>
+                  <SaldoAkhirPage />
                 </ProtectedRoute>
               } />
-              <Route path="/niaga/lbkb" element={
-                <ProtectedRoute>
-                  <TindakLanjutLbkbPage />
-                </ProtectedRoute>
-              } />
-              <Route path="/niaga/lbkb/input" element={
-                <ProtectedRoute>
-                  <InputKinerjaLbkbPage />
-                </ProtectedRoute>
+              <Route path="/niaga/saldo-akhir/input" element={
+                <InputProtectedRoute>
+                  <InputKinerjaSaldoAkhirPage />
+                </InputProtectedRoute>
               } />
               <Route path="/skki" element={
                 <ProtectedRoute>

@@ -5,7 +5,7 @@ const AuthContext = createContext(null)
 
 export const ROLES = {
   ADMIN:  'admin',
-  PIC_ASET: 'pic_aset',
+  PIC_PENGADAAN: 'pic_pengadaan',
   PIC_JARINGAN: 'pic_jaringan',
   PIC_TE: 'pic_transaksi_energi',
   PIC_NIAGA: 'pic_niaga',
