@@ -1,9 +1,11 @@
+import notify from '@/utils/notify';
 import React, { useState, useEffect } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import api from '@/services/api';
 
 import { CheckCircle, AlertCircle, Save, ArrowLeft, Activity, AlertTriangle, Zap } from 'lucide-react';
+import useDirtyFormGuard from '@/hooks/useDirtyFormGuard';
 
 export default function InputKinerjaGantiMeterPage() {
   const navigate = useNavigate();
@@ -11,17 +13,16 @@ export default function InputKinerjaGantiMeterPage() {
   const [success, setSuccess] = useState(false);
   const [existingData, setExistingData] = useState([]);
 
-  const { register, handleSubmit, formState: { errors }, control } = useForm({
+  const { register, handleSubmit, formState: { errors, isDirty: formIsDirty }, reset, control } = useForm({
     defaultValues: {
       tanggal: new Date().toISOString().split('T')[0],
-      jumlah_app: '',
-      jumlah_yantek: '',
+      jumlah_unit: '',
       keterangan: ''
     }
   });
+  const { setIsDirty, guardedNavigate } = useDirtyFormGuard();
   const selectedTanggal = useWatch({ control, name: 'tanggal' });
-  const jumlah_app = useWatch({ control, name: 'jumlah_app' });
-  const jumlah_yantek = useWatch({ control, name: 'jumlah_yantek' });
+  const jumlah_unit = useWatch({ control, name: 'jumlah_unit' });
   useEffect(() => {
     if (selectedTanggal) {
       const tahunDariTanggal = selectedTanggal.split('-')[0];
@@ -33,9 +34,31 @@ export default function InputKinerjaGantiMeterPage() {
   const currentDateData = existingData.find(d => d.tanggal === selectedTanggal);
   const isDuplicate = !!(selectedTanggal && currentDateData && currentDateData.id != null);
 
+  useEffect(() => {
+    if (selectedTanggal && currentDateData) {
+      if (currentDateData.id != null) {
+        reset({
+          tanggal: selectedTanggal,
+          jumlah_unit: currentDateData.jumlah_unit ?? '',
+          keterangan: currentDateData.keterangan ?? ''
+        });
+      } else {
+        reset({
+          tanggal: selectedTanggal,
+          jumlah_unit: '',
+          keterangan: ''
+        });
+      }
+    }
+  }, [selectedTanggal, existingData]);
+
+  useEffect(() => {
+    setIsDirty(formIsDirty);
+  }, [formIsDirty]);
+
   const onSubmit = async (data) => {
     if (isDuplicate) {
-      alert('Data sudah ada! Tidak bisa menginput dari halaman Tambah.');
+      notify.warning('Data sudah ada! Tidak bisa menginput dari halaman Tambah.');
       return;
     }
     setLoading(true);
@@ -43,15 +66,15 @@ export default function InputKinerjaGantiMeterPage() {
     try {
       await api.post('/v1/ganti-meter', {
         tanggal: data.tanggal,
-        jumlah_app: parseInt(data.jumlah_app, 10),
-        jumlah_yantek: parseInt(data.jumlah_yantek, 10),
+        jumlah_unit: parseInt(data.jumlah_unit, 10),
         keterangan: data.keterangan
       });
       setSuccess(true);
+      setIsDirty(false);
       window.scrollTo({ top: 0, behavior: 'smooth' });
       setTimeout(() => navigate('/ganti-meter'), 2000);
     } catch (err) {
-      alert('Error: ' + err.message);
+      notify.error(err.response?.data?.message || err.message);
     } finally {
       setLoading(false);
     }
@@ -67,14 +90,9 @@ export default function InputKinerjaGantiMeterPage() {
 
   // Calculate Realisasi Preview
   let previewRealisasi = null;
-  const appVal = parseInt(jumlah_app, 10);
-  const yantekVal = parseInt(jumlah_yantek, 10);
-  if (!isNaN(appVal) && !isNaN(yantekVal)) {
-    previewRealisasi = appVal + yantekVal;
-  } else if (!isNaN(appVal)) {
-    previewRealisasi = appVal;
-  } else if (!isNaN(yantekVal)) {
-    previewRealisasi = yantekVal;
+  const unitVal = parseInt(jumlah_unit, 10);
+  if (!isNaN(unitVal)) {
+    previewRealisasi = unitVal;
   }
 
   return (
@@ -83,7 +101,7 @@ export default function InputKinerjaGantiMeterPage() {
 
         {/* HEADER */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button type="button" onClick={() => navigate(-1)}
+          <button type="button" onClick={() => guardedNavigate(() => navigate(-1))}
             style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 10, padding: '8px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', fontWeight: 600, color: '#64748b', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
           >
             <ArrowLeft size={16} /> Kembali
@@ -156,21 +174,11 @@ export default function InputKinerjaGantiMeterPage() {
               
               <div className="flex items-center justify-between p-3 bg-white border border-[#f3f4f6] rounded-xl gap-4 hover:bg-slate-50 transition">
                 <div className="flex items-center gap-3 flex-1">
-                  <label className="font-semibold text-slate-700 text-[13px]">Jumlah APP (Unit)</label>
+                  <label className="font-semibold text-slate-700 text-[13px]">Jumlah Pergantian Meter (Unit)</label>
                 </div>
                 <div className="flex flex-col items-end">
-                  <input readOnly={isDuplicate} type="number" step="1" {...register('jumlah_app', { required: 'Wajib diisi', min: { value: 0, message: 'Tidak boleh negatif' } })} className={fieldInputClass} placeholder="0" />
-                  {errors.jumlah_app && <span className="text-xs text-red-500 mt-1 font-semibold">{errors.jumlah_app.message}</span>}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-3 bg-white border border-[#f3f4f6] rounded-xl gap-4 hover:bg-slate-50 transition">
-                <div className="flex items-center gap-3 flex-1">
-                  <label className="font-semibold text-slate-700 text-[13px]">Jumlah Yantek (Unit)</label>
-                </div>
-                <div className="flex flex-col items-end">
-                  <input readOnly={isDuplicate} type="number" step="1" {...register('jumlah_yantek', { required: 'Wajib diisi', min: { value: 0, message: 'Tidak boleh negatif' } })} className={fieldInputClass} placeholder="0" />
-                  {errors.jumlah_yantek && <span className="text-xs text-red-500 mt-1 font-semibold">{errors.jumlah_yantek.message}</span>}
+                  <input readOnly={isDuplicate} type="number" step="1" {...register('jumlah_unit', { required: 'Wajib diisi', min: { value: 0, message: 'Tidak boleh negatif' } })} className={fieldInputClass} placeholder="0" />
+                  {errors.jumlah_unit && <span className="text-xs text-red-500 mt-1 font-semibold">{errors.jumlah_unit.message}</span>}
                 </div>
               </div>
 

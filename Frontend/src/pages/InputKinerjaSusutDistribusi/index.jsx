@@ -1,9 +1,11 @@
+import notify from '@/utils/notify';
 import React, { useState, useEffect } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import api from '@/services/api';
 import { MONTHS } from '@/utils/constants';
 import { CheckCircle, AlertCircle, Save, ArrowLeft, Activity, AlertTriangle, Zap } from 'lucide-react';
+import useDirtyFormGuard from '@/hooks/useDirtyFormGuard';
 
 export default function InputKinerjaSusutDistribusiPage() {
   const navigate = useNavigate();
@@ -11,7 +13,7 @@ export default function InputKinerjaSusutDistribusiPage() {
   const [success, setSuccess] = useState(false);
   const [existingData, setExistingData] = useState([]);
 
-  const { register, handleSubmit, formState: { errors }, control } = useForm({
+  const { register, handleSubmit, formState: { errors, isDirty: formIsDirty }, reset, control } = useForm({
     defaultValues: {
       tahun: new Date().getFullYear(),
       periode_id: '',
@@ -20,6 +22,7 @@ export default function InputKinerjaSusutDistribusiPage() {
       keterangan: ''
     }
   });
+  const { setIsDirty, guardedNavigate } = useDirtyFormGuard();
 
   const selectedMonth = useWatch({ control, name: 'periode_id' });
   const selectedYear = useWatch({ control, name: 'tahun' });
@@ -37,9 +40,35 @@ export default function InputKinerjaSusutDistribusiPage() {
   const currentMonthData = existingData.find(d => parseInt(d.bulan) === parseInt(selectedMonth));
   const isDuplicate = !!(selectedMonth && currentMonthData && currentMonthData.id != null);
 
+  useEffect(() => {
+    if (selectedMonth && currentMonthData) {
+      if (currentMonthData.id != null) {
+        reset({
+          tahun: selectedYear,
+          periode_id: selectedMonth,
+          kwh_siap_jual: currentMonthData.kwh_siap_jual ?? '',
+          kwh_jual: currentMonthData.kwh_jual ?? '',
+          keterangan: currentMonthData.keterangan ?? ''
+        });
+      } else {
+        reset({
+          tahun: selectedYear,
+          periode_id: selectedMonth,
+          kwh_siap_jual: '',
+          kwh_jual: '',
+          keterangan: ''
+        });
+      }
+    }
+  }, [selectedMonth, selectedYear, existingData]);
+
+  useEffect(() => {
+    setIsDirty(formIsDirty);
+  }, [formIsDirty]);
+
   const onSubmit = async (data) => {
     if (isDuplicate) {
-      alert('Data sudah ada! Tidak bisa menginput dari halaman Tambah.');
+      notify.warning('Data sudah ada! Tidak bisa menginput dari halaman Tambah.');
       return;
     }
     setLoading(true);
@@ -53,10 +82,11 @@ export default function InputKinerjaSusutDistribusiPage() {
         keterangan: data.keterangan
       });
       setSuccess(true);
+      setIsDirty(false);
       window.scrollTo({ top: 0, behavior: 'smooth' });
       setTimeout(() => navigate('/susut'), 2000);
     } catch (err) {
-      alert('Error: ' + err.message);
+      notify.error(err.response?.data?.message || err.message);
     } finally {
       setLoading(false);
     }
@@ -84,7 +114,7 @@ export default function InputKinerjaSusutDistribusiPage() {
 
         {/* HEADER */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button type="button" onClick={() => navigate(-1)}
+          <button type="button" onClick={() => guardedNavigate(() => navigate(-1))}
             style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 10, padding: '8px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', fontWeight: 600, color: '#64748b', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
           >
             <ArrowLeft size={16} /> Kembali
@@ -165,8 +195,9 @@ export default function InputKinerjaSusutDistribusiPage() {
             <div className="p-5 flex flex-col gap-3">
               
               <div className="flex items-center justify-between p-3 bg-white border border-[#f3f4f6] rounded-xl gap-4 hover:bg-slate-50 transition">
-                <div className="flex items-center gap-3 flex-1">
+                <div className="flex flex-col flex-1">
                   <label className="font-semibold text-slate-700 text-[13px]">KWh Siap Jual</label>
+                  <span className="text-[11px] text-slate-400">(Siap Salur setelah dikurangi PSSD)</span>
                 </div>
                 <div className="flex flex-col items-end">
                   <input readOnly={isDuplicate} type="number" step="any" {...register('kwh_siap_jual', { required: 'Wajib diisi', min: { value: 0.0001, message: '> 0' } })} className={fieldInputClass} placeholder="0" />
@@ -174,11 +205,19 @@ export default function InputKinerjaSusutDistribusiPage() {
                 </div>
               </div>
               <div className="flex items-center justify-between p-3 bg-white border border-[#f3f4f6] rounded-xl gap-4 hover:bg-slate-50 transition">
-                <div className="flex items-center gap-3 flex-1">
+                <div className="flex flex-col flex-1">
                   <label className="font-semibold text-slate-700 text-[13px]">KWh Jual</label>
+                  <span className="text-[11px] text-slate-400">(Total gabungan 309TR + 309TM + EMIN)</span>
                 </div>
                 <div className="flex flex-col items-end">
-                  <input readOnly={isDuplicate} type="number" step="any" {...register('kwh_jual', { required: 'Wajib diisi', min: { value: 0, message: 'Tidak boleh negatif' } })} className={fieldInputClass} placeholder="0" />
+                  <input readOnly={isDuplicate} type="number" step="any" {...register('kwh_jual', { 
+                    required: 'Wajib diisi', 
+                    min: { value: 0, message: 'Tidak boleh negatif' },
+                    validate: (value) => {
+                      const siapJual = parseFloat(kwh_siap_jual) || 0;
+                      return parseFloat(value) <= siapJual || 'KWh Jual tidak boleh melebihi KWh Siap Jual';
+                    }
+                  })} className={fieldInputClass} placeholder="0" />
                   {errors.kwh_jual && <span className="text-xs text-red-500 mt-1 font-semibold">{errors.kwh_jual.message}</span>}
                 </div>
               </div>

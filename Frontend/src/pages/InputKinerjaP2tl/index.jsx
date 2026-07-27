@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '@/services/api';
 import { MONTHS } from '@/utils/constants';
 import { CheckCircle, AlertCircle, Save, ArrowLeft, Activity, AlertTriangle, Users, Zap } from 'lucide-react';
+import useDirtyFormGuard from '@/hooks/useDirtyFormGuard';
 
 export default function InputKinerjaP2tlPage() {
   const navigate = useNavigate();
@@ -12,7 +13,7 @@ export default function InputKinerjaP2tlPage() {
   const [success, setSuccess] = useState(false);
   const [existingData, setExistingData] = useState([]);
 
-  const { register, handleSubmit, formState: { errors }, control } = useForm({
+  const { register, handleSubmit, formState: { errors, isDirty: formIsDirty }, reset, control } = useForm({
     defaultValues: {
       tahun: new Date().getFullYear(),
       periode_id: '',
@@ -28,6 +29,7 @@ export default function InputKinerjaP2tlPage() {
       keterangan: ''
     }
   });
+  const { setIsDirty, guardedNavigate } = useDirtyFormGuard();
 
   const selectedMonth = useWatch({ control, name: 'periode_id' });
   const selectedYear = useWatch({ control, name: 'tahun' });
@@ -47,6 +49,46 @@ export default function InputKinerjaP2tlPage() {
 
   const currentMonthData = existingData.find(d => parseInt(d.bulan) === parseInt(selectedMonth));
   const isDuplicate = !!(selectedMonth && currentMonthData && currentMonthData.id != null);
+
+  useEffect(() => {
+    if (selectedMonth && currentMonthData) {
+      if (currentMonthData.id != null) {
+        reset({
+          tahun: selectedYear,
+          periode_id: selectedMonth,
+          jml_plg_p1: currentMonthData.jml_plg_p1 ?? '',
+          jml_plg_p2: currentMonthData.jml_plg_p2 ?? '',
+          kwh_p2: currentMonthData.kwh_p2 ?? '',
+          jml_plg_p3: currentMonthData.jml_plg_p3 ?? '',
+          kwh_p3: currentMonthData.kwh_p3 ?? '',
+          jml_plg_p4: currentMonthData.jml_plg_p4 ?? '',
+          kwh_p4: currentMonthData.kwh_p4 ?? '',
+          jml_plg_k2: currentMonthData.jml_plg_k2 ?? '',
+          kwh_k2: currentMonthData.kwh_k2 ?? '',
+          keterangan: currentMonthData.keterangan ?? ''
+        });
+      } else {
+        reset({
+          tahun: selectedYear,
+          periode_id: selectedMonth,
+          jml_plg_p1: '',
+          jml_plg_p2: '',
+          kwh_p2: '',
+          jml_plg_p3: '',
+          kwh_p3: '',
+          jml_plg_p4: '',
+          kwh_p4: '',
+          jml_plg_k2: '',
+          kwh_k2: '',
+          keterangan: ''
+        });
+      }
+    }
+  }, [selectedMonth, selectedYear, existingData]);
+
+  useEffect(() => {
+    setIsDirty(formIsDirty);
+  }, [formIsDirty]);
 
   const onSubmit = async (data) => {
     if (isDuplicate) {
@@ -71,6 +113,7 @@ export default function InputKinerjaP2tlPage() {
         keterangan: data.keterangan
       });
       setSuccess(true);
+      setIsDirty(false);
       window.scrollTo({ top: 0, behavior: 'smooth' });
       setTimeout(() => navigate('/p2tl'), 2000);
     } catch (err) {
@@ -94,7 +137,7 @@ export default function InputKinerjaP2tlPage() {
 
         {/* HEADER */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button type="button" onClick={() => navigate(-1)}
+          <button type="button" onClick={() => guardedNavigate(() => navigate(-1))}
             style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 10, padding: '8px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', fontWeight: 600, color: '#64748b', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
           >
             <ArrowLeft size={16} /> Kembali
