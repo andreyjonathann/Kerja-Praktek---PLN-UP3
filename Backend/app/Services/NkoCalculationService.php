@@ -35,8 +35,8 @@ class NkoCalculationService
             }
         }
 
-        // Cap achievement at a reasonable number (e.g. 100 or 120 based on PLN rules, assuming 100 for now)
-        $pencapaian = min($pencapaian, 100);
+        // Cap achievement at 110%, verified against KM KBJ Excel source (sheet REKAP, formula kolom Pencapaian)
+        $pencapaian = min($pencapaian, 110);
 
         return ($pencapaian * $bobot) / 100;
     }

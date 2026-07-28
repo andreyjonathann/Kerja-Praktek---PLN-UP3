@@ -98,7 +98,8 @@ class NkoController extends Controller
             }
             $totalNko = ($hasAnyRealisasi && $sumBobot > 0) ? (($sumNilai / $sumBobot) * 100) : null;
             if ($totalNko !== null) {
-                $totalNko = max(0, min($totalNko, 120));
+                // Cap 110%, verified against KM KBJ Excel source (sheet REKAP)
+                $totalNko = max(0, min($totalNko, 110));
             }
  
             $months = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
@@ -255,7 +256,7 @@ class NkoController extends Controller
                         $pencapaian = $realisasi == 0 ? 100 : 0;
                     }
                 }
-                $pencapaian = max(0, min($pencapaian, 120));
+                $pencapaian = max(0, min($pencapaian, 110));
                 $nilai = ($pencapaian * $bobot) / 100;
  
                 if ($pencapaian >= 100) {
@@ -304,7 +305,7 @@ class NkoController extends Controller
             if ($hasAnyCalculatedChild) {
                 $nilai = $sumNilai;
                 $pencapaian = ($nilai / $bobot) * 100;
-                $pencapaian = max(0, min($pencapaian, 120));
+                $pencapaian = max(0, min($pencapaian, 110));
  
                 if ($pencapaian >= 100) {
                     $keterangan = 'BAIK';
