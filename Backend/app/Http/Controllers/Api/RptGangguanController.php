@@ -161,7 +161,7 @@ class RptGangguanController extends Controller
         $persenPencapaian = null;
         $status = '-';
         if ($targetMenit !== null && $targetMenit > 0) {
-            $persenPencapaian = min((2 - ($rptRataYtd / $targetMenit)) * 100, 110);
+            $persenPencapaian = max(0, min((2 - ($rptRataYtd / $targetMenit)) * 100, 110));
             $status = $rptRataYtd <= $targetMenit ? 'AMAN' : 'MELEWATI TARGET';
         } elseif ($targetMenit !== null && $targetMenit == 0) {
             $persenPencapaian = 0;
@@ -182,7 +182,7 @@ class RptGangguanController extends Controller
 
                 $persenBulanIni = null;
                 if ($tgtMonth !== null && $tgtMonth > 0) {
-                    $persenBulanIni = round((2 - ($rptMonth / $tgtMonth)) * 100, 2);
+                    $persenBulanIni = round(max(0, min((2 - ($rptMonth / $tgtMonth)) * 100, 110)), 2);
                 } elseif ($tgtMonth !== null && $tgtMonth == 0) {
                     $persenBulanIni = 0;
                 }
