@@ -89,7 +89,7 @@ class RatingNegatifController extends Controller
         }
         $nkoScore = null;
         if ($latestCumulative && $latestCumulative['cumulativeTgt'] !== null && $latestCumulative['cumulativeTgt'] > 0) {
-            $nkoScore = min((2 - ($latestCumulative['cumulativeReal'] / $latestCumulative['cumulativeTgt'])) * 100, 110);
+            $nkoScore = max(0, min((2 - ($latestCumulative['cumulativeReal'] / $latestCumulative['cumulativeTgt'])) * 100, 110));
             $nkoScore = round($nkoScore, 2);
         }
 
@@ -237,7 +237,7 @@ class RatingNegatifController extends Controller
 
         $nkoScore = null;
         if ($ytdTarget !== null && $ytdTarget > 0 && $ytd !== null) {
-            $nkoScore = min((2 - ($ytd / $ytdTarget)) * 100, 110);
+            $nkoScore = max(0, min((2 - ($ytd / $ytdTarget)) * 100, 110));
             $nkoScore = round($nkoScore, 2);
         }
 
