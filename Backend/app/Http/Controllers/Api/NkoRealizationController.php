@@ -89,16 +89,16 @@ class NkoRealizationController extends Controller
             } else if ($targetBulanan == 0) {
                 $polaritasUpper = strtoupper($parameter->polaritas);
                 if (str_starts_with($polaritasUpper, 'MAX')) {
-                    $pencapaian = $realisasi > 0 ? 120 : 0;
+                    $pencapaian = $realisasi > 0 ? 110 : 0;
                 } elseif (str_starts_with($polaritasUpper, 'MIN')) {
                     $pencapaian = $realisasi == 0 ? 100 : 0;
                 } elseif (str_starts_with($polaritasUpper, 'RANGE')) {
                     $pencapaian = $realisasi == 0 ? 100 : 0;
                 } else {
-                    $pencapaian = $realisasi > 0 ? 120 : 0;
+                    $pencapaian = $realisasi > 0 ? 110 : 0;
                 }
             }
-            $pencapaian = max(0, min($pencapaian, 120)); // Cap between 0% and 120%
+            $pencapaian = max(0, min($pencapaian, 110)); // Cap 110% - konsisten dgn KM KBJ 2026
 
             // 2. Calculate score (nilai)
             $nilai = ($pencapaian * floatval($parameter->bobot)) / 100;
