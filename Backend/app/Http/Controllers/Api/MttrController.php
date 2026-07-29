@@ -289,7 +289,7 @@ class MttrController extends Controller
                 }
 
                 if ($realisasi_bulan_ini !== null && $target_persen !== null) {
-                    $persen_pencapaian = $target_persen > 0 ? min(($realisasi_bulan_ini / $target_persen) * 100, 110) : 0;
+                    $persen_pencapaian = $target_persen > 0 ? max(0, min(($realisasi_bulan_ini / $target_persen) * 100, 110)) : 0;
                     $status = $realisasi_bulan_ini >= $target_persen ? 'TERCAPAI' : 'BELUM TERCAPAI';
                 }
             }
@@ -323,7 +323,7 @@ class MttrController extends Controller
                 
                 $pencapaian = null;
                 if ($target_persen_b !== null) {
-                    $pencapaian = $target_persen_b > 0 ? min(($avg_realisasi / $target_persen_b) * 100, 110) : 0;
+                    $pencapaian = $target_persen_b > 0 ? max(0, min(($avg_realisasi / $target_persen_b) * 100, 110)) : 0;
                 }
 
                 $detail_aset = [];
@@ -383,7 +383,7 @@ class MttrController extends Controller
         $pencapaian = null;
         $status = '-';
         if ($realisasi_ytd_avg !== null && $avg_target !== null) {
-            $pencapaian = $avg_target > 0 ? min(($realisasi_ytd_avg / $avg_target) * 100, 110) : 0;
+            $pencapaian = $avg_target > 0 ? max(0, min(($realisasi_ytd_avg / $avg_target) * 100, 110)) : 0;
             $status = $realisasi_ytd_avg >= $avg_target ? 'TERCAPAI' : 'BELUM TERCAPAI';
         }
 
