@@ -258,7 +258,7 @@ class SrdagController extends Controller
 
         // % Pencapaian — MAXIMIZE, di-cap maksimal 110
         if ($targetRate > 0) {
-            $summary['persen_pencapaian'] = min(($summary['sr_rata_ytd'] / $targetRate) * 100, 110);
+            $summary['persen_pencapaian'] = max(0, min(($summary['sr_rata_ytd'] / $targetRate) * 100, 110));
             $summary['status'] = $summary['sr_rata_ytd'] >= $targetRate ? 'TERCAPAI' : 'BELUM_TERCAPAI';
         }
 
@@ -281,7 +281,7 @@ class SrdagController extends Controller
                     'jumlah_dispatch_berhasil' => $monthData->sum('jumlah_dispatch_berhasil'),
                     'jumlah_total_gangguan' => $monthData->sum('jumlah_total_gangguan'),
                     'wo_marking_padam_meluas' => $monthData->sum('wo_marking_padam_meluas'),
-                    'persen_pencapaian' => $monthTargetRate > 0 ? min(($sr / $monthTargetRate) * 100, 110) : 0
+                    'persen_pencapaian' => $monthTargetRate > 0 ? max(0, min(($sr / $monthTargetRate) * 100, 110)) : 0
                 ];
             } else {
                 $trend_bulanan[] = [
