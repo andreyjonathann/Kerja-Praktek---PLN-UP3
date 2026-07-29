@@ -213,7 +213,7 @@ class MvodController extends Controller
         $calcPersen = function($rata_rct, $sla) {
             if ($sla <= 0) return 0;
             $raw = 2 - ($rata_rct / $sla);
-            return min($raw, 1.1); // cap 1.1
+            return max(0, min($raw, 1.1)); // floor 0, cap 1.1
         };
 
         // We use the latest available month from realisasi, or fallback to current month/1
