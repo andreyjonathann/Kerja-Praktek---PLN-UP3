@@ -19,24 +19,20 @@ class NkoCalculationService
             return 0; // Avoid division by zero
         }
 
-        // Base achievement percentage
+        $polaritasUpper = strtoupper($polaritas);
         $pencapaian = 0;
 
-        if (strtoupper($polaritas) === 'MAXIMIZE') {
+        if ($polaritasUpper === 'MAXIMIZE') {
             $pencapaian = ($realisasi / $target) * 100;
-        } else if (strtoupper($polaritas) === 'MINIMIZE') {
-            // Standard minimize formula: (Target / Realisasi) * 100
-            // Or a capped formula depending on specific PLN rules. Using basic proportional.
-            if ($realisasi == 0) {
-                // If realization is 0 for a minimize metric, they hit perfectly (0 duration)
-                $pencapaian = 100; // or maybe more if cap > 100
-            } else {
-                $pencapaian = ($target / $realisasi) * 100;
-            }
+        } else if ($polaritasUpper === 'MINIMIZE') {
+            // Formula resmi KM KBJ 2026 (sheet REKAP): 2 - (realisasi/target)
+            // Realisasi 0 (kondisi terbaik) otomatis menghasilkan pencapaian 200%,
+            // lalu di-cap ke 110% oleh baris cap di bawah — tidak perlu override khusus.
+            $pencapaian = (2 - ($realisasi / $target)) * 100;
         }
 
-        // Cap achievement at 110%, verified against KM KBJ Excel source (sheet REKAP, formula kolom Pencapaian)
-        $pencapaian = min($pencapaian, 110);
+        // Cap 110% dan floor 0%, verified against KM KBJ Excel source (sheet REKAP)
+        $pencapaian = max(0, min($pencapaian, 110));
 
         return ($pencapaian * $bobot) / 100;
     }
