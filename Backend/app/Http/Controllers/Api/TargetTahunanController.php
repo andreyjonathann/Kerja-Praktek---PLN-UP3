@@ -36,7 +36,27 @@ class TargetTahunanController extends Controller
         $query = TargetTahunan::query();
         if ($request->tahun) $query->where('tahun', $request->tahun);
 
-        if ($request->bidang) $query->where('bidang', $request->bidang);
+        if ($user->role !== 'admin' && $user->role !== 'viewer') {
+            // PIC role: force filter to own bidang only
+            $ownBidang = $this->roleToBidang[$user->role] ?? null;
+            if (!$ownBidang) {
+                return response()->json([], 200);
+            }
+
+            if ($request->bidang) {
+                // PIC requested a specific bidang — check it matches their own
+                if (strtolower($request->bidang) !== strtolower($ownBidang)) {
+                    return response()->json([
+                        'message' => 'Anda tidak berwenang membaca data bidang ini.'
+                    ], 403);
+                }
+            }
+            // Force filter to own bidang regardless
+            $query->whereRaw('LOWER(bidang) = ?', [strtolower($ownBidang)]);
+        } else {
+            // Admin/viewer: apply bidang filter only if explicitly requested
+            if ($request->bidang) $query->where('bidang', $request->bidang);
+        }
 
         return response()->json($query->get());
     }
