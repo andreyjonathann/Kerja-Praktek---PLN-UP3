@@ -244,12 +244,19 @@ class NkoController extends Controller
                     } elseif (str_starts_with($polaritasUpper, 'MIN')) {
                         $pencapaian = (2 - ($realisasi / $targetVal)) * 100;
                     } elseif ($polaritasUpper === 'RANGE') {
-                        $pencapaian = (1 - abs($realisasi - $targetVal) / $targetVal) * 100;
+                        $realisasiPersen = $realisasi; // realisasi sudah dalam bentuk persen (basis 100)
+                        if ($realisasiPersen < 95) {
+                            $pencapaian = ($realisasiPersen / 95) * 100;
+                        } elseif ($realisasiPersen <= 105) {
+                            $pencapaian = (1 + (($realisasiPersen - 95) / 10) * 0.1) * 100;
+                        } else {
+                            $pencapaian = (1 - (($realisasiPersen - 105) / 90)) * 100;
+                        }
                     }
                 } else if ($targetVal == 0) {
                     $polaritasUpper = strtoupper($param->polaritas);
                     if (str_starts_with($polaritasUpper, 'MAX')) {
-                        $pencapaian = $realisasi > 0 ? 120 : 0;
+                        $pencapaian = $realisasi > 0 ? 110 : 0;
                     } elseif (str_starts_with($polaritasUpper, 'MIN')) {
                         $pencapaian = $realisasi == 0 ? 100 : 0;
                     } else {
