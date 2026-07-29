@@ -342,7 +342,7 @@ class GangguanSwitchingController extends Controller
         $persenVsTarget = null;
         $status = '-';
         if ($hasTarget) {
-            $persenVsTarget = $targetYtd > 0 ? min((2 - ($ytdGabungan / max(0.001, $targetYtd))) * 100, 110) : 0;
+            $persenVsTarget = $targetYtd > 0 ? max(0, min((2 - ($ytdGabungan / max(0.001, $targetYtd))) * 100, 110)) : 0;
             $status = $ytdGabungan <= $targetYtd ? 'AMAN' : 'MELEBIHI_TARGET';
         }
 
