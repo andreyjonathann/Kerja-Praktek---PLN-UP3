@@ -29,6 +29,19 @@ class NkoCalculationService
             // Realisasi 0 (kondisi terbaik) otomatis menghasilkan pencapaian 200%,
             // lalu di-cap ke 110% oleh baris cap di bawah — tidak perlu override khusus.
             $pencapaian = (2 - ($realisasi / $target)) * 100;
+        } else if ($polaritasUpper === 'RANGE') {
+            // Formula piecewise resmi KM KBJ 2026 (sheet REKAP, baris 51),
+            // sama dengan implementasi di NkoController.php dan
+            // NkoRealizationController.php. Realisasi diasumsikan sudah
+            // dalam bentuk persen (basis 100), sama seperti $target.
+            $realisasiPersen = $realisasi;
+            if ($realisasiPersen < 95) {
+                $pencapaian = ($realisasiPersen / 95) * 100;
+            } elseif ($realisasiPersen <= 105) {
+                $pencapaian = (1 + (($realisasiPersen - 95) / 10) * 0.1) * 100;
+            } else {
+                $pencapaian = (1 - (($realisasiPersen - 105) / 90)) * 100;
+            }
         }
 
         // Cap 110% dan floor 0%, verified against KM KBJ Excel source (sheet REKAP)

@@ -231,7 +231,7 @@ class DataJaringanController extends Controller
             if ($target === null || $target <= 0 || $realisasi === null) {
                 return null;
             }
-            return min((2 - ($realisasi / $target)) * 100, 110);
+            return max(0, min((2 - ($realisasi / $target)) * 100, 110));
         };
 
         $result['overview'] = [
