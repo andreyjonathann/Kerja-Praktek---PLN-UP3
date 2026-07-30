@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\GangguanSwitching;
 use App\Models\GangguanTrafo;
+use App\Services\TargetService;
 use App\Models\GangguanSwitchingTarget;
 
 class GangguanSwitchingController extends Controller
@@ -338,6 +339,9 @@ class GangguanSwitchingController extends Controller
             $targetYtd = ($targetSwitchingYtd ?: 0) + ($targetTrafoYtd ?: 0);
             if ($latestSw == 0 && $latestTr == 0) $targetYtd = null;
         }
+
+        $hasTarget = TargetService::isTargetLengkap('Jaringan', 'Gangguan Switching', $tahun)
+            && TargetService::isTargetLengkap('Jaringan', 'Gangguan Trafo', $tahun);
 
         $persenVsTarget = null;
         $status = '-';
