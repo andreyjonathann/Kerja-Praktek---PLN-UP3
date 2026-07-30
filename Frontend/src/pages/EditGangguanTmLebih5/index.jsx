@@ -5,6 +5,7 @@ import api from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { CheckCircle, AlertCircle, Save, Plus, Trash2, ArrowLeft, Activity, Info } from 'lucide-react';
 import Swal from 'sweetalert2';
+import useDirtyFormGuard from '@/hooks/useDirtyFormGuard';
 
 const MONTHS_FULL = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
@@ -20,7 +21,7 @@ export default function EditGangguanTmLebih5Page() {
   const initialYear = location.state?.initialYear || new Date().getFullYear();
   const initialMonth = location.state?.initialMonth || (new Date().getMonth() + 1);
 
-  const { register, handleSubmit, formState: { errors }, control, reset } = useForm({
+  const { register, handleSubmit, formState: { errors, isDirty: formIsDirty }, control, reset } = useForm({
       defaultValues: {
           tahun: initialYear,
           bulan: initialMonth,
@@ -29,6 +30,12 @@ export default function EditGangguanTmLebih5Page() {
   });
 
   const { fields, append, remove } = useFieldArray({ control, name: 'kejadian' });
+
+  const { isDirty, setIsDirty, guardedNavigate } = useDirtyFormGuard();
+
+  useEffect(() => {
+    setIsDirty(formIsDirty);
+  }, [formIsDirty]);
 
   const fetchData = useCallback(async () => {
     if (!initialYear || !initialMonth) return;
@@ -81,7 +88,7 @@ export default function EditGangguanTmLebih5Page() {
       await api.put(`/jaringan/gangguan-tm/lebih-5/${data.tahun}/${data.bulan}`, payload);
       setSuccess(true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
-      
+      setIsDirty(false);
       setTimeout(() => {
         navigate('/jaringan/gangguan-tm');
       }, 1500);
@@ -115,7 +122,7 @@ export default function EditGangguanTmLebih5Page() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <button
             type="button"
-            onClick={() => navigate(-1)}
+            onClick={() => guardedNavigate(() => navigate(-1))}
             style={{
               background: 'white', border: '1px solid #e2e8f0',
               borderRadius: 10, padding: '8px 12px', cursor: 'pointer',
