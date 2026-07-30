@@ -325,7 +325,7 @@ export default function RatingNegatifPage() {
         </div>
       </div>
       
-      <TargetWarning up3={filters.up3} year={filters.year} isVisible={!loading && targetValue === 0} />
+      <TargetWarning up3={filters.up3} year={filters.year} isVisible={!loading && data?.has_target === false} />
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -552,12 +552,7 @@ export default function RatingNegatifPage() {
           searchable={false}
         />
       </div>
-      {/* Target Warning */}
-      <TargetWarning 
-        target={data?.target_tahunan}
-        indicator="Rating Negatif PLN Mobile"
-        year={filters.year}
-      />
+
 
       <RatingNegatifDetailModal 
         open={detailModalOpen}
