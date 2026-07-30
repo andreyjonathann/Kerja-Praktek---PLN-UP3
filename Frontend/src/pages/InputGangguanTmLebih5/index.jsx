@@ -5,6 +5,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import api from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { CheckCircle, AlertCircle, Save, ChevronDown, Plus, Trash2, ArrowLeft, Activity, AlertTriangle } from 'lucide-react';
+import useDirtyFormGuard from '@/hooks/useDirtyFormGuard';
 import TargetWarning from '@/components/ui/TargetWarning';
 
 export default function InputGangguanTmLebih5Page() {
@@ -14,13 +15,19 @@ export default function InputGangguanTmLebih5Page() {
   const [success, setSuccess] = useState(false);
   const [existingData, setExistingData] = useState({ lebih: false });
 
-  const { register, handleSubmit, formState: { errors }, control, watch, reset } = useForm({
+  const { register, handleSubmit, formState: { errors, isDirty: formIsDirty }, control, watch, reset } = useForm({
       defaultValues: {
           tahun: '',
           bulan: '',
           kejadian: [{ jumlah: '', penyebab: '', penyulang: '' }]
       }
   });
+
+  const { isDirty, setIsDirty, guardedNavigate } = useDirtyFormGuard();
+
+  useEffect(() => {
+    setIsDirty(formIsDirty);
+  }, [formIsDirty]);
 
   const { fields, append, remove } = useFieldArray({ control, name: 'kejadian' });
 
@@ -62,7 +69,15 @@ export default function InputGangguanTmLebih5Page() {
   const isDuplicate = existingData.lebih;
 
   useEffect(() => {
-    if (!isDuplicate || !selectedYear || !selectedMonth) return;
+    if (!selectedYear || !selectedMonth) return;
+    if (!isDuplicate) {
+      reset({
+        tahun: selectedYear,
+        bulan: selectedMonth,
+        kejadian: [{ jumlah: '', penyebab: '', penyulang: '' }]
+      });
+      return;
+    }
     const fetchDetail = async () => {
       try {
         const res = await api.get('/jaringan/gangguan-tm/lebih-5/detail', { params: { tahun: selectedYear, bulan: selectedMonth } });
@@ -76,6 +91,12 @@ export default function InputGangguanTmLebih5Page() {
               penyebab: d.penyebab || '',
               penyulang: d.nama_penyulang || ''
             }))
+          });
+        } else {
+          reset({
+            tahun: selectedYear,
+            bulan: selectedMonth,
+            kejadian: [{ jumlah: '', penyebab: '', penyulang: '' }]
           });
         }
       } catch (err) {
@@ -106,6 +127,7 @@ export default function InputGangguanTmLebih5Page() {
       setSuccess(true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
       
+      setIsDirty(false);
       setTimeout(() => {
         navigate('/jaringan/gangguan-tm');
       }, 2000);
@@ -137,7 +159,7 @@ export default function InputGangguanTmLebih5Page() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <button
             type="button"
-            onClick={() => navigate(-1)}
+            onClick={() => guardedNavigate(() => navigate(-1))}
             style={{
               background: 'white', border: '1px solid #e2e8f0',
               borderRadius: 10, padding: '8px 12px', cursor: 'pointer',
