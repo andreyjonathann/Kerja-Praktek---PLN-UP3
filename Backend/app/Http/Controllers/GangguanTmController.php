@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use App\Models\KinerjaJaringan;
 use App\Models\Periode;
 use App\Models\TargetTahunan;
+use App\Services\TargetService;
 
 class GangguanTmController extends Controller
 {
@@ -599,6 +600,7 @@ class GangguanTmController extends Controller
                 'realisasi_ytd' => $sumReal,
                 'monthly' => $monthlyData,
                 'target_bulanan' => $targetBulanan,
+                'has_target' => TargetService::isTargetLengkap('Jaringan', $indikator, $year),
             ];
         }
 
