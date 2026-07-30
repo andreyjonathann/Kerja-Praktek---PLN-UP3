@@ -8,6 +8,7 @@ use App\Models\MvodTarget;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use App\Services\TargetService;
 
 class MvodController extends Controller
 {
@@ -244,7 +245,9 @@ class MvodController extends Controller
         $sla_jtm = $count_jtm > 0 ? $sla_jtm / $count_jtm : null;
         $sla_gd = $count_gd > 0 ? $sla_gd / $count_gd : null;
         
-        $hasTarget = ($sla_gi !== null || $sla_jtm !== null || $sla_gd !== null);
+        $hasTarget = TargetService::isTargetLengkap('Jaringan', 'MVOD - SLA Gardu Induk', $tahun)
+            && TargetService::isTargetLengkap('Jaringan', 'MVOD - SLA JTM', $tahun)
+            && TargetService::isTargetLengkap('Jaringan', 'MVOD - SLA Gardu Distribusi', $tahun);
 
         // 1. Calculate per Bulan for current year
         $per_bulan = [];
