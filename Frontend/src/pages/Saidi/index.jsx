@@ -107,6 +107,7 @@ export default function SaidiPage() {
   const [selectedRow, setSelectedRow] = useState(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [data, setData]    = useState([])
+  const [hasTarget, setHasTarget] = useState(true)
   const [loading, setLoading] = useState(true)
   const [error, setError]  = useState(null)
 
@@ -122,6 +123,7 @@ export default function SaidiPage() {
         cumulativeTgt: (d.target === null && d.realisasi === null) ? null : d.cumulativeTgt
       }));
       setData(cleanData);
+      setHasTarget(dbData.overview?.kpis?.saidi?.has_target ?? true);
     } catch (err) {
       console.error(err)
       if (!isBackground) {
@@ -211,7 +213,7 @@ export default function SaidiPage() {
       <TargetWarning
         up3={filters.up3}
         year={filters.year}
-        isVisible={!loading && data.some(d => d.target == null || d.target === 0 || d.target === '')}
+        isVisible={!loading && !hasTarget}
       />
 
       {/* KPI Cards */}
