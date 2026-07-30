@@ -6,12 +6,11 @@ export default function TargetWarning({ up3, year, isVisible, monthName }) {
 
   return (
     <div 
-      className="fixed top-24 right-8 p-4 rounded-lg shadow-lg border-l-4 z-50 max-w-md" 
+      className="w-full p-4 rounded-lg shadow-sm border-l-4" 
       style={{ 
         backgroundColor: 'rgba(239, 68, 68, 0.1)', // Light Red Background
         borderColor: '#EF4444', // Solid Red Border
-        backdropFilter: 'blur(8px)',
-        animation: 'slideInRight 0.3s ease-out forwards'
+        animation: 'fadeInDown 0.3s ease-out forwards'
       }}
     >
       <div className="flex items-start">
@@ -33,9 +32,9 @@ export default function TargetWarning({ up3, year, isVisible, monthName }) {
         </div>
       </div>
       <style>{`
-        @keyframes slideInRight {
-          from { opacity: 0; transform: translateX(20px); }
-          to { opacity: 1; transform: translateX(0); }
+        @keyframes fadeInDown {
+          from { opacity: 0; transform: translateY(-8px); }
+          to { opacity: 1; transform: translateY(0); }
         }
       `}</style>
     </div>
