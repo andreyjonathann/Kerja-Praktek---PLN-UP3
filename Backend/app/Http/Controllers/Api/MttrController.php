@@ -8,6 +8,7 @@ use App\Models\MttrTarget;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use App\Services\TargetService;
 
 class MttrController extends Controller
 {
@@ -249,7 +250,7 @@ class MttrController extends Controller
         $bulanMap = [1=>'jan',2=>'feb',3=>'mar',4=>'apr',5=>'mei',6=>'jun',
                      7=>'jul',8=>'agu',9=>'sep',10=>'okt',11=>'nov',12=>'des'];
         
-        $hasTargetMaster = $targetMaster !== null;
+        $hasTargetMaster = TargetService::isTargetLengkap('Jaringan', 'MTTR Siaga 1', $tahun);
 
         $penyulang = $targets->sum('jumlah_penyulang');
 
