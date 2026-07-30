@@ -7,6 +7,7 @@ import { useFilter } from '@/context/FilterContext'
 import { useAuth } from '@/context/AuthContext'
 import { Activity, ArrowLeft, Target, AlertTriangle, Save, Loader2, Info, Calendar, FileText, Trash2, CheckCircle } from 'lucide-react'
 import TargetWarning from '@/components/ui/TargetWarning'
+import useDirtyFormGuard from '@/hooks/useDirtyFormGuard'
 
 const MONTHS_FULL = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
@@ -42,6 +43,8 @@ export default function InputGangguanSwitchingPage({ isInline = false, inlineMon
     details: [],
     existingId: null
   })
+
+  const { isDirty, setIsDirty, guardedNavigate } = useDirtyFormGuard();
   
   const [notification, setNotification] = useState(null)
 
@@ -93,10 +96,12 @@ export default function InputGangguanSwitchingPage({ isInline = false, inlineMon
   const handleSwitchingChange = (e) => {
     const { name, value } = e.target;
     setSwitchingForm(prev => ({ ...prev, [name]: value }));
+    setIsDirty(true);
   };
 
   const addDetail = () => {
     setSwitchingForm(prev => ({ ...prev, details: [...prev.details, { merek: '', tahun_alat: '', nomor_seri: '' }] }));
+    setIsDirty(true);
   };
 
   const removeDetail = (index) => {
@@ -104,12 +109,14 @@ export default function InputGangguanSwitchingPage({ isInline = false, inlineMon
       ...prev,
       details: prev.details.filter((_, i) => i !== index)
     }));
+    setIsDirty(true);
   };
 
   const handleDetailChange = (index, field, value) => {
     const newDetails = [...switchingForm.details];
     newDetails[index][field] = value;
     setSwitchingForm(prev => ({ ...prev, details: newDetails }));
+    setIsDirty(true);
   };
 
   const submitSwitching = async (e) => {
@@ -144,6 +151,7 @@ export default function InputGangguanSwitchingPage({ isInline = false, inlineMon
           timer: 1500,
           showConfirmButton: false
         })
+        setIsDirty(false);
         setTimeout(() => {
           if (isInline && onSuccess) onSuccess();
           else navigate('/jaringan/gangguan-switching');
@@ -212,8 +220,10 @@ export default function InputGangguanSwitchingPage({ isInline = false, inlineMon
           <button
             type="button"
             onClick={() => {
-              if (isInline && onCancel) onCancel();
-              else navigate(-1);
+              guardedNavigate(() => {
+                if (isInline && onCancel) onCancel();
+                else navigate(-1);
+              });
             }}
             title="Kembali"
             style={{

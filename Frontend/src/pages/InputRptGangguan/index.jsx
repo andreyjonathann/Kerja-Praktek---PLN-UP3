@@ -6,6 +6,7 @@ import api from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { MONTHS } from '@/utils/constants';
 import { CheckCircle, AlertCircle, Save, ArrowLeft, Activity, Clock, Info } from 'lucide-react';
+import useDirtyFormGuard from '@/hooks/useDirtyFormGuard';
 
 export default function InputRptGangguanPage() {
   const navigate = useNavigate();
@@ -18,9 +19,15 @@ export default function InputRptGangguanPage() {
   const [existingData, setExistingData] = useState([]);
   const [isUpdateMode, setIsUpdateMode] = useState(false);
 
-  const { register, handleSubmit, watch, formState: { errors }, reset, setValue } = useForm({
+  const { register, handleSubmit, watch, formState: { errors, isDirty: formIsDirty }, reset, setValue } = useForm({
     defaultValues: { tahun: '', bulan: '', rata_rata_rpt: '', jumlah_gangguan: '' }
   });
+
+  const { isDirty, setIsDirty, guardedNavigate } = useDirtyFormGuard();
+
+  useEffect(() => {
+    setIsDirty(formIsDirty);
+  }, [formIsDirty]);
 
   const selectedYear = watch('tahun');
   const selectedMonth = watch('bulan');
@@ -82,6 +89,7 @@ export default function InputRptGangguanPage() {
         jumlah_gangguan: parseInt(data.jumlah_gangguan)
       });
       setSuccess(true);
+      setIsDirty(false);
       reset({ tahun: data.tahun, bulan: '', rata_rata_rpt: '', jumlah_gangguan: '' });
       setTimeout(() => {
         setSuccess(false);
@@ -116,7 +124,7 @@ export default function InputRptGangguanPage() {
 
         {/* HEADER */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button type="button" onClick={() => navigate('/jaringan/rpt-gangguan')}
+          <button type="button" onClick={() => guardedNavigate(() => navigate('/jaringan/rpt-gangguan'))}
             style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 10, padding: '8px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', fontWeight: 600, color: '#64748b', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
           >
             <ArrowLeft size={16} /> Kembali

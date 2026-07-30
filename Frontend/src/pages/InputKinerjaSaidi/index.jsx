@@ -6,6 +6,7 @@ import api from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { MONTHS } from '@/utils/constants';
 import { CheckCircle, AlertCircle, Save, ArrowLeft, Activity, AlertTriangle, Zap, RadioTower, Factory } from 'lucide-react';
+import useDirtyFormGuard from '@/hooks/useDirtyFormGuard';
 
 export default function InputKinerjaSaidiPage() {
   const navigate = useNavigate();
@@ -14,7 +15,7 @@ export default function InputKinerjaSaidiPage() {
   const [success, setSuccess] = useState(false);
   const [dashboardData, setDashboardData] = useState(null);
 
-  const { register, handleSubmit, formState: { errors }, control, setValue } = useForm({
+  const { register, handleSubmit, formState: { errors, isDirty: formIsDirty }, control, setValue } = useForm({
     defaultValues: {
       tahun: '', periode_id: '',
       saidi_distribusi_padam_tidak_terencana: '',
@@ -24,6 +25,12 @@ export default function InputKinerjaSaidiPage() {
       saidi_pembangkit: ''
     }
   });
+
+  const { isDirty, setIsDirty, guardedNavigate } = useDirtyFormGuard();
+
+  useEffect(() => {
+    setIsDirty(formIsDirty);
+  }, [formIsDirty]);
 
   const selectedMonth = useWatch({ control, name: 'periode_id' });
   const selectedYear = useWatch({ control, name: 'tahun' });
@@ -47,6 +54,12 @@ export default function InputKinerjaSaidiPage() {
       setValue('saidi_distribusi_bencana_alam', currentMonthData.distribusi_bencana_alam ?? '');
       setValue('saidi_transmisi', currentMonthData.transmisi ?? '');
       setValue('saidi_pembangkit', currentMonthData.pembangkit ?? '');
+    } else {
+      setValue('saidi_distribusi_padam_tidak_terencana', '');
+      setValue('saidi_distribusi_padam_terencana', '');
+      setValue('saidi_distribusi_bencana_alam', '');
+      setValue('saidi_transmisi', '');
+      setValue('saidi_pembangkit', '');
     }
   }, [isDuplicate, currentMonthData, setValue]);
 
@@ -60,6 +73,7 @@ export default function InputKinerjaSaidiPage() {
     try {
       await api.post('/kinerja/jaringan', data);
       setSuccess(true);
+      setIsDirty(false);
       window.scrollTo({ top: 0, behavior: 'smooth' });
       setTimeout(() => navigate('/saidi'), 2000);
     } catch (err) {
@@ -83,7 +97,7 @@ export default function InputKinerjaSaidiPage() {
 
         {/* HEADER */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button type="button" onClick={() => navigate(-1)}
+          <button type="button" onClick={() => guardedNavigate(() => navigate(-1))}
             style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 10, padding: '8px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', fontWeight: 600, color: '#64748b', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
           >
             <ArrowLeft size={16} /> Kembali
