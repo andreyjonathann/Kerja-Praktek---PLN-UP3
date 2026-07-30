@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\SrdagRealisasi;
 use App\Models\SrdagTarget;
 use Illuminate\Support\Facades\DB;
+use App\Services\TargetService;
 
 class SrdagController extends Controller
 {
@@ -237,7 +238,7 @@ class SrdagController extends Controller
             'target_rate' => $targetRate,
             'persen_pencapaian' => 0,
             'status' => 'BELUM_TERCAPAI',
-            'has_target' => $targetRate > 0,
+            'has_target' => TargetService::isTargetLengkap('Jaringan', 'SRDAG', $tahun),
             'total_gangguan_ytd' => 0
         ];
 
