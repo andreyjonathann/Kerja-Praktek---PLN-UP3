@@ -7,6 +7,7 @@ import {
   Clock, Zap, RadioTower, Factory, ChevronDown, ChevronRight,
   Save, ArrowLeft, CheckCircle, AlertCircle, Loader2
 } from 'lucide-react';
+import useDirtyFormGuard from '@/hooks/useDirtyFormGuard';
 
 
 // ─── Konfigurasi SAIDI / SAIFI ─────────────────────────────────────────────────
@@ -89,7 +90,13 @@ export default function EditKinerjaPage() {
   const [statusMsg,   setStatusMsg]   = useState('');
   const [isDistribusiOpen, setIsDistribusiOpen] = useState(true);
 
-  const { register, handleSubmit, reset, control, formState: { errors } } = useForm();
+  const { register, handleSubmit, reset, control, formState: { errors, isDirty: formIsDirty } } = useForm();
+
+  const { isDirty, setIsDirty, guardedNavigate } = useDirtyFormGuard();
+
+  useEffect(() => {
+    setIsDirty(formIsDirty);
+  }, [formIsDirty]);
 
   // Semua field names dengan prefix (e.g. saidi_distribusi_padam_tidak_terencana)
   const allFieldNames = cfg
@@ -136,6 +143,7 @@ export default function EditKinerjaPage() {
       await api.post('/kinerja/jaringan', data);
       setStatus('success');
       setStatusMsg('Data berhasil disimpan!');
+      setIsDirty(false);
       navigate(`/${type}`);
     } catch (err) {
       setStatus('error');
@@ -163,7 +171,7 @@ export default function EditKinerjaPage() {
       {/* ── Header ───────────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => guardedNavigate(() => navigate(-1))}
           title="Kembali"
           style={{
             width: 36, height: 36, borderRadius: 10,
