@@ -138,10 +138,11 @@ export default function GangguanTmPage() {
 
   // Helper for Summary Cards
   const getSummary = (tipe) => {
-    if (!dataRekap) return { ytd: 0, target: null, sisa: null, persen: null };
+    if (!dataRekap) return { ytd: 0, target: null, sisa: null, persen: null, has_target: false };
     
     let ytd = 0;
     let target = null;
+    let has_target = true;
 
     if (tipe === 'semua') {
       ['lebih_5_mnt', 'kurang_5_mnt'].forEach(t => {
@@ -150,19 +151,25 @@ export default function GangguanTmPage() {
           if (dataRekap[t].target_ytd !== null && dataRekap[t].target_ytd !== undefined) {
             target = (target || 0) + Number(dataRekap[t].target_ytd);
           }
+          if (!dataRekap[t].has_target) has_target = false;
+        } else {
+          has_target = false;
         }
       });
     } else {
       if (dataRekap[tipe]) {
         ytd = dataRekap[tipe].realisasi_ytd || 0;
         target = dataRekap[tipe].target_ytd;
+        has_target = !!dataRekap[tipe].has_target;
+      } else {
+        has_target = false;
       }
     }
 
     let sisa = target !== null ? target - ytd : null;
-    let persen = (target !== null && target > 0) ? (target / Math.max(0.001, ytd)) * 100 : null;
+    let persen = (target !== null && target > 0) ? Math.max(0, Math.min((2 - (ytd / target)) * 100, 110)) : null;
 
-    return { ytd, target, sisa, persen };
+    return { ytd, target, sisa, persen, has_target };
   }
 
   const exportToExcel = () => {
@@ -505,7 +512,7 @@ export default function GangguanTmPage() {
         ))}
       </div>
 
-      <TargetWarning up3={filters.up3} year={filters.year} isVisible={summary.target == null} />
+      <TargetWarning up3={filters.up3} year={filters.year} isVisible={!summary.has_target} />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
