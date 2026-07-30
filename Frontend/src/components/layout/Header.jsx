@@ -4,7 +4,7 @@ import { Moon, Sun, RefreshCw, Menu, Bell, User, ChevronDown, LogOut, Shield } f
 import { useTheme } from '@/context/ThemeContext'
 import { useAuth, ROLES } from '@/context/AuthContext'
 import { useFilter } from '@/context/FilterContext'
-import { MONTHS, YEARS } from '@/utils/constants'
+import { MONTHS } from '@/utils/constants'
 import { NAV_ITEMS } from '@/utils/constants'
 import api from '@/services/api'
 import { formatDistanceToNow } from 'date-fns'
@@ -101,10 +101,9 @@ export default function Header({ onMenuToggle, onRefresh, refreshing }) {
       {/* Center — Filters (Hidden for NKO and Trend NKO pages as they have local selectors) */}
       {!(location.pathname === '/nko' || location.pathname === '/trend-nko') && (
         <div style={{ display:'flex', alignItems:'center', gap:8 }} className="hidden lg:flex">
-          <FilterPill
+          <YearInput
             value={filters.year}
-            onChange={v => updateFilter('year', Number(v))}
-            options={YEARS.map(y => ({ value:y, label:String(y) }))}
+            onChange={v => updateFilter('year', v)}
             width={84}
           />
           <FilterPill
@@ -363,6 +362,48 @@ function FilterPill({ value, onChange, options, width }) {
         }}
       />
     </div>
+  )
+}
+
+function YearInput({ value, onChange, width }) {
+  const [localValue, setLocalValue] = React.useState(String(value))
+
+  React.useEffect(() => {
+    setLocalValue(String(value))
+  }, [value])
+
+  const commit = () => {
+    const parsed = parseInt(localValue, 10)
+    if (!isNaN(parsed) && parsed >= 2020 && parsed <= 2035) {
+      onChange(parsed)
+    } else {
+      setLocalValue(String(value)) // revert ke nilai valid terakhir
+    }
+  }
+
+  return (
+    <input
+      type="number"
+      value={localValue}
+      onChange={e => setLocalValue(e.target.value)}
+      onBlur={commit}
+      onKeyDown={e => {
+        if (e.key === 'Enter') {
+          e.target.blur()
+        }
+      }}
+      min={2020}
+      max={2035}
+      className="select"
+      style={{
+        height:38, width, fontSize:'0.85rem', padding:'0 12px',
+        background:'rgba(255,255,255,0.15)',
+        border:'1px solid rgba(255,255,255,0.25)',
+        borderRadius:8, color:'#FFFFFF',
+        fontWeight: 600,
+        textAlign: 'center',
+      }}
+    />
   )
 }
 
