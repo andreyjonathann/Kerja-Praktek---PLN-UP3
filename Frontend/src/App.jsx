@@ -1,7 +1,7 @@
-import React from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import React, { useEffect } from 'react'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from '@/context/AuthContext'
-import { FilterProvider } from '@/context/FilterContext'
+import { FilterProvider, useFilter } from '@/context/FilterContext'
 import { ThemeProvider } from '@/context/ThemeContext'
 import Layout from '@/components/layout/Layout'
 
@@ -189,12 +189,27 @@ function RoleBasedHome() {
   )
 }
 
+// Reset filter periode (year/month) ke bulan berjalan setiap kali 
+// user berpindah halaman, agar user tidak "terjebak" di bulan lama 
+// saat kembali membuka halaman yang sama di lain waktu.
+function PeriodResetOnNavigate() {
+  const location = useLocation()
+  const { resetPeriodToCurrent } = useFilter()
+
+  useEffect(() => {
+    resetPeriodToCurrent()
+  }, [location.pathname])
+
+  return null
+}
+
 export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
         <FilterProvider>
           <BrowserRouter>
+            <PeriodResetOnNavigate />
             <Routes>
               {/* Public route */}
               <Route path="/login" element={<LoginPage />} />
