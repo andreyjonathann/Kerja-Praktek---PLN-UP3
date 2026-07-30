@@ -35,8 +35,16 @@ export function FilterProvider({ children }) {
     })
   }
 
+  const resetPeriodToCurrent = () => {
+    setFilters(prev => ({
+      ...prev,
+      year: CURRENT_YEAR,
+      month: CURRENT_MONTH,
+    }))
+  }
+
   return (
-    <FilterContext.Provider value={{ filters, updateFilter, resetFilters }}>
+    <FilterContext.Provider value={{ filters, updateFilter, resetFilters, resetPeriodToCurrent }}>
       {children}
     </FilterContext.Provider>
   )
