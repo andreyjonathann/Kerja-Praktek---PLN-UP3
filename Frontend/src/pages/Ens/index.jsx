@@ -26,6 +26,7 @@ import EnsExportModal from './EnsExportModal'
 import EnsDetailModal from '../../components/ui/EnsDetailModal'
 import KpiCard from '@/components/ui/KpiCard'
 import DataTable from '@/components/ui/DataTable'
+import TargetWarning from '@/components/ui/TargetWarning'
 
 // Custom colors for charts
 const COLORS = {
@@ -161,6 +162,7 @@ export default function EnsPage() {
   const navigate = useNavigate()
   const { filters } = useFilter()
   const [data, setData] = useState([])
+  const [hasTarget, setHasTarget] = useState(true)
   const [loading, setLoading] = useState(true)
   
   const [availableYears, setAvailableYears] = useState([])
@@ -197,6 +199,8 @@ export default function EnsPage() {
         }
         return prev
       })
+      
+      setHasTarget(dbData.overview?.kpis?.ens?.has_target ?? true);
 
       const formattedData = dbData.ensPageData.map(d => {
         const b_terencana = d.bulanan.padam_terencana || 0
@@ -384,6 +388,12 @@ export default function EnsPage() {
           )}
         </div>
       </div>
+
+      <TargetWarning
+        up3={filters.up3}
+        year={filters.year}
+        isVisible={!loading && !hasTarget}
+      />
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
