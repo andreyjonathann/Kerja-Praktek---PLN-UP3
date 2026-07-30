@@ -7,8 +7,8 @@ use Illuminate\Http\Request;
 use App\Models\Periode;
 use App\Models\KinerjaJaringan;
 use App\Models\EnsBulanan;
-
 use App\Models\TargetTahunan;
+use App\Services\TargetService;
 
 class DataJaringanController extends Controller
 {
@@ -236,9 +236,9 @@ class DataJaringanController extends Controller
 
         $result['overview'] = [
             'kpis' => [
-                'saidi' => ['val' => $totalSaidi, 'target' => $anySaidiTargetFilled ? $ytdTgtSaidiForOverview : null, 'isInverse' => true, 'unit' => 'mnt/plg', 'persen_pencapaian' => $hitungSkorNegatif($totalSaidi, $anySaidiTargetFilled ? $ytdTgtSaidiForOverview : null)],
-                'saifi' => ['val' => $totalSaifi, 'target' => $anySaifiTargetFilled ? $ytdTgtSaifiForOverview : null, 'isInverse' => true, 'unit' => 'kali/plg', 'persen_pencapaian' => $hitungSkorNegatif($totalSaifi, $anySaifiTargetFilled ? $ytdTgtSaifiForOverview : null)],
-                'ens'   => ['val' => $totalEns, 'target' => $anyEnsTargetFilled ? $runningCumulativeTgtEns : null, 'isInverse' => true, 'unit' => 'MWh', 'persen_pencapaian' => $hitungSkorNegatif($totalEns, $anyEnsTargetFilled ? $runningCumulativeTgtEns : null)],
+                'saidi' => ['val' => $totalSaidi, 'target' => $anySaidiTargetFilled ? $ytdTgtSaidiForOverview : null, 'isInverse' => true, 'unit' => 'mnt/plg', 'persen_pencapaian' => $hitungSkorNegatif($totalSaidi, $anySaidiTargetFilled ? $ytdTgtSaidiForOverview : null), 'has_target' => TargetService::isTargetLengkap('Jaringan', 'SAIDI', $tahun)],
+                'saifi' => ['val' => $totalSaifi, 'target' => $anySaifiTargetFilled ? $ytdTgtSaifiForOverview : null, 'isInverse' => true, 'unit' => 'kali/plg', 'persen_pencapaian' => $hitungSkorNegatif($totalSaifi, $anySaifiTargetFilled ? $ytdTgtSaifiForOverview : null), 'has_target' => TargetService::isTargetLengkap('Jaringan', 'SAIFI', $tahun)],
+                'ens'   => ['val' => $totalEns, 'target' => $anyEnsTargetFilled ? $runningCumulativeTgtEns : null, 'isInverse' => true, 'unit' => 'MWh', 'persen_pencapaian' => $hitungSkorNegatif($totalEns, $anyEnsTargetFilled ? $runningCumulativeTgtEns : null), 'has_target' => TargetService::isTargetLengkap('Jaringan', 'ENS', $tahun)],
                 'losses' => ['val' => 5.5, 'target' => 6.0, 'isInverse' => true, 'unit' => '%'],
             ],
             'monthlyPerf' => array_map(function($sd, $sf) {
