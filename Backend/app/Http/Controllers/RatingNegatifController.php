@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use App\Models\KinerjaJaringan;
 use App\Models\Periode;
 use App\Models\TargetTahunan;
+use App\Services\TargetService;
 
 class RatingNegatifController extends Controller
 {
@@ -117,6 +118,7 @@ class RatingNegatifController extends Controller
             'target' => $calculatedYearlyTarget,
             'target_tahunan' => $target,
             'nko_score' => $nkoScore,
+            'has_target' => TargetService::isTargetLengkap('Jaringan', 'Rating Negatif PLN Mobile', $year),
         ]);
     }
 
