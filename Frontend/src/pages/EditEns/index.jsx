@@ -8,6 +8,7 @@ import {
   Save, ArrowLeft, CheckCircle, AlertCircle, Loader2, Trash2
 } from 'lucide-react';
 import Swal from 'sweetalert2';
+import useDirtyFormGuard from '@/hooks/useDirtyFormGuard';
 
 function FieldInput({ name, label, register, errors }) {
   return (
@@ -49,7 +50,13 @@ export default function EditEnsPage() {
   const [statusMsg,   setStatusMsg]   = useState('');
   const [isDistribusiOpen, setIsDistribusiOpen] = useState(true);
 
-  const { register, handleSubmit, reset, control, formState: { errors } } = useForm();
+  const { register, handleSubmit, reset, control, formState: { errors, isDirty: formIsDirty } } = useForm();
+
+  const { isDirty, setIsDirty, guardedNavigate } = useDirtyFormGuard();
+
+  useEffect(() => {
+    setIsDirty(formIsDirty);
+  }, [formIsDirty]);
 
   const allFieldNames = [
     'distribusi_padam_tidak_terencana',
@@ -97,6 +104,7 @@ export default function EditEnsPage() {
       await api.post('/jaringan/ens', data);
       setStatus('success');
       setStatusMsg('Data berhasil disimpan!');
+      setIsDirty(false);
       setTimeout(() => navigate('/ens'), 1000);
     } catch (err) {
       setStatus('error');
@@ -143,7 +151,7 @@ export default function EditEnsPage() {
     <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 640, margin: '40px auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => guardedNavigate(() => navigate(-1))}
           title="Kembali"
           style={{
             width: 36, height: 36, borderRadius: 10,
