@@ -6,6 +6,7 @@ import api from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { MONTHS } from '@/utils/constants';
 import { CheckCircle, AlertCircle, Activity, Save, ChevronDown, ArrowLeft, AlertTriangle } from 'lucide-react';
+import useDirtyFormGuard from '@/hooks/useDirtyFormGuard';
 import TargetWarning from '@/components/ui/TargetWarning';
 
 export default function InputGangguanTmKurang5Page() {
@@ -17,11 +18,17 @@ export default function InputGangguanTmKurang5Page() {
   const [dashboardData, setDashboardData] = useState(null);
   const [existingData, setExistingData] = useState({ kurang: false });
 
-  const { register, handleSubmit, formState: { errors }, setValue, control } = useForm({
+  const { register, handleSubmit, formState: { errors, isDirty: formIsDirty }, setValue, control } = useForm({
       defaultValues: {
           tahun: '',
       }
   });
+
+  const { isDirty, setIsDirty, guardedNavigate } = useDirtyFormGuard();
+
+  useEffect(() => {
+    setIsDirty(formIsDirty);
+  }, [formIsDirty]);
 
   const selectedYear = useWatch({ control, name: 'tahun' });
   const selectedMonth = useWatch({ control, name: 'bulan' });
@@ -95,6 +102,7 @@ export default function InputGangguanTmKurang5Page() {
       setSuccess(true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
 
+      setIsDirty(false);
       setTimeout(() => {
         navigate('/jaringan/gangguan-tm');
       }, 2000);
@@ -125,7 +133,7 @@ export default function InputGangguanTmKurang5Page() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <button
             type="button"
-            onClick={() => navigate(-1)}
+            onClick={() => guardedNavigate(() => navigate(-1))}
             title="Kembali"
             style={{
               width: 36, height: 36, borderRadius: 10,
