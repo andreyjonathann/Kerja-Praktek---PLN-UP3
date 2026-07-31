@@ -53,8 +53,9 @@ class RealisasiSusutDistribusiController extends Controller
             'up3' => 'nullable|string',
             'tahun' => 'required|integer',
             'bulan' => 'required|integer|min:1|max:12',
-            'kwh_siap_jual' => 'required|numeric|min:0.01',
-            'kwh_jual' => 'required|numeric|min:0',
+            'kwh_netto' => 'required|numeric|min:0.01',
+            'pssd' => 'required|numeric|min:0',
+            'kwh_jual_309' => 'required|numeric|min:0',
             'keterangan' => 'nullable|string'
         ]);
 
@@ -85,17 +86,20 @@ class RealisasiSusutDistribusiController extends Controller
             ], 422);
         }
 
-        // Kalkulasi realisasi_persen — Susut = (kWh Siap Jual - kWh Jual) / kWh Siap Jual x 100
-        $kwh_siap_jual = (float) $request->kwh_siap_jual;
-        $kwh_jual = (float) $request->kwh_jual;
+        // Kalkulasi realisasi_persen sesuai formula resmi KM KBJ 2026 (Excel INPUT I, baris 33-37):
+        // Susut = (kWh Netto - PSSD - kWh Jual 309) / kWh Netto x 100
+        $kwh_netto = (float) $request->kwh_netto;
+        $pssd = (float) $request->pssd;
+        $kwh_jual_309 = (float) $request->kwh_jual_309;
         
-        $realisasi_persen = (($kwh_siap_jual - $kwh_jual) / $kwh_siap_jual) * 100;
+        $realisasi_persen = (($kwh_netto - $pssd - $kwh_jual_309) / $kwh_netto) * 100;
         $realisasi = new RealisasiSusutDistribusi();
         $realisasi->up3 = $up3;
         $realisasi->tahun = $request->tahun;
         $realisasi->bulan = $request->bulan;
-        $realisasi->kwh_siap_jual = $kwh_siap_jual;
-        $realisasi->kwh_jual = $kwh_jual;
+        $realisasi->kwh_netto = $kwh_netto;
+        $realisasi->pssd = $pssd;
+        $realisasi->kwh_jual_309 = $kwh_jual_309;
         $realisasi->realisasi_persen = $realisasi_persen;
         $realisasi->keterangan = $request->keterangan;
         $realisasi->created_by = $user->id;
@@ -128,8 +132,9 @@ class RealisasiSusutDistribusiController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'kwh_siap_jual' => 'required|numeric|min:0.01',
-            'kwh_jual' => 'required|numeric|min:0',
+            'kwh_netto' => 'required|numeric|min:0.01',
+            'pssd' => 'required|numeric|min:0',
+            'kwh_jual_309' => 'required|numeric|min:0',
             'keterangan' => 'nullable|string'
         ]);
 
@@ -141,12 +146,14 @@ class RealisasiSusutDistribusiController extends Controller
             ], 422);
         }
 
-        $kwh_siap_jual = (float) $request->kwh_siap_jual;
-        $kwh_jual = (float) $request->kwh_jual;
+        $kwh_netto = (float) $request->kwh_netto;
+        $pssd = (float) $request->pssd;
+        $kwh_jual_309 = (float) $request->kwh_jual_309;
         
-        $realisasi_persen = (($kwh_siap_jual - $kwh_jual) / $kwh_siap_jual) * 100;
-        $realisasi->kwh_siap_jual = $kwh_siap_jual;
-        $realisasi->kwh_jual = $kwh_jual;
+        $realisasi_persen = (($kwh_netto - $pssd - $kwh_jual_309) / $kwh_netto) * 100;
+        $realisasi->kwh_netto = $kwh_netto;
+        $realisasi->pssd = $pssd;
+        $realisasi->kwh_jual_309 = $kwh_jual_309;
         $realisasi->realisasi_persen = $realisasi_persen;
         $realisasi->keterangan = $request->keterangan;
         
@@ -210,12 +217,12 @@ class RealisasiSusutDistribusiController extends Controller
             ->first();
 
         $ratioFormula = function($sums) {
-            if ($sums['kwh_siap_jual'] <= 0) return 0;
-            return (($sums['kwh_siap_jual'] - $sums['kwh_jual']) / $sums['kwh_siap_jual']) * 100;
+            if ($sums['kwh_netto'] <= 0) return 0;
+            return (($sums['kwh_netto'] - $sums['pssd'] - $sums['kwh_jual_309']) / $sums['kwh_netto']) * 100;
         };
         $ytdSummary = YtdCalculationService::calculateYtdSummary(
             $records,
-            ['kwh_siap_jual', 'kwh_jual'],
+            ['kwh_netto', 'pssd', 'kwh_jual_309'],
             $ratioFormula,
             $targetRecord,
             'NEGATIF'
@@ -226,8 +233,8 @@ class RealisasiSusutDistribusiController extends Controller
         $trend_target = array_fill(1, 12, null);
 
         foreach ($records->groupBy('bulan') as $bulan => $b_records) {
-            $sums = YtdCalculationService::sumRawComponents($b_records, ['kwh_siap_jual', 'kwh_jual']);
-            if ($sums['kwh_siap_jual'] > 0) {
+            $sums = YtdCalculationService::sumRawComponents($b_records, ['kwh_netto', 'pssd', 'kwh_jual_309']);
+            if ($sums['kwh_netto'] > 0) {
                 $trend_realisasi[$bulan] = round($ratioFormula($sums), 4);
             }
         }
