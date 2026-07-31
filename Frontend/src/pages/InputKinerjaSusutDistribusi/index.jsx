@@ -17,8 +17,9 @@ export default function InputKinerjaSusutDistribusiPage() {
     defaultValues: {
       tahun: new Date().getFullYear(),
       periode_id: '',
-      kwh_siap_jual: '',
-      kwh_jual: '',
+      kwh_netto: '',
+      pssd: '',
+      kwh_jual_309: '',
       keterangan: ''
     }
   });
@@ -26,8 +27,9 @@ export default function InputKinerjaSusutDistribusiPage() {
 
   const selectedMonth = useWatch({ control, name: 'periode_id' });
   const selectedYear = useWatch({ control, name: 'tahun' });
-  const kwh_siap_jual = useWatch({ control, name: 'kwh_siap_jual' });
-  const kwh_jual = useWatch({ control, name: 'kwh_jual' });
+  const kwh_netto = useWatch({ control, name: 'kwh_netto' });
+  const pssd = useWatch({ control, name: 'pssd' });
+  const kwh_jual_309 = useWatch({ control, name: 'kwh_jual_309' });
 
   useEffect(() => {
     if (selectedYear) {
@@ -46,16 +48,18 @@ export default function InputKinerjaSusutDistribusiPage() {
         reset({
           tahun: selectedYear,
           periode_id: selectedMonth,
-          kwh_siap_jual: currentMonthData.kwh_siap_jual ?? '',
-          kwh_jual: currentMonthData.kwh_jual ?? '',
+          kwh_netto: currentMonthData.kwh_netto ?? '',
+          pssd: currentMonthData.pssd ?? '',
+          kwh_jual_309: currentMonthData.kwh_jual_309 ?? '',
           keterangan: currentMonthData.keterangan ?? ''
         });
       } else {
         reset({
           tahun: selectedYear,
           periode_id: selectedMonth,
-          kwh_siap_jual: '',
-          kwh_jual: '',
+          kwh_netto: '',
+          pssd: '',
+          kwh_jual_309: '',
           keterangan: ''
         });
       }
@@ -77,8 +81,9 @@ export default function InputKinerjaSusutDistribusiPage() {
       await api.post('/v1/susut-distribusi', {
         tahun: data.tahun,
         bulan: data.periode_id,
-        kwh_siap_jual: data.kwh_siap_jual,
-        kwh_jual: data.kwh_jual,
+        kwh_netto: data.kwh_netto,
+        pssd: data.pssd,
+        kwh_jual_309: data.kwh_jual_309,
         keterangan: data.keterangan
       });
       setSuccess(true);
@@ -102,10 +107,11 @@ export default function InputKinerjaSusutDistribusiPage() {
 
   // Calculate Susut Preview
   let previewSusut = null;
-  const siapJualVal = parseFloat(kwh_siap_jual);
-  const jualVal = parseFloat(kwh_jual) || 0;
-  if (!isNaN(siapJualVal) && siapJualVal > 0) {
-    previewSusut = ((siapJualVal - jualVal) / siapJualVal) * 100;
+  const nettoVal = parseFloat(kwh_netto);
+  const pssdVal = parseFloat(pssd) || 0;
+  const jual309Val = parseFloat(kwh_jual_309) || 0;
+  if (!isNaN(nettoVal) && nettoVal > 0) {
+    previewSusut = ((nettoVal - pssdVal - jual309Val) / nettoVal) * 100;
   }
 
   return (
@@ -196,29 +202,40 @@ export default function InputKinerjaSusutDistribusiPage() {
               
               <div className="flex items-center justify-between p-3 bg-white border border-[#f3f4f6] rounded-xl gap-4 hover:bg-slate-50 transition">
                 <div className="flex flex-col flex-1">
-                  <label className="font-semibold text-slate-700 text-[13px]">KWh Siap Jual</label>
-                  <span className="text-[11px] text-slate-400">(Siap Salur setelah dikurangi PSSD)</span>
+                  <label className="font-semibold text-slate-700 text-[13px]">KWh Netto</label>
+                  <span className="text-[11px] text-slate-400">(Produksi Total Netto - pembagi formula)</span>
                 </div>
                 <div className="flex flex-col items-end">
-                  <input readOnly={isDuplicate} type="number" step="any" {...register('kwh_siap_jual', { required: 'Wajib diisi', min: { value: 0.0001, message: '> 0' } })} className={fieldInputClass} placeholder="0" />
-                  {errors.kwh_siap_jual && <span className="text-xs text-red-500 mt-1 font-semibold">{errors.kwh_siap_jual.message}</span>}
+                  <input readOnly={isDuplicate} type="number" step="any" {...register('kwh_netto', { required: 'Wajib diisi', min: { value: 0.0001, message: '> 0' } })} className={fieldInputClass} placeholder="0" />
+                  {errors.kwh_netto && <span className="text-xs text-red-500 mt-1 font-semibold">{errors.kwh_netto.message}</span>}
                 </div>
               </div>
               <div className="flex items-center justify-between p-3 bg-white border border-[#f3f4f6] rounded-xl gap-4 hover:bg-slate-50 transition">
                 <div className="flex flex-col flex-1">
-                  <label className="font-semibold text-slate-700 text-[13px]">KWh Jual</label>
-                  <span className="text-[11px] text-slate-400">(Total gabungan 309TR + 309TM + EMIN)</span>
+                  <label className="font-semibold text-slate-700 text-[13px]">PSSD</label>
+                  <span className="text-[11px] text-slate-400">(Pemakaian Sendiri Sistem Distribusi)</span>
                 </div>
                 <div className="flex flex-col items-end">
-                  <input readOnly={isDuplicate} type="number" step="any" {...register('kwh_jual', { 
+                  <input readOnly={isDuplicate} type="number" step="any" {...register('pssd', { required: 'Wajib diisi', min: { value: 0, message: 'Tidak boleh negatif' } })} className={fieldInputClass} placeholder="0" />
+                  {errors.pssd && <span className="text-xs text-red-500 mt-1 font-semibold">{errors.pssd.message}</span>}
+                </div>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-white border border-[#f3f4f6] rounded-xl gap-4 hover:bg-slate-50 transition">
+                <div className="flex flex-col flex-1">
+                  <label className="font-semibold text-slate-700 text-[13px]">KWh Jual 309</label>
+                  <span className="text-[11px] text-slate-400">(Tanpa E-min)</span>
+                </div>
+                <div className="flex flex-col items-end">
+                  <input readOnly={isDuplicate} type="number" step="any" {...register('kwh_jual_309', { 
                     required: 'Wajib diisi', 
                     min: { value: 0, message: 'Tidak boleh negatif' },
                     validate: (value) => {
-                      const siapJual = parseFloat(kwh_siap_jual) || 0;
-                      return parseFloat(value) <= siapJual || 'KWh Jual tidak boleh melebihi KWh Siap Jual';
+                      const netto = parseFloat(kwh_netto) || 0;
+                      const pssdVal = parseFloat(pssd) || 0;
+                      return (pssdVal + parseFloat(value)) <= netto || 'PSSD + KWh Jual 309 tidak boleh melebihi KWh Netto';
                     }
                   })} className={fieldInputClass} placeholder="0" />
-                  {errors.kwh_jual && <span className="text-xs text-red-500 mt-1 font-semibold">{errors.kwh_jual.message}</span>}
+                  {errors.kwh_jual_309 && <span className="text-xs text-red-500 mt-1 font-semibold">{errors.kwh_jual_309.message}</span>}
                 </div>
               </div>
 
