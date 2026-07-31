@@ -15,16 +15,18 @@ class RealisasiSusutDistribusi extends Model
         'up3',
         'tahun',
         'bulan',
-        'kwh_siap_jual',
-        'kwh_jual',
+        'kwh_netto',
+        'pssd',
+        'kwh_jual_309',
         'realisasi_persen',
         'keterangan',
         'created_by'
     ];
 
     protected $casts = [
-        'kwh_siap_jual' => 'float',
-        'kwh_jual' => 'float',
+        'kwh_netto' => 'float',
+        'pssd' => 'float',
+        'kwh_jual_309' => 'float',
         'realisasi_persen' => 'float',
     ];
 
