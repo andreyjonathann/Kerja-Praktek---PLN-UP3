@@ -44,7 +44,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
       
       if (item.group === 'NKO') {
          // Hide NKO for roles that only have their own specific page
-         if (user && (user.role === 'pic_jaringan' || user.role === 'pic_pengadaan')) return [];
+         if (user && (user.role === 'pic_jaringan' || user.role === 'pic_pengadaan' || user.role === 'pic_transaksi_energi')) return [];
          const filteredItems = item.items.filter(i => i.group !== 'KELOLA TARGET');
          return [{ ...item, items: filteredItems }];
       }
@@ -65,8 +65,12 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
          const matchingSubgroup = item.items.find(sub => sub.group === userGroup);
          if (!matchingSubgroup) return [];
          
+         const itemsToRender = user && user.role === 'pic_transaksi_energi'
+           ? matchingSubgroup.items.filter(subItem => subItem.key !== 'input-kpi-te')
+           : matchingSubgroup.items;
+
          // Extract the items from the subgroup and render them flatly, but preserve nested groups
-         return matchingSubgroup.items.map(subItem => ({ 
+         return itemsToRender.map(subItem => ({ 
              ...subItem, 
              type: subItem.type || 'item' 
          }));
