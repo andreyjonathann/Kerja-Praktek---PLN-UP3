@@ -109,10 +109,11 @@ export default function SusutDistribusiPage() {
     const rawMatch = data?.find(d => d.bulan === bulanNum);
     return {
       label: MONTHS_ID[bulanNum]?.substring(0, 3) || `B${bulanNum}`,
+      kwh_netto: rawMatch?.kwh_netto ?? null,
+      pssd: rawMatch?.pssd ?? null,
+      kwh_jual_309: rawMatch?.kwh_jual_309 ?? null,
       realisasi: realisasi,
       target: target,
-      kwh_siap_jual: rawMatch?.kwh_siap_jual ?? null,
-      kwh_jual: rawMatch?.kwh_jual ?? null,
     };
   });
 
@@ -127,8 +128,9 @@ export default function SusutDistribusiPage() {
         id: match.id,
         bulan: MONTHS_ID[bulanNum],
         bulan_angka: bulanNum,
-        kwh_siap_jual: match.kwh_siap_jual,
-        kwh_jual: match.kwh_jual,
+        kwh_netto: match.kwh_netto,
+        pssd: match.pssd,
+        kwh_jual_309: match.kwh_jual_309,
         realisasi_persen: match.realisasi_persen,
         target: targetVal,
         keterangan: match.keterangan || '-',
@@ -139,8 +141,9 @@ export default function SusutDistribusiPage() {
       id: null,
       bulan: MONTHS_ID[bulanNum],
       bulan_angka: bulanNum,
-      kwh_siap_jual: null,
-      kwh_jual: null,
+      kwh_netto: null,
+      pssd: null,
+      kwh_jual_309: null,
       realisasi_persen: null,
       target: targetVal,
       keterangan: '-',
@@ -149,16 +152,9 @@ export default function SusutDistribusiPage() {
 
   const columns = [
     { label: 'Bulan', key: 'bulan', render: (v) => <span className="font-semibold">{v}</span> },
-    { 
-      label: 'KWh Siap Jual', 
-      key: 'kwh_siap_jual',
-      render: (v) => v != null ? <span className="text-slate-600">{Number(v).toLocaleString('id-ID')}</span> : '—'
-    },
-    { 
-      label: 'KWh Jual', 
-      key: 'kwh_jual',
-      render: (v) => v != null ? <span className="text-slate-600">{Number(v).toLocaleString('id-ID')}</span> : '—'
-    },
+    { label: 'KWh Netto', key: 'kwh_netto', render: (v) => v != null ? Number(v).toLocaleString('id-ID') : '—' },
+    { label: 'PSSD', key: 'pssd', render: (v) => v != null ? Number(v).toLocaleString('id-ID') : '—' },
+    { label: 'KWh Jual 309', key: 'kwh_jual_309', render: (v) => v != null ? Number(v).toLocaleString('id-ID') : '—' },
     { 
       label: 'Realisasi Susut (%)', 
       key: 'realisasi_persen',
@@ -189,21 +185,15 @@ export default function SusutDistribusiPage() {
         boxShadow: '0 4px 20px rgba(0,0,0,0.12)', border: '1px solid #e2e8f0',
       }}>
         <p style={{ fontWeight: 700, color: '#0f172a', marginBottom: 6, fontSize: 13 }}>{label}</p>
+        <p style={{ fontSize: 12.5, color: '#64748b', fontWeight: 500, margin: '2px 0' }}>KWh Netto: {raw?.kwh_netto != null ? Number(raw.kwh_netto).toLocaleString('id-ID') : '—'}</p>
+        <p style={{ fontSize: 12.5, color: '#64748b', fontWeight: 500, margin: '2px 0' }}>PSSD: {raw?.pssd != null ? Number(raw.pssd).toLocaleString('id-ID') : '—'}</p>
+        <p style={{ fontSize: 12.5, color: '#64748b', fontWeight: 500, margin: '2px 0' }}>KWh Jual 309: {raw?.kwh_jual_309 != null ? Number(raw.kwh_jual_309).toLocaleString('id-ID') : '—'}</p>
         {payload.map((p, i) => (
           <p key={i} style={{ fontSize: 12.5, color: p.color, fontWeight: 600, margin: '2px 0' }}>
             {p.name}: {p.value != null ? Number(p.value).toFixed(4) + '%' : '—'}
           </p>
         ))}
-        {(raw?.kwh_siap_jual != null || raw?.kwh_jual != null) && (
-          <div style={{ marginTop: 6, paddingTop: 6, borderTop: '1px dashed #e2e8f0' }}>
-            <p style={{ fontSize: 12, color: '#64748b', fontWeight: 600, margin: '2px 0' }}>
-              KWh Siap Jual: {raw?.kwh_siap_jual != null ? Number(raw.kwh_siap_jual).toLocaleString('id-ID') : '—'}
-            </p>
-            <p style={{ fontSize: 12, color: '#64748b', fontWeight: 600, margin: '2px 0' }}>
-              KWh Jual: {raw?.kwh_jual != null ? Number(raw.kwh_jual).toLocaleString('id-ID') : '—'}
-            </p>
-          </div>
-        )}
+
       </div>
     );
   };

@@ -172,12 +172,16 @@ export default function SusutDistribusiDetailModal({
             {/* Detail rows */}
             <div style={{ marginBottom: 28 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '14px 0', borderBottom: '1px solid #f3f4f6' }}>
-                <span style={{ fontWeight: 600, fontSize: 14, color: '#0f172a' }}>KWh Siap Jual</span>
-                <span style={{ fontWeight: 500, fontSize: 14, color: '#0f172a' }}>{fmt(rowData.kwh_siap_jual)}</span>
+                <span style={{ fontWeight: 600, fontSize: 14, color: '#0f172a' }}>KWh Netto</span>
+                <span style={{ fontWeight: 500, fontSize: 14, color: '#0f172a' }}>{fmt(rowData.kwh_netto)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '14px 0', borderBottom: '1px solid #f3f4f6' }}>
-                <span style={{ fontWeight: 600, fontSize: 14, color: '#0f172a' }}>KWh Jual</span>
-                <span style={{ fontWeight: 500, fontSize: 14, color: '#0f172a' }}>{fmt(rowData.kwh_jual)}</span>
+                <span style={{ fontWeight: 600, fontSize: 14, color: '#0f172a' }}>PSSD</span>
+                <span style={{ fontWeight: 500, fontSize: 14, color: '#0f172a' }}>{fmt(rowData.pssd)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '14px 0', borderBottom: '1px solid #f3f4f6' }}>
+                <span style={{ fontWeight: 600, fontSize: 14, color: '#0f172a' }}>KWh Jual 309</span>
+                <span style={{ fontWeight: 500, fontSize: 14, color: '#0f172a' }}>{fmt(rowData.kwh_jual_309)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '14px 0', borderBottom: '1px solid #f3f4f6' }}>
                 <span style={{ fontWeight: 600, fontSize: 14, color: '#0f172a' }}>Realisasi Susut (%)</span>
