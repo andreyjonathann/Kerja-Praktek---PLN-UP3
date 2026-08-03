@@ -32,7 +32,8 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
       'pic_transaksi_energi': 'TRANSAKSI ENERGI',
       'pic_pengadaan': 'PENGADAAN',
       'pic_niaga': 'NIAGA',
-      'pic_keuangan': 'KEUANGAN'
+      'pic_keuangan': 'KEUANGAN',
+      'pic_k3': 'K3'
     };
     
     const isPerencanaan = user?.role === 'perencanaan';
@@ -43,8 +44,9 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
       if (item.key === 'home') return [item];
       
       if (item.group === 'NKO') {
-         // Hide NKO for roles that only have their own specific page
-         if (user && (user.role === 'pic_jaringan' || user.role === 'pic_pengadaan' || user.role === 'pic_transaksi_energi')) return [];
+         // Hide NKO for roles that only have their own specific page / module
+         const noNkoRoles = ['pic_jaringan', 'pic_pengadaan', 'pic_transaksi_energi', 'pic_k3'];
+         if (user && noNkoRoles.includes(user.role)) return [];
          const filteredItems = item.items.filter(i => i.group !== 'KELOLA TARGET');
          return [{ ...item, items: filteredItems }];
       }

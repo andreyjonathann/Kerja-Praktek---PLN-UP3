@@ -75,6 +75,15 @@ class DatabaseSeeder extends Seeder
                 'role' => 'pic_keuangan',
                 'up3' => 'UP3 Kebon Jeruk',
                 'is_active' => true,
+            ],
+            [
+                'name' => 'PIC K3',
+                'username' => 'pic_k3',
+                'email' => 'k3@pln.co.id',
+                'password' => Hash::make('password'),
+                'role' => 'pic_k3',
+                'up3' => 'UP3 Kebon Jeruk',
+                'is_active' => true,
             ]
         ];
 

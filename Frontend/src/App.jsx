@@ -86,6 +86,18 @@ import KelolaPaguAnggaranPage from '@/pages/Pengadaan/KelolaPaguAnggaran'
 import KelolaTargetPage from '@/pages/Admin/KelolaTarget'
 import KelolaTargetBulananPage from '@/pages/Admin/KelolaTargetBulanan'
 
+// K3 Pages
+import K3DashboardPage         from '@/pages/K3/Dashboard'
+import K3TrendPage             from '@/pages/K3/Trend'
+import K3SelfAssessmentPage    from '@/pages/K3/SelfAssessment'
+// Detail Route Removed
+import K3KegiatanPage          from '@/pages/K3/Kegiatan'
+import K3TemuanPage from '@/pages/K3/Temuan'
+import K3NkoPage from '@/pages/K3/Nko'
+
+// Error Boundary
+import ErrorBoundary from '@/components/ui/ErrorBoundary'
+
 // Protected Route Wrapper
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -181,6 +193,9 @@ function RoleBasedHome() {
   }
   if (user?.role === 'pic_pengadaan') {
     return <Navigate to="/pengadaan/kontrak" replace />
+  }
+  if (user?.role === 'pic_k3') {
+    return <Navigate to="/k3/dashboard" replace />
   }
   return (
     <ProtectedRoute>
@@ -305,6 +320,7 @@ export default function App() {
                   <InputEnsPage />
                 </InputProtectedRoute>
               } />
+
 
               <Route path="/saidi" element={
                 <ProtectedRoute>
@@ -616,6 +632,52 @@ export default function App() {
                   <InputKinerjaSaldoAkhirPage />
                 </InputProtectedRoute>
               } />
+
+              {/* K3 Routes */}
+              <Route path="/k3/dashboard" element={
+                <ProtectedRoute>
+                  <ErrorBoundary>
+                    <K3DashboardPage />
+                  </ErrorBoundary>
+                </ProtectedRoute>
+              } />
+              <Route path="/k3/trend" element={
+                <ProtectedRoute>
+                  <ErrorBoundary>
+                    <K3TrendPage />
+                  </ErrorBoundary>
+                </ProtectedRoute>
+              } />
+              <Route path="/k3/assessment/:category" element={
+                <ProtectedRoute>
+                  <ErrorBoundary>
+                    <K3SelfAssessmentPage />
+                  </ErrorBoundary>
+                </ProtectedRoute>
+              } />
+
+              <Route path="/k3/kegiatan" element={
+                <ProtectedRoute>
+                  <ErrorBoundary>
+                    <K3KegiatanPage />
+                  </ErrorBoundary>
+                </ProtectedRoute>
+              } />
+              <Route path="/k3/temuan" element={
+                <ProtectedRoute>
+                  <ErrorBoundary>
+                    <K3TemuanPage />
+                  </ErrorBoundary>
+                </ProtectedRoute>
+              } />
+              <Route path="/k3/nko" element={
+                <ProtectedRoute>
+                  <ErrorBoundary>
+                    <K3NkoPage />
+                  </ErrorBoundary>
+                </ProtectedRoute>
+              } />
+
               <Route path="/skki" element={
                 <ProtectedRoute>
                   <PlaceholderPage title="SKKI / Pengadaan" />

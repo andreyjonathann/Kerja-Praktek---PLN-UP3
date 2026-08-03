@@ -158,6 +158,29 @@ Route::middleware('api')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/nko/summary', [NkoController::class, 'summary']);
         
+        // K3 Module
+        Route::get('/k3/categories', [\App\Http\Controllers\Api\K3Controller::class, 'categories']);
+        Route::get('/k3/dashboard', [\App\Http\Controllers\Api\K3Controller::class, 'dashboard']);
+        Route::get('/k3/dashboard/trend', [\App\Http\Controllers\Api\K3Controller::class, 'dashboardTrend']);
+        
+        Route::get('/k3/targets/{tahun}/{semester}', [\App\Http\Controllers\Api\K3Controller::class, 'getTargets']);
+        Route::post('/k3/targets', [\App\Http\Controllers\Api\K3Controller::class, 'storeTarget']);
+        Route::put('/k3/targets/{id}', [\App\Http\Controllers\Api\K3Controller::class, 'updateTarget']);
+        Route::get('/k3/nko-summary/{tahun}/{semester}', [\App\Http\Controllers\Api\K3Controller::class, 'nkoSummary']);
+        
+        Route::get('/k3/assessments/{tahun}/{semester}', [\App\Http\Controllers\Api\K3Controller::class, 'getAssessments']);
+        Route::post('/k3/assessments', [\App\Http\Controllers\Api\K3Controller::class, 'storeAssessment']);
+        Route::post('/k3/assessments/bulk', [\App\Http\Controllers\Api\K3Controller::class, 'storeBulkAssessment']);
+        
+        Route::post('/k3/assessments/bulk/submit', [\App\Http\Controllers\Api\K3Controller::class, 'submitBulkAssessment']);
+        Route::post('/k3/assessments/bulk/unsubmit', [\App\Http\Controllers\Api\K3Controller::class, 'unsubmitBulkAssessment']);
+        Route::post('/k3/assessments/bulk/approve', [\App\Http\Controllers\Api\K3Controller::class, 'approveBulkAssessment']);
+        Route::post('/k3/assessments/bulk/revisi', [\App\Http\Controllers\Api\K3Controller::class, 'revisiBulkAssessment']);
+        
+        Route::post('/k3/assessments/{id}/submit', [\App\Http\Controllers\Api\K3Controller::class, 'submitAssessment']);
+        Route::post('/k3/assessments/{id}/approve', [\App\Http\Controllers\Api\K3Controller::class, 'approveAssessment']);
+        Route::post('/k3/assessments/{id}/revisi', [\App\Http\Controllers\Api\K3Controller::class, 'revisiAssessment']);
+        
         // Data Jaringan (Dashboard)
         Route::get('/jaringan/dashboard', [DataJaringanController::class, 'getDashboardData']);
         Route::get('/jaringan/gangguan-list', [DataJaringanController::class, 'getGangguanList']);

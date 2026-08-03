@@ -98,20 +98,29 @@ export default function Header({ onMenuToggle, onRefresh, refreshing }) {
         </div>
       </div>
 
-      {/* Center — Filters (Hidden for NKO and Trend NKO pages as they have local selectors) */}
-      {!(location.pathname === '/nko' || location.pathname === '/trend-nko') && (
+      {/* Center — Filters (Hidden for NKO, Trend NKO, and specific K3 pages) */}
+      {!(
+        location.pathname === '/nko' ||
+        location.pathname === '/trend-nko' ||
+        location.pathname === '/k3/laporan' ||
+        location.pathname === '/k3/manajemen' ||
+        location.pathname.startsWith('/k3/assessment')
+      ) && (
         <div style={{ display:'flex', alignItems:'center', gap:8 }} className="hidden lg:flex">
           <YearInput
             value={filters.year}
             onChange={v => updateFilter('year', v)}
             width={84}
           />
-          <FilterPill
-            value={filters.month}
-            onChange={v => updateFilter('month', Number(v))}
-            options={[{value:0,label:'Semua Bulan'}, ...MONTHS.map(m => ({value:m.value,label:m.label}))]}
-            width={130}
-          />
+          {/* Bulan — disembunyikan di halaman Temuan, Kegiatan K3, dan Trend Maturity */}
+          {location.pathname !== '/k3/temuan' && location.pathname !== '/k3/kegiatan' && location.pathname !== '/k3/trend' && (
+            <FilterPill
+              value={filters.month}
+              onChange={v => updateFilter('month', Number(v))}
+              options={[{value:0,label:'Semua Bulan'}, ...MONTHS.map(m => ({value:m.value,label:m.label}))]}
+              width={130}
+            />
+          )}
         </div>
       )}
 

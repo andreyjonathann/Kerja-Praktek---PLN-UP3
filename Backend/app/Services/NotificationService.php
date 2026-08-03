@@ -19,6 +19,7 @@ class NotificationService
             'ASET' => 'pic_pengadaan',
             'NIAGA' => 'pic_niaga',
             'KEUANGAN' => 'pic_keuangan',
+            'K3' => 'pic_k3',
         ];
 
         $role = $roleMap[strtoupper($bidang)] ?? null;

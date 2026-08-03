@@ -137,6 +137,29 @@ export const NAV_ITEMS = [
           { key: 'input-kpi-keuangan', label: 'INPUT KPI', path: '/input' },
         ],
       },
+      {
+        type: 'subgroup',
+        group: 'K3',
+        items: [
+          { key: 'k3-dashboard', label: 'DASHBOARD', path: '/k3/dashboard', icon: 'LayoutDashboard' },
+          { key: 'k3-nko',       label: 'NKO',       path: '/k3/nko',       icon: 'Target' },
+          { key: 'k3-trend',     label: 'TREND MATURITY LEVEL',  path: '/k3/trend',     icon: 'TrendingUp' },
+          {
+            type: 'subgroup',
+            group: 'SELF ASSESSMENT',
+            items: [
+              { key: 'k3-assessment-lmc', label: 'LMC', path: '/k3/assessment/lmc' },
+              { key: 'k3-assessment-aai', label: 'AAI', path: '/k3/assessment/aai' },
+              { key: 'k3-assessment-ibp', label: 'IBP', path: '/k3/assessment/ibp' },
+              { key: 'k3-assessment-ste', label: 'STE', path: '/k3/assessment/ste' },
+              { key: 'k3-assessment-scc', label: 'SCC', path: '/k3/assessment/scc' },
+              { key: 'k3-assessment-rep', label: 'REP', path: '/k3/assessment/rep' },
+            ]
+          },
+          { key: 'k3-temuan',   label: 'TEMUAN & TINDAK LANJUT', path: '/k3/temuan',   icon: 'AlertTriangle' },
+          { key: 'k3-kegiatan', label: 'KEGIATAN K3',            path: '/k3/kegiatan', icon: 'Activity' },
+        ],
+      },
     ],
   },
 ]
