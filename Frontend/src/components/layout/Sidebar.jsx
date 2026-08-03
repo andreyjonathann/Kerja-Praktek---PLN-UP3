@@ -32,7 +32,8 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
       'pic_transaksi_energi': 'TRANSAKSI ENERGI',
       'pic_aset': 'ASET',
       'pic_niaga': 'NIAGA',
-      'pic_keuangan': 'KEUANGAN'
+      'pic_keuangan': 'KEUANGAN',
+      'pic_k3': 'K3'
     };
     
     const userGroup = user ? roleMap[user.role] : null;
@@ -42,7 +43,9 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
       if (item.key === 'home') return [item];
       
       if (item.group === 'NKO') {
-         if (user && user.role === 'pic_jaringan') return [];
+         // Hanya role yang module-nya terpisah total dari NKO yang tidak perlu lihat NKO
+         const noNkoRoles = ['pic_jaringan', 'pic_k3'];
+         if (user && noNkoRoles.includes(user.role)) return [];
          const filteredItems = item.items.filter(i => i.group !== 'KELOLA TARGET');
          return [{ ...item, items: filteredItems }];
       }
