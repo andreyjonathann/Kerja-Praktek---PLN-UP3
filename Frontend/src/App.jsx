@@ -550,7 +550,7 @@ export default function App() {
                   <InputKinerjaSusutDistribusiPage />
                 </InputProtectedRoute>
               } />
-              <Route path="/susut/edit/:id" element={
+              <Route path="/susut/edit/:bulan/:tahun" element={
                 <InputProtectedRoute>
                   <EditKinerjaSusutDistribusiPage />
                 </InputProtectedRoute>
