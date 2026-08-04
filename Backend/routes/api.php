@@ -167,6 +167,7 @@ Route::middleware('api')->group(function () {
         Route::post('/k3/targets', [\App\Http\Controllers\Api\K3Controller::class, 'storeTarget']);
         Route::put('/k3/targets/{id}', [\App\Http\Controllers\Api\K3Controller::class, 'updateTarget']);
         Route::get('/k3/nko-summary/{tahun}/{semester}', [\App\Http\Controllers\Api\K3Controller::class, 'nkoSummary']);
+        Route::get('/k3/category-summary/{code}/{tahun}/{semester}', [\App\Http\Controllers\Api\K3Controller::class, 'categorySummary']);
         
         Route::get('/k3/assessments/{tahun}/{semester}', [\App\Http\Controllers\Api\K3Controller::class, 'getAssessments']);
         Route::post('/k3/assessments', [\App\Http\Controllers\Api\K3Controller::class, 'storeAssessment']);
@@ -180,6 +181,12 @@ Route::middleware('api')->group(function () {
         Route::post('/k3/assessments/{id}/submit', [\App\Http\Controllers\Api\K3Controller::class, 'submitAssessment']);
         Route::post('/k3/assessments/{id}/approve', [\App\Http\Controllers\Api\K3Controller::class, 'approveAssessment']);
         Route::post('/k3/assessments/{id}/revisi', [\App\Http\Controllers\Api\K3Controller::class, 'revisiAssessment']);
+
+        // K3 Kegiatan
+        Route::get('/k3/activities', [\App\Http\Controllers\Api\K3ActivityController::class, 'index']);
+        Route::post('/k3/activities', [\App\Http\Controllers\Api\K3ActivityController::class, 'store']);
+        Route::put('/k3/activities/{id}', [\App\Http\Controllers\Api\K3ActivityController::class, 'update']);
+        Route::delete('/k3/activities/{id}', [\App\Http\Controllers\Api\K3ActivityController::class, 'destroy']);
         
         // Data Jaringan (Dashboard)
         Route::get('/jaringan/dashboard', [DataJaringanController::class, 'getDashboardData']);
