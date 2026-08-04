@@ -90,6 +90,7 @@ import KelolaTargetBulananPage from '@/pages/Admin/KelolaTargetBulanan'
 import K3DashboardPage         from '@/pages/K3/Dashboard'
 import K3TrendPage             from '@/pages/K3/Trend'
 import K3SelfAssessmentPage    from '@/pages/K3/SelfAssessment'
+import K3LmcPage               from '@/pages/K3/Lmc'
 // Detail Route Removed
 import K3KegiatanPage          from '@/pages/K3/Kegiatan'
 import K3TemuanPage from '@/pages/K3/Temuan'
@@ -645,6 +646,13 @@ export default function App() {
                 <ProtectedRoute>
                   <ErrorBoundary>
                     <K3TrendPage />
+                  </ErrorBoundary>
+                </ProtectedRoute>
+              } />
+              <Route path="/k3/assessment/lmc" element={
+                <ProtectedRoute>
+                  <ErrorBoundary>
+                    <K3LmcPage />
                   </ErrorBoundary>
                 </ProtectedRoute>
               } />
