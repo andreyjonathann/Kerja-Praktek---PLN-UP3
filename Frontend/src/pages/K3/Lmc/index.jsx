@@ -196,32 +196,6 @@ export default function K3LmcPage() {
       })
   }, [selectedYear, selectedSemester])
 
-  const activeCategory = categories.find(c => c.code === CATEGORY_CODE)
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="text-gray-500 font-medium">Memuat data assessment...</div>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="p-6">
-        <ErrorBanner message={error} onRetry={() => window.location.reload()} />
-      </div>
-    )
-  }
-
-  if (!activeCategory) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="text-red-500 font-medium">Kategori LMC tidak ditemukan.</div>
-      </div>
-    )
-  }
-
   const readOnly = isAdminK3
 
   const handleRowClick = (row) => {
@@ -270,6 +244,32 @@ export default function K3LmcPage() {
       }
     }])
   ], [details, readOnly])
+
+  const activeCategory = categories.find(c => c.code === CATEGORY_CODE)
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-gray-500 font-medium">Memuat data assessment...</div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <ErrorBanner message={error} onRetry={() => window.location.reload()} />
+      </div>
+    )
+  }
+
+  if (!activeCategory) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-red-500 font-medium">Kategori LMC tidak ditemukan.</div>
+      </div>
+    )
+  }
 
   const catTotal = activeCategory.criteria.length
   const catFilled = activeCategory.criteria.filter(cr => details[cr.id]?.level != null).length
