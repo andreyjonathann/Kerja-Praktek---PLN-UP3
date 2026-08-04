@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { ChevronDown, ChevronRight, ShieldCheck, Save, Send, CheckCircle, RotateCcw, Info, Activity, AlertTriangle, CalendarDays, ClipboardList } from 'lucide-react'
+import { ChevronDown, ChevronRight, ShieldCheck, Save, Send, CheckCircle, RotateCcw, Info, Activity, AlertTriangle, CalendarDays, ClipboardList, Edit3, Plus } from 'lucide-react'
 import {
   LineChart, Line, BarChart, Bar, Cell, ComposedChart, LabelList,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ReferenceLine, ResponsiveContainer,
 } from 'recharts'
+import DataTable from '@/components/ui/DataTable'
 import PageHeader from '@/components/ui/PageHeader'
 import KpiCard from '@/components/ui/KpiCard'
 import ChartWrapper from '@/components/ui/ChartWrapper'
@@ -227,6 +228,53 @@ export default function K3SelfAssessmentPage() {
 
   const readOnly = isAdminK3
 
+  const handleRowClick = (row) => {
+    setModalCritId(row.id.toString())
+    setModalDetail({
+      level: details[row.id]?.level || null,
+      catatan: details[row.id]?.catatan || '',
+      pic: details[row.id]?.pic || row.pic || ''
+    })
+    setShowModal(true)
+  }
+
+  const TABLE_COLUMNS = useMemo(() => [
+    { key: 'code', label: 'Kode', width: '90px', align: 'center', render: (v) => <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>{v}</span> },
+    { key: 'name', label: 'Nama Kriteria', render: (v) => <span style={{ fontSize: '0.85rem' }}>{v}</span> },
+    { key: 'level', label: 'Level Saat Ini', width: '120px', align: 'center', render: (_, row) => {
+      const lvl = details[row.id]?.level
+      if (!lvl) return <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>-</span>
+      return (
+        <span style={{ 
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          width: '28px', height: '28px', borderRadius: '50%',
+          background: 'var(--accent-soft)', color: 'var(--text-accent)',
+          fontWeight: 800, fontSize: '0.9rem'
+        }}>{lvl}</span>
+      )
+    }},
+    { key: 'pic', label: 'PIC', width: '150px', align: 'center', render: (_, row) => {
+      const p = details[row.id]?.pic || row.pic
+      return <span style={{ fontSize: '0.8rem', color: p ? 'var(--text-primary)' : 'var(--text-muted)' }}>{p || '-'}</span>
+    }},
+    ...(readOnly ? [] : [{
+      key: 'actions', label: 'Aksi', width: '100px', align: 'center', render: (_, row) => {
+        const hasLevel = !!details[row.id]?.level
+        return (
+          <button style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            padding: '4px 12px', borderRadius: 6,
+            border: '1px solid #2563eb', background: 'transparent',
+            color: '#2563eb', fontSize: '0.75rem', fontWeight: 600,
+            cursor: 'pointer'
+          }}>
+            {hasLevel ? <><Edit3 size={12} /> Edit</> : <><Plus size={12} /> Isi</>}
+          </button>
+        )
+      }
+    }])
+  ], [details, readOnly])
+
   const totalCriteria = categories.reduce((a, c) => a + c.criteria.length, 0)
   const filledCount   = Object.values(details).filter(d => d.level !== null).length
   const pctDone       = totalCriteria > 0 ? Math.round((filledCount / totalCriteria) * 100) : 0
@@ -259,21 +307,7 @@ export default function K3SelfAssessmentPage() {
     { bulan: 'Jul', skor: 3.5 }, { bulan: 'Ags', skor: parseFloat(catAvg) || 3.8 },
   ]
 
-  const handleModalCritChange = (e) => {
-    const cid = e.target.value
-    setModalCritId(cid)
-    if (cid && activeCategory) {
-      const cr = activeCategory.criteria.find(c => c.id.toString() === cid)
-      const existing = details[cid]
-      setModalDetail({
-        level: existing?.level || null,
-        catatan: existing?.catatan || '',
-        pic: existing?.pic || (cr?.pic || '')
-      })
-    } else {
-      setModalDetail({ level: null, catatan: '', pic: '' })
-    }
-  }
+
 
   const handleModalSave = async () => {
     if (!modalCritId || !modalDetail.level) return
@@ -521,30 +555,7 @@ export default function K3SelfAssessmentPage() {
           />
         </div>
 
-        {/* Charts and Action Button */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: -10 }}>
-          {!readOnly && (
-            <button
-              onClick={() => {
-                setModalCritId('')
-                setModalDetail({ level: null, catatan: '', pic: '' })
-                setShowModal(true)
-              }}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                padding: '8px 16px', borderRadius: 99, border: '1px solid #14A2BA',
-                background: 'transparent', color: '#14A2BA',
-                fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer',
-                transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)'
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#14A2BA'; e.currentTarget.style.color = '#fff' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#14A2BA' }}
-            >
-              + Input Penilaian
-            </button>
-          )}
-        </div>
-
+        {/* Charts */}
         <div className="grid grid-cols-1 gap-6">
           <ChartWrapper 
             title={`Profil Skor Kriteria - ${activeCategory.name}`}
@@ -570,7 +581,20 @@ export default function K3SelfAssessmentPage() {
 
       </div>
 
-      {/* Form Penilaian Inline Removed */}
+      {/* Daftar Kriteria (Table) */}
+      <div style={{
+        background: 'var(--bg-card)', border: '1px solid var(--border-subtle)',
+        borderRadius: 16, padding: '20px', overflow: 'hidden'
+      }}>
+        <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: 16 }}>Daftar Kriteria Penilaian</h3>
+        <DataTable 
+          columns={TABLE_COLUMNS} 
+          data={activeCategory.criteria} 
+          onRowClick={!readOnly ? handleRowClick : undefined} 
+          paginated={false} 
+          searchable={true} 
+        />
+      </div>
 
       {/* Submit confirmation modal */}
       {submitConfirm && (
@@ -632,28 +656,15 @@ export default function K3SelfAssessmentPage() {
             </div>
             
             <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
-              <div>
-                <label style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 6, display: 'block', textTransform: 'uppercase' }}>
-                  Pilih Kriteria *
-                </label>
-                <select
-                  value={modalCritId}
-                  onChange={handleModalCritChange}
-                  style={{
-                    width: '100%', padding: '10px 14px', borderRadius: 10, fontSize: '0.9rem',
-                    border: '1px solid var(--border-strong)', background: 'var(--bg-card)',
-                    color: 'var(--text-primary)', fontWeight: 600, outline: 'none'
-                  }}
-                >
-                  <option value="">-- Pilih Kriteria --</option>
-                  {activeCategory.criteria.map(c => (
-                    <option key={c.id} value={c.id}>{c.code} - {c.name}</option>
-                  ))}
-                </select>
-              </div>
-
               {modalCritId && (
                 <>
+                  <div style={{ padding: '12px 16px', background: 'var(--bg-subtle)', borderRadius: 10, border: '1px solid var(--border-subtle)' }}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Kriteria</span>
+                    <div style={{ marginTop: 4, fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.95rem' }}>
+                      {activeCategory.criteria.find(c => c.id.toString() === modalCritId)?.code} - {activeCategory.criteria.find(c => c.id.toString() === modalCritId)?.name}
+                    </div>
+                  </div>
+
                   <div>
                     <label style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 10, display: 'block', textTransform: 'uppercase' }}>
                       Level Kematangan (1-5) *
