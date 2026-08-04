@@ -584,4 +584,107 @@ class K3Controller extends Controller
             ]
         ]);
     }
+
+    // ── GET /k3/category-summary/{code}/{tahun}/{semester} ─────────────────
+
+    public function categorySummary(Request $request, string $code, string $tahun, string $semester)
+    {
+        if (!$this->isPicK3($request)) {
+            return $this->forbiddenJson();
+        }
+
+        $category = K3Category::where('code', strtoupper($code))
+            ->with('criteria')
+            ->firstOrFail();
+
+        $period = "{$tahun}-{$semester}";
+        $criteriaIds = $category->criteria->pluck('id');
+
+        // ── Detail periode aktif ────────────────────────────────────────────
+        $assessments = K3Assessment::where('period', $period)
+            ->where('status', 'approved')
+            ->whereIn('criteria_id', $criteriaIds)
+            ->get()
+            ->keyBy('criteria_id');
+
+        $targets = K3Target::where('period', $period)
+            ->whereIn('criteria_id', $criteriaIds)
+            ->get()
+            ->keyBy('criteria_id');
+
+        $scores = [];
+        $targetLevels = [];
+        $criteriaDetails = [];
+
+        foreach ($category->criteria as $crit) {
+            $actual = isset($assessments[$crit->id]) ? $assessments[$crit->id]->actual_level : null;
+            $target = isset($targets[$crit->id]) ? $targets[$crit->id]->target_level : null;
+            $targetId = isset($targets[$crit->id]) ? $targets[$crit->id]->id : null;
+
+            if ($actual !== null) $scores[] = $actual;
+            if ($target !== null) $targetLevels[] = $target;
+
+            $criteriaDetails[] = [
+                'id' => $crit->id,
+                'code' => $crit->code,
+                'name' => $crit->name,
+                'target_id' => $targetId,
+                'target_level' => $target,
+                'actual_level' => $actual,
+            ];
+        }
+
+        $avgScore = count($scores) > 0 ? round(array_sum($scores) / count($scores), 2) : null;
+        $avgTarget = count($targetLevels) > 0 ? round(array_sum($targetLevels) / count($targetLevels), 2) : null;
+        $gap = ($avgScore !== null && $avgTarget !== null) ? round($avgScore - $avgTarget, 2) : null;
+
+        // ── Tren 4 semester terakhir ─────────────────────────────────────────
+        $currentYear = (int) date('Y');
+        $periods = [
+            ($currentYear - 1) . '-S1',
+            ($currentYear - 1) . '-S2',
+            $currentYear . '-S1',
+            $currentYear . '-S2',
+        ];
+
+        $trendAssessments = K3Assessment::whereIn('period', $periods)
+            ->where('status', 'approved')
+            ->whereIn('criteria_id', $criteriaIds)
+            ->get()
+            ->groupBy('period');
+
+        $trendTargets = K3Target::whereIn('period', $periods)
+            ->whereIn('criteria_id', $criteriaIds)
+            ->get()
+            ->groupBy('period');
+
+        $trend = collect($periods)->map(function ($p) use ($trendAssessments, $trendTargets) {
+            $pScores = ($trendAssessments[$p] ?? collect())->pluck('actual_level');
+            $pTargets = ($trendTargets[$p] ?? collect())->pluck('target_level');
+
+            $pAvgScore = $pScores->count() > 0 ? round($pScores->avg(), 2) : null;
+            $pAvgTarget = $pTargets->count() > 0 ? round($pTargets->avg(), 2) : null;
+            $pGap = ($pAvgScore !== null && $pAvgTarget !== null) ? round($pAvgScore - $pAvgTarget, 2) : null;
+
+            return [
+                'period' => $p,
+                'avg_target' => $pAvgTarget,
+                'avg_score' => $pAvgScore,
+                'gap' => $pGap,
+            ];
+        });
+
+        return response()->json([
+            'data' => [
+                'category_code' => $category->code,
+                'category_name' => $category->name,
+                'period' => $period,
+                'avg_target' => $avgTarget,
+                'avg_score' => $avgScore,
+                'gap' => $gap,
+                'criteria_details' => $criteriaDetails,
+                'trend' => $trend,
+            ]
+        ]);
+    }
 }
