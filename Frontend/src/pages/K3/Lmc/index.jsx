@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { ShieldCheck, Save, Send, CheckCircle, Info, ClipboardList, Edit3, Plus, Crown, Target, TrendingUp, TrendingDown } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { ShieldCheck, Save, Info, ClipboardList, Edit3, Plus, Crown, Target, TrendingUp, TrendingDown } from 'lucide-react'
 import {
   ComposedChart, Line, Bar, Cell, LabelList,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ReferenceLine, ResponsiveContainer,
@@ -8,7 +9,6 @@ import DataTable from '@/components/ui/DataTable'
 import PageHeader from '@/components/ui/PageHeader'
 import KpiCard from '@/components/ui/KpiCard'
 import ChartWrapper from '@/components/ui/ChartWrapper'
-import { K3_STATUS_COLORS } from '@/data/k3MasterData'
 import { useAuth } from '@/context/AuthContext'
 import { useFilter } from '@/context/FilterContext'
 import { k3AssessmentService } from '@/services/k3AssessmentService'
@@ -102,9 +102,9 @@ const CustomTooltip = ({ active, payload, label }) => {
   )
 }
 
-// ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function K3LmcPage() {
-  const { isAdminK3 } = useAuth()
+  const navigate = useNavigate()
+  const { user } = useAuth()
   const { filters } = useFilter()
   const currentYear = filters.year || new Date().getFullYear()
 
@@ -112,26 +112,10 @@ export default function K3LmcPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  const [selectedSemester, setSelectedSemester] = useState(() => {
-    const saved = sessionStorage.getItem('k3_assessment_semester')
-    return saved ? saved : (new Date().getMonth() + 1 <= 6 ? 'S1' : 'S2')
-  })
-  useEffect(() => {
-    sessionStorage.setItem('k3_assessment_semester', selectedSemester)
-  }, [selectedSemester])
+  const selectedSemester = filters.semester || 'S1'
+  const selectedYear = filters.year || currentYear
 
-  const [selectedYear, setSelectedYear] = useState(() => {
-    const saved = sessionStorage.getItem('k3_assessment_year')
-    return saved ? parseInt(saved) : currentYear
-  })
-  useEffect(() => {
-    sessionStorage.setItem('k3_assessment_year', selectedYear)
-  }, [selectedYear])
-
-  const [status, setStatus] = useState('draft')
   const [details, setDetails] = useState({})
-  const [saving, setSaving] = useState(false)
-  const [submitConfirm, setSubmitConfirm] = useState(false)
   const [toastState, setToastState] = useState(null)
   const period = `${selectedYear}-${selectedSemester}`
 
@@ -164,7 +148,6 @@ export default function K3LmcPage() {
           tahun: selectedYear,
           semester: selectedSemester
         })
-        setStatus(list.length > 0 ? list[0].status : 'draft')
         const newDetails = {}
         list.forEach(d => {
           newDetails[d.criteria_id] = {
@@ -177,7 +160,6 @@ export default function K3LmcPage() {
       } catch (err) {
         console.error(err)
         setError("Gagal memuat data assessment.")
-        setStatus('draft')
         setDetails({})
       } finally {
         setLoading(false)
@@ -196,7 +178,7 @@ export default function K3LmcPage() {
       })
   }, [selectedYear, selectedSemester])
 
-  const readOnly = isAdminK3
+  const readOnly = user?.role !== 'pic_k3'
 
   const handleRowClick = (row) => {
     setModalCritId(row.id.toString())
@@ -226,24 +208,8 @@ export default function K3LmcPage() {
     { key: 'pic', label: 'PIC', width: '150px', align: 'center', render: (_, row) => {
       const p = details[row.id]?.pic || row.pic
       return <span style={{ fontSize: '0.8rem', color: p ? 'var(--text-primary)' : 'var(--text-muted)' }}>{p || '-'}</span>
-    }},
-    ...(readOnly ? [] : [{
-      key: 'actions', label: 'Aksi', width: '100px', align: 'center', render: (_, row) => {
-        const hasLevel = !!details[row.id]?.level
-        return (
-          <button style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            padding: '4px 12px', borderRadius: 6,
-            border: '1px solid #2563eb', background: 'transparent',
-            color: '#2563eb', fontSize: '0.75rem', fontWeight: 600,
-            cursor: 'pointer'
-          }}>
-            {hasLevel ? <><Edit3 size={12} /> Edit</> : <><Plus size={12} /> Isi</>}
-          </button>
-        )
-      }
-    }])
-  ], [details, readOnly])
+    }}
+  ], [details])
 
   const activeCategory = categories.find(c => c.code === CATEGORY_CODE)
 
@@ -277,8 +243,6 @@ export default function K3LmcPage() {
   const catAvg = catFilled > 0
     ? (activeCategory.criteria.reduce((a, cr) => a + (details[cr.id]?.level || 0), 0) / catFilled).toFixed(1)
     : '-'
-
-  const statusCfg = K3_STATUS_COLORS[status] || { label: status, bg: 'bg-gray-100', text: 'text-gray-700', border: 'border-gray-200' }
 
   const barChartData = activeCategory.criteria.map(cr => ({
     code: cr.code,
@@ -323,62 +287,6 @@ export default function K3LmcPage() {
     }
   }
 
-  const handleSave = async () => {
-    setSaving(true)
-    try {
-      const detailsArr = Object.keys(details)
-        .filter(critId => details[critId].level != null)
-        .map(critId => ({
-          criteria_id: parseInt(critId),
-          actual_level: details[critId].level,
-          notes: details[critId].catatan,
-          pic_names: details[critId].pic
-        }))
-      await k3AssessmentService.bulkAssessment(period, detailsArr)
-      setToastState({ message: "Berhasil menyimpan draft.", type: "success" })
-    } catch(err) {
-      console.error(err)
-      setToastState({ message: "Gagal menyimpan draft, silakan coba lagi.", type: "error" })
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const handleSubmit = async () => {
-    setSaving(true)
-    try {
-      const detailsArr = Object.keys(details)
-        .filter(critId => details[critId].level != null)
-        .map(critId => ({
-          criteria_id: parseInt(critId),
-          actual_level: details[critId].level,
-          notes: details[critId].catatan,
-          pic_names: details[critId].pic
-        }))
-      await k3AssessmentService.bulkAssessment(period, detailsArr)
-      await k3AssessmentService.submitAssessment(period)
-      setStatus('submitted')
-      setSubmitConfirm(false)
-      setToastState({ message: "Berhasil mensubmit assessment.", type: "success" })
-    } catch(err) {
-      console.error(err)
-      setToastState({ message: "Gagal mensubmit assessment, silakan coba lagi.", type: "error" })
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const handleUnsubmit = async () => {
-    try {
-      await k3AssessmentService.unsubmitAssessment(period)
-      setStatus('draft')
-      setToastState({ message: "Berhasil membatalkan submit.", type: "success" })
-    } catch(err) {
-      console.error(err)
-      setToastState({ message: "Gagal membatalkan submit.", type: "error" })
-    }
-  }
-
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -386,103 +294,28 @@ export default function K3LmcPage() {
         description="Penilaian Mandiri Tingkat Kematangan K3 — Kategori LMC"
         icon={Crown}
         iconColor={CATEGORY_COLOR}
-      />
-
-      {/* Filter row */}
-      <div style={{
-        background: 'var(--bg-card)', border: '1px solid var(--border-subtle)',
-        borderRadius: 16, padding: '16px 20px',
-        display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 16
-      }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Semester</label>
-          <select
-            value={selectedSemester}
-            onChange={e => setSelectedSemester(e.target.value)}
-            style={{
-              padding: '7px 28px 7px 12px', borderRadius: 10,
-              border: '1px solid var(--border-subtle)',
-              background: 'var(--bg-card)', color: 'var(--text-primary)',
-              fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer',
-            }}
-          >
-            <option value="S1">Semester 1 (Jan-Jun)</option>
-            <option value="S2">Semester 2 (Jul-Des)</option>
-          </select>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Tahun</label>
-          <select
-            value={selectedYear}
-            onChange={e => setSelectedYear(Number(e.target.value))}
-            style={{
-              padding: '7px 28px 7px 12px', borderRadius: 10,
-              border: '1px solid var(--border-subtle)',
-              background: 'var(--bg-card)', color: 'var(--text-primary)',
-              fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer',
-            }}
-          >
-            {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
-          </select>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Status</label>
-          <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold border ${statusCfg?.bg} ${statusCfg?.text} ${statusCfg?.border}`}>
-            <CheckCircle size={13} />
-            {statusCfg?.label}
-          </span>
-        </div>
-
-        {isAdminK3 && (
-          <div style={{ display: 'flex', gap: 8, marginLeft: 'auto' }}>
-            <button
-              onClick={handleSave}
-              disabled={saving || status !== 'draft'}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                padding: '7px 16px', borderRadius: 10, border: '1px solid var(--border-subtle)',
-                background: 'var(--bg-card)', color: 'var(--text-primary)',
-                fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer',
-                opacity: (saving || status !== 'draft') ? 0.5 : 1
-              }}
-            >
-              <Save size={14} /> {saving ? 'Menyimpan...' : 'Simpan Draft'}
-            </button>
-            <div style={{ display: 'inline-flex', background: 'rgba(0, 162, 185,0.05)', padding: 4, borderRadius: 12, border: '1px solid rgba(0, 162, 185,0.15)', opacity: status !== 'draft' ? 0.5 : 1 }}>
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          {user?.role === 'pic_k3' && (
+            <div style={{ display: 'inline-flex', background: 'rgba(0, 112, 192, 0.05)', padding: 4, borderRadius: 12, border: '1px solid rgba(0, 112, 192, 0.15)' }}>
               <button
-                onClick={() => setSubmitConfirm(true)}
-                disabled={status !== 'draft'}
+                onClick={() => navigate('/k3/assessment/lmc/input')}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: 6,
-                  padding: '6px 16px', borderRadius: 9, border: 'none',
-                  background: 'var(--bg-card)', color: '#00A2B9',
-                  fontWeight: 700, fontSize: '0.85rem', cursor: status !== 'draft' ? 'not-allowed' : 'pointer',
-                  boxShadow: '0 2px 8px rgba(0, 162, 185,0.15)', transition: 'all 0.2s ease'
+                  padding: '6px 16px', borderRadius: 9, fontSize: '0.85rem', fontWeight: 700,
+                  transition: 'all 0.2s ease', border: 'none', cursor: 'pointer',
+                  background: 'var(--bg-card)', color: CATEGORY_COLOR,
+                  boxShadow: '0 2px 8px rgba(0, 112, 192, 0.15)',
+                  display: 'flex', alignItems: 'center', gap: '8px',
                 }}
-                onMouseEnter={e => { if(status === 'draft') { e.currentTarget.style.background = '#00A2B9'; e.currentTarget.style.color = '#FFFFFF' } }}
-                onMouseLeave={e => { if(status === 'draft') { e.currentTarget.style.background = 'var(--bg-card)'; e.currentTarget.style.color = '#00A2B9' } }}
+                onMouseEnter={e => { e.currentTarget.style.background = CATEGORY_COLOR; e.currentTarget.style.color = '#FFFFFF' }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-card)'; e.currentTarget.style.color = CATEGORY_COLOR }}
               >
-                <Send size={14} /> Submit Keseluruhan
+                <Plus size={16} /> Tambah Penilaian LMC
               </button>
             </div>
-            {status === 'submitted' && (
-              <button
-                onClick={handleUnsubmit}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 6,
-                  padding: '7px 16px', borderRadius: 10, border: '1px solid #EF4444',
-                  background: '#FEF2F2', color: '#EF4444',
-                  fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer',
-                }}
-              >
-                Batalkan Submit
-              </button>
-            )}
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      </PageHeader>
 
       {readOnly && (
         <div style={{
@@ -497,13 +330,18 @@ export default function K3LmcPage() {
       )}
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <KpiCard
           title="Skor Maturity LMC"
           value={catAvg}
           suffix="/ 5.0"
           icon={ShieldCheck}
-          color={CATEGORY_COLOR}
+          color={
+            (summary?.avg_target != null && catAvg !== '-')
+              ? (parseFloat(catAvg) >= summary.avg_target ? '#22C55E' : '#EF4444')
+              : CATEGORY_COLOR
+          }
+          danger={summary?.avg_target != null && catAvg !== '-' && parseFloat(catAvg) < summary.avg_target}
           progress={{ value: catPct, label: `${catPct}% Selesai` }}
         />
         <KpiCard
@@ -520,13 +358,6 @@ export default function K3LmcPage() {
           suffix="/ 5.0"
           icon={Target}
           color="#F59E0B"
-        />
-        <KpiCard
-          title="Gap"
-          value={summary?.gap != null ? (summary.gap > 0 ? `+${summary.gap.toFixed(2)}` : summary.gap.toFixed(2)) : '-'}
-          icon={summary?.gap != null && summary.gap < 0 ? TrendingDown : TrendingUp}
-          color={summary?.gap != null && summary.gap < 0 ? '#EF4444' : '#22C55E'}
-          danger={summary?.gap != null && summary.gap < 0}
         />
       </div>
 
@@ -571,6 +402,21 @@ export default function K3LmcPage() {
         </ChartWrapper>
       </div>
 
+      {/* Daftar Kriteria (Table) */}
+      <div style={{
+        background: 'var(--bg-card)', border: '1px solid var(--border-subtle)',
+        borderRadius: 16, padding: '20px', overflow: 'hidden'
+      }}>
+        <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: 16 }}>Daftar Kriteria Penilaian</h3>
+        <DataTable
+          columns={TABLE_COLUMNS}
+          data={activeCategory.criteria}
+          onRowClick={!readOnly ? handleRowClick : undefined}
+          paginated={false}
+          searchable={true}
+        />
+      </div>
+
       {/* Tabel Perbandingan Antar Semester */}
       <div style={{
         background: 'var(--bg-card)', border: '1px solid var(--border-subtle)',
@@ -596,75 +442,12 @@ export default function K3LmcPage() {
                 ? <span style={{ fontWeight: 700, color: (row.avg_target != null && v < row.avg_target) ? '#EF4444' : '#22C55E' }}>{v.toFixed(2)}</span>
                 : <span style={{ color: 'var(--text-muted)' }}>-</span>
             },
-            {
-              key: 'gap', label: 'Gap', align: 'center',
-              render: v => v != null
-                ? <span style={{ fontWeight: 700, color: v >= 0 ? '#22C55E' : '#EF4444' }}>{v > 0 ? '+' : ''}{v.toFixed(2)}</span>
-                : <span style={{ color: 'var(--text-muted)' }}>-</span>
-            },
           ]}
           data={summary?.trend || []}
           paginated={false}
           searchable={false}
         />
       </div>
-
-      {/* Daftar Kriteria (Table) */}
-      <div style={{
-        background: 'var(--bg-card)', border: '1px solid var(--border-subtle)',
-        borderRadius: 16, padding: '20px', overflow: 'hidden'
-      }}>
-        <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: 16 }}>Daftar Kriteria Penilaian</h3>
-        <DataTable
-          columns={TABLE_COLUMNS}
-          data={activeCategory.criteria}
-          onRowClick={!readOnly ? handleRowClick : undefined}
-          paginated={false}
-          searchable={true}
-        />
-      </div>
-
-      {/* Submit confirmation modal */}
-      {submitConfirm && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 9999,
-          background: 'rgba(0,0,0,0.4)', display: 'flex',
-          alignItems: 'center', justifyContent: 'center',
-        }}>
-          <div style={{
-            background: 'var(--bg-card)', borderRadius: 20, padding: 28,
-            maxWidth: 400, width: '90%', boxShadow: '0 24px 64px rgba(0,0,0,0.15)'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-              <Send size={20} style={{ color: '#0070C0' }} />
-              <h3 style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-primary)' }}>
-                Konfirmasi Submit Assessment
-              </h3>
-            </div>
-            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: 20, lineHeight: 1.6 }}>
-              Assessment untuk periode <strong>Semester {selectedSemester === 'S1' ? '1' : '2'} {selectedYear}</strong> akan disubmit secara keseluruhan dan menunggu persetujuan Admin K3. Data tidak dapat diubah setelah disubmit.
-            </p>
-            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-              <button
-                onClick={() => setSubmitConfirm(false)}
-                style={{
-                  padding: '8px 18px', borderRadius: 10, border: '1px solid var(--border-subtle)',
-                  background: 'transparent', color: 'var(--text-primary)',
-                  fontWeight: 600, cursor: 'pointer'
-                }}
-              >Batal</button>
-              <button
-                onClick={handleSubmit}
-                style={{
-                  padding: '8px 18px', borderRadius: 10, border: 'none',
-                  background: '#0070C0', color: '#fff',
-                  fontWeight: 700, cursor: 'pointer'
-                }}
-              >Ya, Submit</button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Input Penilaian Modal */}
       {showModal && (

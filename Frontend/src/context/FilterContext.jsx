@@ -10,6 +10,7 @@ export function FilterProvider({ children }) {
   const [filters, setFilters] = useState({
     year:       CURRENT_YEAR,
     month:      CURRENT_MONTH,
+    semester:   CURRENT_MONTH <= 6 ? 'S1' : 'S2',
     up3:        DEFAULT_UP3,
     category:   '',
     kpi:        '',
@@ -26,6 +27,7 @@ export function FilterProvider({ children }) {
     setFilters({
       year:      CURRENT_YEAR,
       month:     CURRENT_MONTH,
+      semester:  CURRENT_MONTH <= 6 ? 'S1' : 'S2',
       up3:       DEFAULT_UP3,
       category:  '',
       kpi:       '',
@@ -40,6 +42,7 @@ export function FilterProvider({ children }) {
       ...prev,
       year: CURRENT_YEAR,
       month: CURRENT_MONTH,
+      semester: CURRENT_MONTH <= 6 ? 'S1' : 'S2',
     }))
   }
 

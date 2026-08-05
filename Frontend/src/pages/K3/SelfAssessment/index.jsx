@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { ChevronDown, ChevronRight, ShieldCheck, Save, Send, CheckCircle, RotateCcw, Info, Activity, AlertTriangle, CalendarDays, ClipboardList, Edit3, Plus } from 'lucide-react'
+import { ChevronDown, ChevronRight, ShieldCheck, Save, Info, Activity, AlertTriangle, CalendarDays, ClipboardList, Edit3, Plus } from 'lucide-react'
 import {
   LineChart, Line, BarChart, Bar, Cell, ComposedChart, LabelList,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ReferenceLine, ResponsiveContainer,
@@ -8,7 +8,7 @@ import DataTable from '@/components/ui/DataTable'
 import PageHeader from '@/components/ui/PageHeader'
 import KpiCard from '@/components/ui/KpiCard'
 import ChartWrapper from '@/components/ui/ChartWrapper'
-import { getMaturityLabel, K3_STATUS_COLORS } from '@/data/k3MasterData'
+import { getMaturityLabel } from '@/data/k3MasterData'
 import { useAuth } from '@/context/AuthContext'
 import { useFilter } from '@/context/FilterContext'
 import { k3AssessmentService } from '@/services/k3AssessmentService'
@@ -110,7 +110,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function K3SelfAssessmentPage() {
   const { category: catParam } = useParams()
-  const { isAdminK3, user } = useAuth()
+  const { user } = useAuth()
   const { filters } = useFilter()
   const currentYear = filters.year || new Date().getFullYear()
 
@@ -133,10 +133,8 @@ export default function K3SelfAssessmentPage() {
   useEffect(() => {
     sessionStorage.setItem('k3_assessment_year', selectedYear)
   }, [selectedYear])
-  const [status, setStatus]               = useState('draft')
   const [details, setDetails]             = useState({})
   const [saving, setSaving]               = useState(false)
-  const [submitConfirm, setSubmitConfirm] = useState(false)
   const [error, setError]                 = useState(null)
   const [toastState, setToastState]       = useState(null)
   const period = `${selectedYear}-${selectedSemester}`
@@ -171,9 +169,6 @@ export default function K3SelfAssessmentPage() {
           semester: selectedSemester 
         })
         
-        // Cek status dari salah satu item (karena status per-periode sama)
-        setStatus(list.length > 0 ? list[0].status : 'draft')
-        
         const newDetails = {}
         list.forEach(d => {
           newDetails[d.criteria_id] = {
@@ -186,7 +181,6 @@ export default function K3SelfAssessmentPage() {
       } catch (err) {
         console.error(err)
         setError("Gagal memuat data assessment.")
-        setStatus('draft')
         setDetails({})
       } finally {
         setLoading(false)
@@ -226,7 +220,7 @@ export default function K3SelfAssessmentPage() {
     )
   }
 
-  const readOnly = isAdminK3
+  const readOnly = user?.role !== 'pic_k3'
 
   const handleRowClick = (row) => {
     setModalCritId(row.id.toString())
@@ -285,8 +279,6 @@ export default function K3SelfAssessmentPage() {
   const catAvg = catFilled > 0 
     ? (activeCategory.criteria.reduce((a, cr) => a + (details[cr.id]?.level || 0), 0) / catFilled).toFixed(1)
     : '-'
-
-  const statusCfg = K3_STATUS_COLORS[status] || { label: status, bg: 'bg-gray-100', text: 'text-gray-700', border: 'border-gray-200' }
 
   const barChartData = activeCategory ? activeCategory.criteria.map(cr => ({
     code: cr.code,
@@ -348,47 +340,12 @@ export default function K3SelfAssessmentPage() {
           pic_names: details[critId].pic
         }))
       await k3AssessmentService.bulkAssessment(period, detailsArr)
-      setToastState({ message: "Berhasil menyimpan draft.", type: "success" })
+      setToastState({ message: "Berhasil menyimpan penilaian.", type: "success" })
     } catch(err) {
       console.error(err)
-      setToastState({ message: "Gagal menyimpan draft, silakan coba lagi.", type: "error" })
+      setToastState({ message: "Gagal menyimpan penilaian, silakan coba lagi.", type: "error" })
     } finally {
       setSaving(false)
-    }
-  }
-
-  const handleSubmit = async () => {
-    setSaving(true)
-    try {
-      const detailsArr = Object.keys(details)
-        .filter(critId => details[critId].level != null)
-        .map(critId => ({
-          criteria_id: parseInt(critId),
-          actual_level: details[critId].level,
-          notes: details[critId].catatan,
-          pic_names: details[critId].pic
-        }))
-      await k3AssessmentService.bulkAssessment(period, detailsArr)
-      await k3AssessmentService.submitAssessment(period)
-      setStatus('submitted')
-      setSubmitConfirm(false)
-      setToastState({ message: "Berhasil mensubmit assessment.", type: "success" })
-    } catch(err) {
-      console.error(err)
-      setToastState({ message: "Gagal mensubmit assessment, silakan coba lagi.", type: "error" })
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const handleUnsubmit = async () => {
-    try {
-      await k3AssessmentService.unsubmitAssessment(period)
-      setStatus('draft')
-      setToastState({ message: "Berhasil membatalkan submit.", type: "success" })
-    } catch(err) {
-      console.error(err)
-      setToastState({ message: "Gagal membatalkan submit.", type: "error" })
     }
   }
 
@@ -444,61 +401,22 @@ export default function K3SelfAssessmentPage() {
           </select>
         </div>
 
-        {/* Status badge */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Status</label>
-          <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold border ${statusCfg?.bg} ${statusCfg?.text} ${statusCfg?.border}`}>
-            <CheckCircle size={13} />
-            {statusCfg?.label}
-          </span>
-        </div>
-
         {/* Action buttons */}
-        {isAdminK3 && (
+        {user?.role === 'pic_k3' && (
           <div style={{ display: 'flex', gap: 8, marginLeft: 'auto' }}>
             <button
               onClick={handleSave}
-              disabled={saving || status !== 'draft'}
+              disabled={saving}
               style={{
                 display: 'flex', alignItems: 'center', gap: 6,
                 padding: '7px 16px', borderRadius: 10, border: '1px solid var(--border-subtle)',
                 background: 'var(--bg-card)', color: 'var(--text-primary)',
                 fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer',
-                opacity: (saving || status !== 'draft') ? 0.5 : 1
+                opacity: saving ? 0.5 : 1
               }}
             >
-              <Save size={14} /> {saving ? 'Menyimpan...' : 'Simpan Draft'}
+              <Save size={14} /> {saving ? 'Menyimpan...' : 'Simpan'}
             </button>
-            <div style={{ display: 'inline-flex', background: 'rgba(0, 162, 185,0.05)', padding: 4, borderRadius: 12, border: '1px solid rgba(0, 162, 185,0.15)', opacity: status !== 'draft' ? 0.5 : 1 }}>
-              <button
-                onClick={() => setSubmitConfirm(true)}
-                disabled={status !== 'draft'}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 6,
-                  padding: '6px 16px', borderRadius: 9, border: 'none',
-                  background: 'var(--bg-card)', color: '#00A2B9',
-                  fontWeight: 700, fontSize: '0.85rem', cursor: status !== 'draft' ? 'not-allowed' : 'pointer',
-                  boxShadow: '0 2px 8px rgba(0, 162, 185,0.15)', transition: 'all 0.2s ease'
-                }}
-                onMouseEnter={e => { if(status === 'draft') { e.currentTarget.style.background = '#00A2B9'; e.currentTarget.style.color = '#FFFFFF' } }}
-                onMouseLeave={e => { if(status === 'draft') { e.currentTarget.style.background = 'var(--bg-card)'; e.currentTarget.style.color = '#00A2B9' } }}
-              >
-                <Send size={14} /> Submit Keseluruhan
-              </button>
-            </div>
-            {status === 'submitted' && (
-              <button
-                onClick={handleUnsubmit}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 6,
-                  padding: '7px 16px', borderRadius: 10, border: '1px solid #EF4444',
-                  background: '#FEF2F2', color: '#EF4444',
-                  fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer',
-                }}
-              >
-                Batalkan Submit
-              </button>
-            )}
           </div>
         )}
       </div>
@@ -595,48 +513,6 @@ export default function K3SelfAssessmentPage() {
           searchable={true} 
         />
       </div>
-
-      {/* Submit confirmation modal */}
-      {submitConfirm && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 9999,
-          background: 'rgba(0,0,0,0.4)', display: 'flex',
-          alignItems: 'center', justifyContent: 'center',
-        }}>
-          <div style={{
-            background: 'var(--bg-card)', borderRadius: 20, padding: 28,
-            maxWidth: 400, width: '90%', boxShadow: '0 24px 64px rgba(0,0,0,0.15)'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-              <Send size={20} style={{ color: '#0070C0' }} />
-              <h3 style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-primary)' }}>
-                Konfirmasi Submit Assessment
-              </h3>
-            </div>
-            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: 20, lineHeight: 1.6 }}>
-              Assessment untuk periode <strong>Semester {selectedSemester === 'S1' ? '1' : '2'} {selectedYear}</strong> akan disubmit secara keseluruhan dan menunggu persetujuan Admin K3. Data tidak dapat diubah setelah disubmit.
-            </p>
-            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-              <button
-                onClick={() => setSubmitConfirm(false)}
-                style={{
-                  padding: '8px 18px', borderRadius: 10, border: '1px solid var(--border-subtle)',
-                  background: 'transparent', color: 'var(--text-primary)',
-                  fontWeight: 600, cursor: 'pointer'
-                }}
-              >Batal</button>
-              <button
-                onClick={handleSubmit}
-                style={{
-                  padding: '8px 18px', borderRadius: 10, border: 'none',
-                  background: '#0070C0', color: '#fff',
-                  fontWeight: 700, cursor: 'pointer'
-                }}
-              >Ya, Submit</button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Input Penilaian Modal */}
       {showModal && (

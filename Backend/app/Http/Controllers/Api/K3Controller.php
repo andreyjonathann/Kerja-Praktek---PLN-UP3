@@ -187,6 +187,7 @@ class K3Controller extends Controller
                 'period'        => $a->period,
                 'actual_level'  => $a->actual_level,
                 'notes'         => $a->notes,
+                'pic_names'     => $a->pic_names,
                 'status'        => $a->status,
                 'catatan_revisor' => $a->catatan_revisor,
                 'submitted_by'  => $a->submitter?->name,
@@ -523,7 +524,6 @@ class K3Controller extends Controller
 
         // ONLY get approved assessments for NKO realisasi
         $assessments = K3Assessment::where('period', $period)
-            ->where('status', 'approved')
             ->get()
             ->keyBy('criteria_id');
 
@@ -602,7 +602,6 @@ class K3Controller extends Controller
 
         // ── Detail periode aktif ────────────────────────────────────────────
         $assessments = K3Assessment::where('period', $period)
-            ->where('status', 'approved')
             ->whereIn('criteria_id', $criteriaIds)
             ->get()
             ->keyBy('criteria_id');
@@ -648,7 +647,6 @@ class K3Controller extends Controller
         ];
 
         $trendAssessments = K3Assessment::whereIn('period', $periods)
-            ->where('status', 'approved')
             ->whereIn('criteria_id', $criteriaIds)
             ->get()
             ->groupBy('period');

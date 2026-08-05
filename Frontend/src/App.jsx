@@ -88,10 +88,10 @@ import KelolaTargetBulananPage from '@/pages/Admin/KelolaTargetBulanan'
 
 // K3 Pages
 import K3DashboardPage         from '@/pages/K3/Dashboard'
-import K3TrendPage             from '@/pages/K3/Trend'
+
 import K3SelfAssessmentPage    from '@/pages/K3/SelfAssessment'
 import K3LmcPage               from '@/pages/K3/Lmc'
-// Detail Route Removed
+import LmcInputPage            from '@/pages/K3/LmcInput'
 import K3KegiatanPage          from '@/pages/K3/Kegiatan'
 import K3TemuanPage from '@/pages/K3/Temuan'
 import K3NkoPage from '@/pages/K3/Nko'
@@ -184,20 +184,8 @@ function PengadaanProtectedRoute({ children }) {
 
 // Role-based home: pic_pemasaran → /pemasaran, lainnya → Overview biasa
 function RoleBasedHome() {
-  const { user, loading } = useAuth()
+  const { loading } = useAuth()
   if (loading) return null
-  if (user?.role === 'pic_pemasaran') {
-    return <Navigate to="/pemasaran" replace />
-  }
-  if (user?.role === 'pic_transaksi_energi') {
-    return <Navigate to="/nko" replace />
-  }
-  if (user?.role === 'pic_pengadaan') {
-    return <Navigate to="/pengadaan/kontrak" replace />
-  }
-  if (user?.role === 'pic_k3') {
-    return <Navigate to="/k3/dashboard" replace />
-  }
   return (
     <ProtectedRoute>
       <OverviewPage />
@@ -642,17 +630,18 @@ export default function App() {
                   </ErrorBoundary>
                 </ProtectedRoute>
               } />
-              <Route path="/k3/trend" element={
-                <ProtectedRoute>
-                  <ErrorBoundary>
-                    <K3TrendPage />
-                  </ErrorBoundary>
-                </ProtectedRoute>
-              } />
+
               <Route path="/k3/assessment/lmc" element={
                 <ProtectedRoute>
                   <ErrorBoundary>
                     <K3LmcPage />
+                  </ErrorBoundary>
+                </ProtectedRoute>
+              } />
+              <Route path="/k3/assessment/lmc/input" element={
+                <ProtectedRoute>
+                  <ErrorBoundary>
+                    <LmcInputPage />
                   </ErrorBoundary>
                 </ProtectedRoute>
               } />

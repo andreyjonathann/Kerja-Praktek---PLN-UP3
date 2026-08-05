@@ -1,0 +1,63 @@
+74d1e30 fix(susut-distribusi): sync form Edit ke skema 3-field
+c26cc45 fix(susut-distribusi): perbaiki route edit dari :id ke :bulan/:tahun
+774b622 fix(susut-distribusi): sync frontend display ke skema 3-field
+4cd0f7e fix(susut): update InputKinerjaSusutDistribusi form to 3-component schema
+e1108e9 fix(susut): update controller to use 3-component formula
+0527dc1 fix(susut): revert model to 3-component schema (kwh_netto, pssd, kwh_jual_309)
+7610db7 feat(ux): add unsaved-changes guard to EditKinerjaP2tl
+36b4b8c feat(ux): add unsaved-changes guard to EditKinerjaSusutDistribusi
+8e70049 feat(ux): add unsaved-changes guard to EditKinerja
+2822e76 feat(ux): add unsaved-changes guard to EditGangguanTmLebih5
+3e99f66 feat(ux): add unsaved-changes guard to EditGangguanTrafo
+c0829fd feat(ux): add unsaved-changes guard to EditGangguanSwitching
+b874762 feat(ux): add unsaved-changes guard to EditEns
+8f78e70 fix(ux): fix form-reset bug and add unsaved-changes guard to InputGangguanTmLebih5
+1ac8774 feat(ux): add unsaved-changes guard to InputGangguanTmKurang5
+8daf26f feat(ux): add unsaved-changes guard to InputGangguanTrafo
+a51fe94 feat(ux): add unsaved-changes guard to InputGangguanSwitching
+ccb7f10 feat(ui): make year filter typable instead of dropdown
+d86cc31 feat(filter): auto-reset period to current on every page navigation
+c8eab35 feat(filter): add resetPeriodToCurrent to FilterContext
+5edd7e1 fix(nko): use has_target from backend overview for SAIFI TargetWarning
+5a10b1e fix(nko): use has_target from backend overview for SAIDI TargetWarning
+761facb fix(nko): use has_target for Gangguan TM TargetWarning and fix persen formula (was T/R, now 2-(R/T) with floor 0 / cap 110)
+edc00eb fix(nko): use has_target from backend for Rating Negatif TargetWarning, remove dead duplicate banner call
+3e8111d feat(ui): add TargetWarning to ENS using has_target from backend overview
+9905d1b fix(ui): convert TargetWarning from floating overlay to inline banner
+92bc623 fix(nko): add has_target field for SAIDI/SAIFI/ENS overview KPIs
+3572611 fix(nko): add has_target field to Gangguan TM rekap() endpoint
+b83537f fix(nko): add centralized has_target field to Rating Negatif response
+dbd4192 fix(nko): use TargetService for Gangguan Switching has_target check
+107b4bf fix(nko): use TargetService for MVOD has_target check
+df7930b fix(nko): use TargetService for SRDAG has_target check
+d9e2fb5 fix(nko): use TargetService for MTTR has_target check
+a8874e0 feat(nko): add TargetService for centralized target completeness check
+cbe52c9 fix(nko): add floor 0 to SAIDI/SAIFI/ENS pencapaian closure
+e0a6d48 fix(nko): add floor 0 to Rating Negatif pencapaian calculations
+dfca759 fix(nko): add floor 0 to Gangguan Switching pencapaian calculation
+a8f444b fix(nko): add floor 0 to Gangguan TM pencapaian calculations
+1904975 fix(nko): add floor 0 to SRDAG pencapaian calculations
+41dba20 fix(nko): standardize floor/cap in RPT Gangguan dashboard
+a758943 fix(nko): add floor 0 to MVOD pencapaian closure
+ddbb94d fix(nko): add floor 0 to MTTR dashboard pencapaian calculations
+a52ab16 feat(nko): add artisan command to recalculate historical nko_score
+1e44577 fix(nko): correct MINIMIZE formula in NkoCalculationService
+d3780ff fix(nko): align RANGE formula and cap consistency in NkoController
+62ad579 fix(nko): implement correct piecewise formula for RANGE polarity
+da26ae7 fix(nko): unify pencapaian cap to 110% in NkoRealizationController
+93ffb35 fix(nko): standardisasi cap skor NKO ke 110%, sesuai formula resmi KM KBJ Excel (sebelumnya 100% di NkoCalculationService, 120% di NkoController)
+a81a1e8 fix(ux): koreksi path P2TL, hapus menu tanpa route, kembalikan JARINGAN ke struktur flat (revert grouping dari branch andrey)
+5d73efd merge: gabungkan branch andrey ke eunike, resolve conflict routes/api.php, fix menu LBKB/NIAGA nyasar di TRANSAKSI ENERGI
+c6cd48e wip: checkpoint before merging branch andrey
+73ae05d feat(ux): add TargetWarning banner to GantiMeter, P2TL, SusutDistribusi dashboards for consistency with other Jaringan/TE modules
+95582d1 feat(auto-populate,dirty-guard): populate existing data and warn on unsaved exit for GantiMeter, P2TL, SusutDistribusi, ENS input forms
+ac2bca7 feat(ux): distinguish unset target from zero target (P2TL & Susut Distribusi)
+b6b57c5 fix: relocate RestrictPengadaanWrites middleware to api.php routing to fix undefined middleware() method error
+1534fed fix(nko): floor NKO score at 0 to prevent negative percentage display
+0d13eb6 feat(ux): migrate alert() to centralized notify.js utility
+cf98581 feat: implement budget efficiency features, rbac protection for admin, and redesign pagu anggaran layout
+b180737 fix(security): add missing role checks on unguarded mutation endpoints
+570720c merge: gabungkan perubahan dari origin/eunike ke branch Andre
+5896732 feat: implement Saldo Akhir Niaga, role-based checks, and home dashboard summary overview
+42a1972 Merge origin/eunike: tambah modul P2TL, Ganti Meter, Susut Distribusi, perbaikan RBAC dan YTD
+80ff921 feat: implement RBAC and read-only mode for Perencanaan role

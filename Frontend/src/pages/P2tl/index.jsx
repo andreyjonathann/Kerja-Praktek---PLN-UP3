@@ -24,6 +24,7 @@ export default function P2tlPage() {
   
   const [selectedRow, setSelectedRow] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [tab, setTab] = useState('monthly');
 
   const isViewer = user?.role === 'viewer';
 
@@ -98,13 +99,24 @@ export default function P2tlPage() {
 
   // Chart data from trend
   const trendData = dashboard?.trend;
+  const hasTarget = trendData ? trendData.every(t => t.target !== null) : false;
+  
+  let cumRealChart = 0;
+  let cumTgtChart = 0;
+
   const chartData = Array.from({ length: 12 }, (_, i) => {
     const bulanNum = i + 1;
     const item = trendData?.find(t => t.bulan === bulanNum);
+    
+    if (item?.realisasi != null) cumRealChart += item.realisasi;
+    if (item?.target != null) cumTgtChart += item.target;
+
     return {
       label: MONTHS_ID[bulanNum]?.substring(0, 3) || `B${bulanNum}`,
       realisasi: item?.realisasi ?? null,
       target: item?.target ?? null,
+      cumulativeReal: item?.realisasi != null ? cumRealChart : null,
+      cumulativeTgt: item?.target != null ? cumTgtChart : null,
     };
   });
 
@@ -123,11 +135,26 @@ export default function P2tlPage() {
   };
 
   // Prepare table data (1-12 months)
+  let cumRealTab = 0;
+  let cumTgtTab = 0;
+
   const tableDataBulan = Array.from({ length: 12 }, (_, i) => {
     const bulanNum = i + 1;
     const match = data?.find(d => d.bulan === bulanNum);
     const trendMatch = trendData?.find(t => t.bulan === bulanNum);
     const targetVal = trendMatch?.target ?? null;
+    
+    let cumulativeReal = null;
+    let cumulativeTgt = null;
+    
+    if (match && match.realisasi_kwh != null) {
+      cumRealTab += match.realisasi_kwh;
+      cumulativeReal = cumRealTab;
+    }
+    if (targetVal != null) {
+      cumTgtTab += targetVal;
+      cumulativeTgt = cumTgtTab;
+    }
     
     if (match) {
       return {
@@ -145,6 +172,8 @@ export default function P2tlPage() {
         kwh_k2: match.kwh_k2,
         realisasi_kwh: match.realisasi_kwh,
         target: targetVal,
+        cumulativeReal,
+        cumulativeTgt,
         keterangan: match.keterangan || '-',
       };
     }
@@ -164,6 +193,8 @@ export default function P2tlPage() {
       kwh_k2: null,
       realisasi_kwh: null,
       target: targetVal,
+      cumulativeReal: null,
+      cumulativeTgt,
       keterangan: '-',
     };
   });
@@ -173,12 +204,18 @@ export default function P2tlPage() {
     { 
       label: 'Realisasi kWh P2TL', 
       key: 'realisasi_kwh',
-      render: (v) => v != null ? <span className="font-bold text-blue-600">{Number(v).toLocaleString('id-ID')} kWh</span> : '—'
+      render: (v, row) => {
+        const val = tab === 'monthly' ? row.realisasi_kwh : row.cumulativeReal;
+        return val != null ? <span className="font-bold text-blue-600">{Number(val).toLocaleString('id-ID')} kWh</span> : '—';
+      }
     },
     { 
       label: 'Target kWh P2TL', 
       key: 'target',
-      render: (v) => v != null ? <span className="font-semibold text-slate-500">{Number(v).toLocaleString('id-ID')} kWh</span> : '—'
+      render: (v, row) => {
+        const tgt = tab === 'monthly' ? row.target : row.cumulativeTgt;
+        return tgt != null ? <span className="font-semibold text-slate-500">{Number(tgt).toLocaleString('id-ID')} kWh</span> : '—';
+      }
     },
   ];
 
@@ -211,7 +248,7 @@ export default function P2tlPage() {
       <TargetWarning 
         up3={filters.up3} 
         year={filters.year} 
-        isVisible={!loading && dashboard?.target_kumulatif_ytd == null} 
+        isVisible={!loading && !hasTarget} 
       />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -241,7 +278,31 @@ export default function P2tlPage() {
         />
       </div>
 
-      <ChartWrapper title="Tren Perolehan kWh P2TL" subtitle={`Realisasi vs Target · Tahun ${filters.year || new Date().getFullYear()}`} loading={loading} error={error} empty={!trendData} height={280} onRetry={fetchData}>
+      {/* Tabs */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '16px', marginTop: '16px' }}>
+        <div style={{ display: 'inline-flex', background: 'rgba(37,99,235,0.05)', padding: 4, borderRadius: 12, border: '1px solid rgba(37,99,235,0.08)' }}>
+          {['monthly', 'cumulative'].map(t => {
+            const isActive = tab === t;
+            return (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                style={{
+                  padding: '6px 16px', borderRadius: 9, fontSize: '0.85rem', fontWeight: 700,
+                  transition: 'all 0.2s ease', border: 'none', cursor: 'pointer',
+                  background: isActive ? '#ffffff' : 'transparent',
+                  color: isActive ? '#2563eb' : '#64748b',
+                  boxShadow: isActive ? '0 2px 8px rgba(37,99,235,0.12)' : 'none',
+                }}
+              >
+                {t === 'monthly' ? 'Bulanan' : 'Kumulatif'}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      <ChartWrapper title={tab === 'monthly' ? "Tren Perolehan kWh P2TL Bulanan" : "Tren Perolehan kWh P2TL Kumulatif (YTD)"} subtitle={`Realisasi vs Target · Tahun ${filters.year || new Date().getFullYear()}`} loading={loading} error={error} empty={!trendData} height={280} onRetry={fetchData}>
         <ResponsiveContainer width="100%" height={280}>
           <ComposedChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border, #e2e8f0)" />
@@ -249,8 +310,8 @@ export default function P2tlPage() {
             <YAxis tick={{ fontSize: 12.5, fontWeight: 650 }} />
             <Tooltip content={<CustomTooltip />} />
             <Legend wrapperStyle={{ fontSize: 13, fontWeight: 600 }} />
-            <Bar dataKey="realisasi" name="Realisasi" fill="#2563eb" radius={[4, 4, 0, 0]} />
-            <Line dataKey="target" name="Target" stroke="#EF4444" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 4, fill: '#EF4444' }} />
+            <Bar dataKey={tab === 'monthly' ? "realisasi" : "cumulativeReal"} name="Realisasi" fill="#2563eb" radius={[4, 4, 0, 0]} />
+            <Line dataKey={tab === 'monthly' ? "target" : "cumulativeTgt"} name="Target" stroke="#EF4444" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 4, fill: '#EF4444' }} />
           </ComposedChart>
         </ResponsiveContainer>
       </ChartWrapper>
@@ -258,7 +319,7 @@ export default function P2tlPage() {
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mt-2">
         <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
           <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-            Realisasi Bulanan
+            Realisasi {tab === 'monthly' ? 'Bulanan' : 'Kumulatif (YTD)'}
           </h2>
         </div>
         <div className="p-0">
