@@ -4,8 +4,9 @@ import api from '@/services/api'
 const AuthContext = createContext(null)
 
 export const ROLES = {
-  ADMIN:  'admin',
+  ADMIN: 'admin',
   ADMIN_K3: 'admin_k3',
+  PIC_PENGADAAN: 'pic_pengadaan',
   PIC_ASET: 'pic_aset',
   PIC_JARINGAN: 'pic_jaringan',
   PIC_TE: 'pic_transaksi_energi',
@@ -57,10 +58,10 @@ export function AuthProvider({ children }) {
     localStorage.setItem('sigap_user', JSON.stringify(updated))
   }
 
-  const isAdmin    = user?.role === ROLES.ADMIN
-  const isAdminK3  = user?.role === ROLES.ADMIN_K3 || user?.role === ROLES.ADMIN
-  const isPic      = user?.role?.startsWith('pic_')
-  const isViewer   = !!user
+  const isAdmin   = user?.role === ROLES.ADMIN
+  const isAdminK3 = user?.role === ROLES.ADMIN_K3 || user?.role === ROLES.ADMIN
+  const isPic     = user?.role?.startsWith('pic_')
+  const isViewer  = !!user
 
   return (
     <AuthContext.Provider value={{ user, loading, login, logout, switchRole, isAdmin, isAdminK3, isPic, isViewer }}>

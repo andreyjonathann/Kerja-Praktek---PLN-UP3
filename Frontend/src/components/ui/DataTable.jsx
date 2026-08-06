@@ -89,7 +89,7 @@ export default function DataTable({
             ) : (
               paged.map((row, idx) => (
                 <tr 
-                  key={row.id ?? idx} 
+                  key={row.id != null ? `db-${row.id}` : `idx-${idx}`} 
                   className={`animate-fade-in ${onRowClick ? 'cursor-pointer hover:bg-slate-50/80 transition-colors' : ''}`}
                   onClick={() => onRowClick && onRowClick(row, idx)}
                 >

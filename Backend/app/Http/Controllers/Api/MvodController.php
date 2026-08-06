@@ -8,6 +8,7 @@ use App\Models\MvodTarget;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use App\Services\TargetService;
 
 class MvodController extends Controller
 {
@@ -36,7 +37,7 @@ class MvodController extends Controller
     public function store(Request $request)
     {
         $user = auth()->user();
-        if ($user->role !== 'pic_jaringan') {
+        if (!$user || !in_array($user->role, ['pic_jaringan', 'admin'])) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
@@ -79,7 +80,7 @@ class MvodController extends Controller
     public function update(Request $request, $id)
     {
         $user = auth()->user();
-        if ($user->role !== 'pic_jaringan') {
+        if (!$user || !in_array($user->role, ['pic_jaringan', 'admin'])) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
@@ -136,6 +137,10 @@ class MvodController extends Controller
 
     public function storeTargets(Request $request)
     {
+        $user = $request->user();
+        if ($user->role !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Hanya Admin yang berwenang mengatur target.'], 403);
+        }
         $validator = Validator::make($request->all(), [
             'tahun' => 'required|integer',
             'targets' => 'required|array',
@@ -165,6 +170,20 @@ class MvodController extends Controller
 
     public function dashboard(Request $request)
     {
+        $bobotGi = 3; $bobotJtm = 2; $bobotGd = 1; // fallback default kalau data DB tidak lengkap
+        $mvodParent = \App\Models\NkoParameter::where('nama', 'MVOD (Sesuai kewenangan)')->first();
+        if ($mvodParent) {
+            $children = \App\Models\NkoParameter::where('parent_id', $mvodParent->id)->get();
+            $giParam = $children->firstWhere('nama', 'MVOD - SLA Gardu Induk');
+            $jtmParam = $children->firstWhere('nama', 'MVOD - SLA JTM');
+            $gdParam = $children->firstWhere('nama', 'MVOD - SLA Gardu Distribusi');
+            if ($giParam && $jtmParam && $gdParam) {
+                $bobotGi = (float) $giParam->bobot;
+                $bobotJtm = (float) $jtmParam->bobot;
+                $bobotGd = (float) $gdParam->bobot;
+            }
+        }
+
         $tahun = $request->tahun ?: date('Y');
         $up3 = $request->up3; // optional
 
@@ -195,27 +214,57 @@ class MvodController extends Controller
         $calcPersen = function($rata_rct, $sla) {
             if ($sla <= 0) return 0;
             $raw = 2 - ($rata_rct / $sla);
-            return min($raw, 1.1); // cap 1.1
+            return max(0, min($raw, 1.1)); // floor 0, cap 1.1
         };
 
         // We use the latest available month from realisasi, or fallback to current month/1
         $latestMonth = $realisasi->max('bulan') ?: 1;
-        $targetColLatest = 'target_' . $bulanMap[$latestMonth];
         
-        $sla_gi = $targetGI ? $targetGI->{$targetColLatest} : null;
-        $sla_jtm = $targetJTM ? $targetJTM->{$targetColLatest} : null;
-        $sla_gd = $targetGD ? $targetGD->{$targetColLatest} : null;
+        $sla_gi = 0; $count_gi = 0;
+        $sla_jtm = 0; $count_jtm = 0;
+        $sla_gd = 0; $count_gd = 0;
+
+        for ($i = 1; $i <= $latestMonth; $i++) {
+            $col = 'target_' . $bulanMap[$i];
+            
+            if ($targetGI && $targetGI->{$col} !== null) {
+                $sla_gi += (float)$targetGI->{$col};
+                $count_gi++;
+            }
+            if ($targetJTM && $targetJTM->{$col} !== null) {
+                $sla_jtm += (float)$targetJTM->{$col};
+                $count_jtm++;
+            }
+            if ($targetGD && $targetGD->{$col} !== null) {
+                $sla_gd += (float)$targetGD->{$col};
+                $count_gd++;
+            }
+        }
+
+        $sla_gi = $count_gi > 0 ? $sla_gi / $count_gi : null;
+        $sla_jtm = $count_jtm > 0 ? $sla_jtm / $count_jtm : null;
+        $sla_gd = $count_gd > 0 ? $sla_gd / $count_gd : null;
         
-        $hasTarget = ($sla_gi !== null || $sla_jtm !== null || $sla_gd !== null);
+        $hasTarget = TargetService::isTargetLengkap('Jaringan', 'MVOD - SLA Gardu Induk', $tahun)
+            && TargetService::isTargetLengkap('Jaringan', 'MVOD - SLA JTM', $tahun)
+            && TargetService::isTargetLengkap('Jaringan', 'MVOD - SLA Gardu Distribusi', $tahun);
 
         // 1. Calculate per Bulan for current year
         $per_bulan = [];
         for ($b = 1; $b <= 12; $b++) {
             $b_data = $realisasi->where('bulan', $b);
 
-            $avg_gi = $b_data->where('tipe_rct', 'GI')->avg('rata_rct_menit');
-            $avg_jtm = $b_data->where('tipe_rct', 'JTM')->avg('rata_rct_menit');
-            $avg_gd = $b_data->where('tipe_rct', 'GD')->avg('rata_rct_menit');
+            $sum_dur_gi = $b_data->where('tipe_rct', 'GI')->sum('total_lama_padam_menit');
+            $sum_kali_gi = $b_data->where('tipe_rct', 'GI')->sum('kali_padam');
+            $avg_gi = $sum_kali_gi > 0 ? $sum_dur_gi / $sum_kali_gi : null;
+
+            $sum_dur_jtm = $b_data->where('tipe_rct', 'JTM')->sum('total_lama_padam_menit');
+            $sum_kali_jtm = $b_data->where('tipe_rct', 'JTM')->sum('kali_padam');
+            $avg_jtm = $sum_kali_jtm > 0 ? $sum_dur_jtm / $sum_kali_jtm : null;
+
+            $sum_dur_gd = $b_data->where('tipe_rct', 'GD')->sum('total_lama_padam_menit');
+            $sum_kali_gd = $b_data->where('tipe_rct', 'GD')->sum('kali_padam');
+            $avg_gd = $sum_kali_gd > 0 ? $sum_dur_gd / $sum_kali_gd : null;
 
             $targetCol = 'target_' . $bulanMap[$b];
             
@@ -227,13 +276,13 @@ class MvodController extends Controller
             $p_jtm = $avg_jtm !== null && $sla_jtm_b !== null ? $calcPersen($avg_jtm, $sla_jtm_b) : null;
             $p_gd = $avg_gd !== null && $sla_gd_b !== null ? $calcPersen($avg_gd, $sla_gd_b) : null;
 
-            // Gabungan: Bobot PLN → GI=3, JTM=2, GD=1 (total koefisien=6)
+            // Bobot diambil dari nko_parameters, fallback GI=3 JTM=2 GD=1
             $mvod_gabungan = null;
             $bobot_parts = [];
             $total_koef = 0;
-            if ($p_gi !== null)  { $bobot_parts[] = 3 * $p_gi;  $total_koef += 3; }
-            if ($p_jtm !== null) { $bobot_parts[] = 2 * $p_jtm; $total_koef += 2; }
-            if ($p_gd !== null)  { $bobot_parts[] = 1 * $p_gd;  $total_koef += 1; }
+            if ($p_gi !== null)  { $bobot_parts[] = $bobotGi * $p_gi;  $total_koef += $bobotGi; }
+            if ($p_jtm !== null) { $bobot_parts[] = $bobotJtm * $p_jtm; $total_koef += $bobotJtm; }
+            if ($p_gd !== null)  { $bobot_parts[] = $bobotGd * $p_gd;  $total_koef += $bobotGd; }
             if ($total_koef > 0) {
                 $mvod_gabungan = array_sum($bobot_parts) / $total_koef;
             }
@@ -243,6 +292,9 @@ class MvodController extends Controller
                 'gi_rct' => $avg_gi !== null ? round($avg_gi, 2) : null,
                 'jtm_rct' => $avg_jtm !== null ? round($avg_jtm, 2) : null,
                 'gd_rct' => $avg_gd !== null ? round($avg_gd, 2) : null,
+                'gi_target' => $sla_gi_b !== null ? round($sla_gi_b, 2) : null,
+                'jtm_target' => $sla_jtm_b !== null ? round($sla_jtm_b, 2) : null,
+                'gd_target' => $sla_gd_b !== null ? round($sla_gd_b, 2) : null,
                 'gi_status' => $avg_gi !== null && $sla_gi_b !== null ? ($avg_gi <= $sla_gi_b ? 'AMAN' : 'MELEWATI SLA') : '-',
                 'jtm_status' => $avg_jtm !== null && $sla_jtm_b !== null ? ($avg_jtm <= $sla_jtm_b ? 'AMAN' : 'MELEWATI SLA') : '-',
                 'gd_status' => $avg_gd !== null && $sla_gd_b !== null ? ($avg_gd <= $sla_gd_b ? 'AMAN' : 'MELEWATI SLA') : '-',
@@ -264,7 +316,9 @@ class MvodController extends Controller
             foreach (['GI', 'JTM', 'GD'] as $tipe) {
                 $b_tipe_data = $b_data->where('tipe_rct', $tipe);
                 if ($b_tipe_data->count() > 0) {
-                    $avg_rct = $b_tipe_data->avg('rata_rct_menit');
+                    $sum_durasi = $b_tipe_data->sum('total_lama_padam_menit');
+                    $sum_kali = $b_tipe_data->sum('kali_padam');
+                    $avg_rct = $sum_kali > 0 ? $sum_durasi / $sum_kali : 0;
                     $targetCol = 'target_' . $bulanMap[$b];
                     $avg_sla = null;
                     if ($tipe === 'GI' && $targetGI) $avg_sla = $targetGI->{$targetCol};
@@ -295,7 +349,9 @@ class MvodController extends Controller
             if ($tipe === 'GD') $avg_sla = $sla_gd;
 
             if ($tipe_data->count() > 0) {
-                $avg_rct = $tipe_data->avg('rata_rct_menit');
+                $sum_durasi = $tipe_data->sum('total_lama_padam_menit');
+                $sum_kali = $tipe_data->sum('kali_padam');
+                $avg_rct = $sum_kali > 0 ? $sum_durasi / $sum_kali : 0;
                 $persen = $calcPersen($avg_rct, $avg_sla);
 
                 $summary[strtolower($tipe)] = [
@@ -314,7 +370,7 @@ class MvodController extends Controller
             }
         }
 
-        // Gabungan Summary: Bobot PLN → GI=3, JTM=2, GD=1 (total koefisien=6)
+        // Gabungan Summary: Bobot diambil dari nko_parameters, fallback GI=3 JTM=2 GD=1
         $mvod_gabungan = null;
         $p_gi = $summary['gi']['persen'] !== null ? $summary['gi']['persen'] / 100 : null;
         $p_jtm = $summary['jtm']['persen'] !== null ? $summary['jtm']['persen'] / 100 : null;
@@ -322,9 +378,9 @@ class MvodController extends Controller
 
         $bobot_parts = [];
         $total_koef = 0;
-        if ($p_gi !== null)  { $bobot_parts[] = 3 * $p_gi;  $total_koef += 3; }
-        if ($p_jtm !== null) { $bobot_parts[] = 2 * $p_jtm; $total_koef += 2; }
-        if ($p_gd !== null)  { $bobot_parts[] = 1 * $p_gd;  $total_koef += 1; }
+        if ($p_gi !== null)  { $bobot_parts[] = $bobotGi * $p_gi;  $total_koef += $bobotGi; }
+        if ($p_jtm !== null) { $bobot_parts[] = $bobotJtm * $p_jtm; $total_koef += $bobotJtm; }
+        if ($p_gd !== null)  { $bobot_parts[] = $bobotGd * $p_gd;  $total_koef += $bobotGd; }
         if ($total_koef > 0) {
             $mvod_gabungan = array_sum($bobot_parts) / $total_koef;
         }

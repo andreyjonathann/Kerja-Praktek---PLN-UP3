@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Edit2, Trash2, Save, Loader2 } from 'lucide-react';
 import Swal from 'sweetalert2';
+import useDirtyFormGuard from '@/hooks/useDirtyFormGuard';
+import notify from '@/utils/notify';
 import { useAuth } from '@/context/AuthContext';
 import api from '@/services/api';
 
@@ -16,6 +18,12 @@ export default function RptDetailModal({
   const [showEditForm, setShowEditForm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({ durasi: '', gangguan: '' });
+
+  const { isDirty, setIsDirty } = useDirtyFormGuard();
+  const handleFieldChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    setIsDirty(true);
+  };
 
   if (!open || !rowData) return null;
 
@@ -33,7 +41,12 @@ export default function RptDetailModal({
     return Number(v).toLocaleString('id-ID');
   };
 
-  const closeModal = () => {
+  const closeModal = async () => {
+    if (showEditForm && isDirty) {
+      const result = await notify.confirmLeave();
+      if (!result.isConfirmed) return;
+    }
+    setIsDirty(false);
     setShowEditForm(false);
     onOpenChange(false);
   };
@@ -45,6 +58,7 @@ export default function RptDetailModal({
       durasi: rowData.total_durasi ?? '',
       gangguan: rowData.jumlah_gangguan ?? ''
     });
+    setIsDirty(false);
     setShowEditForm(true);
   };
 
@@ -60,6 +74,7 @@ export default function RptDetailModal({
         jumlah_gangguan: parseInt(formData.gangguan)
       });
       Swal.fire({ icon: 'success', title: 'Berhasil', text: 'Data RPT berhasil diupdate', timer: 1500, showConfirmButton: false });
+      setIsDirty(false);
       setShowEditForm(false);
       if (onSuccess) onSuccess();
       closeModal();
@@ -171,7 +186,7 @@ export default function RptDetailModal({
                   type="number" 
                   step="0.01"
                   value={formData.durasi}
-                  onChange={(e) => setFormData({...formData, durasi: e.target.value})}
+                  onChange={(e) => handleFieldChange('durasi', e.target.value)}
                   style={{ width: '100%', border: '1px solid #e2e8f0', borderRadius: 8, padding: '8px 12px', fontSize: 14, outline: 'none' }} 
                   placeholder="Masukkan total durasi"
                 />
@@ -183,7 +198,7 @@ export default function RptDetailModal({
                 <input 
                   type="number" 
                   value={formData.gangguan}
-                  onChange={(e) => setFormData({...formData, gangguan: e.target.value})}
+                  onChange={(e) => handleFieldChange('gangguan', e.target.value)}
                   style={{ width: '100%', border: '1px solid #e2e8f0', borderRadius: 8, padding: '8px 12px', fontSize: 14, outline: 'none' }} 
                   placeholder="Masukkan jumlah gangguan"
                 />

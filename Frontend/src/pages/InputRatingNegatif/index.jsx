@@ -1,3 +1,4 @@
+import notify from '@/utils/notify';
 import React, { useState, useEffect } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -6,6 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { MONTHS } from '@/utils/constants';
 import { CheckCircle, AlertCircle, Save, ArrowLeft, Activity, Star } from 'lucide-react';
 import { getDashboardData } from '@/services/dashboardDataService';
+import useDirtyFormGuard from '@/hooks/useDirtyFormGuard';
 
 export default function InputRatingNegatifPage() {
   const navigate = useNavigate();
@@ -34,6 +36,28 @@ export default function InputRatingNegatifPage() {
 
   const calculatedPersen = watchWo > 0 ? (watchRatingNegatif / watchWo) * 100 : 0;
 
+  const [existingData, setExistingData] = useState([]);
+  const { isDirty, setIsDirty, guardedNavigate } = useDirtyFormGuard();
+
+  useEffect(() => {
+    const subscription = watch(() => setIsDirty(true));
+    return () => subscription.unsubscribe();
+  }, [watch]);
+
+  useEffect(() => {
+    if (!selectedYear) return;
+    api.get(`/jaringan/rating-negatif?tahun=${selectedYear}`)
+      .then(res => setExistingData(res.data?.monthly || []))
+      .catch(() => setExistingData([]));
+  }, [selectedYear]);
+
+  const matchingRecord = React.useMemo(() => {
+    if (isEditMode || !selectedMonth) return null;
+    return existingData.find(d => d.bulan == selectedMonth && d.jml_rating_negatif != null) || null;
+  }, [selectedMonth, existingData, isEditMode]);
+
+  const isDuplicate = !!matchingRecord;
+
   useEffect(() => {
     if (!selectedYear) return;
     const checkTarget = async () => {
@@ -48,6 +72,10 @@ export default function InputRatingNegatifPage() {
   }, [selectedYear]);
 
   const onSubmit = async (data) => {
+    if (isDuplicate) {
+      notify.warning('Data untuk bulan ini sudah ada. Silakan gunakan fitur Edit.');
+      return;
+    }
     setLoading(true);
     setSuccess(false);
     try {
@@ -57,13 +85,14 @@ export default function InputRatingNegatifPage() {
         jml_rating_negatif: parseInt(data.jml_rating_negatif),
         jml_wo_pln_mobile: parseInt(data.jml_wo_pln_mobile),
       });
+      setIsDirty(false);
       setSuccess(true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
       setTimeout(() => {
         navigate('/jaringan/rating-negatif');
       }, 1500);
     } catch (err) {
-      alert('Error: ' + err.message);
+      notify.error(err.response?.data?.message || err.message);
     } finally {
       setLoading(false);
     }
@@ -91,7 +120,7 @@ export default function InputRatingNegatifPage() {
 
         {/* HEADER */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button type="button" onClick={() => navigate(-1)}
+          <button type="button" onClick={() => guardedNavigate(() => navigate(-1), isDuplicate)}
             style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 10, padding: '8px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', fontWeight: 600, color: '#64748b', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
           >
             <ArrowLeft size={16} /> Kembali
@@ -116,6 +145,12 @@ export default function InputRatingNegatifPage() {
         {!hasTarget && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 16px', borderRadius: 10, background: '#fffbeb', border: '1px solid #fde68a', color: '#92400e', fontWeight: 600, fontSize: '0.86rem' }}>
             <AlertCircle size={16} /> Target Rating Negatif belum diatur untuk tahun {selectedYear}.
+          </div>
+        )}
+
+        {isDuplicate && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 16px', borderRadius: 10, background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 600, fontSize: '0.86rem' }}>
+            <AlertCircle size={16} /> Data untuk bulan ini sudah ada. Anda tidak dapat mengubah data melalui halaman ini. Silakan gunakan fitur Edit.
           </div>
         )}
 
@@ -162,7 +197,7 @@ export default function InputRatingNegatifPage() {
                   <div className="w-9 h-9 rounded-lg bg-red-50 text-red-500 flex items-center justify-center flex-shrink-0"><Star size={15} /></div>
                   <label className="font-semibold text-slate-700 text-[13px]">Jumlah Rating Negatif (Bintang 1 & 2)</label>
                 </div>
-                <input type="number" min="0" {...register('jml_rating_negatif', { required: true })}
+                <input type="number" min="0" {...register('jml_rating_negatif', { required: true })} readOnly={isDuplicate} style={isDuplicate ? { background: '#f1f5f9', color: '#94a3b8', cursor: 'not-allowed' } : {}}
                   className={`w-[120px] border ${errors.jml_rating_negatif ? 'border-red-400' : 'border-gray-200'} rounded-lg px-3 py-2 text-[13px] shadow-sm text-right outline-none focus:border-blue-500 bg-white`}
                   placeholder="-" />
               </div>
@@ -172,7 +207,7 @@ export default function InputRatingNegatifPage() {
                   <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-500 flex items-center justify-center flex-shrink-0"><Activity size={15} /></div>
                   <label className="font-semibold text-slate-700 text-[13px]">Total WO PLN Mobile</label>
                 </div>
-                <input type="number" min="1" {...register('jml_wo_pln_mobile', { required: true })}
+                <input type="number" min="1" {...register('jml_wo_pln_mobile', { required: true })} readOnly={isDuplicate} style={isDuplicate ? { background: '#f1f5f9', color: '#94a3b8', cursor: 'not-allowed' } : {}}
                   className={`w-[120px] border ${errors.jml_wo_pln_mobile ? 'border-red-400' : 'border-gray-200'} rounded-lg px-3 py-2 text-[13px] shadow-sm text-right outline-none focus:border-blue-500 bg-white`}
                   placeholder="-" />
               </div>
@@ -188,11 +223,11 @@ export default function InputRatingNegatifPage() {
           </div>
 
           {/* SUBMIT */}
-          <button type="submit" disabled={loading}
-            style={{ width: '100%', padding: '14px', borderRadius: 12, background: loading ? '#93c5fd' : '#3b82f6', color: '#fff', fontSize: '0.95rem', fontWeight: 700, border: 'none', cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: loading ? 'none' : '0 4px 14px rgba(59,130,246,0.3)', transition: 'all 0.2s' }}
+          <button type="submit" disabled={loading || isDuplicate}
+            style={{ width: '100%', padding: '14px', borderRadius: 12, background: (loading || isDuplicate) ? '#93c5fd' : '#3b82f6', color: '#fff', fontSize: '0.95rem', fontWeight: 700, border: 'none', cursor: (loading || isDuplicate) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: (loading || isDuplicate) ? 'none' : '0 4px 14px rgba(59,130,246,0.3)', transition: 'all 0.2s' }}
           >
             {loading ? <div style={{width:20,height:20,border:'2px solid rgba(255,255,255,0.5)',borderTop:'2px solid white',borderRadius:'50%',animation:'spin 1s linear infinite'}}/> : <Save size={18} />}
-            Simpan Data
+            {isDuplicate ? 'Data Sudah Ada' : 'Simpan Data'}
           </button>
 
         </form>

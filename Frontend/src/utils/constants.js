@@ -72,14 +72,7 @@ export const NAV_ITEMS = [
       },
     ],
   },
-  {
-    type: 'group',
-    group: 'PEGAWAI',
-    icon: 'Users',
-    items: [
-      { key: 'pegawai-up3', label: 'PEGAWAI UP3 CKR', path: '/pegawai-up3' },
-    ],
-  },
+
   {
     type: 'group',
     group: 'KINERJA',
@@ -89,24 +82,16 @@ export const NAV_ITEMS = [
         type: 'subgroup',
         group: 'JARINGAN',
         items: [
-
-          {
-            type: 'group',
-            group: 'REKAP JARINGAN',
-            icon: 'Activity',
-            items: [
-              { key: 'saidi', label: 'SAIDI', path: '/saidi' },
-              { key: 'saifi', label: 'SAIFI', path: '/saifi' },
-              { key: 'ens', label: 'ENS', path: '/ens' },
-              { key: 'gangguan-tm', label: 'Gangguan TM', path: '/jaringan/gangguan-tm' },
-              { key: 'gangguan-switching', label: 'Gangguan Switching', path: '/jaringan/gangguan-switching' },
-              { key: 'rating-negatif', label: 'Rating Negatif', path: '/jaringan/rating-negatif' },
-              { key: 'rpt-g', label: 'RPT G (Tanpa CT)', path: '/jaringan/rpt-gangguan' },
-              { key: 'srdag', label: 'SRDAG', path: '/jaringan/srdag' },
-              { key: 'mvod', label: 'MVOD', path: '/jaringan/mvod' },
-              { key: 'mttr-siaga-1', label: 'MTTR Siaga 1', path: '/jaringan/mttr-siaga1' },
-            ]
-          },
+          { key: 'saidi', label: 'SAIDI', path: '/saidi' },
+          { key: 'saifi', label: 'SAIFI', path: '/saifi' },
+          { key: 'ens', label: 'ENS', path: '/ens' },
+          { key: 'gangguan-tm', label: 'Gangguan TM', path: '/jaringan/gangguan-tm' },
+          { key: 'gangguan-switching', label: 'Gangguan Switching', path: '/jaringan/gangguan-switching' },
+          { key: 'rating-negatif', label: 'Rating Negatif', path: '/jaringan/rating-negatif' },
+          { key: 'rpt-g', label: 'RPT G (Tanpa CT)', path: '/jaringan/rpt-gangguan' },
+          { key: 'srdag', label: 'SRDAG', path: '/jaringan/srdag' },
+          { key: 'mvod', label: 'MVOD', path: '/jaringan/mvod' },
+          { key: 'mttr-siaga-1', label: 'MTTR Siaga 1', path: '/jaringan/mttr-siaga1' },
         ],
       },
       {
@@ -126,17 +111,15 @@ export const NAV_ITEMS = [
         items: [
           { key: 'input-kpi-te', label: 'INPUT KPI', path: '/input' },
           { key: 'susut', label: 'SUSUT (%)', path: '/susut' },
-          { key: 'kwh-p2tl', label: 'KwH P2TL', path: '/kwh-p2tl' },
+          { key: 'kwh-p2tl', label: 'KwH P2TL', path: '/p2tl' },
           { key: 'ganti-meter', label: 'Ganti Meter', path: '/ganti-meter' },
-          { key: 'lbkb', label: 'LBKB', path: '/lbkb' },
-          { key: 'niaga', label: 'NIAGA', path: '/niaga' },
         ],
       },
       {
         type: 'subgroup',
-        group: 'ASET',
+        group: 'PENGADAAN',
         items: [
-          { key: 'input-kpi-aset', label: 'INPUT KPI', path: '/input' },
+          { key: 'pengadaan-kontrak', label: 'KONTRAK', path: '/pengadaan/kontrak', icon: 'FileText' },
         ],
       },
       {
@@ -145,7 +128,7 @@ export const NAV_ITEMS = [
         items: [
           { key: 'niaga-pelunasan',   label: 'PELUNASAN PRR',   path: '/niaga/pelunasan',   icon: 'Briefcase' },
           { key: 'niaga-penghapusan',  label: 'PENGHAPUSAN PRR',  path: '/niaga/penghapusan',  icon: 'TrendingDown' },
-          { key: 'niaga-lbkb',        label: 'TINDAK LANJUT LBKB', path: '/niaga/lbkb',        icon: 'Activity' },
+          { key: 'niaga-saldo-akhir',  label: 'SALDO AKHIR',        path: '/niaga/saldo-akhir',  icon: 'Activity' },
         ],
       },
       {
@@ -153,6 +136,29 @@ export const NAV_ITEMS = [
         group: 'KEUANGAN',
         items: [
           { key: 'input-kpi-keuangan', label: 'INPUT KPI', path: '/input' },
+        ],
+      },
+      {
+        type: 'subgroup',
+        group: 'K3',
+        items: [
+          { key: 'k3-dashboard', label: 'DASHBOARD', path: '/k3/dashboard', icon: 'LayoutDashboard' },
+          { key: 'k3-nko',       label: 'NKO',       path: '/k3/nko',       icon: 'Target' },
+          { key: 'k3-trend',     label: 'TREND MATURITY LEVEL',  path: '/k3/trend',     icon: 'TrendingUp' },
+          {
+            type: 'subgroup',
+            group: 'SELF ASSESSMENT',
+            items: [
+              { key: 'k3-assessment-lmc', label: 'LMC', path: '/k3/assessment/lmc' },
+              { key: 'k3-assessment-aai', label: 'AAI', path: '/k3/assessment/aai' },
+              { key: 'k3-assessment-ibp', label: 'IBP', path: '/k3/assessment/ibp' },
+              { key: 'k3-assessment-ste', label: 'STE', path: '/k3/assessment/ste' },
+              { key: 'k3-assessment-scc', label: 'SCC', path: '/k3/assessment/scc' },
+              { key: 'k3-assessment-rep', label: 'REP', path: '/k3/assessment/rep' },
+            ]
+          },
+          { key: 'k3-temuan',   label: 'TEMUAN & TINDAK LANJUT', path: '/k3/temuan',   icon: 'AlertTriangle' },
+          { key: 'k3-kegiatan', label: 'KEGIATAN K3',            path: '/k3/kegiatan', icon: 'Activity' },
         ],
       },
     ],
@@ -169,40 +175,4 @@ export const NAV_ITEMS = [
   },
   { type: 'item', key: 'informasi-gi', label: 'INFORMASI GI', icon: 'FileText', path: '/informasi-gi' },
   { type: 'item', key: 'spreadsheet', label: 'LIVE SPREADSHEET', icon: 'LayoutDashboard', path: '/spreadsheet' },
-
-  // ── K3 Maturity Level ────────────────────────────────────────────────────────
-  {
-    type: 'group', group: 'K3 MATURITY LEVEL', icon: 'ShieldCheck', k3: true,
-    items: [
-      { key: 'k3-trend',     label: 'TREND MATURITY LEVEL',  path: '/k3/trend',     icon: 'TrendingUp' },
-      {
-        type: 'subgroup',
-        group: 'KELOLA ASSESSMENT',
-        icon: 'ClipboardList',
-        items: [
-          { key: 'k3-assessment-lmc', label: 'LMC', path: '/k3/assessment/lmc' },
-          { key: 'k3-assessment-aai', label: 'AAI', path: '/k3/assessment/aai' },
-          { key: 'k3-assessment-ibp', label: 'IBP', path: '/k3/assessment/ibp' },
-          { key: 'k3-assessment-ste', label: 'STE', path: '/k3/assessment/ste' },
-          { key: 'k3-assessment-scc', label: 'SCC', path: '/k3/assessment/scc' },
-          { key: 'k3-assessment-rep', label: 'REP', path: '/k3/assessment/rep' },
-        ]
-      },
-    ],
-  },
-
-  // ── Kinerja K3 ────────────────────────────────────────────────────────────────
-  {
-    type: 'group', group: 'KINERJA K3', icon: 'Activity', k3: true,
-    items: [
-      { key: 'k3-temuan', label: 'TEMUAN & TINDAK LANJUT', path: '/k3/temuan', icon: 'AlertTriangle' },
-      { key: 'k3-kegiatan', label: 'KEGIATAN K3', path: '/k3/kegiatan', icon: 'Activity' },
-    ],
-  },
-
-  // ── Laporan ───────────────────────────────────────────────────────────────────
-  { type: 'item', key: 'k3-laporan', label: 'LAPORAN', icon: 'FileText', path: '/k3/laporan', k3: true },
-
-  // ── Manajemen Data (Admin K3 only) ────────────────────────────────────────────
-  { type: 'item', key: 'k3-manajemen', label: 'MANAJEMEN DATA', icon: 'Settings', path: '/k3/manajemen', k3: true },
 ]

@@ -22,6 +22,7 @@ import {
   getMaturityLabel,
 } from '@/data/k3MasterData'
 import { k3AssessmentService } from '@/services/k3AssessmentService'
+import ErrorBanner from '@/components/ui/ErrorBanner'
 
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -184,24 +185,47 @@ export default function K3DashboardPage() {
   const [chartTab, setChartTab] = useState('radar') // 'radar' | 'bar'
   
   const [dashboardData, setDashboardData] = useState(null)
+  const [trendData, setTrendData] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  const [selectedSemester, setSelectedSemester] = useState(() => {
+    const saved = sessionStorage.getItem('k3_dashboard_semester')
+    return saved ? saved : (new Date().getMonth() + 1 <= 6 ? 'S1' : 'S2')
+  })
 
   useEffect(() => {
-    k3AssessmentService.getDashboard({ tahun: filters.year, unit: filters.up3 })
-      .then(res => setDashboardData(res))
-      .catch(err => console.error(err))
-      .finally(() => setLoading(false))
-  }, [filters.year, filters.up3])
+    sessionStorage.setItem('k3_dashboard_semester', selectedSemester)
+  }, [selectedSemester])
 
-  const radarData = dashboardData?.radar_data || []
-  const trenData  = dashboardData?.tren_bulanan || []
+  useEffect(() => {
+    setLoading(true)
+    Promise.all([
+      k3AssessmentService.getDashboard({ tahun: filters.year, unit: filters.up3, semester: selectedSemester }),
+      k3AssessmentService.getDashboardTrend()
+    ])
+      .then(([dashRes, trendRes]) => {
+        setDashboardData(dashRes)
+        setTrendData(trendRes)
+      })
+      .catch(err => {
+        console.error(err)
+        setError("Gagal memuat data dashboard.")
+      })
+      .finally(() => setLoading(false))
+  }, [filters.year, filters.up3, selectedSemester])
+
+  // Ensure radarData is always an array (handling cases where backend might return an object or null)
+  const radarRaw = dashboardData?.categories || []
+  const radarData = Array.isArray(radarRaw) ? radarRaw : Object.values(radarRaw)
   
   const CATEGORY_MAP = Object.fromEntries(K3_CATEGORIES.map(c => [c.code, c]))
 
   const mappedRadar = radarData.map(r => ({
-    category: r.category_code,
-    fullName: r.category_name,
-    score: parseFloat(r.avg_score),
+    category: r.code,
+    fullName: r.name,
+    score: parseFloat(r.avg_score || 0),
+    total_criteria: r.criteria_count,
     fullMark: 5
   }))
 
@@ -222,7 +246,7 @@ export default function K3DashboardPage() {
       shortName:      cat.shortName ?? r.category,
       color:          cat.color ?? '#0070C0',
       score:          r.score,
-      prevScore:      Math.max(0, r.score - 0.2),
+      prevScore:      Math.max(0, r.score - 0.2), // Mock prev score
       target:         4.0,
       jumlahKriteria: r.total_criteria || (cat.criteria ?? []).length,
     }
@@ -319,17 +343,27 @@ export default function K3DashboardPage() {
     }
   })
 
-  const MOCK_TREN = trenData.map(t => ({
-    bulan: t.label,
+  const trendRaw = trendData || []
+  const trendArray = Array.isArray(trendRaw) ? trendRaw : Object.values(trendRaw)
+  const MOCK_TREN = trendArray.map(t => ({
+    semester: t.label,
     skor: t.avg_score !== null ? parseFloat(t.avg_score) : null
   }))
 
-  const ASSESSMENT_AKTIF = 3
-  const MOCK_TEMUAN_OPEN = 7
-  const MOCK_KEGIATAN_BULAN = 4
+  const ASSESSMENT_AKTIF = dashboardData?.active_assessments || 0
+  const MOCK_TEMUAN_OPEN = "-"
+  const MOCK_KEGIATAN_BULAN = "-"
 
   if (loading) {
     return <div className="p-8 text-center text-gray-500">Memuat data dashboard...</div>
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <ErrorBanner message={error} onRetry={() => window.location.reload()} />
+      </div>
+    )
   }
 
   return (
@@ -338,16 +372,31 @@ export default function K3DashboardPage() {
       {/* ── Page Header ─────────────────────────────────────────────────────── */}
       <PageHeader
         title="K3 Maturity Level"
-        description={`Dashboard Monitoring Kematangan Sistem Manajemen K3 · PLN UP3 ${filters.up3} · Tahun ${filters.year}`}
+        description={`Dashboard Monitoring Kematangan Sistem Manajemen K3 · PLN UP3 ${filters.up3} · Tahun ${filters.year} Semester ${selectedSemester === 'S1' ? '1' : '2'}`}
         icon={ShieldCheck}
         iconColor="#0070C0"
       >
-        {/* Maturity badge inline with header */}
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 8,
-          padding: '6px 14px', borderRadius: 99,
-          background: avgML.color + '14', border: `1px solid ${avgML.color}28`,
-        }}>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <select
+            value={selectedSemester}
+            onChange={e => setSelectedSemester(e.target.value)}
+            style={{
+              padding: '6px 12px', borderRadius: 8,
+              border: '1px solid var(--border-subtle)',
+              background: 'var(--bg-card)', color: 'var(--text-primary)',
+              fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer',
+            }}
+          >
+            <option value="S1">Semester 1 (Jan-Jun)</option>
+            <option value="S2">Semester 2 (Jul-Des)</option>
+          </select>
+          
+          {/* Maturity badge inline with header */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '6px 14px', borderRadius: 99,
+            background: avgML.color + '14', border: `1px solid ${avgML.color}28`,
+          }}>
           <span style={{
             width: 7, height: 7, borderRadius: '50%',
             background: avgML.color, boxShadow: `0 0 5px ${avgML.color}80`,
@@ -355,6 +404,7 @@ export default function K3DashboardPage() {
           <span style={{ fontSize: '0.75rem', fontWeight: 700, color: avgML.color, letterSpacing: '0.01em' }}>
             Rata-rata {avgScore.toFixed(2)} · {avgML.label}
           </span>
+        </div>
         </div>
       </PageHeader>
 
@@ -383,19 +433,18 @@ export default function K3DashboardPage() {
         />
         <KpiCard
           title="Temuan Open"
-          value={String(MOCK_TEMUAN_OPEN)}
-          unit="temuan"
+          value={MOCK_TEMUAN_OPEN}
+          unit="(Modul belum aktif)"
           icon={AlertTriangle}
-          color={MOCK_TEMUAN_OPEN > 5 ? 'red' : 'yellow'}
+          color="gray"
           isInverse
         />
         <KpiCard
-          title="Kegiatan K3 Bulan Ini"
-          value={String(MOCK_KEGIATAN_BULAN)}
-          unit="kegiatan"
+          title="Kegiatan Bulan Ini"
+          value={MOCK_KEGIATAN_BULAN}
+          unit="(Modul belum aktif)"
           icon={CalendarDays}
-          color="purple"
-          achievement={(MOCK_KEGIATAN_BULAN / 6) * 100}
+          color="gray"
         />
       </div>
 
@@ -488,15 +537,15 @@ export default function K3DashboardPage() {
 
       {/* ── Trend Line Chart ─────────────────────────────────────────────────── */}
       <ChartWrapper
-        title="Tren Skor Maturity K3 Bulanan"
-        subtitle={`Rata-rata skor 6 kategori SMK3 — Tahun ${filters.year} · Mock Data`}
+        title="Tren Skor Maturity K3 Antar Semester"
+        subtitle={`Rata-rata skor 6 kategori SMK3`}
         height={270}
       >
         <ResponsiveContainer width="100%" height={270}>
           <LineChart data={MOCK_TREN} margin={{ top: 8, right: 24, bottom: 4, left: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
             <XAxis
-              dataKey="bulan"
+              dataKey="semester"
               tick={{ fontSize: 12.5, fontWeight: 650, fill: 'var(--text-muted)' }}
               axisLine={false} tickLine={false}
             />

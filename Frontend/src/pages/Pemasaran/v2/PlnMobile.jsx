@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
+import { useAuth } from '@/context/AuthContext'
 import {
   Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, ComposedChart,
@@ -47,6 +48,7 @@ const TOOLTIP_NILAI = ({ active, payload, label }) => {
 }
 
 export default function PlnMobilePage() {
+  const { user } = useAuth()
   const navigate = useNavigate()
   const { filters }          = useFilter()
   const [tab, setTab]        = useState('monthly')
@@ -188,43 +190,45 @@ export default function PlnMobilePage() {
         </div>
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
-          <div style={{
-            display: 'inline-flex',
-            background: 'rgba(20, 162, 186, 0.05)',
-            padding: 4,
-            borderRadius: 12,
-            border: '1px solid rgba(20, 162, 186, 0.15)',
-            cursor: 'pointer'
-          }}>
-            <button
-              onClick={() => navigate('/pemasaran/input?type=pln_mobile')}
-              style={{
-                padding: '6px 16px',
-                borderRadius: 9,
-                fontSize: '0.85rem',
-                fontWeight: 700,
-                transition: 'all 0.2s ease',
-                border: 'none',
-                cursor: 'pointer',
-                background: 'var(--bg-card)',
-                color: '#14A2BA',
-                boxShadow: '0 2px 8px rgba(20, 162, 186, 0.15)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
-              onMouseEnter={e => {
-                 e.currentTarget.style.background = '#14A2BA';
-                 e.currentTarget.style.color = '#FFFFFF';
-              }}
-              onMouseLeave={e => {
-                 e.currentTarget.style.background = 'var(--bg-card)';
-                 e.currentTarget.style.color = '#14A2BA';
-              }}
-            >
-              <Plus size={14} /> Tambah PLN Mobile
-            </button>
-          </div>
+          {user?.role === 'pic_pemasaran' && (
+            <div style={{
+              display: 'inline-flex',
+              background: 'rgba(20, 162, 186, 0.05)',
+              padding: 4,
+              borderRadius: 12,
+              border: '1px solid rgba(20, 162, 186, 0.15)',
+              cursor: 'pointer'
+            }}>
+              <button
+                onClick={() => navigate('/pemasaran/input?type=pln_mobile')}
+                style={{
+                  padding: '6px 16px',
+                  borderRadius: 9,
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  transition: 'all 0.2s ease',
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: 'var(--bg-card)',
+                  color: '#14A2BA',
+                  boxShadow: '0 2px 8px rgba(20, 162, 186, 0.15)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+                onMouseEnter={e => {
+                   e.currentTarget.style.background = '#14A2BA';
+                   e.currentTarget.style.color = '#FFFFFF';
+                }}
+                onMouseLeave={e => {
+                   e.currentTarget.style.background = 'var(--bg-card)';
+                   e.currentTarget.style.color = '#14A2BA';
+                }}
+              >
+                <Plus size={14} /> Tambah PLN Mobile
+              </button>
+            </div>
+          )}
           <ExportModal kpiType="PLN Mobile" />
         </div>
       </div>

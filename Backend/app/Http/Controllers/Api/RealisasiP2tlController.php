@@ -1,0 +1,292 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Constants\Up3Constants;
+use App\Http\Controllers\Controller;
+use App\Models\RealisasiP2tl;
+use App\Models\TargetTahunan;
+use App\Services\YtdCalculationService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
+
+class RealisasiP2tlController extends Controller
+{
+    /**
+     * Display a listing of the resource.
+     */
+    public function index(Request $request)
+    {
+        $user = $request->user();
+        $query = RealisasiP2tl::with('creator:id,name');
+
+        if ($request->has('tahun')) {
+            $query->where('tahun', $request->tahun);
+        }
+
+        if ($user && $user->role === 'pic_transaksi_energi') {
+            // Paksa up3 sesuai milik user
+            $query->where('up3', $user->up3);
+        } else {
+            if ($request->has('up3')) {
+                $query->where('up3', $request->up3);
+            }
+        }
+
+        $data = $query->orderBy('bulan', 'desc')->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $data
+        ]);
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(Request $request)
+    {
+        $user = $request->user();
+        if ($user->role !== 'pic_transaksi_energi' && $user->role !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'tahun' => 'required|integer',
+            'bulan' => 'required|integer|min:1|max:12',
+            'jml_plg_p1' => 'nullable|integer|min:0',
+            'jml_plg_p2' => 'nullable|integer|min:0',
+            'kwh_p2' => 'nullable|numeric|min:0',
+            'jml_plg_p3' => 'nullable|integer|min:0',
+            'kwh_p3' => 'nullable|numeric|min:0',
+            'jml_plg_p4' => 'nullable|integer|min:0',
+            'kwh_p4' => 'nullable|numeric|min:0',
+            'jml_plg_k2' => 'nullable|integer|min:0',
+            'kwh_k2' => 'nullable|numeric|min:0',
+            'up3' => 'nullable|string',
+            'keterangan' => 'nullable|string'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        if ($user->role === 'pic_transaksi_energi') {
+            $up3 = $user->up3;
+        } else {
+            $up3 = $request->up3 ?? Up3Constants::DEFAULT_UP3;
+        }
+
+        // Cek duplikasi
+        $exists = RealisasiP2tl::where('up3', $up3)
+            ->where('tahun', $request->tahun)
+            ->where('bulan', $request->bulan)
+            ->first();
+
+        if ($exists) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data untuk bulan ini sudah pernah diinput, gunakan fitur edit'
+            ], 422);
+        }
+
+        $realisasi = new RealisasiP2tl();
+        $realisasi->up3 = $up3;
+        $realisasi->tahun = $request->tahun;
+        $realisasi->bulan = $request->bulan;
+        $realisasi->jml_plg_p1 = $request->jml_plg_p1 ?? 0;
+        $realisasi->jml_plg_p2 = $request->jml_plg_p2 ?? 0;
+        $realisasi->kwh_p2 = $request->kwh_p2 ?? 0;
+        $realisasi->jml_plg_p3 = $request->jml_plg_p3 ?? 0;
+        $realisasi->kwh_p3 = $request->kwh_p3 ?? 0;
+        $realisasi->jml_plg_p4 = $request->jml_plg_p4 ?? 0;
+        $realisasi->kwh_p4 = $request->kwh_p4 ?? 0;
+        $realisasi->jml_plg_k2 = $request->jml_plg_k2 ?? 0;
+        $realisasi->kwh_k2 = $request->kwh_k2 ?? 0;
+        $realisasi->realisasi_kwh = ($request->kwh_p2 ?? 0) + ($request->kwh_p3 ?? 0) + ($request->kwh_p4 ?? 0) + ($request->kwh_k2 ?? 0);
+        $realisasi->keterangan = $request->keterangan;
+        $realisasi->created_by = $user->id;
+        $realisasi->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data berhasil disimpan',
+            'data' => $realisasi
+        ]);
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, $id)
+    {
+        $user = $request->user();
+        if ($user->role !== 'pic_transaksi_energi' && $user->role !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $realisasi = RealisasiP2tl::find($id);
+        if (!$realisasi) {
+            return response()->json(['success' => false, 'message' => 'Data tidak ditemukan'], 404);
+        }
+
+        if ($user->role === 'pic_transaksi_energi' && $realisasi->up3 !== $user->up3) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized: Data ini milik UP3 lain'], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'jml_plg_p1' => 'nullable|integer|min:0',
+            'jml_plg_p2' => 'nullable|integer|min:0',
+            'kwh_p2' => 'nullable|numeric|min:0',
+            'jml_plg_p3' => 'nullable|integer|min:0',
+            'kwh_p3' => 'nullable|numeric|min:0',
+            'jml_plg_p4' => 'nullable|integer|min:0',
+            'kwh_p4' => 'nullable|numeric|min:0',
+            'jml_plg_k2' => 'nullable|integer|min:0',
+            'kwh_k2' => 'nullable|numeric|min:0',
+            'keterangan' => 'nullable|string'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $realisasi->jml_plg_p1 = $request->jml_plg_p1 ?? 0;
+        $realisasi->jml_plg_p2 = $request->jml_plg_p2 ?? 0;
+        $realisasi->kwh_p2 = $request->kwh_p2 ?? 0;
+        $realisasi->jml_plg_p3 = $request->jml_plg_p3 ?? 0;
+        $realisasi->kwh_p3 = $request->kwh_p3 ?? 0;
+        $realisasi->jml_plg_p4 = $request->jml_plg_p4 ?? 0;
+        $realisasi->kwh_p4 = $request->kwh_p4 ?? 0;
+        $realisasi->jml_plg_k2 = $request->jml_plg_k2 ?? 0;
+        $realisasi->kwh_k2 = $request->kwh_k2 ?? 0;
+        $realisasi->realisasi_kwh = ($request->kwh_p2 ?? 0) + ($request->kwh_p3 ?? 0) + ($request->kwh_p4 ?? 0) + ($request->kwh_k2 ?? 0);
+        $realisasi->keterangan = $request->keterangan;
+        $realisasi->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data berhasil diupdate',
+            'data' => $realisasi
+        ]);
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(Request $request, $id)
+    {
+        $user = $request->user();
+        if ($user->role !== 'pic_transaksi_energi' && $user->role !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $realisasi = RealisasiP2tl::find($id);
+        if (!$realisasi) {
+            return response()->json(['success' => false, 'message' => 'Data tidak ditemukan'], 404);
+        }
+
+        if ($user->role === 'pic_transaksi_energi' && $realisasi->up3 !== $user->up3) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized: Data ini milik UP3 lain'], 403);
+        }
+
+        $realisasi->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data berhasil dihapus'
+        ]);
+    }
+
+    /**
+     * Get dashboard summary
+     */
+    public function dashboard(Request $request)
+    {
+        $user = $request->user();
+        $tahun = $request->tahun ?? date('Y');
+        $bulan = $request->bulan ?? date('m');
+        
+        if ($user && $user->role === 'pic_transaksi_energi') {
+            $up3 = $user->up3;
+        } else {
+            $up3 = $request->up3;
+        }
+
+        // Ambil target
+        $targetRow = TargetTahunan::where('indikator', 'Perolehan kWh P2TL')
+            ->where('tahun', $tahun)
+            ->first();
+
+        $monthMap = [
+            1 => 'target_jan', 2 => 'target_feb', 3 => 'target_mar',
+            4 => 'target_apr', 5 => 'target_mei', 6 => 'target_jun',
+            7 => 'target_jul', 8 => 'target_agu', 9 => 'target_sep',
+            10 => 'target_okt', 11 => 'target_nov', 12 => 'target_des',
+        ];
+
+        $target_kumulatif_ytd = null;
+        if ($targetRow) {
+            $target_kumulatif_ytd = 0;
+            for ($i = 1; $i <= $bulan; $i++) {
+                $col = $monthMap[$i];
+                $target_kumulatif_ytd += $targetRow->$col;
+            }
+        }
+
+        // Ambil realisasi YTD
+        $realisasiYtdQuery = RealisasiP2tl::where('tahun', $tahun)
+            ->where('bulan', '<=', $bulan);
+            
+        if ($up3) {
+            $realisasiYtdQuery->where('up3', $up3);
+        }
+
+        $realisasi_kumulatif_ytd = $realisasiYtdQuery->sum('realisasi_kwh');
+
+        // Pencapaian (menggunakan service tersentralisasi YtdCalculationService, konsisten dgn modul lain)
+        $pencapaian = YtdCalculationService::calculateNkoScore(
+            $realisasi_kumulatif_ytd,
+            $target_kumulatif_ytd,
+            'POSITIF'
+        ) ?? 0;
+
+        // Build trend array (bulan 1-12)
+        $realisasiAllQuery = RealisasiP2tl::where('tahun', $tahun);
+        if ($up3) {
+            $realisasiAllQuery->where('up3', $up3);
+        }
+        $realisasiPerBulan = $realisasiAllQuery
+            ->selectRaw('bulan, SUM(realisasi_kwh) as total_realisasi')
+            ->groupBy('bulan')
+            ->pluck('total_realisasi', 'bulan');
+
+        $trend = [];
+        for ($m = 1; $m <= 12; $m++) {
+            $col = $monthMap[$m];
+            $trend[] = [
+                'bulan' => $m,
+                'realisasi' => $realisasiPerBulan->has($m) ? (float) $realisasiPerBulan[$m] : null,
+                'target' => ($targetRow && !is_null($targetRow->$col)) ? (float) $targetRow->$col : null,
+            ];
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'target_kumulatif_ytd' => $target_kumulatif_ytd,
+                'realisasi_kumulatif_ytd' => $realisasi_kumulatif_ytd,
+                'pencapaian' => round($pencapaian, 2),
+                'trend' => $trend,
+            ]
+        ]);
+    }
+}

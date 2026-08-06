@@ -16,7 +16,7 @@ import api from '@/services/api'
 import { useFilter } from '@/context/FilterContext'
 import { useAuth } from '@/context/AuthContext'
 import * as XLSX from 'xlsx'
-import { Activity, Plus, FileSpreadsheet, Target, TrendingDown, TrendingUp, AlertTriangle } from 'lucide-react'
+import { Activity, Plus, FileSpreadsheet, Target, TrendingDown, TrendingUp, AlertTriangle, CheckCircle, XCircle } from 'lucide-react'
 import KpiCard from '@/components/ui/KpiCard'
 import TargetWarning from '@/components/ui/TargetWarning'
 import DataTable from '@/components/ui/DataTable'
@@ -138,31 +138,38 @@ export default function GangguanTmPage() {
 
   // Helper for Summary Cards
   const getSummary = (tipe) => {
-    if (!dataRekap) return { ytd: 0, target: null, sisa: null, persen: null };
+    if (!dataRekap) return { ytd: 0, target: null, sisa: null, persen: null, has_target: false };
     
     let ytd = 0;
     let target = null;
+    let has_target = true;
 
     if (tipe === 'semua') {
       ['lebih_5_mnt', 'kurang_5_mnt'].forEach(t => {
         if (dataRekap[t]) {
-          ytd += dataRekap[t].realisasi_ytd || 0;
-          if (dataRekap[t].target_tahunan !== null && dataRekap[t].target_tahunan !== undefined) {
-            target = (target || 0) + Number(dataRekap[t].target_tahunan);
+          ytd += (dataRekap[t].realisasi_ytd || 0);
+          if (dataRekap[t].target_ytd !== null && dataRekap[t].target_ytd !== undefined) {
+            target = (target || 0) + Number(dataRekap[t].target_ytd);
           }
+          if (!dataRekap[t].has_target) has_target = false;
+        } else {
+          has_target = false;
         }
       });
     } else {
       if (dataRekap[tipe]) {
         ytd = dataRekap[tipe].realisasi_ytd || 0;
-        target = dataRekap[tipe].target_tahunan;
+        target = dataRekap[tipe].target_ytd;
+        has_target = !!dataRekap[tipe].has_target;
+      } else {
+        has_target = false;
       }
     }
 
     let sisa = target !== null ? target - ytd : null;
-    let persen = (target !== null && target > 0) ? (ytd / target) * 100 : null;
+    let persen = (target !== null && target > 0) ? Math.max(0, Math.min((2 - (ytd / target)) * 100, 110)) : null;
 
-    return { ytd, target, sisa, persen };
+    return { ytd, target, sisa, persen, has_target };
   }
 
   const exportToExcel = () => {
@@ -181,14 +188,13 @@ export default function GangguanTmPage() {
       wsData.push([`REKAPITULASI GANGGUAN TM ${title}`]);
       wsData.push([`TAHUN ${year}`]);
       wsData.push([]);
-      wsData.push(['Bulan', 'Realisasi Bulanan', 'Sisa', '% Pencapaian']);
+      wsData.push(['Bulan', 'Target Bulanan', 'Realisasi Bulanan']);
       
       chartData.forEach(row => {
         const rowData = [
           MONTHS_FULL[row.bulan - 1],
-          row.realisasi !== null ? row.realisasi : '-',
-          (row.targetKumulatif !== null && row.kumulatifReal !== null) ? (row.targetKumulatif - row.kumulatifReal).toFixed(2) : '-',
-          (row.targetKumulatif && row.kumulatifReal !== null) ? ((row.kumulatifReal / row.targetKumulatif) * 100).toFixed(2) + '%' : '-'
+          row.targetBulanan !== null ? row.targetBulanan : '-',
+          row.realisasi !== null ? row.realisasi : '-'
         ];
         wsData.push(rowData);
       });
@@ -292,6 +298,7 @@ export default function GangguanTmPage() {
       bulan: 'TOTAL',
       label: 'TOTAL',
       realisasi: sumReal,
+      targetBulanan: targetTahunan,
       kumulatifReal: sumReal,
       targetKumulatif: targetTahunan,
       isTotal: true
@@ -322,25 +329,20 @@ export default function GangguanTmPage() {
               render: (v, item) => <span className={`block font-semibold ${item.isTotal ? 'text-blue-700 uppercase' : 'text-slate-800'}`}>{item.isTotal ? 'TOTAL' : MONTHS_FULL[item.bulan-1]}</span>
             },
             { 
+              key: 'targetBulanan', label: 'Target Bulanan', align: 'center',
+              render: (v, item) => <span className={item.isTotal ? 'font-bold text-slate-700' : 'text-slate-600'}>{v !== null ? Number(v).toLocaleString('id-ID') : '-'}</span>
+            },
+            { 
               key: 'realisasi', label: 'Realisasi Bulanan', align: 'center',
-              render: (v, item) => <span className={item.isTotal ? 'font-bold text-blue-700' : 'text-slate-600'}>{v !== null ? Number(v).toLocaleString('id-ID') : '-'}</span>
-            },
-            { 
-              key: 'sisa', label: 'Sisa Kuota', align: 'center',
               render: (v, item) => {
-                if (item.targetKumulatif === null || item.kumulatifReal === null) return <span className="text-slate-400">-</span>;
-                const sisa = item.targetKumulatif - item.kumulatifReal;
-                return <span className={`font-bold ${sisa < 0 ? 'text-red-600' : 'text-green-600'}`}>{Number(sisa).toLocaleString('id-ID', {maximumFractionDigits:2})}</span>
+                if (v === null) return <span className="text-slate-400">-</span>;
+                let colorClass = item.isTotal ? 'text-blue-700' : 'text-slate-800';
+                if (item.targetBulanan !== null) {
+                  colorClass = v <= item.targetBulanan ? 'text-green-600' : 'text-red-600';
+                }
+                return <span className={`font-bold ${colorClass}`}>{Number(v).toLocaleString('id-ID')}</span>
               }
-            },
-            { 
-              key: 'persen', label: '% Pencapaian', align: 'center',
-              render: (v, item) => {
-                if (!item.targetKumulatif || item.kumulatifReal === null) return <span className="text-slate-400">-</span>;
-                const p = (item.kumulatifReal / item.targetKumulatif) * 100;
-                return <span className={`font-bold ${p > 100 ? 'text-red-600' : 'text-green-600'}`}>{Number(p).toLocaleString('id-ID', {maximumFractionDigits:2})}%</span>
-              }
-            },
+            }
           ]}
           data={tableData}
           paginated={false}
@@ -367,12 +369,12 @@ export default function GangguanTmPage() {
         <DataTable
           columns={[
             { key: 'up3', label: 'UP3', align: 'left', render: v => <span className="font-semibold text-slate-800">{v}</span> },
-            { key: 'target', label: 'Target Tahunan', align: 'center', render: v => <span className="font-bold text-red-600">{v !== null ? Number(v).toLocaleString('id-ID') : '-'}</span> },
+            { key: 'target', label: 'Target YTD', align: 'center', render: v => <span className="font-bold text-red-600">{v !== null ? Number(v).toLocaleString('id-ID') : '-'}</span> },
             { key: 'realisasi_ytd', label: 'Realisasi YTD', align: 'center', render: v => <span className="font-bold text-blue-600">{v !== null ? Number(v).toLocaleString('id-ID') : '-'}</span> },
             { 
               key: 'pencapaian', label: '% Pencapaian', align: 'center',
               render: v => v !== null ? (
-                <span className={`font-bold ${v > 100 ? 'text-red-600' : 'text-green-600'}`}>
+                <span className={`font-bold ${v < 100 ? 'text-red-600' : 'text-green-600'}`}>
                   {Number(v).toLocaleString('id-ID', {maximumFractionDigits:2})}%
                 </span>
               ) : '-'
@@ -386,7 +388,7 @@ export default function GangguanTmPage() {
                   background: v === 'AMAN' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
                   color: v === 'AMAN' ? '#10b981' : '#ef4444'
                 }}>
-                  {v}
+                  {v === 'AMAN' ? 'TERCAPAI' : 'TIDAK TERCAPAI'}
                 </div>
               ) : '-'
             },
@@ -490,43 +492,6 @@ export default function GangguanTmPage() {
               <Plus size={16} /> Input &gt; 5 Menit
             </button>
           </div>
-          
-          <div style={{
-            display: 'inline-flex',
-            background: 'rgba(16, 185, 129, 0.05)',
-            padding: 4,
-            borderRadius: 12,
-            border: '1px solid rgba(16, 185, 129, 0.15)',
-            cursor: 'pointer'
-          }}>
-            <button
-              onClick={exportToExcel}
-              style={{
-                padding: '6px 16px',
-                borderRadius: 9,
-                fontSize: '0.85rem',
-                fontWeight: 700,
-                transition: 'all 0.2s ease',
-                border: 'none',
-                cursor: 'pointer',
-                background: 'var(--bg-card)',
-                color: '#10B981',
-                boxShadow: '0 2px 8px rgba(16, 185, 129, 0.15)',
-                display: 'flex', alignItems: 'center', gap: '8px'
-              }}
-              title="Export ke Excel"
-              onMouseEnter={e => {
-                  e.currentTarget.style.background = '#10B981';
-                  e.currentTarget.style.color = '#FFFFFF';
-              }}
-              onMouseLeave={e => {
-                  e.currentTarget.style.background = 'var(--bg-card)';
-                  e.currentTarget.style.color = '#10B981';
-              }}
-            >
-              <FileSpreadsheet size={16} /> Export
-            </button>
-          </div>
         </div>
       </div>
 
@@ -549,10 +514,10 @@ export default function GangguanTmPage() {
         </div>
       </div>
 
-      <TargetWarning up3={filters.up3} year={filters.year} isVisible={summary.target == null} />
+      <TargetWarning up3={filters.up3} year={filters.year} isVisible={!summary.has_target} />
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
         <KpiCard
           title="Realisasi YTD"
           value={Number(summary.ytd).toLocaleString('id-ID')}
@@ -562,7 +527,7 @@ export default function GangguanTmPage() {
           color="blue"
         />
         <KpiCard
-          title="Target Tahunan"
+          title="Target YTD"
           value={summary.target !== null ? Number(summary.target).toLocaleString('id-ID') : '-'}
           subtitle={summary.target === null ? 'Belum ada target' : undefined}
           unit={summary.target !== null ? "Kali" : ""}
@@ -570,20 +535,11 @@ export default function GangguanTmPage() {
           color="red"
         />
         <KpiCard
-          title="Sisa Kuota"
-          value={summary.sisa !== null ? Number(summary.sisa).toLocaleString('id-ID', {maximumFractionDigits: 1}) : '-'}
-          unit={summary.sisa !== null ? "Kali" : ""}
-          icon={summary.sisa !== null && summary.sisa < 0 ? TrendingUp : TrendingDown}
-          trend={summary.sisa !== null && summary.sisa < 0 ? 'bad' : 'good'}
-          color={summary.sisa !== null && summary.sisa < 0 ? 'red' : 'green'}
-        />
-        <KpiCard
-          title="% Pencapaian"
-          value={summary.persen !== null ? Number(summary.persen).toLocaleString('id-ID', {maximumFractionDigits: 2}) : '-'}
-          unit={summary.persen !== null ? "%" : ""}
-          icon={summary.persen !== null && summary.persen > 100 ? AlertTriangle : Activity}
-          trend={summary.persen !== null && summary.persen > 100 ? 'bad' : 'good'}
-          color={summary.persen !== null && summary.persen > 100 ? 'red' : 'green'}
+          title="Status Kinerja"
+          value={summary.persen !== null ? (summary.persen >= 100 ? 'TERCAPAI' : 'TIDAK TERCAPAI') : '-'}
+          icon={summary.persen !== null ? (summary.persen >= 100 ? CheckCircle : XCircle) : Activity}
+          color={summary.persen !== null ? (summary.persen >= 100 ? 'green' : 'red') : 'blue'}
+          badgeText={summary.persen !== null ? `Pencapaian: ${Number(summary.persen).toLocaleString('id-ID', {maximumFractionDigits: 2})}%` : null}
         />
       </div>
 
@@ -643,15 +599,7 @@ export default function GangguanTmPage() {
           {renderRekapTable(activeTab)}
           {renderUp3Table(activeTab)}
           
-          {/* FGTM Placeholder for > 5 Menit */}
-          {activeTab === 'lebih_5_mnt' && (
-            <div className="mt-6 card">
-              <div className="text-center text-gray-400 py-8">
-                Data panjang JTM belum tersedia.
-                Fitur FGTM akan aktif setelah data aset dikonfigurasi oleh Admin.
-              </div>
-            </div>
-          )}
+
         </div>
       )}
       <DetailGangguanTmModal 

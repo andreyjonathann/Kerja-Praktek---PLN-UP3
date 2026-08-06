@@ -18,7 +18,7 @@ Route::post('/auth/login', [AuthController::class, 'login']);
 
 use App\Http\Controllers\NotificationController;
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'block_perencanaan'])->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/auth/me', [AuthController::class, 'me']);
     
@@ -36,11 +36,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/nko-realizations', [\App\Http\Controllers\Api\NkoRealizationController::class, 'index']);
     Route::post('/nko-realizations', [\App\Http\Controllers\Api\NkoRealizationController::class, 'store']);
     Route::delete('/nko-realizations/{id}', [\App\Http\Controllers\Api\NkoRealizationController::class, 'destroy']);
+
+    // Kinerja endpoints
+    Route::get('/kinerja/{bidang}', [KinerjaController::class, 'index']);
+    Route::post('/kinerja/{bidang}', [KinerjaController::class, 'store']);
+    Route::delete('/kinerja/{bidang}', [KinerjaController::class, 'destroy']);
 });
+
 
 Route::middleware('api')->group(function () {
     // Gangguan Switching & Trafo
-    Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
+    Route::prefix('v1')->middleware(['auth:sanctum', 'block_perencanaan'])->group(function () {
         Route::get('/gangguan-switching', [\App\Http\Controllers\Api\GangguanSwitchingController::class, 'indexSwitching']);
         Route::post('/gangguan-switching', [\App\Http\Controllers\Api\GangguanSwitchingController::class, 'storeSwitching']);
         Route::put('/gangguan-switching/{id}', [\App\Http\Controllers\Api\GangguanSwitchingController::class, 'updateSwitching']);
@@ -56,6 +62,7 @@ Route::middleware('api')->group(function () {
         Route::post('/gangguan-switching/detail', [\App\Http\Controllers\Api\GangguanSwitchingController::class, 'storeKejadianSwitching']);
         Route::put('/gangguan-switching/detail/{id}', [\App\Http\Controllers\Api\GangguanSwitchingController::class, 'updateKejadianSwitching']);
         Route::delete('/gangguan-switching/detail/{id}', [\App\Http\Controllers\Api\GangguanSwitchingController::class, 'destroyKejadianSwitching']);
+        Route::post('/gangguan-trafo/detail', [\App\Http\Controllers\Api\GangguanSwitchingController::class, 'storeKejadianTrafo']);
         Route::put('/gangguan-trafo/detail/{id}', [\App\Http\Controllers\Api\GangguanSwitchingController::class, 'updateKejadianTrafo']);
         Route::delete('/gangguan-trafo/detail/{id}', [\App\Http\Controllers\Api\GangguanSwitchingController::class, 'destroyKejadianTrafo']);
 
@@ -103,91 +110,147 @@ Route::middleware('api')->group(function () {
         
         Route::get('/mttr/targets', [\App\Http\Controllers\Api\MttrController::class, 'targets']);
         Route::post('/mttr/targets', [\App\Http\Controllers\Api\MttrController::class, 'storeTargets']);
+
+        // Transaksi Energi - P2TL
+        Route::get('/p2tl', [\App\Http\Controllers\Api\RealisasiP2tlController::class, 'index']);
+        Route::get('/p2tl/dashboard', [\App\Http\Controllers\Api\RealisasiP2tlController::class, 'dashboard']);
+        Route::post('/p2tl', [\App\Http\Controllers\Api\RealisasiP2tlController::class, 'store']);
+        Route::put('/p2tl/{id}', [\App\Http\Controllers\Api\RealisasiP2tlController::class, 'update']);
+        Route::delete('/p2tl/{id}', [\App\Http\Controllers\Api\RealisasiP2tlController::class, 'destroy']);
+
+        // Transaksi Energi - Ganti Meter
+        Route::get('/ganti-meter', [\App\Http\Controllers\Api\RealisasiGantiMeterController::class, 'index']);
+        Route::get('/ganti-meter/dashboard', [\App\Http\Controllers\Api\RealisasiGantiMeterController::class, 'dashboard']);
+        Route::post('/ganti-meter', [\App\Http\Controllers\Api\RealisasiGantiMeterController::class, 'store']);
+        Route::get('/ganti-meter/dashboard-harian', [\App\Http\Controllers\Api\RealisasiGantiMeterController::class, 'dashboardHarian']);
+        Route::put('/ganti-meter/{id}', [\App\Http\Controllers\Api\RealisasiGantiMeterController::class, 'update']);
+        Route::delete('/ganti-meter/{id}', [\App\Http\Controllers\Api\RealisasiGantiMeterController::class, 'destroy']);
+
+        // Transaksi Energi - Susut Distribusi
+        Route::get('/susut-distribusi', [\App\Http\Controllers\Api\RealisasiSusutDistribusiController::class, 'index']);
+        Route::get('/susut-distribusi/dashboard', [\App\Http\Controllers\Api\RealisasiSusutDistribusiController::class, 'dashboard']);
+        Route::post('/susut-distribusi', [\App\Http\Controllers\Api\RealisasiSusutDistribusiController::class, 'store']);
+        Route::put('/susut-distribusi/{id}', [\App\Http\Controllers\Api\RealisasiSusutDistribusiController::class, 'update']);
+        Route::delete('/susut-distribusi/{id}', [\App\Http\Controllers\Api\RealisasiSusutDistribusiController::class, 'destroy']);
+
+        // Pengadaan / Kontrak
+        Route::get('/pengadaan/dashboard', [\App\Http\Controllers\Api\PengadaanController::class, 'dashboard']);
+        Route::get('/pengadaan', [\App\Http\Controllers\Api\PengadaanController::class, 'index']);
+        Route::get('/pengadaan/{id}', [\App\Http\Controllers\Api\PengadaanController::class, 'show']);
+        
+        // Write operations restricted to pic_pengadaan
+        Route::middleware(\App\Http\Middleware\RestrictPengadaanWrites::class)->group(function () {
+            Route::post('/pengadaan', [\App\Http\Controllers\Api\PengadaanController::class, 'store']);
+            Route::put('/pengadaan/{id}', [\App\Http\Controllers\Api\PengadaanController::class, 'update']);
+            Route::patch('/pengadaan/{id}/status', [\App\Http\Controllers\Api\PengadaanController::class, 'updateStatus']);
+            Route::delete('/pengadaan/{id}', [\App\Http\Controllers\Api\PengadaanController::class, 'destroy']);
+            Route::delete('/pengadaan/{id}/file/{fileIndex}', [\App\Http\Controllers\Api\PengadaanController::class, 'deleteFile']);
+            
+            Route::post('/pagu-anggaran', [\App\Http\Controllers\Api\PaguAnggaranController::class, 'store']);
+            Route::delete('/pagu-anggaran/{id}', [\App\Http\Controllers\Api\PaguAnggaranController::class, 'destroy']);
+        });
+
+        // Pagu Anggaran SKKO / SKKI (Read-only for others)
+        Route::get('/pagu-anggaran', [\App\Http\Controllers\Api\PaguAnggaranController::class, 'index']);
     });
-    Route::get('/nko/summary', [NkoController::class, 'summary']);
-    
-    // Data Jaringan (Dashboard)
-    Route::get('/jaringan/dashboard', [DataJaringanController::class, 'getDashboardData']);
 
-    // Jaringan CRUD
-    Route::post('/jaringan/ens', [DataJaringanController::class, 'saveEns']);
-    Route::delete('/jaringan/ens', [DataJaringanController::class, 'deleteEns']);
-    Route::put('/jaringan/ens/{id}', [DataJaringanController::class, 'updateEns']);
-    Route::delete('/jaringan/ens/{id}', [DataJaringanController::class, 'destroyEns']);
-    Route::post('/jaringan/gangguan', [DataJaringanController::class, 'saveGangguan']);
-    Route::post('/jaringan/gangguan-list', [DataJaringanController::class, 'saveGangguanList']);
-    Route::get('/jaringan/gangguan-list', [DataJaringanController::class, 'getGangguanList']);
-    Route::delete('/jaringan/gangguan-list/{id}', [DataJaringanController::class, 'deleteGangguanList']);
-    
-    // Rating Negatif
-    Route::get('/jaringan/rating-negatif', [\App\Http\Controllers\RatingNegatifController::class, 'index']);
-    Route::post('/jaringan/rating-negatif', [\App\Http\Controllers\RatingNegatifController::class, 'store']);
-    Route::delete('/jaringan/rating-negatif/{id}', [\App\Http\Controllers\RatingNegatifController::class, 'destroy']);
-    Route::get('/jaringan/rating-negatif/rekap', [\App\Http\Controllers\RatingNegatifController::class, 'rekap']);
-    Route::get('/jaringan/rating-negatif/yoy', [\App\Http\Controllers\RatingNegatifController::class, 'yoy']);
-    
-    // Gangguan TM
-    Route::get('/jaringan/gangguan-tm', [\App\Http\Controllers\GangguanTmController::class, 'index']);
-    Route::post('/jaringan/gangguan-tm', [\App\Http\Controllers\GangguanTmController::class, 'store']); // Legacy
-    Route::post('/jaringan/gangguan-tm/kurang-5', [\App\Http\Controllers\GangguanTmController::class, 'storeKurang5Mnt']);
-    Route::put('/jaringan/gangguan-tm/kurang-5/{id}', [\App\Http\Controllers\GangguanTmController::class, 'updateKurang5Mnt']);
-    Route::delete('/jaringan/gangguan-tm/kurang-5/{id}', [\App\Http\Controllers\GangguanTmController::class, 'deleteKurang5Mnt']);
-    Route::post('/jaringan/gangguan-tm/lebih-5', [\App\Http\Controllers\GangguanTmController::class, 'storeLebih5Mnt']);
-    Route::put('/jaringan/gangguan-tm/lebih-5/{tahun}/{bulan}', [\App\Http\Controllers\GangguanTmController::class, 'updateLebih5Mnt']);
-    Route::post('/jaringan/gangguan-tm/detail-lebih5', [\App\Http\Controllers\GangguanTmController::class, 'insertDetailLebih5Mnt']);
-    Route::put('/jaringan/gangguan-tm/detail-lebih5/{id}', [\App\Http\Controllers\GangguanTmController::class, 'updateDetailLebih5Mnt']);
-    Route::delete('/jaringan/gangguan-tm/detail-lebih5/{id}', [\App\Http\Controllers\GangguanTmController::class, 'deleteDetailLebih5Mnt']);
-    Route::get('/jaringan/gangguan-tm/lebih-5/detail', [\App\Http\Controllers\GangguanTmController::class, 'detailLebih5Mnt']);
-    Route::get('/jaringan/gangguan-tm/rekap', [\App\Http\Controllers\GangguanTmController::class, 'rekap']);
-    Route::get('/jaringan/gangguan-tm/semua-up3', [\App\Http\Controllers\GangguanTmController::class, 'semuaUp3']);
-    
-    // Target Tahunan
-    Route::get('/targets', [TargetTahunanController::class, 'index']);
-    Route::post('/targets', [TargetTahunanController::class, 'store']);
-    Route::get('/target/{bidang}/{indikator}', [TargetTahunanController::class, 'getMonthlyTarget']);
-    Route::put('/target/{bidang}/{indikator}/{tahun}', [TargetTahunanController::class, 'updateMonthlyTarget']);
-    
-    // Kinerja endpoints
-    Route::get('/kinerja/{bidang}', [KinerjaController::class, 'index']);
-    Route::post('/kinerja/{bidang}', [KinerjaController::class, 'store']);
-    Route::delete('/kinerja/{bidang}', [KinerjaController::class, 'destroy']);
+    // Read-only endpoints (protected by auth:sanctum)
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/nko/summary', [NkoController::class, 'summary']);
+        
+        // K3 Module
+        Route::get('/k3/categories', [\App\Http\Controllers\Api\K3Controller::class, 'categories']);
+        Route::get('/k3/dashboard', [\App\Http\Controllers\Api\K3Controller::class, 'dashboard']);
+        Route::get('/k3/dashboard/trend', [\App\Http\Controllers\Api\K3Controller::class, 'dashboardTrend']);
+        
+        Route::get('/k3/targets/{tahun}/{semester}', [\App\Http\Controllers\Api\K3Controller::class, 'getTargets']);
+        Route::post('/k3/targets', [\App\Http\Controllers\Api\K3Controller::class, 'storeTarget']);
+        Route::put('/k3/targets/{id}', [\App\Http\Controllers\Api\K3Controller::class, 'updateTarget']);
+        Route::get('/k3/nko-summary/{tahun}/{semester}', [\App\Http\Controllers\Api\K3Controller::class, 'nkoSummary']);
+        
+        Route::get('/k3/assessments/{tahun}/{semester}', [\App\Http\Controllers\Api\K3Controller::class, 'getAssessments']);
+        Route::post('/k3/assessments', [\App\Http\Controllers\Api\K3Controller::class, 'storeAssessment']);
+        Route::post('/k3/assessments/bulk', [\App\Http\Controllers\Api\K3Controller::class, 'storeBulkAssessment']);
+        
+        Route::post('/k3/assessments/bulk/submit', [\App\Http\Controllers\Api\K3Controller::class, 'submitBulkAssessment']);
+        Route::post('/k3/assessments/bulk/unsubmit', [\App\Http\Controllers\Api\K3Controller::class, 'unsubmitBulkAssessment']);
+        Route::post('/k3/assessments/bulk/approve', [\App\Http\Controllers\Api\K3Controller::class, 'approveBulkAssessment']);
+        Route::post('/k3/assessments/bulk/revisi', [\App\Http\Controllers\Api\K3Controller::class, 'revisiBulkAssessment']);
+        
+        Route::post('/k3/assessments/{id}/submit', [\App\Http\Controllers\Api\K3Controller::class, 'submitAssessment']);
+        Route::post('/k3/assessments/{id}/approve', [\App\Http\Controllers\Api\K3Controller::class, 'approveAssessment']);
+        Route::post('/k3/assessments/{id}/revisi', [\App\Http\Controllers\Api\K3Controller::class, 'revisiAssessment']);
 
-    // Unit UP3
-    Route::apiResource('unit-up3', \App\Http\Controllers\Api\UnitUp3Controller::class);
+        // K3 Findings & Activities (Keep from main)
+        Route::get('/k3/findings',         [\App\Http\Controllers\K3FindingController::class, 'index']);
+        Route::post('/k3/findings',        [\App\Http\Controllers\K3FindingController::class, 'store']);
+        Route::get('/k3/findings/{id}',    [\App\Http\Controllers\K3FindingController::class, 'show']);
+        Route::put('/k3/findings/{id}',    [\App\Http\Controllers\K3FindingController::class, 'update']);
+        Route::delete('/k3/findings/{id}', [\App\Http\Controllers\K3FindingController::class, 'destroy']);
+
+        Route::get('/k3/activities',         [\App\Http\Controllers\K3ActivityController::class, 'index']);
+        Route::post('/k3/activities',        [\App\Http\Controllers\K3ActivityController::class, 'store']);
+        Route::get('/k3/activities/{id}',    [\App\Http\Controllers\K3ActivityController::class, 'show']);
+        Route::put('/k3/activities/{id}',    [\App\Http\Controllers\K3ActivityController::class, 'update']);
+        Route::delete('/k3/activities/{id}', [\App\Http\Controllers\K3ActivityController::class, 'destroy']);
+        
+        // Data Jaringan (Dashboard)
+        Route::get('/jaringan/dashboard', [DataJaringanController::class, 'getDashboardData']);
+        Route::get('/jaringan/gangguan-list', [DataJaringanController::class, 'getGangguanList']);
+        
+        // Rating Negatif
+        Route::get('/jaringan/rating-negatif', [\App\Http\Controllers\RatingNegatifController::class, 'index']);
+        Route::get('/jaringan/rating-negatif/rekap', [\App\Http\Controllers\RatingNegatifController::class, 'rekap']);
+        Route::get('/jaringan/rating-negatif/yoy', [\App\Http\Controllers\RatingNegatifController::class, 'yoy']);
+        
+        // Gangguan TM
+        Route::get('/jaringan/gangguan-tm', [\App\Http\Controllers\GangguanTmController::class, 'index']);
+        Route::get('/jaringan/gangguan-tm/lebih-5/detail', [\App\Http\Controllers\GangguanTmController::class, 'detailLebih5Mnt']);
+        Route::get('/jaringan/gangguan-tm/rekap', [\App\Http\Controllers\GangguanTmController::class, 'rekap']);
+        Route::get('/jaringan/gangguan-tm/semua-up3', [\App\Http\Controllers\GangguanTmController::class, 'semuaUp3']);
+        
+        // Target Tahunan
+        Route::get('/targets', [TargetTahunanController::class, 'index']);
+        Route::get('/target/{bidang}/{indikator}', [TargetTahunanController::class, 'getMonthlyTarget']);
+        Route::get('/kinerja/{bidang}', [KinerjaController::class, 'index']);
+
+        // Unit UP3 (Keep from main)
+        Route::apiResource('unit-up3', \App\Http\Controllers\Api\UnitUp3Controller::class);
+    });
+
+    // Write endpoints (protected by auth:sanctum and block_perencanaan)
+    Route::middleware(['auth:sanctum', 'block_perencanaan'])->group(function () {
+        // Jaringan CRUD
+        Route::post('/jaringan/ens', [DataJaringanController::class, 'saveEns']);
+        Route::delete('/jaringan/ens', [DataJaringanController::class, 'deleteEns']);
+        Route::put('/jaringan/ens/{id}', [DataJaringanController::class, 'updateEns']);
+        Route::delete('/jaringan/ens/{id}', [DataJaringanController::class, 'destroyEns']);
+        Route::post('/jaringan/gangguan', [DataJaringanController::class, 'saveGangguan']);
+        Route::post('/jaringan/gangguan-list', [DataJaringanController::class, 'saveGangguanList']);
+        Route::delete('/jaringan/gangguan-list/{id}', [DataJaringanController::class, 'deleteGangguanList']);
+        
+        // Rating Negatif
+        Route::post('/jaringan/rating-negatif', [\App\Http\Controllers\RatingNegatifController::class, 'store']);
+        Route::delete('/jaringan/rating-negatif/{id}', [\App\Http\Controllers\RatingNegatifController::class, 'destroy']);
+        
+        // Gangguan TM
+        Route::post('/jaringan/gangguan-tm', [\App\Http\Controllers\GangguanTmController::class, 'store']); // Legacy
+        Route::post('/jaringan/gangguan-tm/kurang-5', [\App\Http\Controllers\GangguanTmController::class, 'storeKurang5Mnt']);
+        Route::put('/jaringan/gangguan-tm/kurang-5/{id}', [\App\Http\Controllers\GangguanTmController::class, 'updateKurang5Mnt']);
+        Route::delete('/jaringan/gangguan-tm/kurang-5/{id}', [\App\Http\Controllers\GangguanTmController::class, 'deleteKurang5Mnt']);
+        Route::post('/jaringan/gangguan-tm/lebih-5', [\App\Http\Controllers\GangguanTmController::class, 'storeLebih5Mnt']);
+        Route::put('/jaringan/gangguan-tm/lebih-5/{tahun}/{bulan}', [\App\Http\Controllers\GangguanTmController::class, 'updateLebih5Mnt']);
+        Route::post('/jaringan/gangguan-tm/detail-lebih5', [\App\Http\Controllers\GangguanTmController::class, 'insertDetailLebih5Mnt']);
+        Route::put('/jaringan/gangguan-tm/detail-lebih5/{id}', [\App\Http\Controllers\GangguanTmController::class, 'updateDetailLebih5Mnt']);
+        Route::delete('/jaringan/gangguan-tm/detail-lebih5/{id}', [\App\Http\Controllers\GangguanTmController::class, 'deleteDetailLebih5Mnt']);
+        
+        // Target Tahunan
+        Route::post('/targets', [TargetTahunanController::class, 'store']);
+        Route::put('/target/{bidang}/{indikator}/{tahun}', [TargetTahunanController::class, 'updateMonthlyTarget']);
+        Route::put('/target/reset-auto/{bidang}/{indikator}/{tahun}', [TargetTahunanController::class, 'resetToAuto']);
+
+        Route::get('/target-ganti-meter-harian', [\App\Http\Controllers\Api\TargetGantiMeterHarianController::class, 'index']);
+        Route::post('/target-ganti-meter-harian/bulk', [\App\Http\Controllers\Api\TargetGantiMeterHarianController::class, 'storeBulk']);
+    });
 });
 
-// =============================================================================
-// K3 Maturity Level Routes
-// =============================================================================
-Route::prefix('k3')->middleware('auth:sanctum')->group(function () {
-
-    // Master data: categories with criteria & levels (read-only)
-    Route::get('/categories', [\App\Http\Controllers\K3AssessmentController::class, 'categories']);
-
-    // Dashboard (radar data, monthly trend, unit comparison)
-    Route::get('/dashboard', [\App\Http\Controllers\K3AssessmentController::class, 'dashboard']);
-
-    // Assessments
-    Route::get('/assessments',               [\App\Http\Controllers\K3AssessmentController::class, 'index']);
-    Route::post('/assessments',              [\App\Http\Controllers\K3AssessmentController::class, 'store']);
-    Route::get('/assessments/{id}',          [\App\Http\Controllers\K3AssessmentController::class, 'show']);
-    Route::put('/assessments/{id}',          [\App\Http\Controllers\K3AssessmentController::class, 'update']);
-    Route::post('/assessments/{id}/submit',  [\App\Http\Controllers\K3AssessmentController::class, 'submit']);
-    Route::post('/assessments/{id}/unsubmit',[\App\Http\Controllers\K3AssessmentController::class, 'unsubmit']);
-    Route::post('/assessments/{id}/approve', [\App\Http\Controllers\K3AssessmentController::class, 'approve']);
-    Route::post('/assessments/{id}/revisi',  [\App\Http\Controllers\K3AssessmentController::class, 'revisi']);
-
-    // Findings
-    Route::get('/findings',         [\App\Http\Controllers\K3FindingController::class, 'index']);
-    Route::post('/findings',        [\App\Http\Controllers\K3FindingController::class, 'store']);
-    Route::get('/findings/{id}',    [\App\Http\Controllers\K3FindingController::class, 'show']);
-    Route::put('/findings/{id}',    [\App\Http\Controllers\K3FindingController::class, 'update']);
-    Route::delete('/findings/{id}', [\App\Http\Controllers\K3FindingController::class, 'destroy']);
-
-    // Activities
-    Route::get('/activities',         [\App\Http\Controllers\K3ActivityController::class, 'index']);
-    Route::post('/activities',        [\App\Http\Controllers\K3ActivityController::class, 'store']);
-    Route::get('/activities/{id}',    [\App\Http\Controllers\K3ActivityController::class, 'show']);
-    Route::put('/activities/{id}',    [\App\Http\Controllers\K3ActivityController::class, 'update']);
-    Route::delete('/activities/{id}', [\App\Http\Controllers\K3ActivityController::class, 'destroy']);
-});

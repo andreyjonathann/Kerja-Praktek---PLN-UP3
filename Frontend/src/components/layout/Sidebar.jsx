@@ -52,11 +52,6 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
   }
 
   const getFilteredNavItems = () => {
-    // Admin K3 / PIC K3 → only show HOME + K3-tagged groups
-    if (user?.role === 'admin_k3' || user?.role === 'pic_k3') {
-      return NAV_ITEMS.filter(item => item.key === 'home' || item.k3 === true)
-    }
-
     // Full admin → everything
     if (isAdmin) return NAV_ITEMS
     
@@ -64,27 +59,59 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
       'pic_jaringan': 'JARINGAN',
       'pic_pemasaran': 'PEMASARAN',
       'pic_transaksi_energi': 'TRANSAKSI ENERGI',
-      'pic_aset': 'ASET',
+      'pic_pengadaan': 'PENGADAAN',
       'pic_niaga': 'NIAGA',
-      'pic_keuangan': 'KEUANGAN'
-    }
-    const userGroup = user ? roleMap[user.role] : null
+      'pic_keuangan': 'KEUANGAN',
+      'pic_k3': 'K3',
+      'admin_k3': 'K3'
+    };
+    
+    const isPerencanaan = user?.role === 'perencanaan';
+    const userGroup = user ? roleMap[user.role] : null;
     
     return NAV_ITEMS.flatMap(item => {
-      if (item.key === 'home') return [item]
-      if (item.k3) return [item]  // All K3 groups visible (read-only for non-admin_k3)
+      if (item.key === 'home') return [item];
+      
       if (item.group === 'NKO') {
-        const filteredItems = item.items.filter(i => i.group !== 'KELOLA TARGET')
-        return [{ ...item, items: filteredItems }]
+         // Hide NKO for roles that only have their own specific page / module
+         const noNkoRoles = ['pic_jaringan', 'pic_pengadaan', 'pic_transaksi_energi', 'pic_k3', 'admin_k3'];
+         if (user && noNkoRoles.includes(user.role)) return [];
+         const filteredItems = item.items.filter(i => i.group !== 'KELOLA TARGET');
+         return [{ ...item, items: filteredItems }];
       }
+
+      if (item.group === 'PEGAWAI') {
+         // Only admin and perencanaan see PEGAWAI
+         if (user && !isAdmin && !isPerencanaan) return [];
+         return [item];
+      }
+      
+      // Flatten the specific KINERJA subgroup into top-level items
       if (item.group === 'KINERJA') {
-        if (!userGroup) return []
-        const matchingSubgroup = item.items.find(sub => sub.group === userGroup)
-        if (!matchingSubgroup) return []
-        return matchingSubgroup.items.map(subItem => ({ ...subItem, type: subItem.type || 'item' }))
+         if (isPerencanaan) {
+            return [item]; // Keep KINERJA nested subgroups just like Admin
+         }
+         
+         if (!userGroup) return [];
+         const matchingSubgroup = item.items.find(sub => sub.group === userGroup);
+         if (!matchingSubgroup) return [];
+         
+         const itemsToRender = user && user.role === 'pic_transaksi_energi'
+           ? matchingSubgroup.items.filter(subItem => subItem.key !== 'input-kpi-te')
+           : matchingSubgroup.items;
+
+         // Extract the items from the subgroup and render them flatly, but preserve nested groups
+         return itemsToRender.map(subItem => ({ 
+             ...subItem, 
+             type: subItem.type || 'item' 
+         }));
       }
-      return []
-    })
+      
+      // Keep K3 groups visible for K3 roles
+      if (item.k3) return [item];
+      
+      return [];
+    });
   }
 
   const filteredItems = getFilteredNavItems();

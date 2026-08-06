@@ -8,6 +8,7 @@ use App\Models\MttrTarget;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use App\Services\TargetService;
 
 class MttrController extends Controller
 {
@@ -32,6 +33,15 @@ class MttrController extends Controller
 
     public function store(Request $request)
     {
+        $user = auth()->user();
+        if (!$user || ($user->role !== 'pic_jaringan' && $user->role !== 'admin')) {
+            return response()->json(['success' => false, 'message' => 'Anda tidak berwenang mengelola data ini.'], 403);
+        }
+
+        if ($user->role === 'pic_jaringan' && $request->up3 !== $user->up3) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak. UP3 tidak sesuai.'], 403);
+        }
+
         $validator = Validator::make($request->all(), [
             'up3' => 'required|string',
             'tahun' => 'required|integer',
@@ -76,6 +86,16 @@ class MttrController extends Controller
 
     public function update(Request $request, $id)
     {
+        $user = auth()->user();
+        if (!$user || ($user->role !== 'pic_jaringan' && $user->role !== 'admin')) {
+            return response()->json(['success' => false, 'message' => 'Anda tidak berwenang mengelola data ini.'], 403);
+        }
+
+        $mttr = MttrRealisasi::findOrFail($id);
+        if ($user->role === 'pic_jaringan' && $mttr->up3 !== $user->up3) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak. UP3 tidak sesuai.'], 403);
+        }
+
         $validator = Validator::make($request->all(), [
             'jumlah_siaga1_terpenuhi' => 'required|integer|min:0',
             'jumlah_siaga1_total' => 'required|integer|min:1',
@@ -89,7 +109,7 @@ class MttrController extends Controller
             return response()->json(['success' => false, 'message' => 'Jumlah terpenuhi tidak boleh melebihi jumlah total'], 422);
         }
 
-        $mttr = MttrRealisasi::findOrFail($id);
+        // mttr already found above
 
         $persen = ($request->jumlah_siaga1_terpenuhi / $request->jumlah_siaga1_total) * 100;
 
@@ -104,14 +124,18 @@ class MttrController extends Controller
 
     public function destroy(Request $request, $id)
     {
+        $user = auth()->user();
+        if (!$user || ($user->role !== 'pic_jaringan' && $user->role !== 'admin')) {
+            return response()->json(['success' => false, 'message' => 'Anda tidak berwenang mengelola data ini.'], 403);
+        }
+
         $mttr = MttrRealisasi::find($id);
         if (!$mttr) {
             return response()->json(['success' => false, 'message' => 'Data MTTR tidak ditemukan'], 404);
         }
 
-        $user = auth()->user();
-        if ($user && $user->role === 'pic_jaringan' && $mttr->up3 !== $user->up3) {
-            return response()->json(['success' => false, 'message' => 'Akses ditolak'], 403);
+        if ($user->role === 'pic_jaringan' && $mttr->up3 !== $user->up3) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak. UP3 tidak sesuai.'], 403);
         }
 
         $mttr->delete();
@@ -128,6 +152,10 @@ class MttrController extends Controller
 
     public function storeTargets(Request $request)
     {
+        $user = $request->user();
+        if ($user->role !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Hanya Admin yang berwenang mengatur target.'], 403);
+        }
         $validator = Validator::make($request->all(), [
             'tahun' => 'required|integer',
             'targets' => 'required|array',
@@ -154,16 +182,18 @@ class MttrController extends Controller
     }
 
     // Bobot PLN: SUTM=2, SKTM=2, PHBTM=1, TRAFO=1 (total=6)
-    private function calcWeightedMttr($data)
+    private function calcWeightedMttr($data, $bobotAset)
     {
-        $bobot = ['SUTM' => 2, 'SKTM' => 2, 'PHBTM' => 1, 'TRAFO' => 1];
+        $bobot = $bobotAset;
         $total_bobot = 0;
         $weighted_sum = 0;
 
         foreach ($bobot as $aset => $w) {
             $aset_data = $data->where('jenis_aset', $aset);
             if ($aset_data->count() > 0) {
-                $persen = $aset_data->avg('persen_realisasi');
+                $terpenuhi = $aset_data->sum('jumlah_siaga1_terpenuhi');
+                $total = $aset_data->sum('jumlah_siaga1_total');
+                $persen = $total > 0 ? ($terpenuhi / $total) * 100 : 0;
                 $weighted_sum += $w * $persen;
                 $total_bobot += $w;
             }
@@ -174,6 +204,24 @@ class MttrController extends Controller
 
     public function dashboard(Request $request)
     {
+        $bobotAset = ['SUTM' => 2, 'SKTM' => 2, 'PHBTM' => 1, 'TRAFO' => 1]; // fallback default
+        $mttrParent = \App\Models\NkoParameter::where('nama', 'MTTR Siaga 1 TM (Sesuai kewenangan)')->first();
+        if ($mttrParent) {
+            $children = \App\Models\NkoParameter::where('parent_id', $mttrParent->id)->get();
+            $sutmParam = $children->firstWhere('nama', 'MTTR - SUTM');
+            $sktmParam = $children->firstWhere('nama', 'MTTR - SKTM');
+            $phbtmParam = $children->firstWhere('nama', 'MTTR - PHBTM');
+            $trafoParam = $children->firstWhere('nama', 'MTTR - Trafo');
+            if ($sutmParam && $sktmParam && $phbtmParam && $trafoParam) {
+                $bobotAset = [
+                    'SUTM' => (float) $sutmParam->bobot,
+                    'SKTM' => (float) $sktmParam->bobot,
+                    'PHBTM' => (float) $phbtmParam->bobot,
+                    'TRAFO' => (float) $trafoParam->bobot,
+                ];
+            }
+        }
+
         $tahun = $request->tahun ?: date('Y');
         
         $up3Filter = $request->input('up3', null);
@@ -202,7 +250,7 @@ class MttrController extends Controller
         $bulanMap = [1=>'jan',2=>'feb',3=>'mar',4=>'apr',5=>'mei',6=>'jun',
                      7=>'jul',8=>'agu',9=>'sep',10=>'okt',11=>'nov',12=>'des'];
         
-        $hasTargetMaster = $targetMaster !== null;
+        $hasTargetMaster = TargetService::isTargetLengkap('Jaringan', 'MTTR Siaga 1', $tahun);
 
         $penyulang = $targets->sum('jumlah_penyulang');
 
@@ -222,7 +270,7 @@ class MttrController extends Controller
             $persen_pencapaian = null;
 
             if ($b_data->count() > 0) {
-                $realisasi_bulan_ini = $this->calcWeightedMttr($b_data);
+                $realisasi_bulan_ini = $this->calcWeightedMttr($b_data, $bobotAset);
 
                 foreach (['SUTM', 'SKTM', 'PHBTM', 'TRAFO'] as $aset) {
                     $aset_data = $b_data->where('jenis_aset', $aset);
@@ -242,7 +290,7 @@ class MttrController extends Controller
                 }
 
                 if ($realisasi_bulan_ini !== null && $target_persen !== null) {
-                    $persen_pencapaian = $target_persen > 0 ? min(($realisasi_bulan_ini / $target_persen) * 100, 110) : 0;
+                    $persen_pencapaian = $target_persen > 0 ? max(0, min(($realisasi_bulan_ini / $target_persen) * 100, 110)) : 0;
                     $status = $realisasi_bulan_ini >= $target_persen ? 'TERCAPAI' : 'BELUM TERCAPAI';
                 }
             }
@@ -266,7 +314,7 @@ class MttrController extends Controller
             if ($b_data->count() > 0) {
                 $terpenuhi = $b_data->sum('jumlah_siaga1_terpenuhi');
                 $total = $b_data->sum('jumlah_siaga1_total');
-                $avg_realisasi = $this->calcWeightedMttr($b_data) ?? 0;
+                $avg_realisasi = $this->calcWeightedMttr($b_data, $bobotAset) ?? 0;
                 
                 $target_persen_b = null;
                 if ($targetMaster) {
@@ -276,7 +324,21 @@ class MttrController extends Controller
                 
                 $pencapaian = null;
                 if ($target_persen_b !== null) {
-                    $pencapaian = $target_persen_b > 0 ? min(($avg_realisasi / $target_persen_b) * 100, 110) : 0;
+                    $pencapaian = $target_persen_b > 0 ? max(0, min(($avg_realisasi / $target_persen_b) * 100, 110)) : 0;
+                }
+
+                $detail_aset = [];
+                foreach (['SUTM', 'SKTM', 'PHBTM', 'TRAFO'] as $aset) {
+                    $aset_data = $b_data->where('jenis_aset', $aset);
+                    if ($aset_data->count() > 0) {
+                        $t_aset = $aset_data->sum('jumlah_siaga1_terpenuhi');
+                        $tot_aset = $aset_data->sum('jumlah_siaga1_total');
+                        $detail_aset[$aset] = [
+                            'terpenuhi' => $t_aset,
+                            'total' => $tot_aset,
+                            'persen' => $tot_aset > 0 ? round(($t_aset / $tot_aset) * 100, 2) : 0
+                        ];
+                    }
                 }
 
                 $trend_bulanan[] = [
@@ -285,7 +347,8 @@ class MttrController extends Controller
                     'target' => $target_persen_b !== null ? round($target_persen_b, 2) : null,
                     'terpenuhi' => $terpenuhi,
                     'total' => $total,
-                    'persen_pencapaian' => $pencapaian !== null ? round($pencapaian, 2) : null
+                    'persen_pencapaian' => $pencapaian !== null ? round($pencapaian, 2) : null,
+                    'detail_aset' => $detail_aset
                 ];
             }
         }
@@ -295,31 +358,34 @@ class MttrController extends Controller
         $realisasi_bulan_ini_avg = null;
         if ($last_month_all) {
             $last_data = $realisasi->where('bulan', $last_month_all);
-            $realisasi_bulan_ini_avg = $this->calcWeightedMttr($last_data);
+            $realisasi_bulan_ini_avg = $this->calcWeightedMttr($last_data, $bobotAset);
         }
 
-        // YTD: weighted per month, then average across months
-        $monthly_all = [];
-        foreach ($realisasi->groupBy('bulan') as $bulan => $b_data) {
-            $w = $this->calcWeightedMttr($b_data);
-            if ($w !== null) $monthly_all[] = $w;
-        }
-        $realisasi_ytd_avg = count($monthly_all) > 0 ? array_sum($monthly_all) / count($monthly_all) : null;
+        // YTD: cumulative weighted across all months
+        $realisasi_ytd_avg = $this->calcWeightedMttr($realisasi, $bobotAset);
 
         $total_siaga1_ytd = $realisasi->sum('jumlah_siaga1_total');
         
         $avg_target = null;
         if ($targetMaster) {
             $latestMonthAll = $realisasi->max('bulan') ?: 1;
-            $targetCol = 'target_' . $bulanMap[$latestMonthAll];
-            $avg_target = $targetMaster->{$targetCol} !== null ? (float) $targetMaster->{$targetCol} : null;
+            $sum_target = 0;
+            $count_target = 0;
+            for ($i = 1; $i <= $latestMonthAll; $i++) {
+                $col = 'target_' . $bulanMap[$i];
+                if ($targetMaster->$col !== null) {
+                    $sum_target += (float) $targetMaster->$col;
+                    $count_target++;
+                }
+            }
+            $avg_target = $count_target > 0 ? $sum_target / $count_target : null;
         }
         
         $pencapaian = null;
         $status = '-';
-        if ($realisasi_bulan_ini_avg !== null && $avg_target !== null) {
-            $pencapaian = $avg_target > 0 ? min(($realisasi_bulan_ini_avg / $avg_target) * 100, 110) : 0;
-            $status = $realisasi_bulan_ini_avg >= $avg_target ? 'TERCAPAI' : 'BELUM TERCAPAI';
+        if ($realisasi_ytd_avg !== null && $avg_target !== null) {
+            $pencapaian = $avg_target > 0 ? max(0, min(($realisasi_ytd_avg / $avg_target) * 100, 110)) : 0;
+            $status = $realisasi_ytd_avg >= $avg_target ? 'TERCAPAI' : 'BELUM TERCAPAI';
         }
 
         $summary = [

@@ -1,3 +1,4 @@
+import notify from '@/utils/notify';
 import React, { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -16,7 +17,7 @@ import {
 import api from '@/services/api'
 import { useFilter } from '@/context/FilterContext'
 import * as XLSX from 'xlsx'
-import { Activity, Plus, Download, Target, TrendingDown, TrendingUp, FileSpreadsheet } from 'lucide-react'
+import { Activity, Plus, Download, Target, TrendingDown, TrendingUp, FileSpreadsheet, CheckCircle, XCircle } from 'lucide-react'
 import KpiCard from '@/components/ui/KpiCard'
 import DataTable from '@/components/ui/DataTable'
 import ChartWrapper from '@/components/ui/ChartWrapper'
@@ -132,19 +133,23 @@ export default function RatingNegatifPage() {
     
     // Header
     const up3Names = rekapData.map(r => r.up3);
-    wsData.push(['REKAPITULASI RATING NEGATIF PLN MOBILE', ...up3Names.map(() => ''), '', '']);
-    wsData.push([`TAHUN ${year}`, ...up3Names.map(() => ''), '', '']);
+    wsData.push(['REKAPITULASI RATING NEGATIF PLN MOBILE', '', '', ...up3Names.map(() => '')]);
+    wsData.push([`TAHUN ${year}`, '', '', ...up3Names.map(() => '')]);
     wsData.push([]);
-    wsData.push(['BULAN', ...up3Names, 'YTD', 'TARGET']);
+    wsData.push(['BULAN', 'TARGET (Kali)', 'REALISASI (Kali)', ...up3Names]);
     
     // Data
     pivotedData.forEach(row => {
         const rowData = [row.bulan];
+        const monthNum = MONTHS_FULL.indexOf(row.bulan) + 1;
+        const detail = data?.monthly?.find(m => m.bulan === monthNum);
+        
+        rowData.push(detail && detail.target !== null ? detail.target : '-');
+        rowData.push(detail && detail.jml_rating_negatif !== null ? detail.jml_rating_negatif : '-');
+
         up3Names.forEach(up3 => {
-            rowData.push(row[up3] !== null ? row[up3] : '-');
+            rowData.push(row[up3] !== null ? `${Number(row[up3]).toLocaleString('id-ID', {minimumFractionDigits: 2, maximumFractionDigits: 2})}%` : '-');
         });
-        rowData.push(row.ytd !== null ? row.ytd : '-');
-        rowData.push(row.target !== null ? row.target : '-');
         wsData.push(rowData);
     });
     
@@ -176,17 +181,40 @@ export default function RatingNegatifPage() {
 
   // Calculate YTD (latest cumulative)
   let ytdRealisasi = 0;
+  let lastMonth = 0;
   if (data.cumulative && data.cumulative.length > 0) {
       const validCums = data.cumulative.filter(c => c.cumulativeReal !== null);
       if (validCums.length > 0) {
           ytdRealisasi = validCums[validCums.length - 1].cumulativeReal;
+          lastMonth = validCums[validCums.length - 1].bulan;
       }
   }
 
+  let targetYtd = null;
+  if (data.target_tahunan) {
+      targetYtd = 0;
+      const mKeys = ['jan', 'feb', 'mar', 'apr', 'mei', 'jun', 'jul', 'agu', 'sep', 'okt', 'nov', 'des'];
+      for (let i = 0; i < lastMonth; i++) {
+          const val = data.target_tahunan[`target_${mKeys[i]}`];
+          if (val !== null && val !== undefined) {
+              targetYtd += Number(val);
+          }
+      }
+      if (targetYtd === 0 && lastMonth > 0) {
+          // Fallback if targets are not set correctly for months
+          targetYtd = 0;
+      }
+  } else {
+      targetYtd = 0;
+  }
+
+  // Use NKO Score from backend
+  const persentase = data?.nko_score ?? 0;
+
+  // For negative rating, lower is better. So if ytdRealisasi <= targetYtd, it's good (green).
+  const isGood = targetYtd !== null ? ytdRealisasi <= targetYtd : true;
+
   const targetValue = data.target || 0;
-  const persentase = targetValue > 0 ? (ytdRealisasi / targetValue) * 100 : 0;
-  // For negative rating, lower is better. So if ytdRealisasi <= target, it's good (green).
-  const isGood = ytdRealisasi <= targetValue;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--page-gap, 20px)' }} className="animate-fade-in">
@@ -297,40 +325,34 @@ export default function RatingNegatifPage() {
         </div>
       </div>
       
-      <TargetWarning up3={filters.up3} year={filters.year} isVisible={!loading && targetValue === 0} />
+      <TargetWarning up3={filters.up3} year={filters.year} isVisible={!loading && data?.has_target === false} />
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <KpiCard
           title="Realisasi YTD"
           value={ytdRealisasi.toLocaleString('id-ID')}
           unit="Kali"
-          achievement={isGood ? 100 : 0}
+          trend={isGood ? 'good' : 'bad'}
           icon={Activity}
           color="blue"
           isInverse
           loading={loading}
         />
         <KpiCard
-          title="Target Tahunan"
-          value={targetValue.toLocaleString('id-ID')}
+          title="Target YTD"
+          value={targetYtd !== null ? targetYtd.toLocaleString('id-ID') : '-'}
           unit="Kali"
           icon={Target}
           color="blue"
           loading={loading}
         />
         <KpiCard
-          title="% vs Target"
-          value={persentase.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%'}
-          icon={isGood ? TrendingDown : TrendingUp}
-          color={isGood ? 'green' : 'red'}
-          loading={loading}
-        />
-        <KpiCard
           title="Status Kinerja"
-          value={isGood ? 'Tercapai' : 'Tidak Tercapai'}
-          icon={Activity}
+          value={isGood ? 'TERCAPAI' : 'TIDAK TERCAPAI'}
+          icon={isGood ? CheckCircle : XCircle}
           color={isGood ? 'green' : 'red'}
+          badgeText={`Pencapaian: ${data?.nko_score != null ? data.nko_score.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%' : '-'}`}
           loading={loading}
         />
       </div>
@@ -464,40 +486,47 @@ export default function RatingNegatifPage() {
         <DataTable
           columns={[
             { key: 'bulan', label: 'Bulan', align: 'center', width: '120px', render: v => <span className="font-semibold text-slate-800">{v}</span> },
+            { key: 'target', label: 'Target (Kali)', align: 'center', render: (v, row) => {
+                const monthNum = MONTHS_FULL.indexOf(row.bulan) + 1;
+                const detail = data?.monthly?.find(m => m.bulan === monthNum);
+                return <span className="text-slate-700">{detail && detail.target !== null ? `${Number(detail.target).toLocaleString('id-ID')} Kali` : '-'}</span>;
+            }},
+            { key: 'realisasi', label: 'Realisasi (Kali)', align: 'center', render: (v, row) => {
+                const monthNum = MONTHS_FULL.indexOf(row.bulan) + 1;
+                const detail = data?.monthly?.find(m => m.bulan === monthNum);
+                
+                if (!detail || detail.jml_rating_negatif === null || detail.jml_rating_negatif === undefined) {
+                    return <span className="text-slate-700">-</span>;
+                }
+                
+                let textColor = 'text-slate-700';
+                if (detail.target !== null && detail.target !== undefined) {
+                    textColor = detail.jml_rating_negatif <= detail.target ? 'text-green-600' : 'text-red-600';
+                }
+                
+                return <span className={`font-bold ${textColor}`}>{`${Number(detail.jml_rating_negatif).toLocaleString('id-ID')} Kali`}</span>;
+            }},
             ...rekapData.map(up3Data => ({
               key: up3Data.up3,
               label: <span style={{ color: 'var(--text-muted)' }}>{up3Data.up3}</span>,
-              align: 'center',
-              render: (v, row) => {
+              align: 'center',              render: (v, row) => {
                 const monthNum = MONTHS_FULL.indexOf(row.bulan) + 1;
                 const detail = data?.monthly?.find(m => m.bulan === monthNum);
 
                 if (v === null) return <span style={{ color: 'var(--text-muted)' }}>-</span>;
 
-                let bgColor = '#f8fafc';
-                let hoverColor = '#f1f5f9';
-                let textColor = 'var(--text-secondary)';
-                let borderColor = 'var(--border)';
+                let textColor = 'text-slate-700';
 
-                if (detail && detail.target !== null && detail.target !== undefined) {
+                if (detail && detail.target !== null && detail.target !== undefined && detail.jml_rating_negatif !== null && detail.jml_rating_negatif !== undefined) {
                   if (detail.jml_rating_negatif <= detail.target) {
-                    // Tercapai (Green)
-                    bgColor = '#dcfce7';
-                    hoverColor = '#bbf7d0';
-                    textColor = '#166534';
-                    borderColor = '#86efac';
+                    textColor = 'text-green-600';
                   } else {
-                    // Tidak Tercapai (Red)
-                    bgColor = '#fee2e2';
-                    hoverColor = '#fecaca';
-                    textColor = '#991b1b';
-                    borderColor = '#fca5a5';
+                    textColor = 'text-red-600';
                   }
                 }
 
                 return (
-                  <button 
-                    type="button"
+                  <span 
                     onClick={(e) => {
                       e.stopPropagation();
                       e.preventDefault();
@@ -506,39 +535,24 @@ export default function RatingNegatifPage() {
                         setSelectedMonthDetails(detail);
                         setDetailModalOpen(true);
                       } else {
-                        alert('Data detail tidak ditemukan!');
+                        notify.warning('Data detail tidak ditemukan!');
                       }
                     }}
-                    style={{
-                      padding: '4px 8px', border: `1px solid ${borderColor}`, borderRadius: 6,
-                      background: bgColor, 
-                      minWidth: 60, color: textColor,
-                      fontSize: '0.85rem', fontWeight: 600, display: 'inline-block',
-                      cursor: 'pointer',
-                      transition: 'background 0.2s',
-                    }}
-                    onMouseOver={e => e.currentTarget.style.background = hoverColor}
-                    onMouseOut={e => e.currentTarget.style.background = bgColor}
+                    className={`font-bold cursor-pointer hover:underline ${textColor}`}
                   >
                     {`${Number(v).toLocaleString('id-ID', {minimumFractionDigits: 2, maximumFractionDigits: 2})}%`}
-                  </button>
+                  </span>
                 )
               }
             })),
-            { key: 'ytd', label: 'YTD', align: 'center', render: (v) => <span className="font-bold text-blue-600">{v !== null ? `${Number(v).toLocaleString('id-ID')} Kali` : '-'}</span> },
-            { key: 'target', label: 'Target', align: 'center', render: (v) => <span className="font-bold text-red-600">{v !== null ? `${Number(v).toLocaleString('id-ID')} Kali` : '-'}</span> },
+
           ]}
           data={pivotedData}
           paginated={false}
           searchable={false}
         />
       </div>
-      {/* Target Warning */}
-      <TargetWarning 
-        target={data?.target_tahunan}
-        indicator="Rating Negatif PLN Mobile"
-        year={filters.year}
-      />
+
 
       <RatingNegatifDetailModal 
         open={detailModalOpen}

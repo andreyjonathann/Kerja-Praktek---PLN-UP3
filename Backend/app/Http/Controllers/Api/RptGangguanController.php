@@ -133,8 +133,17 @@ class RptGangguanController extends Controller
         $latestMonth = $allData->max('bulan') ?: 1;
         $bulanIniData = $allData->where('bulan', $latestMonth);
         
-        $valLatest = $targetMaster ? $targetMaster->{'target_'.$bulanMap[$latestMonth]} : null;
-        $targetMenit = $valLatest !== null ? (float) $valLatest : null;
+        $targetMenit = null;
+        if ($targetMaster) {
+            $sumTarget = 0;
+            for ($i = 1; $i <= $latestMonth; $i++) {
+                $val = $targetMaster->{'target_'.$bulanMap[$i]};
+                if ($val !== null) {
+                    $sumTarget += (float) $val;
+                }
+            }
+            $targetMenit = $sumTarget > 0 ? $sumTarget : null;
+        }
 
         $rptBulanIni = 0;
         if ($bulanIniData->sum('jumlah_gangguan') > 0) {
@@ -145,24 +154,18 @@ class RptGangguanController extends Controller
         $totalDurasiYtd = $allData->sum('total_durasi_menit');
         
         $rptRataYtd = 0;
-        if ($allData->count() > 0) {
-            // "Rata-rata dari semua bulan yang sudah ada data dalam tahun berjalan" -> Use AVG of rata_rata_rpt per UP3
-            if ($up3) {
-                $rptRataYtd = $allData->avg('rata_rata_rpt');
-            } else {
-                // If all UP3, average across all months and all UP3s
-                $rptRataYtd = $allData->avg('rata_rata_rpt');
-            }
+        if ($allData->sum('jumlah_gangguan') > 0) {
+            $rptRataYtd = $allData->sum('total_durasi_menit') / $allData->sum('jumlah_gangguan');
         }
 
         $persenPencapaian = null;
         $status = '-';
         if ($targetMenit !== null && $targetMenit > 0) {
-            $persenPencapaian = 2 - ($rptBulanIni / $targetMenit);
-            $status = $rptBulanIni <= $targetMenit ? 'AMAN' : 'MELEWATI TARGET';
+            $persenPencapaian = max(0, min((2 - ($rptRataYtd / $targetMenit)) * 100, 110));
+            $status = $rptRataYtd <= $targetMenit ? 'AMAN' : 'MELEWATI TARGET';
         } elseif ($targetMenit !== null && $targetMenit == 0) {
             $persenPencapaian = 0;
-            $status = $rptBulanIni <= 0 ? 'AMAN' : 'MELEWATI TARGET';
+            $status = $rptRataYtd <= 0 ? 'AMAN' : 'MELEWATI TARGET';
         }
 
         // Trend Bulanan
@@ -179,7 +182,7 @@ class RptGangguanController extends Controller
 
                 $persenBulanIni = null;
                 if ($tgtMonth !== null && $tgtMonth > 0) {
-                    $persenBulanIni = round((2 - ($rptMonth / $tgtMonth)) * 100, 2);
+                    $persenBulanIni = round(max(0, min((2 - ($rptMonth / $tgtMonth)) * 100, 110)), 2);
                 } elseif ($tgtMonth !== null && $tgtMonth == 0) {
                     $persenBulanIni = 0;
                 }
@@ -206,7 +209,7 @@ class RptGangguanController extends Controller
                     'rpt_bulan_ini' => round($rptBulanIni, 2),
                     'rpt_rata_ytd' => round($rptRataYtd, 2),
                     'target_menit' => $targetMenit,
-                    'persen_pencapaian' => round($persenPencapaian * 100, 2),
+                    'persen_pencapaian' => round($persenPencapaian, 2),
                     'status' => $status,
                     'total_durasi_ytd' => round($totalDurasiYtd, 2),
                     'total_gangguan_ytd' => $totalGangguanYtd,

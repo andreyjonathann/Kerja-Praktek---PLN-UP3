@@ -266,7 +266,7 @@ class NkoParameterSeeder extends Seeder
             'is_active' => true,
         ]);
 
-        NkoParameter::create([
+        $mvod = NkoParameter::create([
             'parent_id' => $p8->id,
             'nama' => 'MVOD (Sesuai kewenangan)',
             'polaritas' => 'MAXIMIZE',
@@ -275,8 +275,11 @@ class NkoParameterSeeder extends Seeder
             'urutan' => 1,
             'is_active' => true,
         ]);
+        NkoParameter::create(['parent_id' => $mvod->id, 'nama' => 'MVOD - SLA Gardu Induk', 'polaritas' => 'MAXIMIZE', 'satuan' => '%', 'bobot' => 3.00, 'urutan' => 1, 'is_active' => true]);
+        NkoParameter::create(['parent_id' => $mvod->id, 'nama' => 'MVOD - SLA JTM', 'polaritas' => 'MAXIMIZE', 'satuan' => '%', 'bobot' => 2.00, 'urutan' => 2, 'is_active' => true]);
+        NkoParameter::create(['parent_id' => $mvod->id, 'nama' => 'MVOD - SLA Gardu Distribusi', 'polaritas' => 'MAXIMIZE', 'satuan' => '%', 'bobot' => 1.00, 'urutan' => 3, 'is_active' => true]);
 
-        NkoParameter::create([
+        $mttr = NkoParameter::create([
             'parent_id' => $p8->id,
             'nama' => 'MTTR Siaga 1 TM (Sesuai kewenangan)',
             'polaritas' => 'MAXIMIZE',
@@ -285,6 +288,10 @@ class NkoParameterSeeder extends Seeder
             'urutan' => 2,
             'is_active' => true,
         ]);
+        NkoParameter::create(['parent_id' => $mttr->id, 'nama' => 'MTTR - SUTM', 'polaritas' => 'MAXIMIZE', 'satuan' => '%', 'bobot' => 2.00, 'urutan' => 1, 'is_active' => true]);
+        NkoParameter::create(['parent_id' => $mttr->id, 'nama' => 'MTTR - SKTM', 'polaritas' => 'MAXIMIZE', 'satuan' => '%', 'bobot' => 2.00, 'urutan' => 2, 'is_active' => true]);
+        NkoParameter::create(['parent_id' => $mttr->id, 'nama' => 'MTTR - PHBTM', 'polaritas' => 'MAXIMIZE', 'satuan' => '%', 'bobot' => 1.00, 'urutan' => 3, 'is_active' => true]);
+        NkoParameter::create(['parent_id' => $mttr->id, 'nama' => 'MTTR - Trafo', 'polaritas' => 'MAXIMIZE', 'satuan' => '%', 'bobot' => 1.00, 'urutan' => 4, 'is_active' => true]);
 
         // IX. Management Cash In — Bobot: 6
         $p9 = NkoParameter::create([

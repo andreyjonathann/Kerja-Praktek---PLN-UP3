@@ -128,7 +128,7 @@ const HIERARCHY_TEMPLATE = [
     children: [
       { key: 'Pelunasan PRR & Piutang', label: 'a. Pelunasan PRR & Piutang' },
       { key: 'Penghapusan PRR', label: 'b. Penghapusan PRR' },
-      { key: 'Tindak Lanjut LBKB', label: 'c. Tindak Lanjut LBKB' },
+      { key: 'Tindak Lanjut LBKB', label: 'c. Saldo Akhir' },
     ]
   },
   {

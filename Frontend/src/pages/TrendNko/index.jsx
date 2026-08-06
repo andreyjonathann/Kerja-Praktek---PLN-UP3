@@ -1,4 +1,6 @@
+import notify from '@/utils/notify';
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
+import { Navigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { useFilter } from '@/context/FilterContext'
 import { MONTHS } from '@/utils/constants'
@@ -41,7 +43,7 @@ const SATUAN_OPTIONS = [
 ]
 
 export default function TrendNkoPage() {
-  const { user, isAdmin } = useAuth()
+  const { user, isAdmin, loading: authLoading } = useAuth()
   const { filters } = useFilter()
   
   const [activeTab, setActiveTab] = useState('input') // 'input' or 'parameter'
@@ -87,6 +89,13 @@ export default function TrendNkoPage() {
 
   // Soft Delete Warning Modal
   const [deleteConfirm, setDeleteConfirm] = useState({ show: false, id: null, hasHistory: false, message: '' })
+
+  // Render check
+  if (authLoading) return null
+
+  if (!isAdmin) {
+    return <Navigate to="/" replace />
+  }
 
   // Fetch initial parameters and realizations summary
   const fetchData = useCallback(async (yearOverride) => {
@@ -243,8 +252,8 @@ export default function TrendNkoPage() {
       if (userRole === 'pic_niaga' || userRole === 'niaga') {
         return parentName.includes('NIAGA');
       }
-      if (userRole === 'pic_aset' || userRole === 'aset') {
-        return parentName.includes('ASET');
+      if (userRole === 'pic_aset' || userRole === 'aset' || userRole === 'pic_pengadaan' || userRole === 'pengadaan') {
+        return parentName.includes('ASET') || parentName.includes('PENGADAAN');
       }
       if (userRole === 'pic_transaksi_energi' || userRole === 'transaksi_energi' || userRole === 'transaksi energi') {
         return parentName.includes('TRANSAKSI');
@@ -273,8 +282,8 @@ export default function TrendNkoPage() {
     if (userRole === 'pic_niaga' || userRole === 'niaga') {
       return parentName.includes('NIAGA');
     }
-    if (userRole === 'pic_aset' || userRole === 'aset') {
-      return parentName.includes('ASET');
+    if (userRole === 'pic_aset' || userRole === 'aset' || userRole === 'pic_pengadaan' || userRole === 'pengadaan') {
+      return parentName.includes('ASET') || parentName.includes('PENGADAAN');
     }
     if (userRole === 'pic_transaksi_energi' || userRole === 'transaksi_energi' || userRole === 'transaksi energi') {
       return parentName.includes('TRANSAKSI');
@@ -527,7 +536,7 @@ export default function TrendNkoPage() {
   const handleSaveParameter = async (e) => {
     e.preventDefault()
     if (!paramName.trim()) {
-      alert('Nama parameter wajib diisi.')
+      notify.warning('Nama parameter wajib diisi.')
       return
     }
 
@@ -577,7 +586,7 @@ export default function TrendNkoPage() {
       fetchData()
       window.dispatchEvent(new CustomEvent('sigap:refresh'))
     } catch (err) {
-      alert(err.response?.data?.message || 'Gagal menyimpan parameter.')
+      notify.error(err.response?.data?.message || 'Gagal menyimpan parameter.')
     }
   }
 
@@ -600,7 +609,7 @@ export default function TrendNkoPage() {
       fetchData()
       window.dispatchEvent(new CustomEvent('sigap:refresh'))
     } catch (err) {
-      alert(err.response?.data?.message || 'Gagal menghapus parameter.')
+      notify.error(err.response?.data?.message || 'Gagal menghapus parameter.')
     }
   }
 

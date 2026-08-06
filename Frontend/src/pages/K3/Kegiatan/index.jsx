@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+﻿import React, { useState } from 'react'
 import { Search, Plus, X, Calendar, Users, BookOpen, ClipboardCheck, Briefcase, Activity, Edit, Trash2 } from 'lucide-react'
 import PageHeader from '@/components/ui/PageHeader'
 import { useAuth } from '@/context/AuthContext'

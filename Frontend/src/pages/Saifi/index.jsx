@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '@/context/AuthContext'
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer, BarChart
 } from 'recharts'
-import { Zap, Target, Activity, TrendingDown, Plus } from 'lucide-react'
+import { Zap, Target, Activity, TrendingDown, Plus, CheckCircle, TrendingUp, XCircle } from 'lucide-react'
 import ChartWrapper from '@/components/ui/ChartWrapper'
 import KpiCard from '@/components/ui/KpiCard'
 import DataTable from '@/components/ui/DataTable'
@@ -102,12 +103,14 @@ const BREAKDOWN_TOOLTIP = ({ active, payload, label }) => {
 
 
 export default function SaifiPage() {
+  const { user } = useAuth()
   const navigate = useNavigate()
   const { filters }         = useFilter()
   const [tab,    setTab]    = useState('monthly')
   const [selectedRow, setSelectedRow] = useState(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [data,   setData]   = useState([])
+  const [hasTarget, setHasTarget] = useState(true)
   const [loading,setLoading]= useState(true)
   const [error,  setError]  = useState(null)
   
@@ -116,7 +119,14 @@ export default function SaifiPage() {
     if (!isBackground) { setLoading(true); setError(null) }
     try {
       const dbData = await getDashboardData(filters.year)
-      setData(dbData.saifi || [])
+      const rawData = dbData.saifi || [];
+      const cleanData = rawData.map(d => ({
+        ...d,
+        cumulativeReal: d.realisasi === null ? null : d.cumulativeReal,
+        cumulativeTgt: (d.target === null && d.realisasi === null) ? null : d.cumulativeTgt
+      }));
+      setData(cleanData);
+      setHasTarget(dbData.overview?.kpis?.saifi?.has_target ?? true);
     } catch (err) {
       console.error(err)
       if (!isBackground) {
@@ -145,9 +155,9 @@ export default function SaifiPage() {
 
   const filled      = data.filter(d => d.realisasi != null)
   const lastMonth   = filled[filled.length - 1]
-  const totalReal   = lastMonth ? (lastMonth.realisasi || 0) : 0
-  const totalTgt    = lastMonth ? lastMonth.target : null
-  const achievement = (totalTgt !== null && totalTgt > 0) ? Math.min(150, (totalTgt / Math.max(0.001, totalReal)) * 100) : 0
+  const totalReal   = lastMonth ? (lastMonth.cumulativeReal || 0) : 0
+  const totalTgt    = lastMonth ? lastMonth.cumulativeTgt : null
+  const achievement = (totalTgt !== null && totalTgt > 0) ? (totalTgt / Math.max(0.001, totalReal)) * 100 : 0
   
   const breakdownChartData = filled.map(d => {
     const takTerencana = d.distribusi_padam_tidak_terencana || 0
@@ -199,13 +209,23 @@ export default function SaifiPage() {
           Rata-rata frekuensi pemadaman per pelanggan · Tahun {filters.year}
         </p>
       </div>
-      <TargetWarning up3={filters.up3} year={filters.year} isVisible={!loading && !data.some(d => d.target && d.target > 0)} />
+      <TargetWarning
+        up3={filters.up3}
+        year={filters.year}
+        isVisible={!loading && !hasTarget}
+      />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-        <KpiCard title="SAIFI YTD" value={Number(totalReal).toFixed(4)} unit="kali/plg" achievement={achievement} icon={Zap} color="blue" isInverse loading={loading} />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <KpiCard title="Kumulatif Realisasi" value={Number(totalReal).toFixed(4)} unit="kali/plg" icon={Zap} color="blue" loading={loading} />
         <KpiCard title="Target YTD" value={totalTgt !== null ? Number(totalTgt).toFixed(4) : '-'} unit={totalTgt !== null ? "kali/plg" : ""} icon={Target} color="blue" loading={loading} />
-        <KpiCard title="Bulan Terakhir" value={lastMonth?.realisasi != null ? Number(lastMonth.realisasi).toFixed(4) : '—'} unit="kali/plg" icon={Activity} color="blue" loading={loading} />
-        <KpiCard title="Pencapaian" value={totalTgt !== null ? Number(achievement).toFixed(1) + '%' : '-'} icon={TrendingDown} color={totalReal > (totalTgt || 0) ? 'red' : 'green'} loading={loading} />
+        <KpiCard 
+          title="Status Kinerja" 
+          value={totalTgt !== null ? (totalReal <= totalTgt ? 'TERCAPAI' : 'TIDAK TERCAPAI') : '-'} 
+          icon={totalTgt !== null ? (totalReal <= totalTgt ? CheckCircle : XCircle) : Activity} 
+          color={totalTgt !== null ? (totalReal <= totalTgt ? 'green' : 'red') : 'blue'} 
+          badgeText={totalTgt !== null ? `Pencapaian: ${Number(achievement).toFixed(1)}%` : null}
+          loading={loading} 
+        />
       </div>
 
       <div style={{
@@ -254,43 +274,45 @@ export default function SaifiPage() {
         })}
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
-          <div style={{
-            display: 'inline-flex',
-            background: 'rgba(0, 162, 185, 0.05)',
-            padding: 4,
-            borderRadius: 12,
-            border: '1px solid rgba(0, 162, 185, 0.15)',
-            cursor: 'pointer'
-          }}>
-            <button
-              onClick={() => navigate('/saifi/input')}
-              style={{
-                padding: '6px 16px',
-                borderRadius: 9,
-                fontSize: '0.85rem',
-                fontWeight: 700,
-                transition: 'all 0.2s ease',
-                border: 'none',
-                cursor: 'pointer',
-                background: 'var(--bg-card)',
-                color: '#00A2B9',
-                boxShadow: '0 2px 8px rgba(0, 162, 185, 0.15)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
-              onMouseEnter={e => {
-                 e.currentTarget.style.background = '#00A2B9';
-                 e.currentTarget.style.color = '#FFFFFF';
-              }}
-              onMouseLeave={e => {
-                 e.currentTarget.style.background = 'var(--bg-card)';
-                 e.currentTarget.style.color = '#00A2B9';
-              }}
-            >
-              <Plus size={16} /> Tambah SAIFI
-            </button>
-          </div>
+          {user?.role === 'pic_jaringan' && (
+            <div style={{
+              display: 'inline-flex',
+              background: 'rgba(0, 162, 185, 0.05)',
+              padding: 4,
+              borderRadius: 12,
+              border: '1px solid rgba(0, 162, 185, 0.15)',
+              cursor: 'pointer'
+            }}>
+              <button
+                onClick={() => navigate('/saifi/input')}
+                style={{
+                  padding: '6px 16px',
+                  borderRadius: 9,
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  transition: 'all 0.2s ease',
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: 'var(--bg-card)',
+                  color: '#00A2B9',
+                  boxShadow: '0 2px 8px rgba(0, 162, 185, 0.15)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+                onMouseEnter={e => {
+                   e.currentTarget.style.background = '#00A2B9';
+                   e.currentTarget.style.color = '#FFFFFF';
+                }}
+                onMouseLeave={e => {
+                   e.currentTarget.style.background = 'var(--bg-card)';
+                   e.currentTarget.style.color = '#00A2B9';
+                }}
+              >
+                <Plus size={16} /> Tambah SAIFI
+              </button>
+            </div>
+          )}
           <ExportModal kpiType="SAIFI" />
         </div>
       </div>

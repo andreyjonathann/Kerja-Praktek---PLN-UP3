@@ -1,3 +1,4 @@
+import notify from '@/utils/notify';
 import React, { useState, useEffect } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
@@ -5,6 +6,7 @@ import api from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { MONTHS } from '@/utils/constants';
 import { CheckCircle, AlertCircle, Save, ArrowLeft, Activity, AlertTriangle, Zap, RadioTower, Factory } from 'lucide-react';
+import useDirtyFormGuard from '@/hooks/useDirtyFormGuard';
 
 export default function InputSaifiPage() {
   const navigate = useNavigate();
@@ -13,7 +15,7 @@ export default function InputSaifiPage() {
   const [success, setSuccess] = useState(false);
   const [dashboardData, setDashboardData] = useState(null);
 
-  const { register, handleSubmit, formState: { errors }, control } = useForm({
+  const { register, handleSubmit, formState: { errors, isDirty: formIsDirty }, control, setValue } = useForm({
     defaultValues: {
       tahun: '', periode_id: '',
       saifi_distribusi_padam_tidak_terencana: '',
@@ -23,6 +25,12 @@ export default function InputSaifiPage() {
       saifi_pembangkit: ''
     }
   });
+
+  const { isDirty, setIsDirty, guardedNavigate } = useDirtyFormGuard();
+
+  useEffect(() => {
+    setIsDirty(formIsDirty);
+  }, [formIsDirty]);
 
   const selectedMonth = useWatch({ control, name: 'periode_id' });
   const selectedYear = useWatch({ control, name: 'tahun' });
@@ -39,9 +47,25 @@ export default function InputSaifiPage() {
   const currentMonthData = saifiData.find(d => parseInt(d.bulan) === parseInt(selectedMonth));
   const isDuplicate = !!(selectedMonth && currentMonthData && currentMonthData.realisasi != null);
 
+  useEffect(() => {
+    if (isDuplicate && currentMonthData) {
+      setValue('saifi_distribusi_padam_tidak_terencana', currentMonthData.distribusi_padam_tidak_terencana ?? '');
+      setValue('saifi_distribusi_padam_terencana', currentMonthData.distribusi_padam_terencana ?? '');
+      setValue('saifi_distribusi_bencana_alam', currentMonthData.distribusi_bencana_alam ?? '');
+      setValue('saifi_transmisi', currentMonthData.transmisi ?? '');
+      setValue('saifi_pembangkit', currentMonthData.pembangkit ?? '');
+    } else {
+      setValue('saifi_distribusi_padam_tidak_terencana', '');
+      setValue('saifi_distribusi_padam_terencana', '');
+      setValue('saifi_distribusi_bencana_alam', '');
+      setValue('saifi_transmisi', '');
+      setValue('saifi_pembangkit', '');
+    }
+  }, [isDuplicate, currentMonthData, setValue]);
+
   const onSubmit = async (data) => {
     if (isDuplicate) {
-      alert('Data sudah ada! Tidak bisa menginput dari halaman Tambah.');
+      notify.warning('Data sudah ada! Tidak bisa menginput dari halaman Tambah.');
       return;
     }
     setLoading(true);
@@ -49,10 +73,11 @@ export default function InputSaifiPage() {
     try {
       await api.post('/kinerja/jaringan', data);
       setSuccess(true);
+      setIsDirty(false);
       window.scrollTo({ top: 0, behavior: 'smooth' });
       setTimeout(() => navigate('/saifi'), 2000);
     } catch (err) {
-      alert('Error: ' + err.message);
+      notify.error(err.response?.data?.message || err.message);
     } finally {
       setLoading(false);
     }
@@ -72,7 +97,7 @@ export default function InputSaifiPage() {
 
         {/* HEADER */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button type="button" onClick={() => navigate(-1)}
+          <button type="button" onClick={() => guardedNavigate(() => navigate(-1))}
             style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 10, padding: '8px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', fontWeight: 600, color: '#64748b', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
           >
             <ArrowLeft size={16} /> Kembali

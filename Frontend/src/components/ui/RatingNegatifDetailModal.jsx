@@ -1,3 +1,4 @@
+import notify from '@/utils/notify';
 import React, { useState } from 'react';
 import { Calendar, Edit2, X, Star, FileText, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -54,7 +55,7 @@ export default function RatingNegatifDetailModal({ open, onOpenChange, tahun, bu
       setShowConfirm(false);
       closeModal();
     } catch (err) {
-      alert('Gagal menghapus data: ' + (err.response?.data?.message || err.message));
+      notify.error(err.response?.data?.message || err.message, 'Gagal menghapus data');
       console.error(err);
     } finally {
       setIsDeleting(false);

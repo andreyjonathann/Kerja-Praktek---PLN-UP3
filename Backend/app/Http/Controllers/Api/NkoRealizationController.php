@@ -82,23 +82,30 @@ class NkoRealizationController extends Controller
                 } elseif (str_starts_with($polaritasUpper, 'MIN')) {
                     $pencapaian = (2 - ($realisasi / $targetBulanan)) * 100;
                 } elseif (str_starts_with($polaritasUpper, 'RANGE')) {
-                    $pencapaian = (1 - abs($realisasi - $targetBulanan) / $targetBulanan) * 100;
+                    $realisasiPersen = $realisasi; // realisasi sudah dalam bentuk persen (basis 100)
+                    if ($realisasiPersen < 95) {
+                        $pencapaian = ($realisasiPersen / 95) * 100;
+                    } elseif ($realisasiPersen <= 105) {
+                        $pencapaian = (1 + (($realisasiPersen - 95) / 10) * 0.1) * 100;
+                    } else {
+                        $pencapaian = (1 - (($realisasiPersen - 105) / 90)) * 100;
+                    }
                 } else {
                     $pencapaian = ($realisasi / $targetBulanan) * 100;
                 }
             } else if ($targetBulanan == 0) {
                 $polaritasUpper = strtoupper($parameter->polaritas);
                 if (str_starts_with($polaritasUpper, 'MAX')) {
-                    $pencapaian = $realisasi > 0 ? 120 : 0;
+                    $pencapaian = $realisasi > 0 ? 110 : 0;
                 } elseif (str_starts_with($polaritasUpper, 'MIN')) {
                     $pencapaian = $realisasi == 0 ? 100 : 0;
                 } elseif (str_starts_with($polaritasUpper, 'RANGE')) {
                     $pencapaian = $realisasi == 0 ? 100 : 0;
                 } else {
-                    $pencapaian = $realisasi > 0 ? 120 : 0;
+                    $pencapaian = $realisasi > 0 ? 110 : 0;
                 }
             }
-            $pencapaian = max(0, min($pencapaian, 120)); // Cap between 0% and 120%
+            $pencapaian = max(0, min($pencapaian, 110)); // Cap 110% - konsisten dgn KM KBJ 2026
 
             // 2. Calculate score (nilai)
             $nilai = ($pencapaian * floatval($parameter->bobot)) / 100;
@@ -193,8 +200,8 @@ class NkoRealizationController extends Controller
         if ($userRole === 'pic_niaga' || $userRole === 'niaga') {
             return str_contains($parentName, 'NIAGA');
         }
-        if ($userRole === 'pic_aset' || $userRole === 'aset') {
-            return str_contains($parentName, 'ASET');
+        if ($userRole === 'pic_aset' || $userRole === 'aset' || $userRole === 'pic_pengadaan' || $userRole === 'pengadaan') {
+            return str_contains($parentName, 'ASET') || str_contains($parentName, 'PENGADAAN');
         }
         if ($userRole === 'pic_transaksi_energi' || $userRole === 'transaksi_energi' || $userRole === 'transaksi energi') {
             return str_contains($parentName, 'TRANSAKSI');

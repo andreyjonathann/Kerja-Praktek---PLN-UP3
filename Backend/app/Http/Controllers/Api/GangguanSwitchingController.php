@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\GangguanSwitching;
 use App\Models\GangguanTrafo;
+use App\Services\TargetService;
 use App\Models\GangguanSwitchingTarget;
 
 class GangguanSwitchingController extends Controller
@@ -29,8 +30,8 @@ class GangguanSwitchingController extends Controller
     public function storeSwitching(Request $request)
     {
         $user = $request->user();
-        if ($user->role !== 'PIC' && $user->role !== 'pic_jaringan') {
-            return response()->json(['success' => false, 'message' => 'Unauthorized. Only PIC can input data.'], 403);
+        if ($user->role !== 'pic_jaringan' && $user->role !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Anda tidak berwenang mengelola data ini.'], 403);
         }
 
         $validated = $request->validate([
@@ -43,7 +44,7 @@ class GangguanSwitchingController extends Controller
             'details.*.nomor_seri' => 'nullable|string',
         ]);
 
-        if ($user->up3 && $user->up3 !== $validated['up3']) {
+        if ($user->role === 'pic_jaringan' && $user->up3 && $user->up3 !== $validated['up3']) {
             return response()->json(['success' => false, 'message' => 'Unauthorized UP3.'], 403);
         }
 
@@ -66,13 +67,13 @@ class GangguanSwitchingController extends Controller
     public function updateSwitching(Request $request, $id)
     {
         $user = $request->user();
-        if ($user->role !== 'PIC' && $user->role !== 'pic_jaringan') {
-            return response()->json(['success' => false, 'message' => 'Unauthorized. Only PIC can input data.'], 403);
+        if ($user->role !== 'pic_jaringan' && $user->role !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Anda tidak berwenang mengelola data ini.'], 403);
         }
 
         $record = GangguanSwitching::findOrFail($id);
         
-        if ($user->up3 && $user->up3 !== $record->up3) {
+        if ($user->role === 'pic_jaringan' && $user->up3 && $user->up3 !== $record->up3) {
             return response()->json(['success' => false, 'message' => 'Unauthorized UP3.'], 403);
         }
 
@@ -116,39 +117,50 @@ class GangguanSwitchingController extends Controller
     public function storeTrafo(Request $request)
     {
         $user = $request->user();
-        if ($user->role !== 'PIC' && $user->role !== 'pic_jaringan') {
-            return response()->json(['success' => false, 'message' => 'Unauthorized. Only PIC can input data.'], 403);
+        if ($user->role !== 'pic_jaringan' && $user->role !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Anda tidak berwenang mengelola data ini.'], 403);
         }
 
         $validated = $request->validate([
             'up3' => 'required|string',
             'tahun' => 'required|integer',
             'bulan' => 'required|integer|min:1|max:12',
-            'jumlah_gangguan' => 'required|integer|min:0',
+            'details' => 'array',
+            'details.*.merek' => 'nullable|string',
+            'details.*.tahun_alat' => 'nullable|string',
+            'details.*.nomor_seri' => 'nullable|string',
         ]);
 
-        if ($user->up3 && $user->up3 !== $validated['up3']) {
+        if ($user->role === 'pic_jaringan' && $user->up3 && $user->up3 !== $validated['up3']) {
             return response()->json(['success' => false, 'message' => 'Unauthorized UP3.'], 403);
         }
 
+        $details = $request->input('details', []);
+        $jumlahGangguan = count($details);
+
         $record = GangguanTrafo::updateOrCreate(
             ['up3' => $validated['up3'], 'tahun' => $validated['tahun'], 'bulan' => $validated['bulan']],
-            ['jumlah_gangguan' => $validated['jumlah_gangguan'], 'created_by' => $user->id]
+            ['jumlah_gangguan' => $jumlahGangguan, 'created_by' => $user->id]
         );
 
-        return response()->json(['success' => true, 'data' => $record, 'message' => 'Data Trafo berhasil disimpan.']);
+        $record->details()->delete();
+        if ($jumlahGangguan > 0) {
+            $record->details()->createMany($details);
+        }
+
+        return response()->json(['success' => true, 'data' => $record->load('details'), 'message' => 'Data Trafo berhasil disimpan.']);
     }
 
     public function updateTrafo(Request $request, $id)
     {
         $user = $request->user();
-        if ($user->role !== 'PIC' && $user->role !== 'pic_jaringan') {
-            return response()->json(['success' => false, 'message' => 'Unauthorized. Only PIC can input data.'], 403);
+        if ($user->role !== 'pic_jaringan' && $user->role !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Anda tidak berwenang mengelola data ini.'], 403);
         }
 
         $record = GangguanTrafo::findOrFail($id);
         
-        if ($user->up3 && $user->up3 !== $record->up3) {
+        if ($user->role === 'pic_jaringan' && $user->up3 && $user->up3 !== $record->up3) {
             return response()->json(['success' => false, 'message' => 'Unauthorized UP3.'], 403);
         }
 
@@ -180,8 +192,8 @@ class GangguanSwitchingController extends Controller
     public function storeTargets(Request $request)
     {
         $user = $request->user();
-        if ($user->role !== 'Admin') {
-            return response()->json(['success' => false, 'message' => 'Unauthorized. Only Admin can set targets.'], 403);
+        if ($user->role !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Hanya Admin yang berwenang mengatur target.'], 403);
         }
 
         $validated = $request->validate([
@@ -223,9 +235,14 @@ class GangguanSwitchingController extends Controller
             $qTarget->where('up3', $up3Filter);
         }
 
+        // Find latest month with realisasi
+        $latestSw = (clone $qSwitching)->whereNotNull('jumlah_gangguan')->max('bulan') ?: 0;
+        $latestTr = (clone $qTrafo)->whereNotNull('jumlah_gangguan')->max('bulan') ?: 0;
+        $latestMonth = max((int)$latestSw, (int)$latestTr);
+
         // Summary Data
-        $ytdSwitching = (clone $qSwitching)->where('bulan', '<=', $bulanSekarang)->sum('jumlah_gangguan');
-        $ytdTrafo = (clone $qTrafo)->where('bulan', '<=', $bulanSekarang)->sum('jumlah_gangguan');
+        $ytdSwitching = (clone $qSwitching)->where('bulan', '<=', $latestMonth)->sum('jumlah_gangguan');
+        $ytdTrafo = (clone $qTrafo)->where('bulan', '<=', $latestMonth)->sum('jumlah_gangguan');
         $ytdGabungan = $ytdSwitching + $ytdTrafo;
 
         $targetSwitching = (clone $qTarget)->sum('target_switching_tahunan');
@@ -297,11 +314,40 @@ class GangguanSwitchingController extends Controller
             $targetTahunan = ($targetSwitchingTahunan ?: 0) + ($targetTrafoTahunan ?: 0);
         }
 
+        $targetSwitchingYtd = null;
+        $targetTrafoYtd = null;
+        $targetYtd = null;
+        if ($hasTarget) {
+            $sumSw = 0;
+            $sumTr = 0;
+            for ($i = 0; $i < $latestSw; $i++) {
+                if (isset($mTargetsSwitching[$i])) {
+                    $sumSw += $mTargetsSwitching[$i];
+                }
+            }
+            for ($i = 0; $i < $latestTr; $i++) {
+                if (isset($mTargetsTrafo[$i])) {
+                    $sumTr += $mTargetsTrafo[$i];
+                }
+            }
+            if ($targetSwitchingTahunan !== null) {
+                $targetSwitchingYtd = $latestSw > 0 ? $sumSw : null;
+            }
+            if ($targetTrafoTahunan !== null) {
+                $targetTrafoYtd = $latestTr > 0 ? $sumTr : null;
+            }
+            $targetYtd = ($targetSwitchingYtd ?: 0) + ($targetTrafoYtd ?: 0);
+            if ($latestSw == 0 && $latestTr == 0) $targetYtd = null;
+        }
+
+        $hasTarget = TargetService::isTargetLengkap('Jaringan', 'Gangguan Switching', $tahun)
+            && TargetService::isTargetLengkap('Jaringan', 'Gangguan Trafo', $tahun);
+
         $persenVsTarget = null;
         $status = '-';
         if ($hasTarget) {
-            $persenVsTarget = $targetTahunan > 0 ? ($ytdGabungan / $targetTahunan) * 100 : 0;
-            $status = $ytdGabungan <= $targetTahunan ? 'AMAN' : 'MELEBIHI_TARGET';
+            $persenVsTarget = $targetYtd > 0 ? max(0, min((2 - ($ytdGabungan / max(0.001, $targetYtd))) * 100, 110)) : 0;
+            $status = $ytdGabungan <= $targetYtd ? 'AMAN' : 'MELEBIHI_TARGET';
         }
 
         $summary = [
@@ -311,6 +357,9 @@ class GangguanSwitchingController extends Controller
             'target_switching' => $targetSwitchingTahunan,
             'target_trafo' => $targetTrafoTahunan,
             'target_gabungan' => $targetTahunan,
+            'target_ytd' => $targetYtd,
+            'target_switching_ytd' => $targetSwitchingYtd,
+            'target_trafo_ytd' => $targetTrafoYtd,
             'persen_vs_target' => $persenVsTarget,
             'status' => $status,
             'target_tahunan' => $targetTahunan,
@@ -323,11 +372,14 @@ class GangguanSwitchingController extends Controller
         $accTrafo = 0;
         
         for ($m = 1; $m <= 12; $m++) {
-            $sw = (clone $qSwitching)->where('bulan', $m)->sum('jumlah_gangguan');
-            $tr = (clone $qTrafo)->where('bulan', $m)->sum('jumlah_gangguan');
+            $swQ = (clone $qSwitching)->where('bulan', $m);
+            $trQ = (clone $qTrafo)->where('bulan', $m);
+
+            $sw = $swQ->exists() ? (int) $swQ->sum('jumlah_gangguan') : null;
+            $tr = $trQ->exists() ? (int) $trQ->sum('jumlah_gangguan') : null;
             
-            $accSwitching += $sw;
-            $accTrafo += $tr;
+            $accSwitching += ($sw ?: 0);
+            $accTrafo += ($tr ?: 0);
             
             $targetSwitchingKumulatif = null;
             $targetTrafoKumulatif = null;
@@ -335,19 +387,21 @@ class GangguanSwitchingController extends Controller
             $targetTrafoBulanan = null;
             
             if ($hasTarget) {
-                // S1 (1-6) = 55%, S2 (7-12) = 45%
-                $ratio = 0;
-                if ($m <= 6) {
-                    $ratio = (0.55 / 6) * $m;
-                } else {
-                    $ratio = 0.55 + (0.45 / 6) * ($m - 6);
-                }
-                
                 if ($targetSwitchingTahunan !== null) {
-                    $targetSwitchingKumulatif = round($targetSwitchingTahunan * $ratio);
+                    $targetSwitchingKumulatif = 0;
+                    for ($i = 0; $i < $m; $i++) {
+                        if (isset($mTargetsSwitching[$i])) {
+                            $targetSwitchingKumulatif += $mTargetsSwitching[$i];
+                        }
+                    }
                 }
                 if ($targetTrafoTahunan !== null) {
-                    $targetTrafoKumulatif = round($targetTrafoTahunan * $ratio);
+                    $targetTrafoKumulatif = 0;
+                    for ($i = 0; $i < $m; $i++) {
+                        if (isset($mTargetsTrafo[$i])) {
+                            $targetTrafoKumulatif += $mTargetsTrafo[$i];
+                        }
+                    }
                 }
                 
                 if (isset($mTargetsSwitching[$m - 1])) {
@@ -360,8 +414,8 @@ class GangguanSwitchingController extends Controller
 
             $trend_bulanan[] = [
                 'bulan' => $m,
-                'switching_bulanan' => (int) $sw,
-                'trafo_bulanan' => (int) $tr,
+                'switching_bulanan' => $sw,
+                'trafo_bulanan' => $tr,
                 'switching' => $accSwitching,
                 'trafo' => $accTrafo,
                 'gabungan' => $accSwitching + $accTrafo,
@@ -469,10 +523,13 @@ class GangguanSwitchingController extends Controller
     public function destroySwitching(Request $request, $id)
     {
         $user = $request->user();
-        if ($user->role !== 'PIC' && $user->role !== 'pic_jaringan') {
-            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        if ($user->role !== 'pic_jaringan' && $user->role !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Anda tidak berwenang mengelola data ini.'], 403);
         }
         $record = GangguanSwitching::findOrFail($id);
+        if ($user->role === 'pic_jaringan' && $user->up3 && $user->up3 !== $record->up3) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak. UP3 tidak sesuai.'], 403);
+        }
         $record->delete();
         return response()->json(['success' => true, 'message' => 'Data Kejadian Switching bulan ini berhasil dihapus.']);
     }
@@ -480,10 +537,13 @@ class GangguanSwitchingController extends Controller
     public function destroyTrafo(Request $request, $id)
     {
         $user = $request->user();
-        if ($user->role !== 'PIC' && $user->role !== 'pic_jaringan') {
-            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        if ($user->role !== 'pic_jaringan' && $user->role !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Anda tidak berwenang mengelola data ini.'], 403);
         }
         $record = GangguanTrafo::findOrFail($id);
+        if ($user->role === 'pic_jaringan' && $user->up3 && $user->up3 !== $record->up3) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak. UP3 tidak sesuai.'], 403);
+        }
         $record->delete();
         return response()->json(['success' => true, 'message' => 'Data Kejadian Trafo bulan ini berhasil dihapus.']);
     }
@@ -491,8 +551,8 @@ class GangguanSwitchingController extends Controller
     public function storeKejadianSwitching(Request $request)
     {
         $user = $request->user();
-        if ($user->role !== 'PIC' && $user->role !== 'pic_jaringan') {
-            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        if ($user->role !== 'pic_jaringan' && $user->role !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Anda tidak berwenang mengelola data ini.'], 403);
         }
 
         $validated = $request->validate([
@@ -523,8 +583,8 @@ class GangguanSwitchingController extends Controller
     public function updateKejadianSwitching(Request $request, $id)
     {
         $user = $request->user();
-        if ($user->role !== 'PIC' && $user->role !== 'pic_jaringan') {
-            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        if ($user->role !== 'pic_jaringan' && $user->role !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Anda tidak berwenang mengelola data ini.'], 403);
         }
 
         $detail = \App\Models\GangguanSwitchingDetail::findOrFail($id);
@@ -543,8 +603,8 @@ class GangguanSwitchingController extends Controller
     public function destroyKejadianSwitching(Request $request, $id)
     {
         $user = $request->user();
-        if ($user->role !== 'PIC' && $user->role !== 'pic_jaringan') {
-            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        if ($user->role !== 'pic_jaringan' && $user->role !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Anda tidak berwenang mengelola data ini.'], 403);
         }
 
         $detail = \App\Models\GangguanSwitchingDetail::findOrFail($id);
@@ -552,17 +612,54 @@ class GangguanSwitchingController extends Controller
         $detail->delete();
 
         if ($parent) {
-            $parent->update(['jumlah_gangguan' => $parent->details()->count()]);
+            $count = $parent->details()->count();
+            if ($count === 0) {
+                $parent->delete();
+            } else {
+                $parent->update(['jumlah_gangguan' => $count]);
+            }
         }
 
         return response()->json(['success' => true, 'message' => 'Data berhasil dihapus']);
     }
 
+    public function storeKejadianTrafo(Request $request)
+    {
+        $user = $request->user();
+        if ($user->role !== 'pic_jaringan' && $user->role !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Anda tidak berwenang mengelola data ini.'], 403);
+        }
+
+        $validated = $request->validate([
+            'up3' => 'required|string',
+            'tahun' => 'required|integer',
+            'bulan' => 'required|integer|min:1|max:12',
+            'merek' => 'nullable|string',
+            'tahun_alat' => 'nullable|string',
+            'nomor_seri' => 'nullable|string',
+        ]);
+
+        $parent = GangguanTrafo::firstOrCreate(
+            ['up3' => $validated['up3'], 'tahun' => $validated['tahun'], 'bulan' => $validated['bulan']],
+            ['jumlah_gangguan' => 0, 'created_by' => $user->id]
+        );
+
+        $detail = $parent->details()->create([
+            'merek' => $validated['merek'] ?? null,
+            'tahun_alat' => $validated['tahun_alat'] ?? null,
+            'nomor_seri' => $validated['nomor_seri'] ?? null,
+        ]);
+
+        $parent->update(['jumlah_gangguan' => $parent->details()->count()]);
+
+        return response()->json(['success' => true, 'data' => $detail, 'message' => 'Data Kejadian Trafo berhasil ditambahkan.']);
+    }
+
     public function updateKejadianTrafo(Request $request, $id)
     {
         $user = $request->user();
-        if ($user->role !== 'PIC' && $user->role !== 'pic_jaringan') {
-            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        if ($user->role !== 'pic_jaringan' && $user->role !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Anda tidak berwenang mengelola data ini.'], 403);
         }
 
         $detail = \App\Models\GangguanTrafoDetail::findOrFail($id);
@@ -581,8 +678,8 @@ class GangguanSwitchingController extends Controller
     public function destroyKejadianTrafo(Request $request, $id)
     {
         $user = $request->user();
-        if ($user->role !== 'PIC' && $user->role !== 'pic_jaringan') {
-            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        if ($user->role !== 'pic_jaringan' && $user->role !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Anda tidak berwenang mengelola data ini.'], 403);
         }
 
         $detail = \App\Models\GangguanTrafoDetail::findOrFail($id);
@@ -590,7 +687,12 @@ class GangguanSwitchingController extends Controller
         $detail->delete();
 
         if ($parent) {
-            $parent->update(['jumlah_gangguan' => $parent->details()->count()]);
+            $count = $parent->details()->count();
+            if ($count === 0) {
+                $parent->delete();
+            } else {
+                $parent->update(['jumlah_gangguan' => $count]);
+            }
         }
 
         return response()->json(['success' => true, 'message' => 'Data berhasil dihapus']);

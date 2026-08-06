@@ -47,5 +47,6 @@ class TargetTahunan extends Model
         'target_okt' => 'float',
         'target_nov' => 'float',
         'target_des' => 'float',
+        'is_override' => 'array',
     ];
 }

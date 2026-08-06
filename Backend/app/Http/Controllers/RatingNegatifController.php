@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Constants\Up3Constants;
+
 use Illuminate\Http\Request;
 use App\Models\KinerjaJaringan;
 use App\Models\Periode;
 use App\Models\TargetTahunan;
+use App\Services\TargetService;
 
 class RatingNegatifController extends Controller
 {
@@ -59,6 +62,8 @@ class RatingNegatifController extends Controller
         // Calculate cumulative (Dalam Kali)
         $sumNegatif = 0;
         $sumWo = 0;
+        $sumTargetKumulatif = 0;
+        $hasAnyTarget = false;
         foreach ($data as $idx => $row) {
             if ($row['realisasi'] !== null) {
                 $sumNegatif += $row['jml_rating_negatif'];
@@ -70,7 +75,23 @@ class RatingNegatifController extends Controller
             
             $monthAbbrev = strtolower($this->getBulanLabel($row['bulan']));
             $monthField = 'target_' . $monthAbbrev;
-            $cumulativeData[$idx]['cumulativeTgt'] = $target ? $target->{$monthField} : null;
+            if ($target && $target->{$monthField} !== null) {
+                $sumTargetKumulatif += $target->{$monthField};
+                $hasAnyTarget = true;
+            }
+            $cumulativeData[$idx]['cumulativeTgt'] = $hasAnyTarget ? $sumTargetKumulatif : null;
+        }
+
+        $latestCumulative = null;
+        foreach ($cumulativeData as $row) {
+            if ($row['cumulativeReal'] !== null) {
+                $latestCumulative = $row;
+            }
+        }
+        $nkoScore = null;
+        if ($latestCumulative && $latestCumulative['cumulativeTgt'] !== null && $latestCumulative['cumulativeTgt'] > 0) {
+            $nkoScore = max(0, min((2 - ($latestCumulative['cumulativeReal'] / $latestCumulative['cumulativeTgt'])) * 100, 110));
+            $nkoScore = round($nkoScore, 2);
         }
 
         $calculatedYearlyTarget = null;
@@ -96,6 +117,8 @@ class RatingNegatifController extends Controller
             'cumulative' => $cumulativeData,
             'target' => $calculatedYearlyTarget,
             'target_tahunan' => $target,
+            'nko_score' => $nkoScore,
+            'has_target' => TargetService::isTargetLengkap('Jaringan', 'Rating Negatif PLN Mobile', $year),
         ]);
     }
 
@@ -104,6 +127,13 @@ class RatingNegatifController extends Controller
      */
     public function store(Request $request)
     {
+        $user = $request->user();
+        if ($user->role !== 'pic_jaringan' && $user->role !== 'admin') {
+            return response()->json([
+                'message' => 'Anda tidak berwenang mengelola data ini.'
+            ], 403);
+        }
+
         $request->validate([
             'tahun' => 'required|integer',
             'bulan' => 'required|integer',
@@ -158,7 +188,7 @@ class RatingNegatifController extends Controller
             ->first();
 
         return response()->json([
-            'up3' => 'UP3 Kebon Jeruk', // Hardcoded as per current DB structure
+            'up3' => Up3Constants::DEFAULT_UP3, // Hardcoded as per current DB structure
             'bulan' => $bulan,
             'tahun_curr' => $tahun,
             'tahun_prev' => $prevTahun,
@@ -207,12 +237,19 @@ class RatingNegatifController extends Controller
             $ytdTarget = $target->{'target_' . $monthAbbrev};
         }
 
+        $nkoScore = null;
+        if ($ytdTarget !== null && $ytdTarget > 0 && $ytd !== null) {
+            $nkoScore = max(0, min((2 - ($ytd / $ytdTarget)) * 100, 110));
+            $nkoScore = round($nkoScore, 2);
+        }
+
         return response()->json([
             [
-                'up3' => 'UP3 Kebon Jeruk',
+                'up3' => Up3Constants::DEFAULT_UP3,
                 'monthly' => $monthlyData,
                 'ytd' => $ytd,
                 'target' => $ytdTarget,
+                'nko_score' => $nkoScore,
             ]
         ]);
     }
@@ -228,6 +265,13 @@ class RatingNegatifController extends Controller
 
     public function destroy($id)
     {
+        $user = auth()->user();
+        if ($user->role !== 'pic_jaringan' && $user->role !== 'admin') {
+            return response()->json([
+                'message' => 'Anda tidak berwenang mengelola data ini.'
+            ], 403);
+        }
+
         try {
             $data = KinerjaJaringan::find($id);
             if (!$data) {

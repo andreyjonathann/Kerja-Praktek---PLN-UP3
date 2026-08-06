@@ -7,8 +7,8 @@ use Illuminate\Http\Request;
 use App\Models\Periode;
 use App\Models\KinerjaJaringan;
 use App\Models\EnsBulanan;
-
 use App\Models\TargetTahunan;
+use App\Services\TargetService;
 
 class DataJaringanController extends Controller
 {
@@ -227,12 +227,18 @@ class DataJaringanController extends Controller
             $ytdTgtSaidiForOverview = $runningCumulativeTgtSaidi;
         }
 
+        $hitungSkorNegatif = function($realisasi, $target) {
+            if ($target === null || $target <= 0 || $realisasi === null) {
+                return null;
+            }
+            return max(0, min((2 - ($realisasi / $target)) * 100, 110));
+        };
+
         $result['overview'] = [
             'kpis' => [
-                'saidi' => ['val' => $totalSaidi, 'target' => $anySaidiTargetFilled ? $ytdTgtSaidiForOverview : null, 'isInverse' => true, 'unit' => 'mnt/plg'],
-                'saifi' => ['val' => $totalSaifi, 'target' => $anySaifiTargetFilled ? $ytdTgtSaifiForOverview : null, 'isInverse' => true, 'unit' => 'kali/plg'],
-                'ens'   => ['val' => $totalEns, 'target' => $anyEnsTargetFilled ? $runningCumulativeTgtEns : null, 'isInverse' => true, 'unit' => 'MWh'],
-
+                'saidi' => ['val' => $totalSaidi, 'target' => $anySaidiTargetFilled ? $ytdTgtSaidiForOverview : null, 'isInverse' => true, 'unit' => 'mnt/plg', 'persen_pencapaian' => $hitungSkorNegatif($totalSaidi, $anySaidiTargetFilled ? $ytdTgtSaidiForOverview : null), 'has_target' => TargetService::isTargetLengkap('Jaringan', 'SAIDI', $tahun)],
+                'saifi' => ['val' => $totalSaifi, 'target' => $anySaifiTargetFilled ? $ytdTgtSaifiForOverview : null, 'isInverse' => true, 'unit' => 'kali/plg', 'persen_pencapaian' => $hitungSkorNegatif($totalSaifi, $anySaifiTargetFilled ? $ytdTgtSaifiForOverview : null), 'has_target' => TargetService::isTargetLengkap('Jaringan', 'SAIFI', $tahun)],
+                'ens'   => ['val' => $totalEns, 'target' => $anyEnsTargetFilled ? $runningCumulativeTgtEns : null, 'isInverse' => true, 'unit' => 'MWh', 'persen_pencapaian' => $hitungSkorNegatif($totalEns, $anyEnsTargetFilled ? $runningCumulativeTgtEns : null), 'has_target' => TargetService::isTargetLengkap('Jaringan', 'ENS', $tahun)],
                 'losses' => ['val' => 5.5, 'target' => 6.0, 'isInverse' => true, 'unit' => '%'],
             ],
             'monthlyPerf' => array_map(function($sd, $sf) {
@@ -249,6 +255,11 @@ class DataJaringanController extends Controller
 
     public function saveEns(Request $request)
     {
+        $user = auth()->user();
+        if (!$user || !in_array($user->role, ['pic_jaringan', 'admin'])) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
         $request->validate([
             'periode_id' => 'required', // This is actually bulan from the frontend
             'tahun' => 'required'
@@ -274,6 +285,11 @@ class DataJaringanController extends Controller
 
     public function deleteEns(Request $request)
     {
+        $user = auth()->user();
+        if (!$user || !in_array($user->role, ['pic_jaringan', 'admin'])) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
         $request->validate([
             'bulan' => 'required',
             'tahun' => 'required'
@@ -293,7 +309,7 @@ class DataJaringanController extends Controller
     public function updateEns(Request $request, $id)
     {
         $user = auth()->user();
-        if (!$user || ($user->role !== 'pic_jaringan' && $user->role !== 'admin')) {
+        if (!$user || !in_array($user->role, ['pic_jaringan', 'admin'])) {
             return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
         }
 
@@ -329,7 +345,7 @@ class DataJaringanController extends Controller
     public function destroyEns($id)
     {
         $user = auth()->user();
-        if (!$user || ($user->role !== 'pic_jaringan' && $user->role !== 'admin')) {
+        if (!$user || !in_array($user->role, ['pic_jaringan', 'admin'])) {
             return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
         }
 
@@ -341,6 +357,10 @@ class DataJaringanController extends Controller
 
     public function saveGangguan(Request $request)
     {
+        $user = auth()->user();
+        if (!$user || !in_array($user->role, ['pic_jaringan', 'admin'])) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
         $request->validate(['periode_id' => 'required']);
         $gg = GangguanBulanan::firstOrNew(['periode_id' => $request->periode_id]);
         $gg->fill($request->all());
@@ -350,6 +370,10 @@ class DataJaringanController extends Controller
 
     public function saveGangguanList(Request $request)
     {
+        $user = auth()->user();
+        if (!$user || !in_array($user->role, ['pic_jaringan', 'admin'])) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
         $request->validate([
             'tahun' => 'required',
             'bulan' => 'required',
@@ -369,6 +393,10 @@ class DataJaringanController extends Controller
 
     public function deleteGangguanList($id)
     {
+        $user = auth()->user();
+        if (!$user || !in_array($user->role, ['pic_jaringan', 'admin'])) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
         GangguanList::destroy($id);
         return response()->json(['message' => 'Data terhapus']);
     }

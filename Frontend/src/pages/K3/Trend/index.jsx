@@ -9,9 +9,8 @@ import ChartWrapper from '@/components/ui/ChartWrapper'
 import { K3_CATEGORIES, getMaturityLabel } from '@/data/k3MasterData'
 import { useFilter } from '@/context/FilterContext'
 import { k3AssessmentService } from '@/services/k3AssessmentService'
+import ErrorBanner from '@/components/ui/ErrorBanner'
 
-// ─── Mock 12 bulan data ────────────────────────────────────────────────────────
-const MONTHS = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des']
 // Hapus MOCK_MONTHLY yang sifatnya statis
 
 const CAT_CFG = [
@@ -55,37 +54,51 @@ export default function K3TrendPage() {
   const [showCats, setShowCats] = useState(CAT_CFG.map(c => c.key))
   const [dashboardData, setDashboardData] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
-    k3AssessmentService.getDashboard({ tahun: filters.year, unit: filters.up3 })
+    k3AssessmentService.getDashboardTrend()
       .then(res => setDashboardData(res))
-      .catch(err => console.error(err))
+      .catch(err => {
+        console.error(err)
+        setError("Gagal memuat data tren.")
+      })
       .finally(() => setLoading(false))
-  }, [filters.year, filters.up3])
+  }, []) // getDashboardTrend returns multiple semesters, don't re-fetch on year filter unless backend expects year (backend doesn't require it currently for trend)
 
   const toggleCat = (key) => setShowCats(prev =>
     prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
   )
 
-  // Mapping real data from API to 12 months array
-  const mergedMonthly = MONTHS.map((m, idx) => {
-    const fromApi = dashboardData?.tren_bulanan?.find(t => t.bulan === idx + 1)
-    if (fromApi && fromApi.avg_score !== null) {
-       return { 
-         bulan: m, 
-         avg: parseFloat(fromApi.avg_score),
-         lmc: fromApi.lmc !== null ? parseFloat(fromApi.lmc) : null,
-         aai: fromApi.aai !== null ? parseFloat(fromApi.aai) : null,
-         ibp: fromApi.ibp !== null ? parseFloat(fromApi.ibp) : null,
-         ste: fromApi.ste !== null ? parseFloat(fromApi.ste) : null,
-         scc: fromApi.scc !== null ? parseFloat(fromApi.scc) : null,
-         rep: fromApi.rep !== null ? parseFloat(fromApi.rep) : null,
-       }
-    }
-    
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] text-slate-500">
+        <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-4" />
+        <p className="text-sm font-medium">Memuat data tren...</p>
+      </div>
+    )
+  }
 
-    return { bulan: m, avg: null, lmc: null, aai: null, ibp: null, ste: null, scc: null, rep: null }
-  })
+  if (error) {
+    return (
+      <div className="p-6">
+        <ErrorBanner message={error} onRetry={() => window.location.reload()} />
+      </div>
+    )
+  }
+
+  // Mapping real data from API
+  // dashboardData is an array of objects: [{ label: '2025-S1', avg_score: 3.5, lmc: 4, aai: 3, ... }]
+  const mergedMonthly = (dashboardData || []).map(d => ({
+    bulan: d.label,
+    avg: d.avg_score !== null ? parseFloat(d.avg_score) : null,
+    lmc: d.lmc !== null ? parseFloat(d.lmc) : null,
+    aai: d.aai !== null ? parseFloat(d.aai) : null,
+    ibp: d.ibp !== null ? parseFloat(d.ibp) : null,
+    ste: d.ste !== null ? parseFloat(d.ste) : null,
+    scc: d.scc !== null ? parseFloat(d.scc) : null,
+    rep: d.rep !== null ? parseFloat(d.rep) : null,
+  }))
 
   const validMerged = mergedMonthly.filter(m => m.avg !== null)
   const first = validMerged.length > 0 ? validMerged[0] : { avg: 0 }
@@ -155,7 +168,7 @@ export default function K3TrendPage() {
       </div>
 
       {/* Main trend line chart */}
-      <ChartWrapper title="Tren Skor K3 Bulanan" subtitle={`Skor rata-rata per kategori (Tahun ${filters.year})`}>
+      <ChartWrapper title="Tren Skor K3 per Semester" subtitle="Skor rata-rata per kategori">
         <ResponsiveContainer width="100%" height={320}>
           <LineChart data={mergedMonthly} margin={{ top: 10, right: 20, bottom: 0, left: -15 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
@@ -167,10 +180,10 @@ export default function K3TrendPage() {
             <ReferenceLine y={3} stroke="#D97706" strokeDasharray="5 3" label={{ value: 'L3', position: 'insideTopRight', fill: '#D97706', fontSize: 11 }} />
             {CAT_CFG.filter(c => showCats.includes(c.key)).map(c => (
               <Line key={c.key} type="monotone" dataKey={c.key} name={c.label} stroke={c.color} strokeWidth={2.5}
-                connectNulls={true} dot={{ r: 5, fill: '#fff', stroke: c.color, strokeWidth: 2 }} activeDot={{ r: 7, strokeWidth: 0 }} />
+                connectNulls={true} isAnimationActive={false} dot={{ r: 5, fill: '#fff', stroke: c.color, strokeWidth: 2 }} activeDot={{ r: 7, strokeWidth: 0 }} />
             ))}
             <Line type="monotone" dataKey="avg" name="AVG" stroke="#374151" strokeWidth={3}
-              connectNulls={true} strokeDasharray="6 3" dot={{ r: 6, fill: '#fff', stroke: '#374151', strokeWidth: 2 }} />
+              connectNulls={true} isAnimationActive={false} strokeDasharray="6 3" dot={{ r: 6, fill: '#fff', stroke: '#374151', strokeWidth: 2 }} />
           </LineChart>
         </ResponsiveContainer>
       </ChartWrapper>

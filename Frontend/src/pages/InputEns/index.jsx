@@ -1,9 +1,11 @@
+import notify from '@/utils/notify';
 import React, { useState, useEffect } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { useNavigate, useLocation } from 'react-router-dom';
 import api from '@/services/api';
 import { MONTHS } from '@/utils/constants';
 import { CheckCircle, AlertCircle, Save, ArrowLeft, Activity, AlertTriangle, Zap, RadioTower, Factory, Trash2 } from 'lucide-react';
+import useDirtyFormGuard from '@/hooks/useDirtyFormGuard';
 
 export default function InputEnsPage() {
   const navigate = useNavigate();
@@ -12,7 +14,7 @@ export default function InputEnsPage() {
   const [success, setSuccess] = useState(false);
   const [dashboardData, setDashboardData] = useState(null);
 
-  const { register, handleSubmit, formState: { errors }, reset, control } = useForm({
+  const { register, handleSubmit, formState: { errors, isDirty: formIsDirty }, reset, control } = useForm({
     defaultValues: {
       tahun: '',
       periode_id: location.state?.bulan?.toString() || '',
@@ -23,6 +25,7 @@ export default function InputEnsPage() {
       pembangkit: ''
     }
   });
+  const { setIsDirty, guardedNavigate } = useDirtyFormGuard();
 
   const selectedYear = useWatch({ control, name: 'tahun' });
   const selectedMonth = useWatch({ control, name: 'periode_id' });
@@ -65,9 +68,13 @@ export default function InputEnsPage() {
     }
   }, [selectedMonth, selectedYear, dashboardData]);
 
+  useEffect(() => {
+    setIsDirty(formIsDirty);
+  }, [formIsDirty]);
+
   const onSubmit = async (data) => {
     if (isDuplicate) {
-      alert('Data sudah ada! Tidak bisa menginput dari halaman Tambah.');
+      notify.warning('Data sudah ada! Tidak bisa menginput dari halaman Tambah.');
       return;
     }
     setLoading(true);
@@ -75,10 +82,11 @@ export default function InputEnsPage() {
     try {
       await api.post('/jaringan/ens', data);
       setSuccess(true);
+      setIsDirty(false);
       window.scrollTo({ top: 0, behavior: 'smooth' });
       setTimeout(() => navigate('/ens'), 2000);
     } catch (err) {
-      alert('Error: ' + err.message);
+      notify.error(err.response?.data?.message || err.message);
     } finally {
       setLoading(false);
     }
@@ -100,7 +108,7 @@ export default function InputEnsPage() {
 
         {/* HEADER */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button type="button" onClick={() => navigate(-1)}
+          <button type="button" onClick={() => guardedNavigate(() => navigate(-1))}
             style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 10, padding: '8px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', fontWeight: 600, color: '#64748b', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
           >
             <ArrowLeft size={16} /> Kembali

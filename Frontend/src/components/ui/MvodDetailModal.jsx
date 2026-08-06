@@ -1,6 +1,9 @@
+import notify from '@/utils/notify';
 import React, { useState, useEffect } from 'react'
+import { DEFAULT_UP3 } from '@/constants/up3'
 import { createPortal } from 'react-dom'
 import { X, Edit2, Trash2, Loader2, Save } from 'lucide-react'
+import useDirtyFormGuard from '@/hooks/useDirtyFormGuard'
 import api from '../../services/api'
 import { useAuth } from '../../context/AuthContext'
 
@@ -12,7 +15,7 @@ const MONTHS_ID = [
 export default function MvodDetailModal({ open, onOpenChange, rowData, tahun, up3, onSuccess }) {
   const { user } = useAuth()
   const isPIC = user?.role === 'pic_jaringan' || user?.role === 'admin'
-  const targetUp3 = user?.role === 'admin' && up3 ? up3 : (user?.up3 || 'UP3 Kebon Jeruk')
+  const targetUp3 = user?.role === 'admin' && up3 ? up3 : (user?.up3 || DEFAULT_UP3)
 
   const bulanNum  = rowData?.bulan ?? 0
   const bulanName = MONTHS_ID[bulanNum] || rowData?.label || ''
@@ -27,9 +30,15 @@ export default function MvodDetailModal({ open, onOpenChange, rowData, tahun, up
   const [saving, setSaving] = useState(false)
   
   const [form, setForm] = useState({
-    total_lama_padam_menit: '',
+    rata_rata_lama_padam_menit: '',
     kali_padam: ''
   })
+
+  const { isDirty, setIsDirty } = useDirtyFormGuard();
+  const handleFieldChange = (field, value) => {
+    setForm(prev => ({ ...prev, [field]: value }));
+    setIsDirty(true);
+  };
 
   // Fetch Data on Open
   useEffect(() => {
@@ -40,7 +49,7 @@ export default function MvodDetailModal({ open, onOpenChange, rowData, tahun, up
       setEditingTipe(null)
       setDeletingTipe(null)
       setRecords({ GI: null, JTM: null, GD: null })
-      setForm({ total_lama_padam_menit: '', kali_padam: '' })
+      setForm({ rata_rata_lama_padam_menit: '', kali_padam: '' })
     }
   }, [open, rowData, tahun])
 
@@ -67,19 +76,18 @@ export default function MvodDetailModal({ open, onOpenChange, rowData, tahun, up
   }
 
   const startEdit = (tipe) => {
-    const record = records[tipe]
-    if (record) {
+    const rec = records[tipe]
+    if (rec) {
       setForm({
-        total_lama_padam_menit: record.total_lama_padam_menit !== undefined 
-          ? record.total_lama_padam_menit.toString() 
-          : (record.total_lama_padam_jam * 60).toString(),
-        kali_padam: record.kali_padam.toString()
+        rata_rata_lama_padam_menit: rec.rata_rct_menit || '',
+        kali_padam: rec.kali_padam || ''
       })
     } else {
-      setForm({ total_lama_padam_menit: '', kali_padam: '' })
+      setForm({ rata_rata_lama_padam_menit: '', kali_padam: '' })
     }
     setEditingTipe(tipe)
     setDeletingTipe(null)
+    setIsDirty(false);
   }
 
   const handleSave = async () => {
@@ -92,7 +100,7 @@ export default function MvodDetailModal({ open, onOpenChange, rowData, tahun, up
         tahun: Number(tahun),
         bulan: Number(bulanNum),
         tipe_rct: editingTipe,
-        total_lama_padam_jam: Number(form.total_lama_padam_menit) / 60,
+        total_lama_padam_jam: (Number(form.rata_rata_lama_padam_menit) * Number(form.kali_padam)) / 60,
         kali_padam: Number(form.kali_padam)
       }
       
@@ -102,12 +110,13 @@ export default function MvodDetailModal({ open, onOpenChange, rowData, tahun, up
         await api.post(`/v1/mvod`, payload)
       }
       
+      setIsDirty(false);
       setEditingTipe(null)
       if (onSuccess) onSuccess()
       fetchData()
     } catch (err) {
       console.error('Failed to save MVOD:', err)
-      alert(err.response?.data?.message || 'Gagal menyimpan data MVOD')
+      notify.error(err.response?.data?.message || 'Gagal menyimpan data MVOD')
     } finally {
       setSaving(false)
     }
@@ -124,7 +133,7 @@ export default function MvodDetailModal({ open, onOpenChange, rowData, tahun, up
       fetchData()
     } catch (err) {
       console.error('Failed to delete MVOD:', err)
-      alert('Gagal menghapus data')
+      notify.error('Gagal menghapus data')
     } finally {
       setSaving(false)
     }
@@ -135,7 +144,12 @@ export default function MvodDetailModal({ open, onOpenChange, rowData, tahun, up
     return Number(v).toLocaleString('id-ID', { maximumFractionDigits: 2 })
   }
 
-  const closeModal = () => {
+  const closeModal = async () => {
+    if (editingTipe && isDirty) {
+      const result = await notify.confirmLeave();
+      if (!result.isConfirmed) return;
+    }
+    setIsDirty(false)
     onOpenChange(false)
   }
 
@@ -271,15 +285,15 @@ export default function MvodDetailModal({ open, onOpenChange, rowData, tahun, up
                     <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
                       <div style={{ flex: 1 }}>
                         <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 8 }}>
-                          Total Lama Padam (Menit)
+                          Rata-rata Lama Padam (Menit)
                         </label>
                         <input
                           type="number"
                           min="0"
                           step="0.01"
                           placeholder="Cth: 150"
-                          value={form.total_lama_padam_menit}
-                          onChange={(e) => setForm({ ...form, total_lama_padam_menit: e.target.value })}
+                          value={form.rata_rata_lama_padam_menit}
+                          onChange={(e) => handleFieldChange('rata_rata_lama_padam_menit', e.target.value)}
                           style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: 6, fontSize: 14 }}
                           disabled={saving}
                         />
@@ -293,7 +307,7 @@ export default function MvodDetailModal({ open, onOpenChange, rowData, tahun, up
                           min="1"
                           placeholder="Cth: 1"
                           value={form.kali_padam}
-                          onChange={(e) => setForm({ ...form, kali_padam: e.target.value })}
+                          onChange={(e) => handleFieldChange('kali_padam', e.target.value)}
                           style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: 6, fontSize: 14 }}
                           disabled={saving}
                         />

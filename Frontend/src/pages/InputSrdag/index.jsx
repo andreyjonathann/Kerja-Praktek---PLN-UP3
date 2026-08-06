@@ -1,8 +1,11 @@
+import notify from '@/utils/notify';
 import React, { useState } from 'react'
+import { DEFAULT_UP3 } from '@/constants/up3'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Save, Activity, Calendar } from 'lucide-react'
 import api from '@/services/api'
 import { useAuth } from '@/context/AuthContext'
+import useDirtyFormGuard from '@/hooks/useDirtyFormGuard'
 
 const MONTHS = [
   { value: 1, label: 'Januari' }, { value: 2, label: 'Februari' }, { value: 3, label: 'Maret' },
@@ -18,27 +21,64 @@ export default function InputSrdagPage() {
   const currentYear = new Date().getFullYear()
 
   const [saving, setSaving] = useState(false)
-  const [form, setForm] = useState({ tahun: currentYear, bulan: '', berhasil: '', total: '' })
+  const [form, setForm] = useState({ tahun: currentYear, bulan: '', berhasil: '', total: '', wo_marking_padam_meluas: '' })
+  const [existingData, setExistingData] = useState([])
+  const [isUpdateMode, setIsUpdateMode] = useState(false)
+
+  const { isDirty, setIsDirty, guardedNavigate } = useDirtyFormGuard();
+
+  const handleFieldChange = (field, value) => {
+    setForm(prev => ({ ...prev, [field]: value }));
+    setIsDirty(true);
+  };
+
+  React.useEffect(() => {
+    if (!form.tahun) return;
+    api.get('/v1/srdag/dashboard', { params: { tahun: form.tahun, up3: user?.up3 } })
+      .then(res => {
+        setExistingData(res.data.data.trend_bulanan || []);
+      })
+      .catch(() => {});
+  }, [form.tahun, user?.up3]);
+
+  React.useEffect(() => {
+    if (!form.bulan) return;
+    const match = existingData.find(d => d.bulan == form.bulan);
+    if (match && match.success_rate !== null) {
+      setIsUpdateMode(true);
+      setForm(prev => ({
+        ...prev,
+        berhasil: match.jumlah_dispatch_berhasil != null ? match.jumlah_dispatch_berhasil.toString() : '',
+        total: match.jumlah_total_gangguan != null ? match.jumlah_total_gangguan.toString() : '',
+        wo_marking_padam_meluas: match.wo_marking_padam_meluas != null ? match.wo_marking_padam_meluas.toString() : '0'
+      }));
+    } else {
+      setIsUpdateMode(false);
+      setForm(prev => ({ ...prev, berhasil: '', total: '', wo_marking_padam_meluas: '' }));
+    }
+  }, [form.bulan, existingData]);
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!form.tahun || !form.bulan || form.berhasil === '' || form.total === '') return alert('Semua field wajib diisi!')
-    if (Number(form.berhasil) < 0 || Number(form.total) < 0) return alert('Angka tidak boleh negatif!')
-    if (Number(form.berhasil) > Number(form.total)) return alert('Jumlah berhasil tidak boleh lebih besar dari total gangguan!')
+    if (!form.tahun || !form.bulan || form.berhasil === '' || form.total === '') return notify.warning('Semua field wajib diisi!')
+    if (Number(form.berhasil) < 0 || Number(form.total) < 0) return notify.warning('Angka tidak boleh negatif!')
+    if (Number(form.berhasil) > Number(form.total)) return notify.warning('Jumlah berhasil tidak boleh lebih besar dari total gangguan!')
 
     setSaving(true)
     try {
       const payload = {
-        up3: user?.up3 || 'UP3 Kebon Jeruk',
+        up3: user?.up3 || DEFAULT_UP3,
         tahun: Number(form.tahun),
         bulan: Number(form.bulan),
         jumlah_dispatch_berhasil: Number(form.berhasil),
-        jumlah_total_gangguan: Number(form.total)
+        jumlah_total_gangguan: Number(form.total),
+        wo_marking_padam_meluas: Number(form.wo_marking_padam_meluas) || 0
       }
       await api.post('/v1/srdag', payload)
+      setIsDirty(false)
       navigate('/jaringan/srdag')
     } catch (err) {
-      alert(err.response?.data?.message || 'Terjadi kesalahan saat menyimpan data.')
+      notify.error(err.response?.data?.message || 'Terjadi kesalahan saat menyimpan data.')
     } finally {
       setSaving(false)
     }
@@ -58,7 +98,7 @@ export default function InputSrdagPage() {
 
         {/* HEADER */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button type="button" onClick={() => navigate(-1)}
+          <button type="button" onClick={() => guardedNavigate(() => navigate(-1), isUpdateMode)}
             style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 10, padding: '8px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', fontWeight: 600, color: '#64748b', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
           >
             <ArrowLeft size={16} /> Kembali
@@ -71,6 +111,12 @@ export default function InputSrdagPage() {
 
         <form style={{ display: 'flex', flexDirection: 'column', gap: 14 }} onSubmit={handleSubmit}>
 
+          {isUpdateMode && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 16px', borderRadius: 10, background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', fontWeight: 600, fontSize: '0.86rem' }}>
+              <Activity size={16} /> Data SRDAG untuk bulan ini sudah ditambahkan. Anda tidak dapat menyimpan data untuk periode yang sama.
+            </div>
+          )}
+
           {/* CARD PERIODE */}
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             <div className="p-4 border-b border-slate-100 flex items-center gap-2 bg-slate-50/50">
@@ -81,7 +127,7 @@ export default function InputSrdagPage() {
               <div className="flex gap-4">
                 <div className="w-1/2">
                   <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#64748b', marginBottom: 5 }}>Bulan <span className="text-rose-500">*</span></label>
-                  <select value={form.bulan} onChange={e => setForm({ ...form, bulan: e.target.value })} style={inputStyle} required>
+                  <select value={form.bulan} onChange={e => handleFieldChange('bulan', e.target.value)} style={inputStyle} required>
                     <option value="">Pilih Bulan</option>
                     {MONTHS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
                   </select>
@@ -93,7 +139,7 @@ export default function InputSrdagPage() {
                     min="2000" 
                     placeholder={currentYear.toString()} 
                     value={form.tahun} 
-                    onChange={e => setForm({ ...form, tahun: e.target.value })} 
+                    onChange={e => handleFieldChange('tahun', e.target.value)} 
                     style={inputStyle} 
                     required 
                   />
@@ -116,7 +162,7 @@ export default function InputSrdagPage() {
                   <label className="font-semibold text-slate-700 text-[13px]">Jumlah Dispatch Berhasil <span className="text-rose-500">*</span></label>
                 </div>
                 <div className="w-[140px]">
-                  <input type="number" min="0" className={fieldInputClass} placeholder="0" value={form.berhasil} onChange={e => setForm({ ...form, berhasil: e.target.value })} required />
+                  <input type="number" min="0" className={fieldInputClass} placeholder="0" value={form.berhasil} onChange={e => handleFieldChange('berhasil', e.target.value)} required />
                 </div>
               </div>
 
@@ -126,7 +172,20 @@ export default function InputSrdagPage() {
                   <label className="font-semibold text-slate-700 text-[13px]">Jumlah Total Gangguan <span className="text-rose-500">*</span></label>
                 </div>
                 <div className="w-[140px]">
-                  <input type="number" min="0" className={fieldInputClass} placeholder="0" value={form.total} onChange={e => setForm({ ...form, total: e.target.value })} required />
+                  <input type="number" min="0" className={fieldInputClass} placeholder="0" value={form.total} onChange={e => handleFieldChange('total', e.target.value)} required />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-3 bg-white border border-[#f3f4f6] rounded-xl gap-4 hover:bg-slate-50 transition">
+                <div className="flex items-center gap-3 flex-1">
+                  <div className="w-9 h-9 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center flex-shrink-0"><Activity size={15} /></div>
+                  <div>
+                    <label className="font-semibold text-slate-700 text-[13px] block">WO Marking Padam Meluas (Kali, opsional)</label>
+                    <span className="text-[11px] text-slate-500">WO yang ditandai sebagai padam meluas, dikecualikan dari perhitungan Success Rate</span>
+                  </div>
+                </div>
+                <div className="w-[140px]">
+                  <input type="number" min="0" className={fieldInputClass} placeholder="0" value={form.wo_marking_padam_meluas} onChange={e => handleFieldChange('wo_marking_padam_meluas', e.target.value)} />
                 </div>
               </div>
 
@@ -134,11 +193,11 @@ export default function InputSrdagPage() {
           </div>
 
           {/* SUBMIT */}
-          <button type="submit" disabled={saving}
-            style={{ width: '100%', padding: '14px', borderRadius: 12, background: saving ? '#93c5fd' : '#3b82f6', color: '#fff', fontSize: '0.95rem', fontWeight: 700, border: 'none', cursor: saving ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: saving ? 'none' : '0 4px 14px rgba(59,130,246,0.3)', transition: 'all 0.2s' }}
+          <button type="submit" disabled={saving || isUpdateMode}
+            style={{ width: '100%', padding: '14px', borderRadius: 12, background: (saving || isUpdateMode) ? '#94a3b8' : '#3b82f6', color: '#fff', fontSize: '0.95rem', fontWeight: 700, border: 'none', cursor: (saving || isUpdateMode) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: (saving || isUpdateMode) ? 'none' : '0 4px 14px rgba(59,130,246,0.3)', transition: 'all 0.2s' }}
           >
             {saving ? <div style={{width:20,height:20,border:'2px solid rgba(255,255,255,0.5)',borderTop:'2px solid white',borderRadius:'50%',animation:'spin 1s linear infinite'}}/> : <Save size={18} />}
-            Simpan Data
+            {isUpdateMode ? 'Data Sudah Ada' : 'Simpan Data'}
           </button>
 
         </form>

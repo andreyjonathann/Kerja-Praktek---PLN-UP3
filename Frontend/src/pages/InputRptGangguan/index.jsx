@@ -1,3 +1,4 @@
+import notify from '@/utils/notify';
 import React, { useState, useEffect } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
@@ -5,6 +6,7 @@ import api from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { MONTHS } from '@/utils/constants';
 import { CheckCircle, AlertCircle, Save, ArrowLeft, Activity, Clock, Info } from 'lucide-react';
+import useDirtyFormGuard from '@/hooks/useDirtyFormGuard';
 
 export default function InputRptGangguanPage() {
   const navigate = useNavigate();
@@ -17,19 +19,23 @@ export default function InputRptGangguanPage() {
   const [existingData, setExistingData] = useState([]);
   const [isUpdateMode, setIsUpdateMode] = useState(false);
 
-  const { register, handleSubmit, watch, formState: { errors }, reset, setValue } = useForm({
-    defaultValues: { tahun: '', bulan: '', total_durasi_menit: '', jumlah_gangguan: '' }
+  const { register, handleSubmit, watch, formState: { errors, isDirty: formIsDirty }, reset, setValue } = useForm({
+    defaultValues: { tahun: '', bulan: '', rata_rata_rpt: '', jumlah_gangguan: '' }
   });
+
+  const { isDirty, setIsDirty, guardedNavigate } = useDirtyFormGuard();
+
+  useEffect(() => {
+    setIsDirty(formIsDirty);
+  }, [formIsDirty]);
 
   const selectedYear = watch('tahun');
   const selectedMonth = watch('bulan');
-  const durasi = watch('total_durasi_menit');
-  const gangguan = watch('jumlah_gangguan');
+  const rataRataVal = watch('rata_rata_rpt');
+  const gangguanVal = watch('jumlah_gangguan');
 
-  let rataRata = 0;
-  if (durasi && gangguan && parseInt(gangguan) > 0) {
-    rataRata = parseFloat(durasi) / parseInt(gangguan);
-  }
+  const rataRata = rataRataVal ? parseFloat(rataRataVal) : 0;
+  const gangguanCount = gangguanVal ? parseInt(gangguanVal) : 0;
   const isAman = rataRata > 0 && rataRata <= targetMenit;
 
   useEffect(() => {
@@ -52,11 +58,11 @@ export default function InputRptGangguanPage() {
     const match = existingData.find(d => String(d.bulan) === String(selectedMonth));
     if (match) {
       setIsUpdateMode(true);
-      setValue('total_durasi_menit', match.total_durasi);
+      setValue('rata_rata_rpt', match.rpt_realisasi);
       setValue('jumlah_gangguan', match.jumlah_gangguan);
     } else {
       setIsUpdateMode(false);
-      setValue('total_durasi_menit', '');
+      setValue('rata_rata_rpt', '');
       setValue('jumlah_gangguan', '');
     }
   }, [selectedMonth, existingData, setValue]);
@@ -65,24 +71,32 @@ export default function InputRptGangguanPage() {
     setLoading(true);
     setSuccess(false);
     try {
-      if (parseInt(data.jumlah_gangguan) <= 0) {
-        alert('Jumlah gangguan tidak boleh 0 atau kurang.');
+      if (parseFloat(data.rata_rata_rpt) < 0) {
+        notify.warning('Rata-rata RPT tidak boleh kurang dari 0.');
         return;
       }
+      if (parseInt(data.jumlah_gangguan) <= 0) {
+        notify.warning('Jumlah gangguan tidak boleh 0 atau kurang.');
+        return;
+      }
+      
+      const durasiCalc = parseFloat(data.rata_rata_rpt) * parseInt(data.jumlah_gangguan);
+      
       await api.post('/v1/rpt-gangguan', {
         tahun: parseInt(data.tahun),
         bulan: parseInt(data.bulan),
-        total_durasi_menit: parseFloat(data.total_durasi_menit),
+        total_durasi_menit: durasiCalc,
         jumlah_gangguan: parseInt(data.jumlah_gangguan)
       });
       setSuccess(true);
-      reset({ tahun: data.tahun, bulan: '', total_durasi_menit: '', jumlah_gangguan: '' });
+      setIsDirty(false);
+      reset({ tahun: data.tahun, bulan: '', rata_rata_rpt: '', jumlah_gangguan: '' });
       setTimeout(() => {
         setSuccess(false);
         navigate('/jaringan/rpt-gangguan');
       }, 1500);
     } catch (err) {
-      alert('Error: ' + (err.response?.data?.message || err.message));
+      notify.error(err.response?.data?.message || err.message);
     } finally {
       setLoading(false);
     }
@@ -110,7 +124,7 @@ export default function InputRptGangguanPage() {
 
         {/* HEADER */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button type="button" onClick={() => navigate('/jaringan/rpt-gangguan')}
+          <button type="button" onClick={() => guardedNavigate(() => navigate('/jaringan/rpt-gangguan'))}
             style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 10, padding: '8px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', fontWeight: 600, color: '#64748b', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
           >
             <ArrowLeft size={16} /> Kembali
@@ -182,21 +196,21 @@ export default function InputRptGangguanPage() {
 
               <div className="flex items-center justify-between p-3 bg-white border border-[#f3f4f6] rounded-xl gap-4 hover:bg-slate-50 transition">
                 <div className="flex items-center gap-3 flex-1">
-                  <div className="w-9 h-9 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center flex-shrink-0"><Clock size={15} /></div>
-                  <label className="font-semibold text-slate-700 text-[13px]">Total Durasi (Menit)</label>
+                  <div className="w-9 h-9 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center flex-shrink-0"><Activity size={15} /></div>
+                  <label className="font-semibold text-slate-700 text-[13px]">Jumlah Gangguan</label>
                 </div>
-                <input type="number" step="0.01" min="0" {...register('total_durasi_menit', { required: true })}
-                  className={`w-[120px] border ${errors.total_durasi_menit ? 'border-red-400' : 'border-gray-200'} rounded-lg px-3 py-2 text-[13px] shadow-sm text-right outline-none focus:border-blue-500 bg-white`}
+                <input type="number" min="1" {...register('jumlah_gangguan', { required: true })}
+                  className={`w-[120px] border ${errors.jumlah_gangguan ? 'border-red-400' : 'border-gray-200'} rounded-lg px-3 py-2 text-[13px] shadow-sm text-right outline-none focus:border-blue-500 bg-white`}
                   placeholder="-" />
               </div>
 
               <div className="flex items-center justify-between p-3 bg-white border border-[#f3f4f6] rounded-xl gap-4 hover:bg-slate-50 transition">
                 <div className="flex items-center gap-3 flex-1">
-                  <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0"><Activity size={15} /></div>
-                  <label className="font-semibold text-slate-700 text-[13px]">Jumlah Gangguan</label>
+                  <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0"><Clock size={15} /></div>
+                  <label className="font-semibold text-slate-700 text-[13px]">Rata-rata RPT (Menit)</label>
                 </div>
-                <input type="number" min="1" {...register('jumlah_gangguan', { required: true })}
-                  className={`w-[120px] border ${errors.jumlah_gangguan ? 'border-red-400' : 'border-gray-200'} rounded-lg px-3 py-2 text-[13px] shadow-sm text-right outline-none focus:border-blue-500 bg-white`}
+                <input type="number" step="0.01" min="0" {...register('rata_rata_rpt', { required: true })}
+                  className={`w-[120px] border ${errors.rata_rata_rpt ? 'border-red-400' : 'border-gray-200'} rounded-lg px-3 py-2 text-[13px] shadow-sm text-right outline-none focus:border-blue-500 bg-white`}
                   placeholder="-" />
               </div>
 

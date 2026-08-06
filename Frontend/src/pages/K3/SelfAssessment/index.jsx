@@ -7,11 +7,13 @@ import {
 import PageHeader from '@/components/ui/PageHeader'
 import KpiCard from '@/components/ui/KpiCard'
 import ChartWrapper from '@/components/ui/ChartWrapper'
+import { getMaturityLabel, K3_STATUS_COLORS } from '@/data/k3MasterData'
 import { useAuth } from '@/context/AuthContext'
 import { useFilter } from '@/context/FilterContext'
-import { K3_CATEGORIES, K3_STATUS_COLORS, MONTHS_FULL_ID } from '@/data/k3MasterData'
 import { k3AssessmentService } from '@/services/k3AssessmentService'
 import { useParams, Navigate, useNavigate } from 'react-router-dom'
+import Toast from '@/components/ui/Toast'
+import ErrorBanner from '@/components/ui/ErrorBanner'
 
 // Removed mock data builder
 
@@ -102,65 +104,7 @@ const CustomTooltip = ({ active, payload, label }) => {
   )
 }
 
-// ─── Criteria Row ─────────────────────────────────────────────────────────────
-function CriteriaRow({ category, criteria, detail, catColor, assessmentId, status }) {
-  const navigate = useNavigate()
-
-  return (
-    <div style={{
-      border: '1px solid var(--border-subtle)',
-      borderRadius: 12, overflow: 'hidden', marginBottom: 8,
-    }}>
-      <button
-        onClick={() => navigate(`/k3/assessment/${category.toLowerCase()}/${criteria.id}`, {
-          state: { criteria, detail, catColor, assessmentId, status }
-        })}
-        style={{
-          width: '100%', display: 'flex', alignItems: 'center', gap: 12,
-          padding: '12px 16px', background: 'var(--bg-card)',
-          border: 'none', cursor: 'pointer', textAlign: 'left',
-          transition: 'background 0.2s'
-        }}
-        onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-subtle)'}
-        onMouseLeave={e => e.currentTarget.style.background = 'var(--bg-card)'}
-      >
-        <div style={{
-          width: 32, height: 32, borderRadius: 8, flexShrink: 0,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: `${catColor}18`, border: `1px solid ${catColor}30`,
-          fontWeight: 800, fontSize: '0.78rem', color: catColor
-        }}>{criteria.code}</div>
-
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text-primary)' }}>
-            {criteria.name}
-          </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>
-            PIC: {detail.pic || criteria.pic}
-          </div>
-        </div>
-
-        {/* Level badge */}
-        <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-          {detail.level ? (
-            <span style={{
-              padding: '3px 10px', borderRadius: 99,
-              background: catColor + '18', color: catColor,
-              fontWeight: 700, fontSize: '0.78rem', border: `1px solid ${catColor}30`
-            }}>Level {detail.level}</span>
-          ) : (
-            <span style={{
-              padding: '3px 10px', borderRadius: 99,
-              background: 'var(--bg-subtle)', color: 'var(--text-muted)',
-              fontWeight: 600, fontSize: '0.78rem'
-            }}>Belum dinilai</span>
-          )}
-          <ChevronRight size={16} style={{ color: 'var(--text-muted)' }} />
-        </div>
-      </button>
-    </div>
-  )
-}
+// ─── Removed CriteriaRow ────────────────────────────────────────────────────────
 
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function K3SelfAssessmentPage() {
@@ -172,14 +116,14 @@ export default function K3SelfAssessmentPage() {
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
 
-  const [selectedMonth, setSelectedMonth] = useState(() => {
-    const saved = sessionStorage.getItem('k3_assessment_month')
-    return saved ? parseInt(saved) : (new Date().getMonth() + 1)
+  const [selectedSemester, setSelectedSemester] = useState(() => {
+    const saved = sessionStorage.getItem('k3_assessment_semester')
+    return saved ? saved : (new Date().getMonth() + 1 <= 6 ? 'S1' : 'S2')
   })
 
   useEffect(() => {
-    sessionStorage.setItem('k3_assessment_month', selectedMonth)
-  }, [selectedMonth])
+    sessionStorage.setItem('k3_assessment_semester', selectedSemester)
+  }, [selectedSemester])
   const [selectedYear, setSelectedYear]   = useState(() => {
     const saved = sessionStorage.getItem('k3_assessment_year')
     return saved ? parseInt(saved) : currentYear
@@ -192,7 +136,15 @@ export default function K3SelfAssessmentPage() {
   const [details, setDetails]             = useState({})
   const [saving, setSaving]               = useState(false)
   const [submitConfirm, setSubmitConfirm] = useState(false)
-  const [assessmentId, setAssessmentId]   = useState(null)
+  const [error, setError]                 = useState(null)
+  const [toastState, setToastState]       = useState(null)
+  const period = `${selectedYear}-${selectedSemester}`
+
+  // Modal State
+  const [showModal, setShowModal] = useState(false)
+  const [modalCritId, setModalCritId] = useState('')
+  const [modalDetail, setModalDetail] = useState({ level: null, catatan: '', pic: '' })
+  const [modalSaving, setModalSaving] = useState(false)
 
   // 1. Load Categories
   useEffect(() => {
@@ -200,7 +152,9 @@ export default function K3SelfAssessmentPage() {
       setCategories(data)
     }).catch(err => {
       console.error(err)
-      setCategories(K3_CATEGORIES) // Fallback to mock data if API fails
+      setError("Gagal memuat kategori K3.")
+      setLoading(false)
+      // Stop using mock data completely to avoid ID mismatch (string vs integer)
     })
   }, [])
 
@@ -212,41 +166,33 @@ export default function K3SelfAssessmentPage() {
       setLoading(true)
       try {
         const list = await k3AssessmentService.getAssessments({ 
-          unit: filters.up3 || 'Kebon Jeruk', 
-          bulan: selectedMonth, 
-          tahun: selectedYear 
+          tahun: selectedYear, 
+          semester: selectedSemester 
         })
-        let asm = list[0]
-        if (!asm) {
-           asm = await k3AssessmentService.createAssessment({ 
-             unit: filters.up3 || 'Kebon Jeruk', 
-             periode_bulan: selectedMonth, 
-             periode_tahun: selectedYear 
-           })
-        }
-        const full = await k3AssessmentService.getAssessmentById(asm.id)
-        setAssessmentId(full.id)
-        setStatus(full.status)
+        
+        // Cek status dari salah satu item (karena status per-periode sama)
+        setStatus(list.length > 0 ? list[0].status : 'draft')
         
         const newDetails = {}
-        full.details.forEach(d => {
+        list.forEach(d => {
           newDetails[d.criteria_id] = {
-            level: d.level_chosen,
-            catatan: d.catatan || '',
-            pic: d.pic_role || '' 
+            level: d.actual_level,
+            catatan: d.notes || '',
+            pic: d.pic_names || ''
           }
         })
         setDetails(newDetails)
       } catch (err) {
         console.error(err)
-        // If API fails, just use empty details for now so the UI can still render
+        setError("Gagal memuat data assessment.")
+        setStatus('draft')
         setDetails({})
       } finally {
         setLoading(false)
       }
     }
     loadData()
-  }, [selectedMonth, selectedYear, categories, user?.up3])
+  }, [selectedSemester, selectedYear, categories])
 
   // Find matching category from URL param
   const activeCategory = categories.find(c => c.code.toLowerCase() === catParam?.toLowerCase())
@@ -255,6 +201,14 @@ export default function K3SelfAssessmentPage() {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="text-gray-500 font-medium">Memuat data assessment...</div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <ErrorBanner message={error} onRetry={() => window.location.reload()} />
       </div>
     )
   }
@@ -271,14 +225,14 @@ export default function K3SelfAssessmentPage() {
     )
   }
 
-  const readOnly = !isAdminK3
+  const readOnly = isAdminK3
 
   const totalCriteria = categories.reduce((a, c) => a + c.criteria.length, 0)
   const filledCount   = Object.values(details).filter(d => d.level !== null).length
   const pctDone       = totalCriteria > 0 ? Math.round((filledCount / totalCriteria) * 100) : 0
 
   const catTotal = activeCategory ? activeCategory.criteria.length : 0
-  const catFilled = activeCategory ? activeCategory.criteria.filter(cr => details[cr.id]?.level !== null).length : 0
+  const catFilled = activeCategory ? activeCategory.criteria.filter(cr => details[cr.id]?.level != null).length : 0
   const catPct = catTotal > 0 ? Math.round((catFilled / catTotal) * 100) : 0
   const catAvg = catFilled > 0 
     ? (activeCategory.criteria.reduce((a, cr) => a + (details[cr.id]?.level || 0), 0) / catFilled).toFixed(1)
@@ -305,38 +259,65 @@ export default function K3SelfAssessmentPage() {
     { bulan: 'Jul', skor: 3.5 }, { bulan: 'Ags', skor: parseFloat(catAvg) || 3.8 },
   ]
 
-  const handleLevelChange = (criteriaId, level) => {
-    setDetails(prev => ({
-      ...prev,
-      [criteriaId]: { ...prev[criteriaId], level }
-    }))
+  const handleModalCritChange = (e) => {
+    const cid = e.target.value
+    setModalCritId(cid)
+    if (cid && activeCategory) {
+      const cr = activeCategory.criteria.find(c => c.id.toString() === cid)
+      const existing = details[cid]
+      setModalDetail({
+        level: existing?.level || null,
+        catatan: existing?.catatan || '',
+        pic: existing?.pic || (cr?.pic || '')
+      })
+    } else {
+      setModalDetail({ level: null, catatan: '', pic: '' })
+    }
   }
 
-  const handleCatatanChange = (criteriaId, catatan) => {
-    setDetails(prev => ({
-      ...prev,
-      [criteriaId]: { ...prev[criteriaId], catatan }
-    }))
-  }
-
-  const handlePicChange = (criteriaId, pic) => {
-    setDetails(prev => ({
-      ...prev,
-      [criteriaId]: { ...prev[criteriaId], pic }
-    }))
+  const handleModalSave = async () => {
+    if (!modalCritId || !modalDetail.level) return
+    setModalSaving(true)
+    try {
+      const detailsArr = [{
+        criteria_id: parseInt(modalCritId),
+        actual_level: modalDetail.level,
+        notes: modalDetail.catatan,
+        pic_names: modalDetail.pic
+      }]
+      await k3AssessmentService.bulkAssessment(period, detailsArr)
+      setDetails(prev => ({
+        ...prev,
+        [modalCritId]: { level: modalDetail.level, catatan: modalDetail.catatan, pic: modalDetail.pic }
+      }))
+      setToastState({ message: "Berhasil menyimpan penilaian.", type: "success" })
+      setShowModal(false)
+      setModalCritId('')
+      setModalDetail({ level: null, catatan: '', pic: '' })
+    } catch(err) {
+      console.error(err)
+      setToastState({ message: "Gagal menyimpan penilaian.", type: "error" })
+    } finally {
+      setModalSaving(false)
+    }
   }
 
   const handleSave = async () => {
     setSaving(true)
     try {
-      const detailsArr = Object.keys(details).map(critId => ({
-        criteria_id: parseInt(critId),
-        level_chosen: details[critId].level,
-        catatan: details[critId].catatan
-      }))
-      await k3AssessmentService.updateAssessment(assessmentId, detailsArr)
+      const detailsArr = Object.keys(details)
+        .filter(critId => details[critId].level != null)
+        .map(critId => ({
+          criteria_id: parseInt(critId),
+          actual_level: details[critId].level,
+          notes: details[critId].catatan,
+          pic_names: details[critId].pic
+        }))
+      await k3AssessmentService.bulkAssessment(period, detailsArr)
+      setToastState({ message: "Berhasil menyimpan draft.", type: "success" })
     } catch(err) {
       console.error(err)
+      setToastState({ message: "Gagal menyimpan draft, silakan coba lagi.", type: "error" })
     } finally {
       setSaving(false)
     }
@@ -345,20 +326,22 @@ export default function K3SelfAssessmentPage() {
   const handleSubmit = async () => {
     setSaving(true)
     try {
-      // Simpan data terakhir (yang ada di state) ke database sebelum mengubah status
-      const detailsArr = Object.keys(details).map(critId => ({
-        criteria_id: parseInt(critId),
-        level_chosen: details[critId].level,
-        catatan: details[critId].catatan
-      }))
-      await k3AssessmentService.updateAssessment(assessmentId, detailsArr)
-
-      // Ubah status menjadi submitted
-      await k3AssessmentService.submitAssessment(assessmentId)
+      const detailsArr = Object.keys(details)
+        .filter(critId => details[critId].level != null)
+        .map(critId => ({
+          criteria_id: parseInt(critId),
+          actual_level: details[critId].level,
+          notes: details[critId].catatan,
+          pic_names: details[critId].pic
+        }))
+      await k3AssessmentService.bulkAssessment(period, detailsArr)
+      await k3AssessmentService.submitAssessment(period)
       setStatus('submitted')
       setSubmitConfirm(false)
+      setToastState({ message: "Berhasil mensubmit assessment.", type: "success" })
     } catch(err) {
       console.error(err)
+      setToastState({ message: "Gagal mensubmit assessment, silakan coba lagi.", type: "error" })
     } finally {
       setSaving(false)
     }
@@ -366,10 +349,12 @@ export default function K3SelfAssessmentPage() {
 
   const handleUnsubmit = async () => {
     try {
-      await k3AssessmentService.unsubmitAssessment(assessmentId)
+      await k3AssessmentService.unsubmitAssessment(period)
       setStatus('draft')
+      setToastState({ message: "Berhasil membatalkan submit.", type: "success" })
     } catch(err) {
       console.error(err)
+      setToastState({ message: "Gagal membatalkan submit.", type: "error" })
     }
   }
 
@@ -393,10 +378,10 @@ export default function K3SelfAssessmentPage() {
         display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 16
       }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Periode Bulan</label>
+          <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Semester</label>
           <select
-            value={selectedMonth}
-            onChange={e => setSelectedMonth(Number(e.target.value))}
+            value={selectedSemester}
+            onChange={e => setSelectedSemester(e.target.value)}
             style={{
               padding: '7px 28px 7px 12px', borderRadius: 10,
               border: '1px solid var(--border-subtle)',
@@ -404,9 +389,8 @@ export default function K3SelfAssessmentPage() {
               fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer',
             }}
           >
-            {MONTHS_FULL_ID.map((m, i) => (
-              <option key={i} value={i + 1}>{m}</option>
-            ))}
+            <option value="S1">Semester 1 (Jan-Jun)</option>
+            <option value="S2">Semester 2 (Jul-Des)</option>
           </select>
         </div>
 
@@ -494,7 +478,7 @@ export default function K3SelfAssessmentPage() {
           color: '#1D4ED8', fontSize: '0.85rem', fontWeight: 500
         }}>
           <Info size={16} />
-          Anda sedang dalam mode <strong>Lihat Saja</strong>. Hanya Admin K3 yang dapat melakukan penilaian.
+          Anda sedang dalam mode <strong>Lihat Saja</strong>. Hanya PIC Bidang yang dapat melakukan penilaian.
         </div>
       )}
 
@@ -509,7 +493,7 @@ export default function K3SelfAssessmentPage() {
             suffix="/ 5.0"
             icon={ShieldCheck}
             color={activeCategory.color}
-            trend={{ value: 5.2, isPositive: true }}
+            trend={catAvg > 0 ? 5.2 : 0}
             progress={{ value: catPct, label: `${catPct}% Selesai` }}
           />
           <KpiCard
@@ -537,8 +521,31 @@ export default function K3SelfAssessmentPage() {
           />
         </div>
 
-        {/* Charts */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        {/* Charts and Action Button */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: -10 }}>
+          {!readOnly && (
+            <button
+              onClick={() => {
+                setModalCritId('')
+                setModalDetail({ level: null, catatan: '', pic: '' })
+                setShowModal(true)
+              }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '8px 16px', borderRadius: 99, border: '1px solid #14A2BA',
+                background: 'transparent', color: '#14A2BA',
+                fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer',
+                transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)'
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#14A2BA'; e.currentTarget.style.color = '#fff' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#14A2BA' }}
+            >
+              + Input Penilaian
+            </button>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 gap-6">
           <ChartWrapper 
             title={`Profil Skor Kriteria - ${activeCategory.name}`}
             subtitle="Skor penilaian per sub-kriteria pada skala 1-5"
@@ -559,58 +566,11 @@ export default function K3SelfAssessmentPage() {
               </ComposedChart>
             </ResponsiveContainer>
           </ChartWrapper>
-
-          <ChartWrapper 
-            title={`Tren Skor ${activeCategory.code} Bulanan`}
-            subtitle={`Rata-rata skor kategori ${activeCategory.code} - Tahun ${selectedYear}`}
-          >
-            <ResponsiveContainer width="100%" height={280}>
-              <LineChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-subtle)" />
-                <XAxis dataKey="bulan" axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 600, fill: 'var(--text-secondary)' }} dy={10} />
-                <YAxis domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--text-muted)' }} />
-                <Tooltip content={<CustomTooltip />} />
-                <ReferenceLine y={4.0} stroke="#0070C0" strokeDasharray="4 4" strokeWidth={1.5} />
-                <Line 
-                  type="monotone" 
-                  dataKey="skor" 
-                  name={`Skor ${activeCategory.code}`} 
-                  stroke={activeCategory.color} 
-                  strokeWidth={3} 
-                  dot={{ r: 4, fill: 'var(--bg-card)', strokeWidth: 2 }} 
-                  activeDot={{ r: 6, strokeWidth: 0, fill: activeCategory.color }} 
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </ChartWrapper>
         </div>
 
       </div>
 
-      {/* Form Penilaian Header */}
-      <div style={{ marginTop: 8, paddingBottom: 12, borderBottom: '1px solid var(--border-subtle)' }}>
-        <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-          Form Penilaian — {activeCategory.name}
-        </h3>
-        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-          Silakan lengkapi form penilaian di bawah ini. Pastikan Anda menyimpan (Simpan Draft) setiap perubahan.
-        </p>
-      </div>
-
-      {/* Criteria list for active category */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-        {activeCategory.criteria.map(cr => (
-          <CriteriaRow
-            key={cr.id}
-            category={activeCategory.code}
-            criteria={cr}
-            detail={details[cr.id] || { level: null, catatan: '', pic: cr.pic }}
-            catColor={activeCategory.color}
-            assessmentId={assessmentId}
-            status={status}
-          />
-        ))}
-      </div>
+      {/* Form Penilaian Inline Removed */}
 
       {/* Submit confirmation modal */}
       {submitConfirm && (
@@ -630,7 +590,7 @@ export default function K3SelfAssessmentPage() {
               </h3>
             </div>
             <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: 20, lineHeight: 1.6 }}>
-              Assessment untuk periode <strong>{MONTHS_FULL_ID[selectedMonth - 1]} {selectedYear}</strong> akan disubmit secara keseluruhan dan menunggu persetujuan Admin K3. Data tidak dapat diubah setelah disubmit.
+              Assessment untuk periode <strong>Semester {selectedSemester === 'S1' ? '1' : '2'} {selectedYear}</strong> akan disubmit secara keseluruhan dan menunggu persetujuan Admin K3. Data tidak dapat diubah setelah disubmit.
             </p>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               <button
@@ -652,6 +612,126 @@ export default function K3SelfAssessmentPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Input Penilaian Modal */}
+      {showModal && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9998,
+          background: 'rgba(0,0,0,0.5)', display: 'flex',
+          alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div style={{
+            background: 'var(--bg-card)', borderRadius: 16, width: '90%', maxWidth: 600,
+            maxHeight: '90vh', overflowY: 'auto',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.2)', display: 'flex', flexDirection: 'column'
+          }}>
+            <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', gap: 10 }}>
+              <ClipboardList size={22} style={{ color: categoryColor }} />
+              <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>Input Penilaian Kriteria</h2>
+            </div>
+            
+            <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+              <div>
+                <label style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 6, display: 'block', textTransform: 'uppercase' }}>
+                  Pilih Kriteria *
+                </label>
+                <select
+                  value={modalCritId}
+                  onChange={handleModalCritChange}
+                  style={{
+                    width: '100%', padding: '10px 14px', borderRadius: 10, fontSize: '0.9rem',
+                    border: '1px solid var(--border-strong)', background: 'var(--bg-card)',
+                    color: 'var(--text-primary)', fontWeight: 600, outline: 'none'
+                  }}
+                >
+                  <option value="">-- Pilih Kriteria --</option>
+                  {activeCategory.criteria.map(c => (
+                    <option key={c.id} value={c.id}>{c.code} - {c.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {modalCritId && (
+                <>
+                  <div>
+                    <label style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 10, display: 'block', textTransform: 'uppercase' }}>
+                      Level Kematangan (1-5) *
+                    </label>
+                    <LevelSelector
+                      criteriaId={modalCritId}
+                      levels={activeCategory.criteria.find(c => c.id.toString() === modalCritId)?.levels || []}
+                      selected={modalDetail.level}
+                      onChange={(_, level) => setModalDetail(p => ({ ...p, level }))}
+                      readOnly={false}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 6, display: 'block', textTransform: 'uppercase' }}>
+                      PIC / Penanggung Jawab
+                    </label>
+                    <input
+                      value={modalDetail.pic}
+                      onChange={e => setModalDetail(p => ({ ...p, pic: e.target.value }))}
+                      placeholder="Nama PIC..."
+                      style={{
+                        width: '100%', padding: '10px 14px', borderRadius: 10, fontSize: '0.9rem',
+                        border: '1px solid var(--border-subtle)', background: 'var(--bg-card)',
+                        color: 'var(--text-primary)', outline: 'none'
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 6, display: 'block', textTransform: 'uppercase' }}>
+                      Catatan / Justifikasi
+                    </label>
+                    <textarea
+                      value={modalDetail.catatan}
+                      onChange={e => setModalDetail(p => ({ ...p, catatan: e.target.value }))}
+                      placeholder="Bukti dukung atau alasan..."
+                      rows={3}
+                      style={{
+                        width: '100%', padding: '10px 14px', borderRadius: 10, fontSize: '0.9rem',
+                        border: '1px solid var(--border-subtle)', background: 'var(--bg-card)',
+                        color: 'var(--text-primary)', outline: 'none', resize: 'vertical'
+                      }}
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'flex-end', gap: 12, background: 'var(--bg-subtle)' }}>
+              <button
+                onClick={() => setShowModal(false)}
+                style={{ padding: '8px 20px', borderRadius: 10, border: '1px solid var(--border-strong)', background: 'var(--bg-card)', color: 'var(--text-primary)', fontWeight: 600, cursor: 'pointer' }}
+              >Batal</button>
+              <button
+                onClick={handleModalSave}
+                disabled={!modalCritId || !modalDetail.level || modalSaving}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  padding: '8px 20px', borderRadius: 10, border: 'none',
+                  background: (!modalCritId || !modalDetail.level) ? '#CBD5E1' : '#3B82F6',
+                  color: (!modalCritId || !modalDetail.level) ? '#64748B' : '#fff',
+                  fontWeight: 700, cursor: (!modalCritId || !modalDetail.level) ? 'not-allowed' : 'pointer'
+                }}
+              >
+                <Save size={16} /> {modalSaving ? 'Menyimpan...' : 'Simpan Data'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toastState && (
+        <Toast 
+          message={toastState.message} 
+          type={toastState.type} 
+          onClose={() => setToastState(null)} 
+        />
       )}
     </div>
   )
