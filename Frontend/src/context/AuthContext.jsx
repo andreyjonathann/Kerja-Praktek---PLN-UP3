@@ -59,7 +59,7 @@ export function AuthProvider({ children }) {
   }
 
   const isAdmin   = user?.role === ROLES.ADMIN
-  const isAdminK3 = user?.role === ROLES.ADMIN_K3 || user?.role === ROLES.ADMIN
+  const isAdminK3 = user?.role === ROLES.PIC_K3 || user?.role === ROLES.ADMIN_K3 || user?.role === ROLES.ADMIN
   const isPic     = user?.role?.startsWith('pic_')
   const isViewer  = !!user
 

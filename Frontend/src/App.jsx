@@ -91,7 +91,7 @@ import K3DashboardPage         from '@/pages/K3/Dashboard'
 
 import K3SelfAssessmentPage    from '@/pages/K3/SelfAssessment'
 import K3LmcPage               from '@/pages/K3/Lmc'
-import LmcInputPage            from '@/pages/K3/LmcInput'
+import AssessmentInputPage     from '@/pages/K3/AssessmentInput'
 import K3KegiatanPage          from '@/pages/K3/Kegiatan'
 import K3TemuanPage from '@/pages/K3/Temuan'
 import K3NkoPage from '@/pages/K3/Nko'
@@ -509,6 +509,7 @@ export default function App() {
                   <TrendNkoPage />
                 </ProtectedRoute>
               } />
+
               <Route path="/ens" element={
                 <ProtectedRoute>
                   <EnsPage />
@@ -638,10 +639,10 @@ export default function App() {
                   </ErrorBoundary>
                 </ProtectedRoute>
               } />
-              <Route path="/k3/assessment/lmc/input" element={
+              <Route path="/k3/assessment/:category/input" element={
                 <ProtectedRoute>
                   <ErrorBoundary>
-                    <LmcInputPage />
+                    <AssessmentInputPage />
                   </ErrorBoundary>
                 </ProtectedRoute>
               } />
