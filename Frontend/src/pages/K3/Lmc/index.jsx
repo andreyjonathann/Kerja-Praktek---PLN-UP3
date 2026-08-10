@@ -1,22 +1,22 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { ChevronDown, ChevronRight, ShieldCheck, Save, Info, Activity, AlertTriangle, CalendarDays, ClipboardList, Edit3, Plus } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { ShieldCheck, Save, Info, ClipboardList, Edit3, Plus, Crown, Target, TrendingUp, TrendingDown } from 'lucide-react'
 import {
-  LineChart, Line, BarChart, Bar, Cell, ComposedChart, LabelList,
+  ComposedChart, Line, Bar, Cell, LabelList,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ReferenceLine, ResponsiveContainer,
 } from 'recharts'
 import DataTable from '@/components/ui/DataTable'
 import PageHeader from '@/components/ui/PageHeader'
 import KpiCard from '@/components/ui/KpiCard'
 import ChartWrapper from '@/components/ui/ChartWrapper'
-import { getMaturityLabel } from '@/data/k3MasterData'
 import { useAuth } from '@/context/AuthContext'
 import { useFilter } from '@/context/FilterContext'
 import { k3AssessmentService } from '@/services/k3AssessmentService'
-import { useParams, Navigate, useNavigate } from 'react-router-dom'
 import Toast from '@/components/ui/Toast'
 import ErrorBanner from '@/components/ui/ErrorBanner'
 
-// Removed mock data builder
+const CATEGORY_CODE = 'LMC'
+const CATEGORY_COLOR = '#0070C0'
 
 // ─── Level Radio Selector ──────────────────────────────────────────────────────
 function LevelSelector({ criteriaId, levels, selected, onChange, readOnly }) {
@@ -25,12 +25,11 @@ function LevelSelector({ criteriaId, levels, selected, onChange, readOnly }) {
 
   return (
     <div className="flex flex-col gap-3">
-      {/* Radio buttons */}
       <div className="flex flex-wrap gap-2">
         {levels.map(lv => {
           const isSelected = selected === lv.level
           const levelColors = [
-            '', // 0 unused
+            '',
             'border-red-300 bg-red-50 text-red-700 hover:bg-red-100',
             'border-orange-300 bg-orange-50 text-orange-700 hover:bg-orange-100',
             'border-yellow-300 bg-yellow-50 text-yellow-700 hover:bg-yellow-100',
@@ -62,8 +61,6 @@ function LevelSelector({ criteriaId, levels, selected, onChange, readOnly }) {
           )
         })}
       </div>
-
-      {/* Description panel */}
       {shownLevel && (
         <div style={{
           background: 'var(--bg-subtle)',
@@ -97,7 +94,7 @@ const CustomTooltip = ({ active, payload, label }) => {
           <span style={{ width: 8, height: 8, borderRadius: 2, background: p.color ?? p.fill, display: 'inline-block', flexShrink: 0 }} />
           <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>{p.name}:</span>
           <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>
-            {typeof p.value === 'number' ? p.value.toFixed(2) : p.value}
+            {typeof p.value === 'number' ? p.value.toFixed(2) : (p.value ?? '—')}
           </span>
         </div>
       ))}
@@ -105,39 +102,24 @@ const CustomTooltip = ({ active, payload, label }) => {
   )
 }
 
-// ─── Removed CriteriaRow ────────────────────────────────────────────────────────
-
-// ─── Main Page ─────────────────────────────────────────────────────────────────
-export default function K3SelfAssessmentPage() {
-  const { category: catParam } = useParams()
+export default function K3LmcPage() {
+  const navigate = useNavigate()
   const { user } = useAuth()
   const { filters } = useFilter()
   const currentYear = filters.year || new Date().getFullYear()
 
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
-  const [selectedSemester, setSelectedSemester] = useState(() => {
-    const saved = sessionStorage.getItem('k3_assessment_semester')
-    return saved ? saved : (new Date().getMonth() + 1 <= 6 ? 'S1' : 'S2')
-  })
+  const selectedSemester = filters.semester || 'S1'
+  const selectedYear = filters.year || currentYear
 
-  useEffect(() => {
-    sessionStorage.setItem('k3_assessment_semester', selectedSemester)
-  }, [selectedSemester])
-  const [selectedYear, setSelectedYear]   = useState(() => {
-    const saved = sessionStorage.getItem('k3_assessment_year')
-    return saved ? parseInt(saved) : currentYear
-  })
-
-  useEffect(() => {
-    sessionStorage.setItem('k3_assessment_year', selectedYear)
-  }, [selectedYear])
-  const [details, setDetails]             = useState({})
-  const [saving, setSaving]               = useState(false)
-  const [error, setError]                 = useState(null)
-  const [toastState, setToastState]       = useState(null)
+  const [details, setDetails] = useState({})
+  const [toastState, setToastState] = useState(null)
   const period = `${selectedYear}-${selectedSemester}`
+
+  const [summary, setSummary] = useState(null)
 
   // Modal State
   const [showModal, setShowModal] = useState(false)
@@ -145,7 +127,7 @@ export default function K3SelfAssessmentPage() {
   const [modalDetail, setModalDetail] = useState({ level: null, catatan: '', pic: '' })
   const [modalSaving, setModalSaving] = useState(false)
 
-  // 1. Load Categories
+  // 1. Load categories (untuk dapat kriteria LMC)
   useEffect(() => {
     k3AssessmentService.getCategories().then(data => {
       setCategories(data)
@@ -153,22 +135,19 @@ export default function K3SelfAssessmentPage() {
       console.error(err)
       setError("Gagal memuat kategori K3.")
       setLoading(false)
-      // Stop using mock data completely to avoid ID mismatch (string vs integer)
     })
   }, [])
 
-  // 2. Load Assessment
+  // 2. Load assessment (details per kriteria)
   useEffect(() => {
     if (categories.length === 0) return
-
     const loadData = async () => {
       setLoading(true)
       try {
-        const list = await k3AssessmentService.getAssessments({ 
-          tahun: selectedYear, 
-          semester: selectedSemester 
+        const list = await k3AssessmentService.getAssessments({
+          tahun: selectedYear,
+          semester: selectedSemester
         })
-        
         const newDetails = {}
         list.forEach(d => {
           newDetails[d.criteria_id] = {
@@ -189,36 +168,15 @@ export default function K3SelfAssessmentPage() {
     loadData()
   }, [selectedSemester, selectedYear, categories])
 
-  // Find matching category from URL param
-  const activeCategory = categories.find(c => c.code.toLowerCase() === catParam?.toLowerCase())
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="text-gray-500 font-medium">Memuat data assessment...</div>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="p-6">
-        <ErrorBanner message={error} onRetry={() => window.location.reload()} />
-      </div>
-    )
-  }
-
-  if (categories.length > 0 && !activeCategory) {
-    return <Navigate to={`/k3/assessment/${categories[0].code.toLowerCase()}`} replace />
-  }
-
-  if (categories.length === 0) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="text-red-500 font-medium">Gagal memuat data kategori K3.</div>
-      </div>
-    )
-  }
+  // 3. Load category summary (target/realisasi/gap + tren 4 semester)
+  useEffect(() => {
+    k3AssessmentService.getCategorySummary(CATEGORY_CODE.toLowerCase(), selectedYear, selectedSemester)
+      .then(data => setSummary(data))
+      .catch(err => {
+        console.error(err)
+        setSummary(null)
+      })
+  }, [selectedYear, selectedSemester])
 
   const readOnly = user?.role !== 'pic_k3'
 
@@ -239,7 +197,7 @@ export default function K3SelfAssessmentPage() {
       const lvl = details[row.id]?.level
       if (!lvl) return <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>-</span>
       return (
-        <span style={{ 
+        <span style={{
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
           width: '28px', height: '28px', borderRadius: '50%',
           background: 'var(--accent-soft)', color: 'var(--text-accent)',
@@ -250,56 +208,57 @@ export default function K3SelfAssessmentPage() {
     { key: 'pic', label: 'PIC', width: '150px', align: 'center', render: (_, row) => {
       const p = details[row.id]?.pic || row.pic
       return <span style={{ fontSize: '0.8rem', color: p ? 'var(--text-primary)' : 'var(--text-muted)' }}>{p || '-'}</span>
-    }},
-    ...(readOnly ? [] : [{
-      key: 'actions', label: 'Aksi', width: '100px', align: 'center', render: (_, row) => {
-        const hasLevel = !!details[row.id]?.level
-        return (
-          <button style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            padding: '4px 12px', borderRadius: 6,
-            border: '1px solid #2563eb', background: 'transparent',
-            color: '#2563eb', fontSize: '0.75rem', fontWeight: 600,
-            cursor: 'pointer'
-          }}>
-            {hasLevel ? <><Edit3 size={12} /> Edit</> : <><Plus size={12} /> Isi</>}
-          </button>
-        )
-      }
-    }])
-  ], [details, readOnly])
+    }}
+  ], [details])
 
-  const totalCriteria = categories.reduce((a, c) => a + c.criteria.length, 0)
-  const filledCount   = Object.values(details).filter(d => d.level !== null).length
-  const pctDone       = totalCriteria > 0 ? Math.round((filledCount / totalCriteria) * 100) : 0
+  const activeCategory = categories.find(c => c.code === CATEGORY_CODE)
 
-  const catTotal = activeCategory ? activeCategory.criteria.length : 0
-  const catFilled = activeCategory ? activeCategory.criteria.filter(cr => details[cr.id]?.level != null).length : 0
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-gray-500 font-medium">Memuat data assessment...</div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <ErrorBanner message={error} onRetry={() => window.location.reload()} />
+      </div>
+    )
+  }
+
+  if (!activeCategory) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-red-500 font-medium">Kategori LMC tidak ditemukan.</div>
+      </div>
+    )
+  }
+
+  const catTotal = activeCategory.criteria.length
+  const catFilled = activeCategory.criteria.filter(cr => details[cr.id]?.level != null).length
   const catPct = catTotal > 0 ? Math.round((catFilled / catTotal) * 100) : 0
-  const catAvg = catFilled > 0 
+  const catAvg = catFilled > 0
     ? (activeCategory.criteria.reduce((a, cr) => a + (details[cr.id]?.level || 0), 0) / catFilled).toFixed(1)
     : '-'
 
-  const barChartData = activeCategory ? activeCategory.criteria.map(cr => ({
+  const barChartData = activeCategory.criteria.map(cr => ({
     code: cr.code,
     name: cr.name,
     score: details[cr.id]?.level || 0
-  })) : []
+  }))
 
-  const CAT_COLORS = {
-    lmc: '#0070C0', aai: '#16A34A', ibp: '#D97706', 
-    ste: '#7C3AED', scc: '#0891B2', rep: '#DC2626'
-  }
-  const categoryColor = activeCategory ? (CAT_COLORS[activeCategory.code.toLowerCase()] || '#0070C0') : '#0070C0'
-
-  const trendData = [
-    { bulan: 'Jan', skor: 3.2 }, { bulan: 'Feb', skor: 3.3 },
-    { bulan: 'Mar', skor: 3.4 }, { bulan: 'Apr', skor: 3.5 },
-    { bulan: 'Mei', skor: 3.5 }, { bulan: 'Jun', skor: 3.7 },
-    { bulan: 'Jul', skor: 3.5 }, { bulan: 'Ags', skor: parseFloat(catAvg) || 3.8 },
-  ]
-
-
+  const trendChartData = (summary?.trend || []).map(t => {
+    const [yr, sem] = t.period.split('-')
+    return {
+      period: t.period,
+      periodLabel: `${sem === 'S1' ? 'S1' : 'S2'} ${yr}`,
+      target: t.avg_target,
+      realisasi: t.avg_score
+    }
+  })
 
   const handleModalSave = async () => {
     if (!modalCritId || !modalDetail.level) return
@@ -328,100 +287,36 @@ export default function K3SelfAssessmentPage() {
     }
   }
 
-  const handleSave = async () => {
-    setSaving(true)
-    try {
-      const detailsArr = Object.keys(details)
-        .filter(critId => details[critId].level != null)
-        .map(critId => ({
-          criteria_id: parseInt(critId),
-          actual_level: details[critId].level,
-          notes: details[critId].catatan,
-          pic_names: details[critId].pic
-        }))
-      await k3AssessmentService.bulkAssessment(period, detailsArr)
-      setToastState({ message: "Berhasil menyimpan penilaian.", type: "success" })
-    } catch(err) {
-      console.error(err)
-      setToastState({ message: "Gagal menyimpan penilaian, silakan coba lagi.", type: "error" })
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  if (loading || !activeCategory) {
-    return <div className="p-8 text-center text-gray-500">Memuat data assessment...</div>
-  }
-
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Self-Assessment K3"
-        description="Penilaian Mandiri Tingkat Kematangan K3"
-        icon={ShieldCheck}
-        iconColor="#0070C0"
-      />
-
-      {/* Filter row */}
-      <div style={{
-        background: 'var(--bg-card)', border: '1px solid var(--border-subtle)',
-        borderRadius: 16, padding: '16px 20px',
-        display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 16
-      }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Semester</label>
-          <select
-            value={selectedSemester}
-            onChange={e => setSelectedSemester(e.target.value)}
-            style={{
-              padding: '7px 28px 7px 12px', borderRadius: 10,
-              border: '1px solid var(--border-subtle)',
-              background: 'var(--bg-card)', color: 'var(--text-primary)',
-              fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer',
-            }}
-          >
-            <option value="S1">Semester 1 (Jan-Jun)</option>
-            <option value="S2">Semester 2 (Jul-Des)</option>
-          </select>
+        title="LMC — Leadership & Management Commitment"
+        description="Penilaian Mandiri Tingkat Kematangan K3 — Kategori LMC"
+        icon={Crown}
+        iconColor={CATEGORY_COLOR}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          {user?.role === 'pic_k3' && (
+            <div style={{ display: 'inline-flex', background: 'rgba(0, 112, 192, 0.05)', padding: 4, borderRadius: 12, border: '1px solid rgba(0, 112, 192, 0.15)' }}>
+              <button
+                onClick={() => navigate('/k3/assessment/lmc/input')}
+                style={{
+                  padding: '6px 16px', borderRadius: 9, fontSize: '0.85rem', fontWeight: 700,
+                  transition: 'all 0.2s ease', border: 'none', cursor: 'pointer',
+                  background: 'var(--bg-card)', color: CATEGORY_COLOR,
+                  boxShadow: '0 2px 8px rgba(0, 112, 192, 0.15)',
+                  display: 'flex', alignItems: 'center', gap: '8px',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = CATEGORY_COLOR; e.currentTarget.style.color = '#FFFFFF' }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-card)'; e.currentTarget.style.color = CATEGORY_COLOR }}
+              >
+                <Plus size={16} /> Tambah Penilaian LMC
+              </button>
+            </div>
+          )}
         </div>
+      </PageHeader>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Tahun</label>
-          <select
-            value={selectedYear}
-            onChange={e => setSelectedYear(Number(e.target.value))}
-            style={{
-              padding: '7px 28px 7px 12px', borderRadius: 10,
-              border: '1px solid var(--border-subtle)',
-              background: 'var(--bg-card)', color: 'var(--text-primary)',
-              fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer',
-            }}
-          >
-            {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
-          </select>
-        </div>
-
-        {/* Action buttons */}
-        {user?.role === 'pic_k3' && (
-          <div style={{ display: 'flex', gap: 8, marginLeft: 'auto' }}>
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                padding: '7px 16px', borderRadius: 10, border: '1px solid var(--border-subtle)',
-                background: 'var(--bg-card)', color: 'var(--text-primary)',
-                fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer',
-                opacity: saving ? 0.5 : 1
-              }}
-            >
-              <Save size={14} /> {saving ? 'Menyimpan...' : 'Simpan'}
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Info banner for read-only */}
       {readOnly && (
         <div style={{
           display: 'flex', alignItems: 'center', gap: 10,
@@ -434,69 +329,77 @@ export default function K3SelfAssessmentPage() {
         </div>
       )}
 
-      {/* ── Dashboard Khusus Kategori ────────────────────────────────────────── */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 24, marginBottom: 12 }}>
-        
-        {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <KpiCard
-            title={`Skor Maturity ${activeCategory.code}`}
-            value={catAvg}
-            suffix="/ 5.0"
-            icon={ShieldCheck}
-            color={activeCategory.color}
-            trend={catAvg > 0 ? 5.2 : 0}
-            progress={{ value: catPct, label: `${catPct}% Selesai` }}
-          />
-          <KpiCard
-            title="Kriteria Dinilai"
-            value={catFilled}
-            suffix={`/ ${catTotal}`}
-            icon={ClipboardList}
-            color="#16A34A"
-            progress={{ value: catPct, label: 'Progres Input' }}
-          />
-          <KpiCard
-            title={`Temuan Open ${activeCategory.code}`}
-            value="2"
-            suffix="temuan"
-            icon={AlertTriangle}
-            color="#EF4444"
-            danger
-          />
-          <KpiCard
-            title={`Kegiatan ${activeCategory.code} Bulan Ini`}
-            value="1"
-            suffix="kegiatan"
-            icon={CalendarDays}
-            color="#8B5CF6"
-          />
-        </div>
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <KpiCard
+          title="Skor Maturity LMC"
+          value={catAvg}
+          suffix="/ 5.0"
+          icon={ShieldCheck}
+          color={
+            (summary?.avg_target != null && catAvg !== '-')
+              ? (parseFloat(catAvg) >= summary.avg_target ? '#22C55E' : '#EF4444')
+              : CATEGORY_COLOR
+          }
+          danger={summary?.avg_target != null && catAvg !== '-' && parseFloat(catAvg) < summary.avg_target}
+          progress={{ value: catPct, label: `${catPct}% Selesai` }}
+        />
+        <KpiCard
+          title="Kriteria Dinilai"
+          value={catFilled}
+          suffix={`/ ${catTotal}`}
+          icon={ClipboardList}
+          color="#16A34A"
+          progress={{ value: catPct, label: 'Progres Input' }}
+        />
+        <KpiCard
+          title="Target LMC"
+          value={summary?.avg_target != null ? summary.avg_target.toFixed(2) : '-'}
+          suffix="/ 5.0"
+          icon={Target}
+          color="#F59E0B"
+        />
+      </div>
 
-        {/* Charts */}
-        <div className="grid grid-cols-1 gap-6">
-          <ChartWrapper 
-            title={`Profil Skor Kriteria - ${activeCategory.name}`}
-            subtitle="Skor penilaian per sub-kriteria pada skala 1-5"
-          >
-            <ResponsiveContainer width="100%" height={280}>
-              <ComposedChart data={barChartData} margin={{ top: 20, right: 20, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-subtle)" />
-                <XAxis dataKey="code" axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 600, fill: 'var(--text-secondary)' }} dy={10} />
-                <YAxis domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--text-muted)' }} />
-                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--bg-subtle)' }} />
-                <ReferenceLine y={4.0} stroke="#0070C0" strokeDasharray="4 4" strokeWidth={1.5} />
-                <Bar dataKey="score" name="Skor Aktual" radius={[6, 6, 0, 0]} maxBarSize={40}>
-                  {barChartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill="#22C55E" />
-                  ))}
-                  <LabelList dataKey="score" position="top" style={{ fontSize: 11, fontWeight: 800, fill: '#22C55E' }} />
-                </Bar>
-              </ComposedChart>
-            </ResponsiveContainer>
-          </ChartWrapper>
-        </div>
+      {/* Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <ChartWrapper
+          title="Tren Target vs Realisasi"
+          subtitle="4 semester terakhir"
+        >
+          <ResponsiveContainer width="100%" height={280}>
+            <ComposedChart data={trendChartData} margin={{ top: 20, right: 20, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-subtle)" />
+              <XAxis dataKey="periodLabel" axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 600, fill: 'var(--text-secondary)' }} dy={10} />
+              <YAxis domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--text-muted)' }} />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend wrapperStyle={{ fontSize: 12, fontWeight: 600 }} />
+              <Line type="monotone" dataKey="target" name="Target" stroke="#0070C0" strokeDasharray="5 5" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+              <Line type="monotone" dataKey="realisasi" name="Realisasi" stroke="#22C55E" strokeWidth={2.5} dot={{ r: 4 }} connectNulls />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </ChartWrapper>
 
+        <ChartWrapper
+          title="Profil Skor Kriteria"
+          subtitle="Skor penilaian per sub-kriteria pada skala 1-5"
+        >
+          <ResponsiveContainer width="100%" height={280}>
+            <ComposedChart data={barChartData} margin={{ top: 20, right: 20, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-subtle)" />
+              <XAxis dataKey="code" axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 600, fill: 'var(--text-secondary)' }} dy={10} />
+              <YAxis domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--text-muted)' }} />
+              <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--bg-subtle)' }} />
+              <ReferenceLine y={4.0} stroke="#0070C0" strokeDasharray="4 4" strokeWidth={1.5} />
+              <Bar dataKey="score" name="Skor Aktual" radius={[6, 6, 0, 0]} maxBarSize={40}>
+                {barChartData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill="#22C55E" />
+                ))}
+                <LabelList dataKey="score" position="top" style={{ fontSize: 11, fontWeight: 800, fill: '#22C55E' }} />
+              </Bar>
+            </ComposedChart>
+          </ResponsiveContainer>
+        </ChartWrapper>
       </div>
 
       {/* Daftar Kriteria (Table) */}
@@ -505,12 +408,44 @@ export default function K3SelfAssessmentPage() {
         borderRadius: 16, padding: '20px', overflow: 'hidden'
       }}>
         <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: 16 }}>Daftar Kriteria Penilaian</h3>
-        <DataTable 
-          columns={TABLE_COLUMNS} 
-          data={activeCategory.criteria} 
-          onRowClick={!readOnly ? handleRowClick : undefined} 
-          paginated={false} 
-          searchable={true} 
+        <DataTable
+          columns={TABLE_COLUMNS}
+          data={activeCategory.criteria}
+          onRowClick={!readOnly ? handleRowClick : undefined}
+          paginated={false}
+          searchable={true}
+        />
+      </div>
+
+      {/* Tabel Perbandingan Antar Semester */}
+      <div style={{
+        background: 'var(--bg-card)', border: '1px solid var(--border-subtle)',
+        borderRadius: 16, padding: '20px', overflow: 'hidden'
+      }}>
+        <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: 16 }}>Perbandingan Antar Semester</h3>
+        <DataTable
+          columns={[
+            {
+              key: 'period', label: 'Periode', align: 'center',
+              render: (v) => {
+                const [yr, sem] = v.split('-')
+                return `Semester ${sem === 'S1' ? '1' : '2'} ${yr}`
+              }
+            },
+            {
+              key: 'avg_target', label: 'Target', align: 'center',
+              render: v => v != null ? v.toFixed(2) : <span style={{ color: 'var(--text-muted)' }}>-</span>
+            },
+            {
+              key: 'avg_score', label: 'Realisasi', align: 'center',
+              render: (v, row) => v != null
+                ? <span style={{ fontWeight: 700, color: (row.avg_target != null && v < row.avg_target) ? '#EF4444' : '#22C55E' }}>{v.toFixed(2)}</span>
+                : <span style={{ color: 'var(--text-muted)' }}>-</span>
+            },
+          ]}
+          data={summary?.trend || []}
+          paginated={false}
+          searchable={false}
         />
       </div>
 
@@ -527,10 +462,10 @@ export default function K3SelfAssessmentPage() {
             boxShadow: '0 20px 40px rgba(0,0,0,0.2)', display: 'flex', flexDirection: 'column'
           }}>
             <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', gap: 10 }}>
-              <ClipboardList size={22} style={{ color: categoryColor }} />
-              <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>Input Penilaian Kriteria</h2>
+              <ClipboardList size={22} style={{ color: CATEGORY_COLOR }} />
+              <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>Input Penilaian Kriteria LMC</h2>
             </div>
-            
+
             <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
               {modalCritId && (
                 <>
@@ -614,13 +549,12 @@ export default function K3SelfAssessmentPage() {
       )}
 
       {toastState && (
-        <Toast 
-          message={toastState.message} 
-          type={toastState.type} 
-          onClose={() => setToastState(null)} 
+        <Toast
+          message={toastState.message}
+          type={toastState.type}
+          onClose={() => setToastState(null)}
         />
       )}
     </div>
   )
 }
-

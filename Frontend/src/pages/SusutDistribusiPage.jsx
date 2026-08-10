@@ -24,6 +24,7 @@ export default function SusutDistribusiPage() {
   
   const [selectedRow, setSelectedRow] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [tab, setTab] = useState('monthly');
 
   const isViewer = user?.role === 'viewer';
 
@@ -102,11 +103,28 @@ export default function SusutDistribusiPage() {
 
   // Prepare chart data from dashboard?.trend
   const trendData = dashboard?.trend;
+  const hasTarget = trendData?.target ? Array.from({length: 12}).every((_, i) => trendData.target[i + 1] !== null) : false;
+  
+  let sumNetto = 0;
+  let sumPssd = 0;
+  let sumJual = 0;
+
   const chartData = Array.from({ length: 12 }, (_, i) => {
     const bulanNum = i + 1;
     const realisasi = trendData?.realisasi?.[bulanNum] ?? null;
     const target = trendData?.target?.[bulanNum] ?? null;
     const rawMatch = data?.find(d => d.bulan === bulanNum);
+    
+    let kumulatifReal = null;
+    if (rawMatch) {
+      sumNetto += rawMatch.kwh_netto || 0;
+      sumPssd += rawMatch.pssd || 0;
+      sumJual += rawMatch.kwh_jual_309 || 0;
+      if (sumNetto > 0) {
+        kumulatifReal = ((sumNetto - sumPssd - sumJual) / sumNetto) * 100;
+      }
+    }
+
     return {
       label: MONTHS_ID[bulanNum]?.substring(0, 3) || `B${bulanNum}`,
       kwh_netto: rawMatch?.kwh_netto ?? null,
@@ -114,16 +132,29 @@ export default function SusutDistribusiPage() {
       kwh_jual_309: rawMatch?.kwh_jual_309 ?? null,
       realisasi: realisasi,
       target: target,
+      cumulativeReal: kumulatifReal,
+      cumulativeTgt: target,
     };
   });
 
   // Prepare table data (1-12 months)
+  let sumNettoTab = 0;
+  let sumPssdTab = 0;
+  let sumJualTab = 0;
   const tableDataBulan = Array.from({ length: 12 }, (_, i) => {
     const bulanNum = i + 1;
     const match = data?.find(d => d.bulan === bulanNum);
     
     const targetVal = trendData?.target?.[bulanNum] ?? null;
+    
+    let kumulatifReal = null;
     if (match) {
+      sumNettoTab += match.kwh_netto || 0;
+      sumPssdTab += match.pssd || 0;
+      sumJualTab += match.kwh_jual_309 || 0;
+      if (sumNettoTab > 0) {
+        kumulatifReal = ((sumNettoTab - sumPssdTab - sumJualTab) / sumNettoTab) * 100;
+      }
       return {
         id: match.id,
         bulan: MONTHS_ID[bulanNum],
@@ -133,6 +164,8 @@ export default function SusutDistribusiPage() {
         kwh_jual_309: match.kwh_jual_309,
         realisasi_persen: match.realisasi_persen,
         target: targetVal,
+        cumulativeReal: kumulatifReal,
+        cumulativeTgt: targetVal,
         keterangan: match.keterangan || '-',
       };
     }
@@ -146,6 +179,8 @@ export default function SusutDistribusiPage() {
       kwh_jual_309: null,
       realisasi_persen: null,
       target: targetVal,
+      cumulativeReal: null,
+      cumulativeTgt: targetVal,
       keterangan: '-',
     };
   });
@@ -159,19 +194,23 @@ export default function SusutDistribusiPage() {
       label: 'Realisasi Susut (%)', 
       key: 'realisasi_persen',
       render: (v, row) => {
-        if (v == null) return '—';
-        const tgt = row.target;
+        const val = tab === 'monthly' ? row.realisasi_persen : row.cumulativeReal;
+        if (val == null) return '—';
+        const tgt = tab === 'monthly' ? row.target : row.cumulativeTgt;
         let colorClass = 'text-slate-700';
         if (tgt != null) {
-          colorClass = v <= tgt ? 'text-emerald-600' : 'text-rose-600';
+          colorClass = val <= tgt ? 'text-emerald-600' : 'text-rose-600';
         }
-        return <span className={`font-bold ${colorClass}`}>{Number(v).toFixed(4)}%</span>;
+        return <span className={`font-bold ${colorClass}`}>{Number(val).toFixed(4)}%</span>;
       }
     },
     { 
       label: 'Target (%)', 
       key: 'target',
-      render: (v) => v != null ? <span className="font-semibold text-slate-500">{Number(v).toFixed(4)}%</span> : '—'
+      render: (v, row) => {
+        const tgt = tab === 'monthly' ? row.target : row.cumulativeTgt;
+        return tgt != null ? <span className="font-semibold text-slate-500">{Number(tgt).toFixed(4)}%</span> : '—';
+      }
     },
   ];
 
@@ -227,7 +266,7 @@ export default function SusutDistribusiPage() {
       <TargetWarning 
         up3={filters.up3} 
         year={filters.year} 
-        isVisible={!loading && summary?.target_ytd == null} 
+        isVisible={!loading && !hasTarget} 
       />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -257,9 +296,33 @@ export default function SusutDistribusiPage() {
         />
       </div>
 
+      {/* Tabs */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '16px', marginTop: '16px' }}>
+        <div style={{ display: 'inline-flex', background: 'rgba(37,99,235,0.05)', padding: 4, borderRadius: 12, border: '1px solid rgba(37,99,235,0.08)' }}>
+          {['monthly', 'cumulative'].map(t => {
+            const isActive = tab === t;
+            return (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                style={{
+                  padding: '6px 16px', borderRadius: 9, fontSize: '0.85rem', fontWeight: 700,
+                  transition: 'all 0.2s ease', border: 'none', cursor: 'pointer',
+                  background: isActive ? '#ffffff' : 'transparent',
+                  color: isActive ? '#2563eb' : '#64748b',
+                  boxShadow: isActive ? '0 2px 8px rgba(37,99,235,0.12)' : 'none',
+                }}
+              >
+                {t === 'monthly' ? 'Bulanan' : 'Kumulatif'}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
       {/* Chart Realisasi vs Target */}
       <ChartWrapper
-        title="Tren Susut Distribusi"
+        title={tab === 'monthly' ? "Tren Susut Distribusi Bulanan" : "Tren Susut Distribusi Kumulatif (YTD)"}
         subtitle={`Realisasi vs Target · Tahun ${filters.year || new Date().getFullYear()}`}
         loading={loading}
         error={error}
@@ -274,9 +337,9 @@ export default function SusutDistribusiPage() {
             <YAxis tick={{ fontSize: 12.5, fontWeight: 650 }} unit="%" />
             <Tooltip content={<CustomTooltip />} />
             <Legend wrapperStyle={{ fontSize: 13, fontWeight: 600 }} />
-            <Bar dataKey="realisasi" name="Realisasi" fill="#2563eb" radius={[4, 4, 0, 0]} />
+            <Bar dataKey={tab === 'monthly' ? "realisasi" : "cumulativeReal"} name="Realisasi" fill="#2563eb" radius={[4, 4, 0, 0]} />
             <Line
-              dataKey="target"
+              dataKey={tab === 'monthly' ? "target" : "cumulativeTgt"}
               name="Target"
               stroke="#EF4444"
               strokeWidth={2}
@@ -291,7 +354,7 @@ export default function SusutDistribusiPage() {
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mt-2">
         <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
           <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-            Realisasi Bulanan
+            Realisasi {tab === 'monthly' ? 'Bulanan' : 'Kumulatif (YTD)'}
           </h2>
         </div>
         <div className="p-0">

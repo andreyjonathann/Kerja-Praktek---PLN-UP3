@@ -5,6 +5,7 @@ import api from '@/services/api';
 
 import { useAuth } from '@/context/AuthContext';
 import { CheckCircle, AlertCircle, Save, ArrowLeft, Activity, Loader2 } from 'lucide-react';
+import useDirtyFormGuard from '@/hooks/useDirtyFormGuard';
 
 export default function EditKinerjaGantiMeterPage() {
   const navigate = useNavigate();
@@ -17,12 +18,18 @@ export default function EditKinerjaGantiMeterPage() {
   const [statusMsg, setStatusMsg] = useState('');
   const [recordId, setRecordId] = useState(null);
 
-  const { register, handleSubmit, reset, control, formState: { errors } } = useForm({
+  const { register, handleSubmit, reset, control, formState: { errors, isDirty: formIsDirty } } = useForm({
     defaultValues: {
       jumlah_unit: '',
       keterangan: ''
     }
   });
+
+  const { isDirty, setIsDirty, guardedNavigate } = useDirtyFormGuard();
+
+  useEffect(() => {
+    setIsDirty(formIsDirty);
+  }, [formIsDirty]);
 
   const jumlah_unit = useWatch({ control, name: 'jumlah_unit' });
 
@@ -111,6 +118,7 @@ export default function EditKinerjaGantiMeterPage() {
       setStatus('success');
       setStatusMsg('Data Ganti Meter Berhasil Diperbarui!');
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      setIsDirty(false);
       setTimeout(() => navigate('/ganti-meter'), 2000);
     } catch (err) {
       setStatus('error');
@@ -128,7 +136,7 @@ export default function EditKinerjaGantiMeterPage() {
 
         {/* HEADER */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button type="button" onClick={() => navigate(-1)}
+          <button type="button" onClick={() => guardedNavigate(() => navigate(-1))}
             style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 10, padding: '8px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', fontWeight: 600, color: '#64748b', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
           >
             <ArrowLeft size={16} /> Kembali

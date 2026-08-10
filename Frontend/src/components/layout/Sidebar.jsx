@@ -98,7 +98,9 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
          
          const itemsToRender = user && user.role === 'pic_transaksi_energi'
            ? matchingSubgroup.items.filter(subItem => subItem.key !== 'input-kpi-te')
-           : matchingSubgroup.items;
+           : user && user.role === 'pic_k3'
+             ? matchingSubgroup.items.filter(subItem => subItem.key !== 'k3-nko')
+             : matchingSubgroup.items;
 
          // Extract the items from the subgroup and render them flatly, but preserve nested groups
          return itemsToRender.map(subItem => ({ 

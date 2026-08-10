@@ -25,6 +25,7 @@ export default function GantiMeterPage() {
   
   const [selectedRow, setSelectedRow] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [tab, setTab] = useState('monthly');
 
   const isViewer = user?.role === 'viewer';
 
@@ -99,13 +100,24 @@ export default function GantiMeterPage() {
 
   // Chart data from trend
   const trendData = dashboard?.trend;
+  const hasTarget = trendData ? trendData.every(t => t.target !== null) : false;
+  
+  let cumRealChart = 0;
+  let cumTgtChart = 0;
+
   const chartData = Array.from({ length: 12 }, (_, i) => {
     const bulanNum = i + 1;
     const item = trendData?.find(t => t.bulan === bulanNum);
+    
+    if (item?.realisasi != null) cumRealChart += item.realisasi;
+    if (item?.target != null) cumTgtChart += item.target;
+
     return {
       label: MONTHS_ID[bulanNum]?.substring(0, 3) || `B${bulanNum}`,
       realisasi: item?.realisasi ?? null,
       target: item?.target ?? null,
+      cumulativeReal: item?.realisasi != null ? cumRealChart : null,
+      cumulativeTgt: item?.target != null ? cumTgtChart : null,
     };
   });
 
@@ -124,31 +136,36 @@ export default function GantiMeterPage() {
   };
 
   // Prepare table data (1-12 months)
+  let cumRealTab = 0;
+  let cumTgtTab = 0;
+
   const tableDataBulan = Array.from({ length: 12 }, (_, i) => {
     const bulanNum = i + 1;
     const match = data?.find(d => d.bulan === bulanNum);
     const trendMatch = trendData?.find(t => t.bulan === bulanNum);
     
-    if (match) {
-      return {
-        id: match.id,
-        bulan: MONTHS_ID[bulanNum],
-        bulan_angka: bulanNum,
-        jumlah_unit: match.jumlah_unit,
-        target_unit: trendMatch?.target ?? null,
-        total: match.jumlah_unit,
-        keterangan: match.keterangan || '-',
-      };
+    let cumulativeReal = null;
+    let cumulativeTgt = null;
+    
+    if (trendMatch?.realisasi != null) {
+      cumRealTab += trendMatch.realisasi;
+      cumulativeReal = cumRealTab;
+    }
+    if (trendMatch?.target != null) {
+      cumTgtTab += trendMatch.target;
+      cumulativeTgt = cumTgtTab;
     }
     
     return {
-      id: null,
+      id: match?.id || null,
       bulan: MONTHS_ID[bulanNum],
       bulan_angka: bulanNum,
-      jumlah_unit: null,
+      jumlah_unit: trendMatch?.realisasi ?? null,
       target_unit: trendMatch?.target ?? null,
-      total: null,
-      keterangan: '-',
+      total: trendMatch?.realisasi ?? null,
+      cumulativeReal,
+      cumulativeTgt,
+      keterangan: match?.keterangan || '-',
     };
   });
 
@@ -157,12 +174,18 @@ export default function GantiMeterPage() {
     { 
       label: 'Target Bulanan', 
       key: 'target_unit',
-      render: (v) => v != null ? <span className="font-bold text-slate-600">{Number(v).toLocaleString('id-ID')} Unit</span> : '—'
+      render: (v, row) => {
+        const tgt = tab === 'monthly' ? row.target_unit : row.cumulativeTgt;
+        return tgt != null ? <span className="font-bold text-slate-600">{Number(tgt).toLocaleString('id-ID')} Unit</span> : '—';
+      }
     },
     { 
       label: 'Realisasi (Unit)', 
       key: 'jumlah_unit',
-      render: (v) => v != null ? <span className="font-bold text-blue-600">{Number(v).toLocaleString('id-ID')} Unit</span> : '—'
+      render: (v, row) => {
+        const val = tab === 'monthly' ? row.jumlah_unit : row.cumulativeReal;
+        return val != null ? <span className="font-bold text-blue-600">{Number(val).toLocaleString('id-ID')} Unit</span> : '—';
+      }
     },
     { 
       label: 'Keterangan', 
@@ -200,7 +223,7 @@ export default function GantiMeterPage() {
       <TargetWarning 
         up3={filters.up3} 
         year={filters.year} 
-        isVisible={!loading && dashboard?.target_kumulatif_ytd == null} 
+        isVisible={!loading && !hasTarget} 
       />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -230,7 +253,31 @@ export default function GantiMeterPage() {
         />
       </div>
 
-      <ChartWrapper title="Tren Ganti Meter" subtitle={`Realisasi vs Target · Tahun ${filters.year || new Date().getFullYear()}`} loading={loading} error={error} empty={!trendData} height={280} onRetry={fetchData}>
+      {/* Tabs */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '16px', marginTop: '16px' }}>
+        <div style={{ display: 'inline-flex', background: 'rgba(37,99,235,0.05)', padding: 4, borderRadius: 12, border: '1px solid rgba(37,99,235,0.08)' }}>
+          {['monthly', 'cumulative'].map(t => {
+            const isActive = tab === t;
+            return (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                style={{
+                  padding: '6px 16px', borderRadius: 9, fontSize: '0.85rem', fontWeight: 700,
+                  transition: 'all 0.2s ease', border: 'none', cursor: 'pointer',
+                  background: isActive ? '#ffffff' : 'transparent',
+                  color: isActive ? '#2563eb' : '#64748b',
+                  boxShadow: isActive ? '0 2px 8px rgba(37,99,235,0.12)' : 'none',
+                }}
+              >
+                {t === 'monthly' ? 'Bulanan' : 'Kumulatif'}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      <ChartWrapper title={tab === 'monthly' ? "Tren Ganti Meter Bulanan" : "Tren Ganti Meter Kumulatif (YTD)"} subtitle={`Realisasi vs Target · Tahun ${filters.year || new Date().getFullYear()}`} loading={loading} error={error} empty={!trendData} height={280} onRetry={fetchData}>
         <ResponsiveContainer width="100%" height={280}>
           <ComposedChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border, #e2e8f0)" />
@@ -239,7 +286,7 @@ export default function GantiMeterPage() {
             <Tooltip content={<CustomTooltip />} />
             <Legend wrapperStyle={{ fontSize: 13, fontWeight: 600 }} />
             <Bar
-              dataKey="realisasi"
+              dataKey={tab === 'monthly' ? "realisasi" : "cumulativeReal"}
               name="Realisasi"
               fill="#2563eb"
               radius={[4, 4, 0, 0]}
@@ -250,7 +297,7 @@ export default function GantiMeterPage() {
                 if (matchedRow) { setSelectedRow(matchedRow); setIsModalOpen(true); }
               }}
             />
-            <Line dataKey="target" name="Target" stroke="#EF4444" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 4, fill: '#EF4444' }} />
+            <Line dataKey={tab === 'monthly' ? "target" : "cumulativeTgt"} name="Target" stroke="#EF4444" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 4, fill: '#EF4444' }} />
           </ComposedChart>
         </ResponsiveContainer>
       </ChartWrapper>
@@ -258,7 +305,7 @@ export default function GantiMeterPage() {
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mt-2">
         <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
           <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-            Realisasi Bulanan
+            Realisasi {tab === 'monthly' ? 'Bulanan' : 'Kumulatif (YTD)'}
           </h2>
         </div>
         <div className="p-0">

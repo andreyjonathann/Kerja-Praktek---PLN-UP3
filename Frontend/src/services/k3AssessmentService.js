@@ -21,6 +21,7 @@ export const k3AssessmentService = {
   getDashboard: (params) => api.get('/k3/dashboard', { params }).then(res => res.data.data),
   getDashboardTrend: () => api.get('/k3/dashboard/trend').then(res => res.data.data || res.data),
   getNkoSummary: (tahun, semester) => api.get(`/k3/nko-summary/${tahun}/${semester}`).then(res => res.data.data),
+  getCategorySummary: (code, tahun, semester) => api.get(`/k3/category-summary/${code}/${tahun}/${semester}`).then(res => res.data.data),
   
   // Targets
   updateTarget: (id, target_level) => api.put(`/k3/targets/${id}`, { target_level }).then(res => res.data.data),

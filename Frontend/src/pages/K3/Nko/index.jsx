@@ -8,7 +8,6 @@ import PageHeader   from '@/components/ui/PageHeader'
 import { useAuth }  from '@/context/AuthContext'
 import { useFilter } from '@/context/FilterContext'
 import { k3AssessmentService } from '@/services/k3AssessmentService'
-import { K3_CATEGORIES } from '@/data/k3MasterData'
 import ErrorBanner from '@/components/ui/ErrorBanner'
 import Toast from '@/components/ui/Toast'
 
@@ -21,6 +20,7 @@ export default function K3NkoPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
   const [toastState, setToastState] = useState(null)
+  const [categories, setCategories] = useState([])
   
   const [selectedSemester, setSelectedSemester] = useState(() => {
     const saved = sessionStorage.getItem('k3_nko_semester')
@@ -34,6 +34,12 @@ export default function K3NkoPage() {
   useEffect(() => {
     sessionStorage.setItem('k3_nko_semester', selectedSemester)
   }, [selectedSemester])
+
+  useEffect(() => {
+    k3AssessmentService.getCategories()
+      .then(data => setCategories(data.map(c => ({ ...c, shortName: c.short_name }))))
+      .catch(err => console.error('Gagal memuat kategori K3:', err))
+  }, [])
 
   const loadData = () => {
     setLoading(true)
@@ -89,11 +95,11 @@ export default function K3NkoPage() {
     }
   }
 
-  const CATEGORY_MAP = Object.fromEntries(K3_CATEGORIES.map(c => [c.code, c]))
-  const categories = data?.categories || []
+  const CATEGORY_MAP = Object.fromEntries(categories.map(c => [c.code, c]))
+  const categoriesData = data?.categories || []
 
-  const validScores = categories.filter(c => c.avg_score !== null)
-  const validTargets = categories.filter(c => c.avg_target !== null)
+  const validScores = categoriesData.filter(c => c.avg_score !== null)
+  const validTargets = categoriesData.filter(c => c.avg_target !== null)
   
   const totalScore = validScores.length > 0 ? (validScores.reduce((a, b) => a + b.avg_score, 0) / validScores.length) : null
   const totalTarget = validTargets.length > 0 ? (validTargets.reduce((a, b) => a + b.avg_target, 0) / validTargets.length) : null
@@ -159,8 +165,8 @@ export default function K3NkoPage() {
           style={{
             display: 'inline-flex', alignItems: 'center', gap: 6,
             padding: '5px 12px', borderRadius: 6,
-            background: 'var(--bg-elevated)', border: '1px solid var(--border)',
-            fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-primary)',
+            background: 'transparent', border: '1px solid #2563eb',
+            fontSize: '0.75rem', fontWeight: 600, color: '#2563eb',
             cursor: 'pointer'
           }}
         >
@@ -235,7 +241,7 @@ export default function K3NkoPage() {
         </div>
         <DataTable
           columns={TABLE_COLUMNS}
-          data={categories}
+          data={categoriesData}
           paginated={false}
           searchable={false}
         />

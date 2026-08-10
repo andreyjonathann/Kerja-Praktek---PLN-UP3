@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react'
 import {
   ShieldCheck, TrendingUp, TrendingDown, AlertTriangle,
   CalendarDays, Activity, Info, Star, BarChart2,
-  ClipboardList, CheckCircle2,
+  ClipboardList, CheckCircle2, Minus,
 } from 'lucide-react'
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
@@ -17,8 +17,6 @@ import PageHeader   from '@/components/ui/PageHeader'
 import { useAuth }  from '@/context/AuthContext'
 import { useFilter } from '@/context/FilterContext'
 import {
-  K3_CATEGORIES,
-  K3_TOTAL_CRITERIA,
   getMaturityLabel,
 } from '@/data/k3MasterData'
 import { k3AssessmentService } from '@/services/k3AssessmentService'
@@ -52,11 +50,11 @@ const CustomTooltip = ({ active, payload, label }) => {
 }
 
 /** Radar chart tooltip with maturity level badge */
-const RadarTooltip = ({ active, payload }) => {
+const RadarTooltip = ({ active, payload, categories = [] }) => {
   if (!active || !payload?.length) return null
   const data = payload[0]?.payload
   if (!data) return null
-  const cat = Object.values(K3_CATEGORIES).find(c => c.code === data.category)
+  const cat = categories.find(c => c.code === data.category)
   const ml  = getMaturityLabel(data.score)
   return (
     <div style={{
@@ -116,8 +114,8 @@ function MaturityBar({ score, color }) {
 }
 
 /** Right-panel score row item */
-function CategoryScoreRow({ item, isLast }) {
-  const cat = Object.values(K3_CATEGORIES).find(c => c.code === item.code) ?? {}
+function CategoryScoreRow({ item, isLast, categoryMap }) {
+  const cat = categoryMap?.[item.code] ?? {}
   const ml  = getMaturityLabel(item.score)
   const diff = item.score - item.prevScore
   return (
@@ -177,6 +175,22 @@ function CategoryScoreRow({ item, isLast }) {
   )
 }
 
+const CAT_CFG = [
+  { key: 'lmc', label: 'LMC', color: '#0070C0' },
+  { key: 'aai', label: 'AAI', color: '#16A34A' },
+  { key: 'ibp', label: 'IBP', color: '#D97706' },
+  { key: 'ste', label: 'STE', color: '#7C3AED' },
+  { key: 'scc', label: 'SCC', color: '#0891B2' },
+  { key: 'rep', label: 'REP', color: '#DC2626' },
+]
+
+function Delta({ from, to }) {
+  const diff = Number((to - from).toFixed(2))
+  if (diff > 0) return <span style={{ color: '#16A34A', fontSize: '0.75rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 2 }}><TrendingUp size={11} />+{diff}</span>
+  if (diff < 0) return <span style={{ color: '#DC2626', fontSize: '0.75rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 2 }}><TrendingDown size={11} />{diff}</span>
+  return <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 2 }}><Minus size={11} />0</span>
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function K3DashboardPage() {
@@ -188,6 +202,8 @@ export default function K3DashboardPage() {
   const [trendData, setTrendData] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [categories, setCategories] = useState([])
+  const [showCats, setShowCats] = useState(CAT_CFG.map(c => c.key))
 
   const [selectedSemester, setSelectedSemester] = useState(() => {
     const saved = sessionStorage.getItem('k3_dashboard_semester')
@@ -197,6 +213,12 @@ export default function K3DashboardPage() {
   useEffect(() => {
     sessionStorage.setItem('k3_dashboard_semester', selectedSemester)
   }, [selectedSemester])
+
+  useEffect(() => {
+    k3AssessmentService.getCategories()
+      .then(data => setCategories(data.map(c => ({ ...c, shortName: c.short_name }))))
+      .catch(err => console.error('Gagal memuat kategori K3:', err))
+  }, [])
 
   useEffect(() => {
     setLoading(true)
@@ -219,7 +241,8 @@ export default function K3DashboardPage() {
   const radarRaw = dashboardData?.categories || []
   const radarData = Array.isArray(radarRaw) ? radarRaw : Object.values(radarRaw)
   
-  const CATEGORY_MAP = Object.fromEntries(K3_CATEGORIES.map(c => [c.code, c]))
+  const CATEGORY_MAP = Object.fromEntries(categories.map(c => [c.code, c]))
+  const totalCriteria = categories.reduce((sum, c) => sum + (c.criteria?.length || 0), 0)
 
   const mappedRadar = radarData.map(r => ({
     category: r.code,
@@ -329,7 +352,7 @@ export default function K3DashboardPage() {
         )
       },
     },
-  ], [])
+  ], [categories])
 
   let runSum = 0;
   const BAR_DATA = mappedRadar.map((r, i) => {
@@ -345,10 +368,33 @@ export default function K3DashboardPage() {
 
   const trendRaw = trendData || []
   const trendArray = Array.isArray(trendRaw) ? trendRaw : Object.values(trendRaw)
-  const MOCK_TREN = trendArray.map(t => ({
-    semester: t.label,
-    skor: t.avg_score !== null ? parseFloat(t.avg_score) : null
+
+  const toggleCat = (key) => setShowCats(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key])
+
+  const mergedMonthly = trendArray.map(d => ({
+    bulan: d.label,
+    avg: d.avg_score !== null ? parseFloat(d.avg_score) : null,
+    lmc: d.lmc !== null ? parseFloat(d.lmc) : null,
+    aai: d.aai !== null ? parseFloat(d.aai) : null,
+    ibp: d.ibp !== null ? parseFloat(d.ibp) : null,
+    ste: d.ste !== null ? parseFloat(d.ste) : null,
+    scc: d.scc !== null ? parseFloat(d.scc) : null,
+    rep: d.rep !== null ? parseFloat(d.rep) : null,
   }))
+  const validMerged = mergedMonthly.filter(m => m.avg !== null)
+  const first = validMerged.length > 0 ? validMerged[0] : { avg: 0 }
+  const last  = validMerged.length > 0 ? validMerged[validMerged.length - 1] : { avg: 0 }
+  const totalDelta = Number((last.avg - first.avg).toFixed(2))
+  const barData = CAT_CFG.map(c => ({
+    name: c.label, color: c.color,
+    awal: first[c.key] || 0, akhir: last[c.key] || 0,
+    delta: Number(((last[c.key] || 0) - (first[c.key] || 0)).toFixed(2))
+  }))
+  const catsKeys = ['lmc','aai','ibp','ste','scc','rep']
+  const latestScores = catsKeys.map(k => ({ key: k, val: last[k] || 0 })).sort((a,b) => b.val - a.val)
+  const bestCat = latestScores[0]
+  const worstCat = latestScores[latestScores.length - 1]
+  const getCatLabel = (k) => CAT_CFG.find(c => c.key === k)?.label || k.toUpperCase()
 
   const ASSESSMENT_AKTIF = dashboardData?.active_assessments || 0
   const MOCK_TEMUAN_OPEN = "-"
@@ -518,6 +564,7 @@ export default function K3DashboardPage() {
                 key={item.code}
                 item={item}
                 isLast={idx === CATEGORY_TABLE_DATA.length - 1}
+                categoryMap={CATEGORY_MAP}
               />
             ))}
           </div>
@@ -529,50 +576,129 @@ export default function K3DashboardPage() {
           }}>
             <Info size={10} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
             <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
-              Total {K3_TOTAL_CRITERIA} sub-kriteria · Data periode {filters.year}
+              Total {totalCriteria} sub-kriteria · Data periode {filters.year}
             </p>
           </div>
         </div>
       </div>
 
-      {/* ── Trend Line Chart ─────────────────────────────────────────────────── */}
-      <ChartWrapper
-        title="Tren Skor Maturity K3 Antar Semester"
-        subtitle={`Rata-rata skor 6 kategori SMK3`}
-        height={270}
-      >
-        <ResponsiveContainer width="100%" height={270}>
-          <LineChart data={MOCK_TREN} margin={{ top: 8, right: 24, bottom: 4, left: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-            <XAxis
-              dataKey="semester"
-              tick={{ fontSize: 12.5, fontWeight: 650, fill: 'var(--text-muted)' }}
-              axisLine={false} tickLine={false}
-            />
-            <YAxis
-              domain={[2.5, 5]} tickCount={6}
-              tick={{ fontSize: 12, fontWeight: 650, fill: 'var(--text-muted)' }}
-              axisLine={false} tickLine={false}
-            />
+      {/* ── Tren & Perkembangan Maturity Level ───────────────────────────────── */}
+      <div style={{ marginTop: 16, marginBottom: 8 }}>
+        <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-primary)' }}>Tren & Perkembangan Maturity Level</h2>
+        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Analisis pergerakan skor dari periode ke periode</p>
+      </div>
+
+      {/* KPI Summary */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
+        {[
+          { label: `Skor Awal (${first.bulan || '-'})`, value: (first.avg || 0).toFixed(2), sub: `Level ${getMaturityLabel(first.avg || 0).level}`, color: '#64748B' },
+          { label: `Skor Terbaru (${last.bulan || '-'})`, value: (last.avg || 0).toFixed(2), sub: getMaturityLabel(last.avg || 0).label, color: '#0070C0' },
+          { label: `Kenaikan Skor`, value: totalDelta >= 0 ? `+${totalDelta}` : totalDelta, sub: `${last.bulan || '-'} vs ${first.bulan || '-'}`, color: '#16A34A' },
+          { label: 'Kategori Terbaik', value: getCatLabel(bestCat.key), sub: `Skor ${bestCat.val.toFixed(1)}`, color: '#D97706' },
+          { label: 'Kategori Terendah', value: getCatLabel(worstCat.key), sub: `Skor ${worstCat.val.toFixed(1)}`, color: '#DC2626' },
+        ].map(kpi => (
+          <div key={kpi.label} style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: 14, padding: '14px 16px' }}>
+            <div style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 6 }}>{kpi.label}</div>
+            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: kpi.color }}>{kpi.value}</div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: 3 }}>{kpi.sub}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Category toggle filter */}
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: 14, padding: '12px 16px' }}>
+        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginRight: 4 }}>Tampilkan:</span>
+        {CAT_CFG.map(c => (
+          <button key={c.key} onClick={() => toggleCat(c.key)}
+            style={{
+              padding: '5px 12px', borderRadius: 99, border: `2px solid ${c.color}`,
+              background: showCats.includes(c.key) ? c.color : 'transparent',
+              color: showCats.includes(c.key) ? '#fff' : c.color,
+              fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer', transition: 'all 0.15s'
+            }}>
+            {c.label}
+          </button>
+        ))}
+        <button onClick={() => setShowCats(CAT_CFG.map(c => c.key))}
+          style={{ marginLeft: 'auto', padding: '5px 12px', borderRadius: 99, border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.75rem', cursor: 'pointer' }}>
+          Tampilkan Semua
+        </button>
+      </div>
+
+      {/* Main trend line chart */}
+      <ChartWrapper title="Tren Skor K3 per Semester" subtitle="Skor rata-rata per kategori">
+        <ResponsiveContainer width="100%" height={320}>
+          <LineChart data={mergedMonthly} margin={{ top: 10, right: 20, bottom: 0, left: -15 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
+            <XAxis dataKey="bulan" tick={{ fontSize: 12, fill: 'var(--text-muted)' }} />
+            <YAxis domain={[1, 5]} ticks={[1, 2, 3, 4, 5]} tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
             <Tooltip content={<CustomTooltip />} />
-            <Legend wrapperStyle={{ fontSize: 12.5, fontWeight: 600, paddingTop: 12 }} />
-            <ReferenceLine
-              y={4.0}
-              stroke="#0070C032" strokeDasharray="5 4"
-              label={{ value: 'Target 4.0', position: 'insideTopRight', fontSize: 11, fill: '#0070C0', fontWeight: 700 }}
-            />
-            <Line
-              type="monotone"
-              dataKey="skor"
-              name="Skor Maturity"
-              stroke="#0070C0"
-              strokeWidth={3}
-              dot={{ fill: '#0070C0', r: 4, strokeWidth: 0 }}
-              activeDot={{ r: 7, fill: '#0070C0', stroke: '#fff', strokeWidth: 2 }}
-            />
+            <Legend wrapperStyle={{ fontSize: '0.78rem' }} />
+            <ReferenceLine y={4} stroke="#16A34A" strokeDasharray="5 3" label={{ value: 'Target L4', position: 'insideTopRight', fill: '#16A34A', fontSize: 11 }} />
+            <ReferenceLine y={3} stroke="#D97706" strokeDasharray="5 3" label={{ value: 'L3', position: 'insideTopRight', fill: '#D97706', fontSize: 11 }} />
+            {CAT_CFG.filter(c => showCats.includes(c.key)).map(c => (
+              <Line key={c.key} type="monotone" dataKey={c.key} name={c.label} stroke={c.color} strokeWidth={2.5}
+                connectNulls={true} isAnimationActive={false} dot={{ r: 5, fill: '#fff', stroke: c.color, strokeWidth: 2 }} activeDot={{ r: 7, strokeWidth: 0 }} />
+            ))}
+            <Line type="monotone" dataKey="avg" name="AVG" stroke="#374151" strokeWidth={3}
+              connectNulls={true} isAnimationActive={false} strokeDasharray="6 3" dot={{ r: 6, fill: '#fff', stroke: '#374151', strokeWidth: 2 }} />
           </LineChart>
         </ResponsiveContainer>
       </ChartWrapper>
+
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_1fr]" style={{ gap: 20 }}>
+        {/* Delta per category table */}
+        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: 16, overflow: 'hidden' }}>
+          <div style={{ padding: '16px 20px 12px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <BarChart2 size={15} style={{ color: '#0070C0' }} />
+            <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+              Perbandingan Skor Awal vs Terbaru per Kategori
+            </span>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 1, padding: 1, background: 'var(--border-subtle)' }}>
+            {barData.map(d => (
+              <div key={d.name} style={{ background: 'var(--bg-card)', padding: '14px 18px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: '0.72rem', fontWeight: 700, color: d.color, background: d.color + '18', padding: '2px 8px', borderRadius: 99 }}>{d.name}</span>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                      {categories.find(c => c.code === d.name)?.shortName}
+                    </span>
+                  </div>
+                  <Delta from={d.awal} to={d.akhir} />
+                </div>
+                {/* Progress bars side by side */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                  {[{ label: 'Awal', val: d.awal, opacity: 0.4 }, { label: 'Terbaru', val: d.akhir, opacity: 1 }].map(bar => (
+                    <div key={bar.label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ width: 40, fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600, textAlign: 'right' }}>{bar.label}</span>
+                      <div style={{ flex: 1, height: 8, borderRadius: 99, background: 'var(--bg-subtle)', overflow: 'hidden' }}>
+                        <div style={{ width: `${(bar.val / 5) * 100}%`, height: '100%', borderRadius: 99, background: d.color, opacity: bar.opacity, transition: 'width 0.5s' }} />
+                      </div>
+                      <span style={{ width: 28, fontSize: '0.78rem', fontWeight: 700, color: d.color, opacity: bar.opacity }}>{(bar.val || 0).toFixed(1)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Bar chart: delta per kategori */}
+        <ChartWrapper title="Kenaikan Skor per Kategori" subtitle="Delta skor awal vs terbaru" height={220}>
+          <ResponsiveContainer width="100%" height={260}>
+            <BarChart data={barData} margin={{ top: 15, right: 10, bottom: 5, left: -20 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" vertical={false} />
+              <XAxis dataKey="name" tick={{ fontSize: 12, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: 'var(--text-muted)' }} domain={[0, 1]} axisLine={false} tickLine={false} />
+              <Tooltip formatter={(v) => [`+${v.toFixed(2)}`, 'Kenaikan']} />
+              <Bar dataKey="delta" name="Kenaikan" radius={[6, 6, 0, 0]}>
+                {barData.map(d => <Cell key={d.name} fill={d.color} />)}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartWrapper>
+      </div>
 
       {/* ── Category Detail Table ──────────────────────────────────────────── */}
       <div className="card" style={{ padding: '20px 22px' }}>
@@ -651,7 +777,7 @@ export default function K3DashboardPage() {
                 Total Kriteria
               </p>
               <span style={{ fontSize: '0.875rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                {K3_TOTAL_CRITERIA} sub-kriteria
+                {totalCriteria} sub-kriteria
               </span>
             </div>
           </div>

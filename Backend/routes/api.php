@@ -167,6 +167,7 @@ Route::middleware('api')->group(function () {
         Route::post('/k3/targets', [\App\Http\Controllers\Api\K3Controller::class, 'storeTarget']);
         Route::put('/k3/targets/{id}', [\App\Http\Controllers\Api\K3Controller::class, 'updateTarget']);
         Route::get('/k3/nko-summary/{tahun}/{semester}', [\App\Http\Controllers\Api\K3Controller::class, 'nkoSummary']);
+        Route::get('/k3/category-summary/{code}/{tahun}/{semester}', [\App\Http\Controllers\Api\K3Controller::class, 'categorySummary']);
         
         Route::get('/k3/assessments/{tahun}/{semester}', [\App\Http\Controllers\Api\K3Controller::class, 'getAssessments']);
         Route::post('/k3/assessments', [\App\Http\Controllers\Api\K3Controller::class, 'storeAssessment']);
@@ -181,18 +182,18 @@ Route::middleware('api')->group(function () {
         Route::post('/k3/assessments/{id}/approve', [\App\Http\Controllers\Api\K3Controller::class, 'approveAssessment']);
         Route::post('/k3/assessments/{id}/revisi', [\App\Http\Controllers\Api\K3Controller::class, 'revisiAssessment']);
 
-        // K3 Findings & Activities (Keep from main)
-        Route::get('/k3/findings',         [\App\Http\Controllers\K3FindingController::class, 'index']);
-        Route::post('/k3/findings',        [\App\Http\Controllers\K3FindingController::class, 'store']);
-        Route::get('/k3/findings/{id}',    [\App\Http\Controllers\K3FindingController::class, 'show']);
-        Route::put('/k3/findings/{id}',    [\App\Http\Controllers\K3FindingController::class, 'update']);
-        Route::delete('/k3/findings/{id}', [\App\Http\Controllers\K3FindingController::class, 'destroy']);
+        // K3 Findings
+        Route::get('/k3/findings',         [\App\Http\Controllers\Api\K3FindingController::class, 'index']);
+        Route::post('/k3/findings',        [\App\Http\Controllers\Api\K3FindingController::class, 'store']);
+        Route::get('/k3/findings/{id}',    [\App\Http\Controllers\Api\K3FindingController::class, 'show']);
+        Route::put('/k3/findings/{id}',    [\App\Http\Controllers\Api\K3FindingController::class, 'update']);
+        Route::delete('/k3/findings/{id}', [\App\Http\Controllers\Api\K3FindingController::class, 'destroy']);
 
-        Route::get('/k3/activities',         [\App\Http\Controllers\K3ActivityController::class, 'index']);
-        Route::post('/k3/activities',        [\App\Http\Controllers\K3ActivityController::class, 'store']);
-        Route::get('/k3/activities/{id}',    [\App\Http\Controllers\K3ActivityController::class, 'show']);
-        Route::put('/k3/activities/{id}',    [\App\Http\Controllers\K3ActivityController::class, 'update']);
-        Route::delete('/k3/activities/{id}', [\App\Http\Controllers\K3ActivityController::class, 'destroy']);
+        // K3 Kegiatan
+        Route::get('/k3/activities',         [\App\Http\Controllers\Api\K3ActivityController::class, 'index']);
+        Route::post('/k3/activities',        [\App\Http\Controllers\Api\K3ActivityController::class, 'store']);
+        Route::put('/k3/activities/{id}',    [\App\Http\Controllers\Api\K3ActivityController::class, 'update']);
+        Route::delete('/k3/activities/{id}', [\App\Http\Controllers\Api\K3ActivityController::class, 'destroy']);
         
         // Data Jaringan (Dashboard)
         Route::get('/jaringan/dashboard', [DataJaringanController::class, 'getDashboardData']);

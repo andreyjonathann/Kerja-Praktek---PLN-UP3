@@ -43,8 +43,8 @@ export default function InputKinerjaSusutDistribusiPage() {
   const isDuplicate = !!(selectedMonth && currentMonthData && currentMonthData.id != null);
 
   useEffect(() => {
-    if (selectedMonth && currentMonthData) {
-      if (currentMonthData.id != null) {
+    if (selectedMonth) {
+      if (currentMonthData && currentMonthData.id != null) {
         reset({
           tahun: selectedYear,
           periode_id: selectedMonth,
@@ -64,7 +64,7 @@ export default function InputKinerjaSusutDistribusiPage() {
         });
       }
     }
-  }, [selectedMonth, selectedYear, existingData]);
+  }, [selectedMonth, selectedYear, existingData, currentMonthData, reset]);
 
   useEffect(() => {
     setIsDirty(formIsDirty);

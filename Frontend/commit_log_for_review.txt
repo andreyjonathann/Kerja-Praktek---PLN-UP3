@@ -1,0 +1,930 @@
+commit 74d1e3012427acbbe39ecac60c0bec6d4b1fbd33
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Mon Aug 3 09:43:42 2026 +0700
+
+    fix(susut-distribusi): sync form Edit ke skema 3-field
+    
+    Update defaultValues, useWatch, formula preview, fetch/reset data, submit payload, dan JSX input fields dari kwh_siap_jual/kwh_jual (lama) ke kwh_netto/pssd/kwh_jual_309, konsisten dengan form Input yang sudah diupdate
+
+ .../src/pages/EditKinerjaSusutDistribusi/index.jsx | 60 ++++++++++++++--------
+ 1 file changed, 38 insertions(+), 22 deletions(-)
+
+commit c26cc45d9eafd9475709a48ed13e3ae49b697881
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Mon Aug 3 09:39:19 2026 +0700
+
+    fix(susut-distribusi): perbaiki route edit dari :id ke :bulan/:tahun
+    
+    Route /susut/edit/:id tidak match dengan navigate() di modal dan useParams() di EditKinerjaSusutDistribusiPage yang expect bulan+tahun, menyebabkan fallback ke route generik dan error Tipe tidak dikenal
+
+ Frontend/src/App.jsx | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit 774b6227873203455f149280467b1243f25fe17e
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Mon Aug 3 09:39:15 2026 +0700
+
+    fix(susut-distribusi): sync frontend display ke skema 3-field
+    
+    Update tabel, chart tooltip, dan modal detail dari kwh_siap_jual/kwh_jual (lama) ke kwh_netto/pssd/kwh_jual_309 (sesuai formula Excel sumber, backend sudah pakai skema ini)
+
+ .../components/ui/SusutDistribusiDetailModal.jsx   | 12 ++++---
+ Frontend/src/pages/SusutDistribusiPage.jsx         | 42 +++++++++-------------
+ 2 files changed, 24 insertions(+), 30 deletions(-)
+
+commit 4cd0f7efa5f004cbe72380c6ec6f0b80cbd7c7d5
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Fri Jul 31 10:31:14 2026 +0700
+
+    fix(susut): update InputKinerjaSusutDistribusi form to 3-component schema
+    
+    - Replace "KWh Siap Jual" + "KWh Jual" fields with "KWh Netto", "PSSD",
+      "KWh Jual 309" matching the official KM KBJ 2026 formula
+    - Update preview calculation: (netto - pssd - jual309) / netto * 100
+    - Update cross-field validation: pssd + kwh_jual_309 must not exceed
+      kwh_netto (equivalent logical constraint to the old one)
+    - Update payload sent to API and reset() logic for existing data
+
+ .../pages/InputKinerjaSusutDistribusi/index.jsx    | 65 ++++++++++++++--------
+ 1 file changed, 41 insertions(+), 24 deletions(-)
+
+commit e1108e98a995c3689bb283b063b517890172fa69
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Fri Jul 31 10:22:44 2026 +0700
+
+    fix(susut): update controller to use 3-component formula
+    
+    - store(), update(): validate and persist kwh_netto, pssd, kwh_jual_309
+      instead of kwh_siap_jual/kwh_jual
+    - dashboard(): ratioFormula and trend calculation now use official
+      formula: (kwh_netto - pssd - kwh_jual_309) / kwh_netto * 100
+    - Matches KM KBJ 2026 source (Excel INPUT I sheet, rows 33-37)
+
+ .../Api/RealisasiSusutDistribusiController.php     | 47 +++++++++++++---------
+ 1 file changed, 27 insertions(+), 20 deletions(-)
+
+commit 0527dc17f9d857fbe6edb7b91f064949ed035914
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Fri Jul 31 10:04:17 2026 +0700
+
+    fix(susut): revert model to 3-component schema (kwh_netto, pssd, kwh_jual_309)
+    
+    - Matches official KM KBJ 2026 formula (Excel sheet INPUT I, rows 33-37):
+      Susut% = (kwh_netto - pssd - kwh_jual_309) / kwh_netto * 100
+    - Reverts the 2-component simplification from the July 16 migration
+      which used a different, incorrect formula
+    - Part of 3-step fix: migration (done) -> model (this) -> controller -> frontend
+
+ Backend/app/Models/RealisasiSusutDistribusi.php | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
+
+commit 7610db70f98cf16a5b005b8690d8b9dee078673f
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Thu Jul 30 16:28:07 2026 +0700
+
+    feat(ux): add unsaved-changes guard to EditKinerjaP2tl
+    
+    - Wire useDirtyFormGuard to react-hook-form's isDirty state
+    - Guard only the active-form 'Kembali' button; Viewer-forbidden and
+      Not-Found state buttons intentionally left unguarded
+    - Reset isDirty to false after successful save
+    - No form-reset bug risk (period from URL params, not dropdown)
+
+ Frontend/src/pages/EditKinerjaP2tl/index.jsx | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
+
+commit 36b4b8c05b3c338820c048cfad221dc8883c2c96
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Thu Jul 30 16:21:51 2026 +0700
+
+    feat(ux): add unsaved-changes guard to EditKinerjaSusutDistribusi
+    
+    - Wire useDirtyFormGuard to react-hook-form's isDirty state
+    - Guard only the active-form 'Kembali' button; the two other
+      navigate('/susut') buttons (Viewer-forbidden and Not-Found states)
+      intentionally left unguarded since no editing occurs there
+    - Reset isDirty to false after successful save
+    - No form-reset bug risk (period from URL params, not dropdown)
+
+ Frontend/src/pages/EditKinerjaSusutDistribusi/index.jsx | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
+
+commit 8e70049414854d3364b6d765d00a672e6cde8f54
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Thu Jul 30 16:10:59 2026 +0700
+
+    feat(ux): add unsaved-changes guard to EditKinerja
+    
+    - Wire useDirtyFormGuard to react-hook-form's isDirty state
+    - Guard 'Kembali' button navigation
+    - Reset isDirty to false right before navigate(`/`) redirect
+    - Generic edit page for both SAIDI and SAIFI (via :type URL param)
+    - No form-reset bug risk (period comes from URL params, not a
+      in-page dropdown)
+
+ Frontend/src/pages/EditKinerja/index.jsx | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
+
+commit 2822e76ca959b21dfdbf363c8367941a22d23c16
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Thu Jul 30 16:06:28 2026 +0700
+
+    feat(ux): add unsaved-changes guard to EditGangguanTmLebih5
+    
+    - Wire useDirtyFormGuard to react-hook-form's isDirty state
+    - Guard 'Kembali' button navigation
+    - Reset isDirty to false after successful save
+    - No form-reset bug risk (uses location.state for year/month, no
+      in-page dropdown to switch periods)
+
+ Frontend/src/pages/EditGangguanTmLebih5/index.jsx | 13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
+
+commit 3e99f6670d5fd4fad7fb4a9af5c0f53ae700d2cd
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Thu Jul 30 15:58:08 2026 +0700
+
+    feat(ux): add unsaved-changes guard to EditGangguanTrafo
+    
+    - Manual isDirty tracking: set true in handleTrafoChange
+    - Guard 'Kembali' button, handling both isInline and standalone modes
+    - Reset isDirty to false after both successful save and successful
+      parent delete, before their respective redirects
+    - Form-reset-on-empty-month logic already correct, untouched
+    - Redirect route still points to '/jaringan/gangguan-switching'
+      (known typo, tracked separately)
+
+ Frontend/src/pages/EditGangguanTrafo/index.jsx | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
+
+commit c0829fd20e2839743cbefc910f70aee0af36f0fe
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Thu Jul 30 15:53:15 2026 +0700
+
+    feat(ux): add unsaved-changes guard to EditGangguanSwitching
+    
+    - Manual isDirty tracking (plain useState): set true in
+      handleSwitchingChange, addDetail, removeDetail, handleDetailChange
+    - Guard 'Kembali' button, handling both isInline and standalone modes
+    - Reset isDirty to false after both successful save and successful
+      parent delete, before their respective redirects
+    - Form-reset-on-empty-month logic was already correct, untouched
+
+ Frontend/src/pages/EditGangguanSwitching/index.jsx | 15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
+
+commit b87476274cbb872451c87a51ffb4a01a374ab682
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Thu Jul 30 15:39:22 2026 +0700
+
+    feat(ux): add unsaved-changes guard to EditEns
+    
+    - Wire useDirtyFormGuard to react-hook-form's isDirty state
+    - Guard 'Kembali' button navigation
+    - Reset isDirty to false after successful save
+    - No form-reset bug risk here since this page uses URL params
+      (bulan/tahun) rather than an in-page dropdown, so no stale-data
+      carryover scenario exists
+
+ Frontend/src/pages/EditEns/index.jsx | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
+
+commit 8f78e708a125ea9d60acb965507320f13a8dc3ef
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Thu Jul 30 15:32:55 2026 +0700
+
+    fix(ux): fix form-reset bug and add unsaved-changes guard to InputGangguanTmLebih5
+    
+    - Fix form-reset bug: previously 'if (!isDuplicate) return;' left the
+      form populated with the previous month's kejadian array when
+      switching to an empty month; now resets to default empty state in
+      both the !isDuplicate case and the empty-details case
+    - Wire useDirtyFormGuard to react-hook-form's isDirty state
+    - Guard 'Kembali' button navigation
+    - Reset isDirty to false after successful save
+
+ Frontend/src/pages/InputGangguanTmLebih5/index.jsx | 28 +++++++++++++++++++---
+ 1 file changed, 25 insertions(+), 3 deletions(-)
+
+commit 1ac87748f24ffdd498d0a43a2061f50316cb7142
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Thu Jul 30 15:25:59 2026 +0700
+
+    feat(ux): add unsaved-changes guard to InputGangguanTmKurang5
+    
+    - Wire useDirtyFormGuard to react-hook-form's isDirty state
+    - Guard 'Kembali' button navigation with confirmation dialog
+    - Reset isDirty to false after successful save
+    - Form-reset-on-empty-month logic already correct, untouched
+
+ Frontend/src/pages/InputGangguanTmKurang5/index.jsx | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
+
+commit 8daf26f29882a610b9ddd31f0e7356efa3c5ea91
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Thu Jul 30 15:20:42 2026 +0700
+
+    feat(ux): add unsaved-changes guard to InputGangguanTrafo
+    
+    - Manual isDirty tracking (plain useState, not react-hook-form): set
+      true in handleTrafoChange, addDetail, removeDetail, handleDetailChange
+    - Guard 'Kembali' button, handling both isInline and standalone modes
+    - Reset isDirty to false after successful save
+    - Note: redirect route still points to '/jaringan/gangguan-switching'
+      (likely copy-paste typo, should be gangguan-trafo)  left untouched,
+      tracked as separate follow-up item
+
+ Frontend/src/pages/InputGangguanTrafo/index.jsx | 14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
+
+commit a51fe9426140ca604b375db8e132c21b1175d577
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Thu Jul 30 15:10:28 2026 +0700
+
+    feat(ux): add unsaved-changes guard to InputGangguanSwitching
+    
+    - Manual isDirty tracking (this page uses plain useState, not
+      react-hook-form): set true in handleSwitchingChange, addDetail,
+      removeDetail, handleDetailChange
+    - Guard the 'Kembali' button, handling both isInline and standalone
+      navigation modes
+    - Reset isDirty to false after successful save, before the redirect
+    - Form-reset-on-empty-month logic was already correct, untouched
+
+ Frontend/src/pages/InputGangguanSwitching/index.jsx | 14 ++++++++++++--
+ Frontend/src/pages/InputKinerjaSaidi/index.jsx      | 18 ++++++++++++++++--
+ Frontend/src/pages/InputRptGangguan/index.jsx       | 12 ++++++++++--
+ Frontend/src/pages/InputSaifi/index.jsx             | 18 ++++++++++++++++--
+ 4 files changed, 54 insertions(+), 8 deletions(-)
+
+commit ccb7f108230d42ff5bd331cb0f50084779f672ee
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Thu Jul 30 13:53:27 2026 +0700
+
+    feat(ui): make year filter typable instead of dropdown
+
+ Frontend/src/components/layout/Header.jsx | 49 ++++++++++++++++++++++++++++---
+ 1 file changed, 45 insertions(+), 4 deletions(-)
+
+commit d86cc31af09823f8d74ec10d68e9311431964b61
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Thu Jul 30 13:53:27 2026 +0700
+
+    feat(filter): auto-reset period to current on every page navigation
+
+ Frontend/src/App.jsx | 21 ++++++++++++++++++---
+ 1 file changed, 18 insertions(+), 3 deletions(-)
+
+commit c8eab35f274455fcc9bfb6802974f0044228a4c3
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Thu Jul 30 13:53:27 2026 +0700
+
+    feat(filter): add resetPeriodToCurrent to FilterContext
+
+ Frontend/src/context/FilterContext.jsx | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
+
+commit 5edd7e136259300d68c467506d9137392f94ac3b
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Thu Jul 30 13:53:27 2026 +0700
+
+    fix(nko): use has_target from backend overview for SAIFI TargetWarning
+
+ Frontend/src/pages/Saifi/index.jsx | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+commit 5a10b1ebfd6c0bac8656f59b1b6286c4dd1c4dab
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Thu Jul 30 13:53:26 2026 +0700
+
+    fix(nko): use has_target from backend overview for SAIDI TargetWarning
+
+ Frontend/src/pages/Saidi/index.jsx | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+commit 761facbc31ad0fc7b3614a4da15f6af232fda7eb
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Thu Jul 30 13:53:26 2026 +0700
+
+    fix(nko): use has_target for Gangguan TM TargetWarning and fix persen formula (was T/R, now 2-(R/T) with floor 0 / cap 110)
+
+ Frontend/src/pages/GangguanTm/index.jsx | 15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
+
+commit edc00eb2213083df5ee313a58f65836046acb06e
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Thu Jul 30 13:53:26 2026 +0700
+
+    fix(nko): use has_target from backend for Rating Negatif TargetWarning, remove dead duplicate banner call
+
+ Frontend/src/pages/RatingNegatif/index.jsx | 9 ++-------
+ 1 file changed, 2 insertions(+), 7 deletions(-)
+
+commit 3e8111dcfc1a812f094015c4acabb26ee329e0dd
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Thu Jul 30 13:53:25 2026 +0700
+
+    feat(ui): add TargetWarning to ENS using has_target from backend overview
+
+ Frontend/src/pages/Ens/index.jsx | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+commit 9905d1baef2167cc3325cf03984645e38f7ca5ad
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Thu Jul 30 13:53:25 2026 +0700
+
+    fix(ui): convert TargetWarning from floating overlay to inline banner
+
+ Frontend/src/components/ui/TargetWarning.jsx | 11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
+
+commit 92bc62345bd25ded811716e576f056001a71dbc3
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Thu Jul 30 13:53:25 2026 +0700
+
+    fix(nko): add has_target field for SAIDI/SAIFI/ENS overview KPIs
+
+ Backend/app/Http/Controllers/Api/DataJaringanController.php | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+commit 35726114d799af93ab83abbb9985fe77c92b6630
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Thu Jul 30 13:53:25 2026 +0700
+
+    fix(nko): add has_target field to Gangguan TM rekap() endpoint
+
+ Backend/app/Http/Controllers/GangguanTmController.php | 2 ++
+ 1 file changed, 2 insertions(+)
+
+commit b83537f95e41cbb04483f0c8217491be99a55b7a
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Thu Jul 30 13:53:25 2026 +0700
+
+    fix(nko): add centralized has_target field to Rating Negatif response
+
+ Backend/app/Http/Controllers/RatingNegatifController.php | 2 ++
+ 1 file changed, 2 insertions(+)
+
+commit dbd41925f2ec87ed462514e3852be0fb5407704a
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Thu Jul 30 13:53:24 2026 +0700
+
+    fix(nko): use TargetService for Gangguan Switching has_target check
+
+ Backend/app/Http/Controllers/Api/GangguanSwitchingController.php | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+commit 107b4bf52ce304afbe6ce10f8e1e80b7011e917d
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Thu Jul 30 13:53:24 2026 +0700
+
+    fix(nko): use TargetService for MVOD has_target check
+
+ Backend/app/Http/Controllers/Api/MvodController.php | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+commit df7930bbd4f3e7ca6dde8b2347d2f8e634cd5748
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Thu Jul 30 13:53:24 2026 +0700
+
+    fix(nko): use TargetService for SRDAG has_target check
+
+ Backend/app/Http/Controllers/Api/SrdagController.php | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+commit d9e2fb5a06bd73aec67c98e97bed1c278eb94a6e
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Thu Jul 30 13:53:24 2026 +0700
+
+    fix(nko): use TargetService for MTTR has_target check
+
+ Backend/app/Http/Controllers/Api/MttrController.php | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+commit a8874e01161cecbf24cb65d73a14740ab725f4f6
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Thu Jul 30 13:53:23 2026 +0700
+
+    feat(nko): add TargetService for centralized target completeness check
+
+ Backend/app/Services/TargetService.php | 44 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 44 insertions(+)
+
+commit cbe52c99359c97678abb807f2d706415fef07bbe
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Wed Jul 29 15:12:15 2026 +0700
+
+    fix(nko): add floor 0 to SAIDI/SAIFI/ENS pencapaian closure
+    
+    Add max(0,...) to hitungSkorNegatif closure in DataJaringanController
+
+ Backend/app/Http/Controllers/Api/DataJaringanController.php |  2 +-
+ Backend/app/Services/NkoCalculationService.php              | 13 +++++++++++++
+ 2 files changed, 14 insertions(+), 1 deletion(-)
+
+commit e0a6d483064bab4abf7862bd3c3e4e4c8ccdca93
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Wed Jul 29 11:32:16 2026 +0700
+
+    fix(nko): add floor 0 to Rating Negatif pencapaian calculations
+    
+    - Add max(0, ...) to nkoScore in index() (monthly cumulative) and
+      rekap() (per-UP3 YTD) methods
+    - Consistent with floor/cap standard across all NKO modules
+    - Note: this controller lives at app/Http/Controllers/RatingNegatifController.php
+      (not under Controllers/Api/)
+
+ Backend/app/Http/Controllers/RatingNegatifController.php | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+commit dfca759fc14ae856afcb0db52ef22d224232e2a6
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Wed Jul 29 11:16:29 2026 +0700
+
+    fix(nko): add floor 0 to Gangguan Switching pencapaian calculation
+    
+    - Add max(0, ...) to persenVsTarget in dashboard() YTD summary
+    - Consistent with floor/cap standard across all NKO modules
+
+ Backend/app/Http/Controllers/Api/GangguanSwitchingController.php | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit a8f444bd9b16e9650632f5ebe2ba49c2148fd6f2
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Wed Jul 29 11:08:31 2026 +0700
+
+    fix(nko): add floor 0 to Gangguan TM pencapaian calculations
+    
+    - Add max(0, ...) to pencapaian formula in index() (monthly cumulative
+      loop) and semuaUp3() (per-UP3 YTD summary)
+    - Consistent with floor/cap standard across all NKO modules
+    - Note: this controller lives at app/Http/Controllers/GangguanTmController.php
+      (not under Controllers/Api/ like most other NKO controllers)
+
+ .../app/Http/Controllers/Api/KinerjaController.php | 17 +++++++++++++++++
+ .../Controllers/Api/TargetTahunanController.php    | 22 +++++++++++++++++++++-
+ .../app/Http/Controllers/GangguanTmController.php  |  4 ++--
+ 3 files changed, 40 insertions(+), 3 deletions(-)
+
+commit 19049755062c2769f68a14dfca24083218b31f1f
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Wed Jul 29 10:56:53 2026 +0700
+
+    fix(nko): add floor 0 to SRDAG pencapaian calculations
+    
+    - Add max(0, ...) to summary YTD and trend bulanan pencapaian in
+      SrdagController::dashboard() (both already had 110% cap)
+    - Consistent with floor/cap standard across all NKO modules
+
+ Backend/app/Http/Controllers/Api/SrdagController.php | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+commit 41dba2071d58073cfa53c0fdc73de200474f60fa
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Wed Jul 29 10:44:26 2026 +0700
+
+    fix(nko): standardize floor/cap in RPT Gangguan dashboard
+    
+    - Add floor 0 to YTD summary pencapaian (already had 110% cap)
+    - Add missing floor 0 AND cap 110% to trend bulanan pencapaian
+      (previously completely uncapped — could exceed 110% when realisasi
+      was much better than target, unlike YTD which was already capped)
+    - Now consistent with floor/cap standard across all NKO modules
+
+ Backend/app/Http/Controllers/Api/RptGangguanController.php | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+commit a758943db59e0881b59eb45f0b7012c601a5ffd3
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Wed Jul 29 10:40:32 2026 +0700
+
+    fix(nko): add floor 0 to MVOD pencapaian closure
+    
+    - Add max(0, ...) to  closure in MvodController::dashboard()
+      (single fix point protects all 5 call sites: per_bulan, trend_bulanan,
+      and summary YTD, since they all route through this one closure)
+    - Formula 2-(rata_rct/sla) can go negative when rata_rct exceeds 2x sla;
+      now consistent with floor/cap standard applied across other NKO modules
+
+ Backend/app/Http/Controllers/Api/MvodController.php | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit ddbb94d98516e7d6ea1540b5bfa47bcd54c41223
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Wed Jul 29 10:36:56 2026 +0700
+
+    fix(nko): add floor 0 to MTTR dashboard pencapaian calculations
+    
+    - Add max(0, ...) to 3 pencapaian formulas in MttrController::dashboard()
+      (per_bulan loop, trend_bulanan loop, YTD summary) for consistency with
+      the floor/cap standard already applied in NkoCalculationService,
+      NkoController, and NkoRealizationController
+    - Prevents negative pencapaian values from anomalous data
+
+ Backend/app/Http/Controllers/Api/MttrController.php | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+commit a52ab16d16ce063a24fa66246bded593746bb4b0
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Wed Jul 29 10:30:53 2026 +0700
+
+    feat(nko): add artisan command to recalculate historical nko_score
+    
+    One-time (and reusable) command to re-run NkoCalculationService against existing Kinerja records, needed after fixing the MINIMIZE formula bug. Supports --tahun filter. Ran locally: 3 Jaringan, 1 Niaga, 1 Pemasaran rows recalculated.
+
+ .../app/Console/Commands/RecalculateNkoScores.php  | 58 ++++++++++++++++++++++
+ 1 file changed, 58 insertions(+)
+
+commit 1e44577ff3cf29ee9c73c78c29ee28d48357d9bf
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Wed Jul 29 09:49:34 2026 +0700
+
+    fix(nko): correct MINIMIZE formula in NkoCalculationService
+    
+    - Replace incorrect T/R formula with official KM KBJ 2026 formula: 2-(R/T)
+      (was producing wrong scores for all MINIMIZE-polarity KPIs calculated via
+      KinerjaController: Jaringan SAIDI/SAIFI, and generic bidang Niaga,
+      Pemasaran, Aset, Keuangan, Transaksi Energi)
+    - Remove special-case override for realisasi==0 (previously hardcoded to
+      exactly 100%); now falls through to the standard formula which correctly
+      yields 200% -> capped to 110%, since realisasi=0 is the best possible
+      outcome for a MINIMIZE KPI
+    - Add missing floor (max(0, ...)) alongside existing 110% cap — required
+      now that the formula can legitimately go negative for very poor realisasi
+
+ Backend/app/Services/NkoCalculationService.php | 22 +++++++++-------------
+ 1 file changed, 9 insertions(+), 13 deletions(-)
+
+commit d3780ff4616bd7d93a68c55281a2b33e28bf83d1
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Wed Jul 29 09:45:01 2026 +0700
+
+    fix(nko): align RANGE formula and cap consistency in NkoController
+    
+    - Replace incorrect symmetric-gap RANGE formula with piecewise band formula
+      from KM KBJ 2026 source (same fix as NkoRealizationController):
+      - realisasi < 95%: pencapaian = realisasi/95
+      - 95% <= realisasi <= 105%: bonus band up to 110%
+      - realisasi > 105%: linear decay to 0% at realisasi=195%
+    - Clean up misleading 120 magic number in target=0 fallback branch
+      (value was always clamped to 110 by max(0, min(pencapaian, 110)) below,
+      this is cosmetic consistency, not a behavior change)
+    - NkoController.php now fully consistent with NkoRealizationController.php
+
+ Backend/app/Http/Controllers/Api/NkoController.php | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
+
+commit 62ad579d5cc82d345b429813b79ef377d8c7fab9
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Wed Jul 29 09:39:44 2026 +0700
+
+    fix(nko): implement correct piecewise formula for RANGE polarity
+    
+    - Replace incorrect symmetric-gap formula (1 - abs(R-T)/T) with the actual
+      piecewise band formula from KM KBJ 2026 source (REKAP sheet, row 51):
+      - realisasi < 95%: pencapaian = realisasi/95
+      - 95% <= realisasi <= 105%: bonus band, up to 110% at realisasi=105%
+      - realisasi > 105%: linear decay to 0% at realisasi=195%
+    - Verified against live data: realisasi=88.96%, expected=93.64%, matches Excel exactly
+    - Affects only NkoParameter ID 40 (" Pengendalian Penggunaan Anggaran Investasi
+
+ Backend/app/Http/Controllers/Api/NkoRealizationController.php | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
+
+commit da26ae7d506b60f2a5b524d299ee96f097ac4fb1
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Wed Jul 29 09:14:04 2026 +0700
+
+    fix(nko): unify pencapaian cap to 110% in NkoRealizationController
+    
+    - Fix leaked 120% cap in min() clamp (should be 110% per KM KBJ 2026)
+    - Clean up misleading 120 magic numbers in target=0 fallback branch
+      (values were always clamped to 110 anyway, this is cosmetic consistency)
+
+ Backend/app/Http/Controllers/Api/NkoRealizationController.php | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+commit 93ffb3597ba9ae476beecc316fb3ceefe0f03448
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Tue Jul 28 22:27:05 2026 +0700
+
+    fix(nko): standardisasi cap skor NKO ke 110%, sesuai formula resmi KM KBJ Excel (sebelumnya 100% di NkoCalculationService, 120% di NkoController)
+
+ Backend/app/Http/Controllers/Api/NkoController.php | 7 ++++---
+ Backend/app/Services/NkoCalculationService.php     | 4 ++--
+ 2 files changed, 6 insertions(+), 5 deletions(-)
+
+commit a81a1e8485177aa193817180017b2969dfecd1ba
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Tue Jul 28 11:47:36 2026 +0700
+
+    fix(ux): koreksi path P2TL, hapus menu tanpa route, kembalikan JARINGAN ke struktur flat (revert grouping dari branch andrey)
+
+ Frontend/src/utils/constants.js | 51 ++++++++++-------------------------------
+ 1 file changed, 12 insertions(+), 39 deletions(-)
+
+commit 5d73efd5dfebfcaf69fd71d26806f0ddbae3c76a
+Merge: c6cd48e b6b57c5
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Mon Jul 27 17:16:58 2026 +0700
+
+    merge: gabungkan branch andrey ke eunike, resolve conflict routes/api.php, fix menu LBKB/NIAGA nyasar di TRANSAKSI ENERGI
+
+commit c6cd48edb2c481d429c92a550faba42a34b62fa4
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Mon Jul 27 15:31:19 2026 +0700
+
+    wip: checkpoint before merging branch andrey
+
+ .gitignore                                         |   7 +
+ .../Api/RealisasiGantiMeterController.php          |  68 +++--
+ .../app/Http/Controllers/Api/SrdagController.php   |   6 +
+ .../Api/TargetGantiMeterHarianController.php       |  77 +++++
+ .../Controllers/Api/TargetTahunanController.php    |  85 +++++-
+ Backend/app/Models/RealisasiGantiMeter.php         |   4 +-
+ Backend/app/Models/TargetGantiMeterHarian.php      |  17 ++
+ Backend/app/Models/TargetTahunan.php               |   1 +
+ Backend/app/Services/TargetGantiMeterService.php   |  64 +++++
+ ...26_07_20_023353_simplify_ganti_meter_fields.php |  45 +++
+ ...508_create_target_ganti_meter_harians_table.php |  30 ++
+ ...729_add_is_override_to_target_tahunan_table.php |  28 ++
+ Backend/routes/api.php                             |   4 +
+ Frontend/diff_ens.txt                              |   0
+ Frontend/diff_mttr.txt                             |   0
+ Frontend/diff_mvod.txt                             |   0
+ Frontend/diff_output.txt                           | 220 ++++++++++++++
+ Frontend/diff_rpt.txt                              |   0
+ Frontend/src/components/ui/EnsDetailModal.jsx      |  26 +-
+ Frontend/src/components/ui/GangguanDetailModal.jsx |  43 ++-
+ .../src/components/ui/GantiMeterDetailModal.jsx    | 316 +++++++++------------
+ Frontend/src/components/ui/KpiCard.jsx             |   8 +-
+ Frontend/src/components/ui/MttrDetailModal.jsx     |  20 +-
+ Frontend/src/components/ui/MvodDetailModal.jsx     |  20 +-
+ Frontend/src/components/ui/RptDetailModal.jsx      |  21 +-
+ Frontend/src/components/ui/SrdagDetailModal.jsx    |  39 ++-
+ .../components/ui/TargetGantiMeterHarianModal.jsx  | 204 +++++++++++++
+ Frontend/src/hooks/useDirtyFormGuard.js            |  29 ++
+ Frontend/src/index.css                             |   6 +
+ Frontend/src/pages/Admin/KelolaTargetBulanan.jsx   | 132 +++++++--
+ Frontend/src/pages/EditKinerjaGantiMeter/index.jsx |  39 +--
+ .../src/pages/EditKinerjaSusutDistribusi/index.jsx |  15 +-
+ Frontend/src/pages/InputGangguanTmLebih5/index.jsx |  26 +-
+ Frontend/src/pages/InputKinerjaSaidi/index.jsx     |  12 +-
+ Frontend/src/pages/InputMttr/index.jsx             |  66 ++++-
+ Frontend/src/pages/InputMvod/index.jsx             |  67 ++++-
+ Frontend/src/pages/InputRatingNegatif/index.jsx    |  46 ++-
+ Frontend/src/pages/InputSaifi/index.jsx            |  12 +-
+ Frontend/src/pages/InputSrdag/index.jsx            |  21 +-
+ Frontend/src/pages/TrendNko/index.jsx              |   7 +-
+ patch_gangguan.js                                  |  72 +++++
+ 41 files changed, 1564 insertions(+), 339 deletions(-)
+
+commit 73ae05dc1ba69dd4e3d988178a0ab80debd4446e
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Mon Jul 27 11:30:10 2026 +0700
+
+    feat(ux): add TargetWarning banner to GantiMeter, P2TL, SusutDistribusi dashboards for consistency with other Jaringan/TE modules
+
+ Frontend/src/pages/GantiMeter.jsx          | 79 ++++++++++++++----------------
+ Frontend/src/pages/P2tl/index.jsx          |  7 +++
+ Frontend/src/pages/SusutDistribusiPage.jsx |  7 +++
+ 3 files changed, 51 insertions(+), 42 deletions(-)
+
+commit 95582d1ba1de7d0af301328eed0716d252b1e35f
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Mon Jul 27 11:30:10 2026 +0700
+
+    feat(auto-populate,dirty-guard): populate existing data and warn on unsaved exit for GantiMeter, P2TL, SusutDistribusi, ENS input forms
+
+ Frontend/src/pages/InputEns/index.jsx              | 11 +++-
+ .../src/pages/InputKinerjaGantiMeter/index.jsx     | 70 ++++++++++++----------
+ Frontend/src/pages/InputKinerjaP2tl/index.jsx      | 47 ++++++++++++++-
+ .../pages/InputKinerjaSusutDistribusi/index.jsx    | 53 +++++++++++++---
+ 4 files changed, 139 insertions(+), 42 deletions(-)
+
+commit ac2bca7c0a848c768fd0add6606961e3551ab20a
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Thu Jul 23 11:26:11 2026 +0700
+
+    feat(ux): distinguish unset target from zero target (P2TL & Susut Distribusi)
+    
+    - RealisasiP2tlController@dashboard(): target_kumulatif_ytd now returns
+      null (not 0) when no target row exists in DB for the year
+    - P2tl/index.jsx: KPI cards render '-' / 'belum ditetapkan' when target
+      is null, instead of silently falling back to 0
+    - SusutDistribusiPage.jsx: same fix, backend was already correct
+      (target_ytd already null via getTargetForMonth()), only frontend
+      fallback was fixed
+    - No calculation/NKO score logic changed
+    - Ganti Meter equivalent fix exists in working tree but is entangled
+      with an unrelated uncommitted jumlah_unit refactor in the same file;
+      will be committed together with that topic separately
+
+ .../Controllers/Api/RealisasiP2tlController.php    | 17 ++++----
+ Frontend/src/pages/P2tl/index.jsx                  | 47 +++++++++------------
+ Frontend/src/pages/SusutDistribusiPage.jsx         | 49 +++++++++-------------
+ 3 files changed, 48 insertions(+), 65 deletions(-)
+
+commit b6b57c52b6ba8fb24f7815a1b6685c2b34a8ddcd
+Author: andrey jonathan nathaniel nainggolan <143679440+andreyjonathann@users.noreply.github.com>
+Date:   Wed Jul 22 15:44:41 2026 +0700
+
+    fix: relocate RestrictPengadaanWrites middleware to api.php routing to fix undefined middleware() method error
+
+ .../Controllers/Api/PaguAnggaranController.php     |  6 ----
+ .../Http/Controllers/Api/PengadaanController.php   |  6 ----
+ Backend/routes/api.php                             | 23 ++++++++-----
+ .../src/pages/Pengadaan/KelolaPaguAnggaran.jsx     | 40 ++++++++++++++++++----
+ Frontend/src/pages/Pengadaan/Kontrak/index.jsx     |  8 ++---
+ 5 files changed, 51 insertions(+), 32 deletions(-)
+
+commit 1534fed8afca4135577781989f0b846b22900ea8
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Wed Jul 22 15:44:29 2026 +0700
+
+    fix(nko): floor NKO score at 0 to prevent negative percentage display
+    
+    - calculateNkoScore() now wraps both POSITIF and NEGATIF branches with
+      max(0, ...) so extreme cases (realisasi far worse than target) return
+      0 instead of a nonsensical negative percentage (e.g. -911%)
+    - Formula itself unchanged: (realisasi/target)*100 for POSITIF,
+      (2-realisasi/target)*100 for NEGATIF — only the final floor added,
+      symmetric with existing 110 cap
+    - Applies to all modules using this shared service (Susut Distribusi,
+      P2TL, MVOD, MTTR, SRDAG, etc.) — no per-module weighting logic touched
+    - Added unit test test_calculate_nko_score_polaritas_negatif_extreme
+
+ Backend/app/Services/YtdCalculationService.php   | 4 ++--
+ Backend/tests/Unit/YtdCalculationServiceTest.php | 9 +++++++++
+ 2 files changed, 11 insertions(+), 2 deletions(-)
+
+commit 0d13eb6259db07e051147b220c0de107117f5412
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Wed Jul 22 15:25:59 2026 +0700
+
+    feat(ux): migrate alert() to centralized notify.js utility
+    
+    - Add Frontend/src/utils/notify.js wrapping SweetAlert2 (success/error/warning/confirmDelete/confirmLeave)
+    - Replace 60+ native alert() calls across 26 modal/page components with notify.warning()/notify.error()
+    - Where original error handling only showed generic 'Error: ' + err.message, upgrade to surface backend's dynamic error message (err.response?.data?.message) so validation messages (e.g. duplicate data) reach the user correctly
+    - No logic changes beyond notification calls; no backend changes
+
+ .../components/ui/DetailGangguanTmKurang5Modal.jsx |  5 ++-
+ .../src/components/ui/DetailGangguanTmModal.jsx    |  7 ++--
+ Frontend/src/components/ui/EnsDetailModal.jsx      |  5 ++-
+ Frontend/src/components/ui/ExportModal.jsx         |  5 ++-
+ Frontend/src/components/ui/GangguanDetailModal.jsx |  9 ++--
+ Frontend/src/components/ui/MttrDetailModal.jsx     |  5 ++-
+ Frontend/src/components/ui/MvodDetailModal.jsx     |  5 ++-
+ .../src/components/ui/RatingNegatifDetailModal.jsx |  3 +-
+ Frontend/src/components/ui/SrdagDetailModal.jsx    |  5 ++-
+ Frontend/src/pages/Ens/EnsExportModal.jsx          |  5 ++-
+ Frontend/src/pages/InputEns/index.jsx              |  5 ++-
+ Frontend/src/pages/InputGangguanTm/index.jsx       |  3 +-
+ .../src/pages/InputGangguanTmKurang5/index.jsx     |  5 ++-
+ Frontend/src/pages/InputGangguanTmLebih5/index.jsx |  5 ++-
+ Frontend/src/pages/InputKinerjaP2tl/index.jsx      |  5 ++-
+ Frontend/src/pages/InputKinerjaSaidi/index.jsx     |  5 ++-
+ Frontend/src/pages/InputMttr/index.jsx             |  9 ++--
+ Frontend/src/pages/InputMvod/index.jsx             |  9 ++--
+ Frontend/src/pages/InputRatingNegatif/index.jsx    |  3 +-
+ Frontend/src/pages/InputRptGangguan/index.jsx      |  7 ++--
+ Frontend/src/pages/InputSaifi/index.jsx            |  5 ++-
+ Frontend/src/pages/InputSrdag/index.jsx            |  9 ++--
+ Frontend/src/pages/Niaga/InputKinerjaLbkb.jsx      |  3 +-
+ Frontend/src/pages/Niaga/InputKinerjaPelunasan.jsx |  3 +-
+ .../src/pages/Niaga/InputKinerjaPenghapusan.jsx    |  3 +-
+ Frontend/src/pages/RatingNegatif/index.jsx         |  3 +-
+ Frontend/src/utils/notify.js                       | 49 ++++++++++++++++++++++
+ 27 files changed, 130 insertions(+), 55 deletions(-)
+
+commit cf98581cb6c46551373b374c84f4f81810de39dc
+Author: andrey jonathan nathaniel nainggolan <143679440+andreyjonathann@users.noreply.github.com>
+Date:   Wed Jul 22 12:48:43 2026 +0700
+
+    feat: implement budget efficiency features, rbac protection for admin, and redesign pagu anggaran layout
+
+ .../app/Http/Controllers/Api/KinerjaController.php |   4 +-
+ .../Controllers/Api/NkoRealizationController.php   |   4 +-
+ .../Controllers/Api/PaguAnggaranController.php     |  83 ++
+ .../Http/Controllers/Api/PengadaanController.php   | 424 ++++++++++
+ .../Controllers/Api/TargetTahunanController.php    |   4 +-
+ .../Http/Middleware/RestrictPengadaanWrites.php    |  35 +
+ Backend/app/Models/PaguAnggaran.php                |  33 +
+ Backend/app/Models/Pengadaan.php                   |  66 ++
+ Backend/app/Services/NotificationService.php       |   2 +-
+ Backend/check_all_data.php                         |  24 +
+ .../2026_07_20_154200_create_pengadaans_table.php  |  46 ++
+ ...26_07_21_000001_create_pagu_anggarans_table.php |  30 +
+ ...000002_add_file_kontrak_to_pengadaans_table.php |  22 +
+ ...0001_add_file_kontrak_2_to_pengadaans_table.php |  22 +
+ Backend/database/seeders/DatabaseSeeder.php        |   9 +-
+ Backend/database/seeders/PengadaanSeeder.php       | 207 +++++
+ Backend/routes/api.php                             |  15 +
+ Frontend/src/App.jsx                               |  66 ++
+ Frontend/src/components/layout/Sidebar.jsx         |  11 +-
+ Frontend/src/components/ui/KpiCard.jsx             |   2 +-
+ Frontend/src/components/ui/PengadaanFormModal.jsx  | 437 +++++++++++
+ Frontend/src/context/AuthContext.jsx               |   2 +-
+ Frontend/src/index.css                             |  46 ++
+ Frontend/src/pages/EditKinerja/index.jsx           |   2 +-
+ Frontend/src/pages/Pengadaan/InputPengadaan.jsx    | 566 ++++++++++++++
+ .../src/pages/Pengadaan/KelolaPaguAnggaran.jsx     | 360 +++++++++
+ Frontend/src/pages/Pengadaan/Kontrak/index.jsx     | 543 +++++++++++++
+ Frontend/src/pages/Pengadaan/PaguAnggaranModal.jsx | 316 ++++++++
+ .../src/pages/Pengadaan/UbahStatusPengadaan.jsx    | 208 +++++
+ Frontend/src/pages/TrendNko/index.jsx              |   8 +-
+ Frontend/src/utils/constants.js                    |   4 +-
+ scratch/saidi_dashboard.html                       | 858 +++++++++++++++++++++
+ 32 files changed, 4438 insertions(+), 21 deletions(-)
+
+commit b180737c5eeb2ae12b5b91fb54ca6b878f413022
+Author: Eunikepurba <eunikepurba50@gmail.com>
+Date:   Wed Jul 22 12:44:59 2026 +0700
+
+    fix(security): add missing role checks on unguarded mutation endpoints
+    
+    - DataJaringanController: saveGangguan, saveGangguanList, deleteGangguanList
+      now require pic_jaringan or admin role
+    - SrdagController, MvodController, MttrController: storeTargets now
+      requires admin role, consistent with GangguanSwitchingController pattern
+
+ Backend/app/Http/Controllers/Api/DataJaringanController.php | 12 ++++++++++++
+ Backend/app/Http/Controllers/Api/MttrController.php         |  4 ++++
+ Backend/app/Http/Controllers/Api/MvodController.php         |  4 ++++
+ Backend/app/Http/Controllers/Api/SrdagController.php        |  4 ++++
+ 4 files changed, 24 insertions(+)
+
+commit 570720c2dc60d7929749713e2c7eef03bffc1b57
+Merge: 5896732 361c776
+Author: andrey jonathan nathaniel nainggolan <143679440+andreyjonathann@users.noreply.github.com>
+Date:   Mon Jul 20 10:08:18 2026 +0700
+
+    merge: gabungkan perubahan dari origin/eunike ke branch Andre
+
+commit 5896732f70f4fa7f391faf2c1bf9a73f6020caf4
+Author: andrey jonathan nathaniel nainggolan <143679440+andreyjonathann@users.noreply.github.com>
+Date:   Wed Jul 15 15:49:03 2026 +0700
+
+    feat: implement Saldo Akhir Niaga, role-based checks, and home dashboard summary overview
+
+ .../app/Http/Controllers/Api/KinerjaController.php |  16 -
+ .../Controllers/Api/TargetTahunanController.php    |  22 +-
+ Backend/routes/api.php                             |  42 +-
+ Frontend/src/App.jsx                               |  66 +--
+ Frontend/src/components/ui/ExportModal.jsx         |  11 +-
+ Frontend/src/pages/EditKinerja/index.jsx           |   1 +
+ Frontend/src/pages/Niaga/InputKinerjaPelunasan.jsx | 426 +++++++++++--------
+ .../src/pages/Niaga/InputKinerjaPenghapusan.jsx    | 279 +++++--------
+ .../src/pages/Niaga/InputKinerjaSaldoAkhir.jsx     | 370 ++++++++++++++++
+ Frontend/src/pages/Niaga/PelunasanPrr.jsx          |  24 +-
+ Frontend/src/pages/Niaga/PenghapusanPrr.jsx        |   4 +-
+ Frontend/src/pages/Niaga/SaldoAkhir.jsx            | 223 ++++++++++
+ Frontend/src/pages/Nko/index.jsx                   |   2 +-
+ Frontend/src/pages/Overview/index.jsx              | 465 +++++++++++++++++++--
+ .../pages/Pemasaran/v2/InputKinerjaPemasaran.jsx   | 417 ++++++++++--------
+ Frontend/src/services/homeDashboardService.js      | 342 +++++++++++++++
+ Frontend/src/services/niagaDataService.js          | 214 +++++++++-
+ Frontend/src/utils/constants.js                    |  34 +-
+ Frontend/src/utils/excelExport.js                  |  47 ++-
+ 19 files changed, 2285 insertions(+), 720 deletions(-)
+
+commit 42a1972ea1db617e821b6c23a43e3286ed32f419
+Merge: 80ff921 cef3747
+Author: andrey jonathan nathaniel nainggolan <143679440+andreyjonathann@users.noreply.github.com>
+Date:   Mon Jul 13 10:56:43 2026 +0700
+
+    Merge origin/eunike: tambah modul P2TL, Ganti Meter, Susut Distribusi, perbaikan RBAC dan YTD
+
+commit 80ff921d679cbed19e2a4c152b4dc52b40b3f646
+Author: andrey jonathan nathaniel nainggolan <143679440+andreyjonathann@users.noreply.github.com>
+Date:   Thu Jul 2 18:01:44 2026 +0700
+
+    feat: implement RBAC and read-only mode for Perencanaan role
+
+ .../app/Http/Middleware/BlockPerencanaanWrites.php |  36 +++++
+ Backend/bootstrap/app.php                          |   4 +-
+ Backend/routes/api.php                             |  84 +++++------
+ Frontend/src/App.jsx                               | 113 +++++++++------
+ Frontend/src/components/layout/Sidebar.jsx         |   7 +-
+ Frontend/src/components/ui/KinerjaDetailModal.jsx  | 156 +++++++++++----------
+ .../src/components/ui/PemasaranDetailModal.jsx     | 122 ++++++++--------
+ Frontend/src/pages/Ens/index.jsx                   |  78 ++++++-----
+ Frontend/src/pages/GangguanSwitching/index.jsx     |   2 +-
+ Frontend/src/pages/Mttr/index.jsx                  |   2 +-
+ Frontend/src/pages/Mvod/index.jsx                  |   2 +-
+ Frontend/src/pages/Niaga/PelunasanPrr.jsx          |  78 ++++++-----
+ Frontend/src/pages/Niaga/PenghapusanPrr.jsx        |  78 ++++++-----
+ Frontend/src/pages/Niaga/TindakLanjutLbkb.jsx      |  78 ++++++-----
+ Frontend/src/pages/Pemasaran/v2/DayaTersambung.jsx |  78 ++++++-----
+ Frontend/src/pages/Pemasaran/v2/Pelanggan.jsx      |  78 ++++++-----
+ Frontend/src/pages/Pemasaran/v2/PendapatanBP.jsx   |  78 ++++++-----
+ Frontend/src/pages/Pemasaran/v2/Penjualan.jsx      |  78 ++++++-----
+ Frontend/src/pages/Pemasaran/v2/PlnMobile.jsx      |  78 ++++++-----
+ Frontend/src/pages/RatingNegatif/index.jsx         |  78 ++++++-----
+ Frontend/src/pages/RptGangguan/index.jsx           |   2 +-
+ Frontend/src/pages/Saidi/index.jsx                 |  36 ++---
+ Frontend/src/pages/Saifi/index.jsx                 |  78 ++++++-----
+ Frontend/src/pages/Srdag/index.jsx                 |   2 +-
+ Frontend/src/pages/TrendNko/index.jsx              |  10 +-
+ 25 files changed, 788 insertions(+), 648 deletions(-)
