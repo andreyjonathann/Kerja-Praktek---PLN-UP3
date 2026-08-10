@@ -1,46 +1,12 @@
-﻿import React, { useState } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Plus, Search, Calendar, User, FileText, CheckCircle, Clock, AlertTriangle, X, Camera, Edit2, MessageSquare, Paperclip } from 'lucide-react'
 import PageHeader from '@/components/ui/PageHeader'
 import { useAuth } from '@/context/AuthContext'
 import { useFilter } from '@/context/FilterContext'
 import { K3_JENIS_TEMUAN, K3_STATUS_TEMUAN, MONTHS_FULL_ID } from '@/data/k3MasterData'
+import api from '@/services/api'
 
-// ─── Mock Data ─────────────────────────────────────────────────────────────────
-const MOCK_FINDINGS = [
-  {
-    id: 1, judul: 'APD tidak tersedia di lokasi kerja kabel tegangan menengah',
-    deskripsi: 'Saat inspeksi tanggal 5 Jun 2026 ditemukan bahwa petugas di gardu distribusi GD-107 tidak menggunakan/memiliki APD standar (sarung tangan isolasi, helm, dll).',
-    jenis: 'mayor', pic_name: 'Budi Santoso', due_date: '2026-07-15',
-    status: 'open', unit: 'UP3 Kebon Jeruk',
-    catatan_tindak_lanjut: '',
-    created_at: '2026-06-05', year: 2026
-  },
-  {
-    id: 2, judul: 'IBPPR belum diperbarui untuk pekerjaan pemeliharaan trafo',
-    deskripsi: 'Dokumen IBPPR untuk pekerjaan pemeliharaan trafo masih menggunakan versi 2022, belum mencerminkan SOP terbaru yang berlaku sejak Januari 2026.',
-    jenis: 'minor', pic_name: 'Rina Wulandari', due_date: '2026-07-30',
-    status: 'in_progress', unit: 'UP3 Kebon Jeruk',
-    catatan_tindak_lanjut: 'Sedang dalam proses revisi dokumen oleh tim K3.',
-    created_at: '2026-06-10', year: 2026
-  },
-  {
-    id: 3, judul: 'Rambu K3 di area panel tegangan menengah terkikis/tidak terbaca',
-    deskripsi: 'Beberapa rambu peringatan bahaya tegangan tinggi di ruang panel GH-02 sudah pudar dan tidak terbaca dengan jelas.',
-    jenis: 'observasi', pic_name: 'Ahmad Fauzi', due_date: '2026-06-25',
-    status: 'closed', unit: 'UP3 Kebon Jeruk',
-    catatan_tindak_lanjut: 'Rambu sudah diganti pada 20 Jun 2026.',
-    created_at: '2026-05-20', year: 2026
-  },
-  {
-    id: 4, judul: 'Petugas tidak memiliki SIO untuk pekerjaan di ketinggian',
-    deskripsi: 'Ditemukan 2 petugas yang melakukan pekerjaan di ketinggian (>2m) tanpa memiliki Surat Izin Operator (SIO) yang masih berlaku.',
-    jenis: 'kritikal', pic_name: 'Devi Rahayu', due_date: '2026-06-15',
-    status: 'open', unit: 'UP3 Kebon Jeruk',
-    catatan_tindak_lanjut: '',
-    created_at: '2026-06-12', year: 2026,
-    progress: []
-  },
-]
+const storageUrl = (path) => path ? `/storage/${path}` : null
 
 // ─── Finding Drawer (Slide-Out Panel) ──────────────────────────────────────────
 function FindingDrawer({ finding, onClose, onUpdateProgress, onChangeStatus, onEdit, isAdminK3, onDeleteProgressAttachment, onAddProgressAttachment }) {
@@ -94,9 +60,9 @@ function FindingDrawer({ finding, onClose, onUpdateProgress, onChangeStatus, onE
             {finding.deskripsi}
           </p>
           
-          {finding.fotoUrl && (
+          {finding.foto_path && (
             <div style={{ marginBottom: 24 }}>
-              <img src={finding.fotoUrl} alt="Foto Bukti Temuan" style={{ width: '100%', maxHeight: 250, objectFit: 'cover', borderRadius: 12, border: '1px solid var(--border-subtle)' }} />
+              <img src={storageUrl(finding.foto_path)} alt="Foto Bukti Temuan" style={{ width: '100%', maxHeight: 250, objectFit: 'cover', borderRadius: 12, border: '1px solid var(--border-subtle)' }} />
             </div>
           )}
 
@@ -104,7 +70,7 @@ function FindingDrawer({ finding, onClose, onUpdateProgress, onChangeStatus, onE
             <div>
               <p style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4 }}>Dibuat Pada</p>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                <Calendar size={14} /> {finding.created_at}
+                <Calendar size={14} /> {finding.created_at ? new Date(finding.created_at).toISOString().slice(0, 10) : '-'}
               </div>
             </div>
             <div>
@@ -125,58 +91,38 @@ function FindingDrawer({ finding, onClose, onUpdateProgress, onChangeStatus, onE
             <MessageSquare size={16} /> Timeline Tindak Lanjut
           </h4>
 
-          {(!finding.progress || finding.progress.length === 0) && !finding.catatan_tindak_lanjut && (
+          {(!finding.progress || finding.progress.length === 0) && (
             <div style={{ textAlign: 'center', padding: '24px', background: 'var(--bg-subtle)', borderRadius: 12, color: 'var(--text-muted)', fontSize: '0.85rem' }}>
               Belum ada tindak lanjut.
             </div>
           )}
 
-          {/* Legacy catatan mapping */}
-          {finding.catatan_tindak_lanjut && (!finding.progress || finding.progress.length === 0) && (
-            <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
-              <div style={{ width: 2, background: '#0070C0', margin: '6px 0 6px 6px' }} />
-              <div>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Progress Awal</span>
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-primary)', marginTop: 2 }}>{finding.catatan_tindak_lanjut}</p>
-              </div>
-            </div>
-          )}
-
           {/* Progress mapping */}
           {finding.progress?.map((p, i) => (
-            <div key={i} style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+            <div key={p.id || i} style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
                 <div style={{ width: 10, height: 10, borderRadius: 10, background: '#0070C0', marginTop: 4 }} />
                 {i < finding.progress.length - 1 && <div style={{ width: 2, flex: 1, background: '#E2E8F0' }} />}
               </div>
               <div style={{ paddingBottom: i === finding.progress.length - 1 ? 0 : 16 }}>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{p.date} oleh {p.author}</span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{p.created_at ? new Date(p.created_at).toISOString().slice(0, 10) : p.date} oleh {p.author}</span>
                 <p style={{ fontSize: '0.85rem', color: 'var(--text-primary)', marginTop: 2 }}>{p.text}</p>
-                {p.attachmentUrl ? (
+                {p.attachment_path ? (
                   <div style={{ marginTop: 8, position: 'relative', display: 'inline-block' }}>
-                    <img src={p.attachmentUrl} alt="Lampiran" style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 8, border: '1px solid var(--border-subtle)', objectFit: 'cover' }} />
-                    <button
-                      onClick={() => onDeleteProgressAttachment(finding.id, i)}
-                      style={{
-                        position: 'absolute', top: 8, right: 8, background: 'rgba(239, 68, 68, 0.9)', color: '#fff',
-                        border: 'none', borderRadius: '50%', width: 26, height: 26, display: 'flex',
-                        alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                        boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
-                      }}
-                      title="Hapus Foto"
-                    >
+                    <img src={storageUrl(p.attachment_path)} alt="Lampiran" style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 8, border: '1px solid var(--border-subtle)', objectFit: 'cover' }} />
+                    <button onClick={() => onDeleteProgressAttachment(finding.id, p.id)} style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(239, 68, 68, 0.9)', color: '#fff', border: 'none', borderRadius: '50%', width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
                       <X size={14} />
                     </button>
                   </div>
                 ) : (
                   <div style={{ marginTop: 8 }}>
-                    <input type="file" id={`upload-progress-${i}`} style={{ display: 'none' }} accept="image/*" onChange={(e) => {
-                      if(e.target.files[0]) {
-                        onAddProgressAttachment(finding.id, i, e.target.files[0]);
+                    <input type="file" id={`upload-progress-${p.id}`} style={{ display: 'none' }} accept="image/*" onChange={(e) => {
+                      if (e.target.files[0]) {
+                        onAddProgressAttachment(finding.id, p.id, e.target.files[0]);
                       }
                       e.target.value = null;
                     }} />
-                    <button onClick={() => document.getElementById(`upload-progress-${i}`).click()} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 8, border: '1px dashed var(--text-muted)', background: 'var(--bg-subtle)', color: 'var(--text-secondary)', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s' }} onMouseEnter={e => { e.currentTarget.style.borderColor = '#0070C0'; e.currentTarget.style.color = '#0070C0' }} onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--text-muted)'; e.currentTarget.style.color = 'var(--text-secondary)' }}>
+                    <button onClick={() => document.getElementById(`upload-progress-${p.id}`).click()} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 8, border: '1px dashed var(--text-muted)', background: 'var(--bg-subtle)', color: 'var(--text-secondary)', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 600 }}>
                       <Camera size={14} /> Tambahkan Foto
                     </button>
                   </div>
@@ -213,15 +159,10 @@ function FindingDrawer({ finding, onClose, onUpdateProgress, onChangeStatus, onE
               <button 
                 disabled={!newProgress && !attachment}
                 onClick={() => {
-                  if (attachment) {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                      onUpdateProgress(finding.id, { text: newProgress || 'Melampirkan foto bukti tindak lanjut', date: new Date().toISOString().slice(0, 10), author: 'Current User', attachment: attachment.name, attachmentUrl: e.target.result })
-                    }
-                    reader.readAsDataURL(attachment);
-                  } else {
-                    onUpdateProgress(finding.id, { text: newProgress, date: new Date().toISOString().slice(0, 10), author: 'Current User', attachment: null, attachmentUrl: null })
-                  }
+                  onUpdateProgress(finding.id, { 
+                    text: newProgress || 'Melampirkan foto bukti tindak lanjut', 
+                    attachmentFile: attachment 
+                  })
                   setNewProgress('')
                   setAttachment(null)
                 }}
@@ -250,7 +191,8 @@ function AddFindingModal({ onClose, onSave, initialData }) {
   const [form, setForm] = useState(initialData || {
     judul: '', deskripsi: '', jenis: 'observasi',
     pic_name: '', due_date: '', catatan_tindak_lanjut: '',
-    fotoUrl: null, fotoName: ''
+    fotoUrl: initialData?.foto_path ? storageUrl(initialData.foto_path) : null, 
+    fotoFile: null
   })
 
   const handleChange = (k, v) => setForm(p => ({ ...p, [k]: v }))
@@ -285,7 +227,7 @@ function AddFindingModal({ onClose, onSave, initialData }) {
               {f.label}
             </label>
             <input
-              type={f.type} value={form[f.key]} placeholder={f.placeholder}
+              type={f.type} value={form[f.key] || ''} placeholder={f.placeholder}
               onChange={e => handleChange(f.key, e.target.value)}
               style={{
                 width: '100%', padding: '9px 12px', borderRadius: 10,
@@ -323,7 +265,7 @@ function AddFindingModal({ onClose, onSave, initialData }) {
             Deskripsi Detail
           </label>
           <textarea
-            rows={3} value={form.deskripsi} placeholder="Uraikan temuan secara detail..."
+            rows={3} value={form.deskripsi || ''} placeholder="Uraikan temuan secara detail..."
             onChange={e => handleChange('deskripsi', e.target.value)}
             style={{
               width: '100%', padding: '9px 12px', borderRadius: 10,
@@ -334,6 +276,24 @@ function AddFindingModal({ onClose, onSave, initialData }) {
           />
         </div>
 
+        {!initialData && (
+          <div style={{ marginBottom: 14 }}>
+            <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 5 }}>
+              Progress Awal (Opsional)
+            </label>
+            <textarea
+              rows={2} value={form.catatan_tindak_lanjut || ''} placeholder="Jika sudah ada progress awal..."
+              onChange={e => handleChange('catatan_tindak_lanjut', e.target.value)}
+              style={{
+                width: '100%', padding: '9px 12px', borderRadius: 10,
+                border: '1px solid var(--border-subtle)',
+                background: 'var(--bg-card)', color: 'var(--text-primary)',
+                fontFamily: 'inherit', fontSize: '0.875rem', resize: 'vertical'
+              }}
+            />
+          </div>
+        )}
+
         <div style={{ marginBottom: 14 }}>
           <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 5 }}>
             Foto Bukti Temuan
@@ -341,7 +301,7 @@ function AddFindingModal({ onClose, onSave, initialData }) {
           {form.fotoUrl && (
              <div style={{ position: 'relative', marginBottom: 10, display: 'inline-block' }}>
                <img src={form.fotoUrl} alt="Preview" style={{ height: 120, borderRadius: 8, border: '1px solid var(--border-subtle)', objectFit: 'cover' }} />
-               <button onClick={() => setForm(p => ({ ...p, fotoUrl: null, fotoName: '' }))} style={{ position: 'absolute', top: -8, right: -8, background: '#EF4444', color: '#fff', border: 'none', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 5px rgba(0,0,0,0.2)' }}>
+               <button onClick={() => setForm(p => ({ ...p, fotoUrl: null, fotoFile: null }))} style={{ position: 'absolute', top: -8, right: -8, background: '#EF4444', color: '#fff', border: 'none', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 5px rgba(0,0,0,0.2)' }}>
                  <X size={14} />
                </button>
              </div>
@@ -350,15 +310,11 @@ function AddFindingModal({ onClose, onSave, initialData }) {
             <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept="image/*" onChange={(e) => { 
               if(e.target.files[0]) {
                 const file = e.target.files[0];
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                  setForm(p => ({ ...p, fotoUrl: ev.target.result, fotoName: file.name }));
-                };
-                reader.readAsDataURL(file);
+                setForm(p => ({ ...p, fotoUrl: URL.createObjectURL(file), fotoFile: file }));
               }
               e.target.value = null; 
             }} />
-            <button onClick={() => fileInputRef.current?.click()} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 12px', borderRadius: 8, border: '1px dashed var(--text-muted)', background: 'var(--bg-subtle)', color: 'var(--text-secondary)', fontSize: '0.8rem', cursor: 'pointer', fontWeight: 600 }}>
+            <button type="button" onClick={() => fileInputRef.current?.click()} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 12px', borderRadius: 8, border: '1px dashed var(--text-muted)', background: 'var(--bg-subtle)', color: 'var(--text-secondary)', fontSize: '0.8rem', cursor: 'pointer', fontWeight: 600 }}>
               <Camera size={16} /> {form.fotoUrl ? 'Ganti Foto' : 'Unggah Foto Temuan'}
             </button>
           </div>
@@ -371,11 +327,7 @@ function AddFindingModal({ onClose, onSave, initialData }) {
           }}>Batal</button>
           <button
             onClick={() => { 
-              const payload = initialData 
-                ? { ...initialData, ...form } 
-                : { ...form, id: Date.now(), status: 'open', unit: 'UP3 Kebon Jeruk', created_at: new Date().toISOString().slice(0, 10) }
-              onSave(payload)
-              onClose() 
+              onSave(form)
             }}
             disabled={!form.judul || !form.pic_name || !form.due_date}
             style={{
@@ -394,20 +346,9 @@ function AddFindingModal({ onClose, onSave, initialData }) {
 export default function K3TemuanPage() {
   const { isAdminK3 } = useAuth()
   const { filters } = useFilter()
-  const [findings, setFindings] = useState(() => {
-    const saved = localStorage.getItem('k3_temuan_mock')
-    return saved ? JSON.parse(saved) : MOCK_FINDINGS
-  })
-
-  // Sinkronisasi ke localStorage
-  React.useEffect(() => {
-    try {
-      localStorage.setItem('k3_temuan_mock', JSON.stringify(findings))
-    } catch (e) {
-      console.error('Failed to save to localStorage', e)
-      alert('Ukuran foto terlalu besar untuk disimpan secara permanen di memori lokal (localStorage penuh). Foto ini akan hilang setelah halaman direfresh.')
-    }
-  }, [findings])
+  const [findings, setFindings] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   const [showAdd, setShowAdd]     = useState(false)
   const [editingFinding, setEditingFinding] = useState(null)
@@ -416,12 +357,31 @@ export default function K3TemuanPage() {
   const [filterStatus, setFStatus]= useState('all')
   const [selectedFinding, setSelectedFinding] = useState(null)
 
+  const fetchFindings = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await api.get('/k3/findings', { params: { tahun: filters.year, jenis: filterJenis, status: filterStatus } })
+      setFindings(res.data)
+    } catch (err) {
+      console.error('Gagal memuat temuan K3', err)
+      setError(err.message || 'Gagal memuat data')
+    } finally {
+      setLoading(false)
+    }
+  }, [filters.year, filterJenis, filterStatus])
+
+  useEffect(() => { 
+    fetchFindings() 
+  }, [fetchFindings])
+
   // Sync selectedFinding dengan perubahan findings
-  React.useEffect(() => {
+  useEffect(() => {
     if (selectedFinding) {
       const current = findings.find(f => f.id === selectedFinding.id)
       if (current && JSON.stringify(current) !== JSON.stringify(selectedFinding)) {
         setSelectedFinding(current)
+      } else if (!current) {
+        setSelectedFinding(null)
       }
     }
   }, [findings])
@@ -430,75 +390,100 @@ export default function K3TemuanPage() {
 
   const filtered = findings.filter(f => {
     const matchSearch = f.judul.toLowerCase().includes(search.toLowerCase()) || f.pic_name.toLowerCase().includes(search.toLowerCase())
-    const matchJenis  = filterJenis === 'all' || f.jenis === filterJenis
-    const matchStatus = filterStatus === 'all' || f.status === filterStatus
-    const findingYear = f.year || (f.created_at ? new Date(f.created_at).getFullYear() : null)
-    const matchYear   = !filters.year || findingYear === filters.year
-    return matchSearch && matchJenis && matchStatus && matchYear
+    return matchSearch
   })
 
   const isOverdue = (f) => f.status !== 'closed' && f.due_date < today
 
-  const handleUpdateStatus = (id, newStatus) => {
-    setFindings(prev => prev.map(f => f.id === id ? { ...f, status: newStatus } : f))
+  const handleUpdateStatus = async (id, newStatus) => {
+    try {
+      await api.patch(`/k3/findings/${id}/status`, { status: newStatus })
+      await fetchFindings()
+    } catch (err) {
+      alert(err.response?.data?.message || 'Gagal mengubah status')
+    }
   }
 
-  const handleUpdateProgress = (id, progressObj) => {
-    setFindings(prev => prev.map(f => {
-      if (f.id === id) {
-        return { ...f, progress: [...(f.progress || []), progressObj] }
+  const handleUpdateProgress = async (id, progressObj) => {
+    try {
+      const formData = new FormData()
+      formData.append('text', progressObj.text)
+      if (progressObj.attachmentFile) {
+        formData.append('attachment', progressObj.attachmentFile)
       }
-      return f
-    }))
+      await api.post(`/k3/findings/${id}/progress`, formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+      await fetchFindings()
+    } catch (err) {
+      alert(err.response?.data?.message || 'Gagal menambah progress')
+    }
   }
 
-  const handleDeleteProgressAttachment = (findingId, progressIndex) => {
-    setFindings(prev => prev.map(f => {
-      if (f.id === findingId) {
-        const newProgress = [...(f.progress || [])]
-        if (newProgress[progressIndex]) {
-          newProgress[progressIndex] = { ...newProgress[progressIndex], attachmentUrl: null, attachment: null }
-        }
-        return { ...f, progress: newProgress }
+  const handleDeleteProgressAttachment = async (findingId, progressId) => {
+    if (!window.confirm('Yakin ingin menghapus foto progress ini?')) return
+    try {
+      await api.delete(`/k3/findings/${findingId}/progress/${progressId}/attachment`)
+      await fetchFindings()
+    } catch (err) {
+      alert(err.response?.data?.message || 'Gagal menghapus lampiran')
+    }
+  }
+
+  const handleAddProgressAttachment = async (findingId, progressId, file) => {
+    try {
+      const formData = new FormData()
+      formData.append('attachment', file)
+      await api.post(`/k3/findings/${findingId}/progress/${progressId}/attachment`, formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+      await fetchFindings()
+    } catch (err) {
+      alert(err.response?.data?.message || 'Gagal menambah lampiran')
+    }
+  }
+
+  const handleSaveFinding = async (savedFinding) => {
+    try {
+      const formData = new FormData()
+      formData.append('judul', savedFinding.judul)
+      formData.append('deskripsi', savedFinding.deskripsi || '')
+      formData.append('jenis', savedFinding.jenis)
+      formData.append('pic_name', savedFinding.pic_name || '')
+      formData.append('due_date', savedFinding.due_date || '')
+      if (savedFinding.status) formData.append('status', savedFinding.status)
+      if (savedFinding.unit) formData.append('unit', savedFinding.unit)
+      
+      if (!editingFinding && savedFinding.catatan_tindak_lanjut) {
+        formData.append('catatan_tindak_lanjut', savedFinding.catatan_tindak_lanjut)
       }
-      return f
-    }))
+      
+      if (savedFinding.fotoFile) {
+        formData.append('foto', savedFinding.fotoFile)
+      } else if (editingFinding && editingFinding.foto_path && !savedFinding.fotoUrl) {
+        formData.append('remove_foto', '1')
+      }
+
+      if (editingFinding) {
+        formData.append('_method', 'PUT')
+        await api.post(`/k3/findings/${editingFinding.id}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+      } else {
+        await api.post('/k3/findings', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+      }
+      
+      await fetchFindings()
+      setEditingFinding(null)
+      setShowAdd(false)
+    } catch (err) {
+      alert(err.response?.data?.message || 'Gagal menyimpan temuan')
+    }
   }
 
-  const handleAddProgressAttachment = (findingId, progressIndex, file) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setFindings(prev => prev.map(f => {
-        if (f.id === findingId) {
-          const newProgress = [...(f.progress || [])]
-          if (newProgress[progressIndex]) {
-            newProgress[progressIndex] = { 
-              ...newProgress[progressIndex], 
-              attachmentUrl: e.target.result, 
-              attachment: file.name 
-            }
-          }
-          return { ...f, progress: newProgress }
-        }
-        return f
-      }))
+  const handleDeleteFinding = async (id) => {
+    if (!window.confirm('Yakin ingin menghapus temuan ini?')) return
+    try {
+      await api.delete(`/k3/findings/${id}`)
+      await fetchFindings()
+      if (selectedFinding?.id === id) setSelectedFinding(null)
+    } catch (err) {
+      alert(err.response?.data?.message || 'Gagal menghapus temuan')
     }
-    reader.readAsDataURL(file);
-  }
-
-  const handleSaveFinding = (savedFinding) => {
-    // Pastikan tahun tersimpan dari created_at
-    const withYear = {
-      ...savedFinding,
-      year: savedFinding.year || (savedFinding.created_at ? new Date(savedFinding.created_at).getFullYear() : new Date().getFullYear())
-    }
-    if (editingFinding) {
-      setFindings(prev => prev.map(f => f.id === withYear.id ? withYear : f))
-      if (selectedFinding?.id === withYear.id) setSelectedFinding(withYear)
-    } else {
-      setFindings(prev => [withYear, ...prev])
-    }
-    setEditingFinding(null)
   }
 
   return (
@@ -565,9 +550,15 @@ export default function K3TemuanPage() {
         )}
       </div>
 
+      {loading && findings.length === 0 && (
+        <div className="flex h-40 items-center justify-center">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-red-600"></div>
+        </div>
+      )}
+
       {/* Findings List */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {filtered.length === 0 && (
+        {!loading && filtered.length === 0 && (
           <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '32px', fontSize: '0.875rem' }}>
             Tidak ada temuan yang cocok dengan filter.
           </div>
@@ -585,13 +576,22 @@ export default function K3TemuanPage() {
               border: `1px solid ${overdue ? '#FCA5A5' : 'var(--border-subtle)'}`,
               borderLeft: `4px solid ${overdue ? '#DC2626' : jenisInfo?.color}`,
               borderRadius: 14, padding: '16px 20px',
-              transition: 'all 0.2s', cursor: 'pointer'
+              transition: 'all 0.2s', cursor: 'pointer', position: 'relative'
             }}
               onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
               onMouseLeave={e => e.currentTarget.style.transform = 'none'}
             >
+              {isAdminK3 && (
+                <button 
+                  onClick={(e) => { e.stopPropagation(); handleDeleteFinding(f.id) }} 
+                  style={{ position: 'absolute', top: 16, right: 16, background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                  title="Hapus Temuan"
+                >
+                  <X size={16} />
+                </button>
+              )}
               {/* Header row */}
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', paddingRight: 24 }}>
                 <div style={{ flex: 1, minWidth: 200 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
                     <span className={`inline-block px-2 py-0.5 rounded-lg text-xs font-bold ${jenisInfo?.bgClass} ${jenisInfo?.textClass}`}>
@@ -627,17 +627,6 @@ export default function K3TemuanPage() {
                   </div>
                 </div>
               </div>
-
-              {/* Tindak Lanjut */}
-              {f.catatan_tindak_lanjut && (
-                <div style={{
-                  marginTop: 10, background: '#F0FDF4', border: '1px solid #BBF7D0',
-                  borderRadius: 9, padding: '8px 12px', fontSize: '0.78rem', color: '#166534'
-                }}>
-                  <CheckCircle size={11} style={{ display: 'inline', marginRight: 5 }} />
-                  <strong>Tindak Lanjut:</strong> {f.catatan_tindak_lanjut}
-                </div>
-              )}
             </div>
           )
         })}
