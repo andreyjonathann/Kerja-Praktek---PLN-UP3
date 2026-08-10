@@ -192,34 +192,6 @@ export default function K3SelfAssessmentPage() {
   // Find matching category from URL param
   const activeCategory = categories.find(c => c.code.toLowerCase() === catParam?.toLowerCase())
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="text-gray-500 font-medium">Memuat data assessment...</div>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="p-6">
-        <ErrorBanner message={error} onRetry={() => window.location.reload()} />
-      </div>
-    )
-  }
-
-  if (categories.length > 0 && !activeCategory) {
-    return <Navigate to={`/k3/assessment/${categories[0].code.toLowerCase()}`} replace />
-  }
-
-  if (categories.length === 0) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="text-red-500 font-medium">Gagal memuat data kategori K3.</div>
-      </div>
-    )
-  }
-
   const readOnly = user?.role !== 'pic_k3'
 
   const handleRowClick = (row) => {
@@ -268,6 +240,34 @@ export default function K3SelfAssessmentPage() {
       }
     }])
   ], [details, readOnly])
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-gray-500 font-medium">Memuat data assessment...</div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <ErrorBanner message={error} onRetry={() => window.location.reload()} />
+      </div>
+    )
+  }
+
+  if (categories.length > 0 && !activeCategory) {
+    return <Navigate to={`/k3/assessment/${categories[0].code.toLowerCase()}`} replace />
+  }
+
+  if (categories.length === 0) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-red-500 font-medium">Gagal memuat data kategori K3.</div>
+      </div>
+    )
+  }
 
   const totalCriteria = categories.reduce((a, c) => a + c.criteria.length, 0)
   const filledCount   = Object.values(details).filter(d => d.level !== null).length

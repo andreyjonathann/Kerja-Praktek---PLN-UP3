@@ -47,6 +47,10 @@ class SrdagController extends Controller
 
         $up3 = $user->role === 'admin' ? $request->up3 : $user->up3;
 
+        if (empty($up3) || $up3 === 'Semua UP3') {
+            return response()->json(['success' => false, 'message' => 'UP3 tidak valid atau belum dipilih'], 422);
+        }
+
         $woMarking = $request->wo_marking_padam_meluas ?? 0;
 
         if ($woMarking > $request->jumlah_total_gangguan) {
