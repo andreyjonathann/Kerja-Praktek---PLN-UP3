@@ -95,7 +95,7 @@ import K3DashboardPage         from '@/pages/K3/Dashboard'
 
 import K3SelfAssessmentPage    from '@/pages/K3/SelfAssessment'
 import K3LmcPage               from '@/pages/K3/Lmc'
-import AssessmentInputPage     from '@/pages/K3/LmcInput'
+import AssessmentInputPage     from '@/pages/K3/AssessmentInput'
 import K3SelfAssessmentDetailPage from '@/pages/K3/SelfAssessment/Detail'
 import K3KegiatanPage          from '@/pages/K3/Kegiatan'
 import K3TemuanPage from '@/pages/K3/Temuan'
