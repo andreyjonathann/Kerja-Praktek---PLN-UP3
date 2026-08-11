@@ -1,44 +1,12 @@
-﻿import React, { useState } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Search, Plus, X, Calendar, Users, BookOpen, ClipboardCheck, Briefcase, Activity, Edit, Trash2 } from 'lucide-react'
 import PageHeader from '@/components/ui/PageHeader'
 import { useAuth } from '@/context/AuthContext'
 import { useFilter } from '@/context/FilterContext'
 import { K3_JENIS_KEGIATAN, K3_STATUS_KEGIATAN, MONTHS_FULL_ID } from '@/data/k3MasterData'
+import api from '@/services/api'
 
 const ICON_MAP = { Search, Users, BookOpen, ClipboardCheck, Briefcase, Activity }
-
-const MOCK_ACTIVITIES = [
-  {
-    id: 1, jenis: 'inspeksi', judul: 'Inspeksi K3 Manajemen — Gardu GH-01 s/d GH-05',
-    tanggal: '2026-06-15', lokasi: 'Gardu Distribusi GH-01 hingga GH-05',
-    peserta: 4, status: 'done', year: 2026,
-    keterangan: 'Inspeksi berjalan lancar. Ditemukan 1 temuan observasi (rambu terkikis.)'
-  },
-  {
-    id: 2, jenis: 'rapat_p2k3', judul: 'Rapat P2K3 Bulanan — Juni 2026',
-    tanggal: '2026-06-20', lokasi: 'Ruang Rapat Lt. 2 UP3 Kebon Jeruk',
-    peserta: 12, status: 'done', year: 2026,
-    keterangan: 'Dibahas temuan inspeksi bulan Mei, rencana pelatihan K3 Listrik, laporan ke Disnaker.'
-  },
-  {
-    id: 3, jenis: 'pelatihan', judul: 'Pelatihan K3 Listrik — Dasar & Lanjutan',
-    tanggal: '2026-07-10', lokasi: 'Aula Training PLN UID Jaya',
-    peserta: 20, status: 'planned', year: 2026,
-    keterangan: 'Pelatihan bersertifikat K3 Listrik kerjasama dengan BSN dan Disnaker DKI.'
-  },
-  {
-    id: 4, jenis: 'audit_internal', judul: 'Audit Internal SMK3 — Semester I 2026',
-    tanggal: '2026-07-25', lokasi: 'Seluruh area UP3 Kebon Jeruk',
-    peserta: 6, status: 'planned', year: 2026,
-    keterangan: 'Audit SMK3 internal sesuai PP 50/2012 dan ISO 45001.'
-  },
-  {
-    id: 5, jenis: 'audit_mitra', judul: 'CSMS Assessment — PT. Jasa Listrik Mandiri',
-    tanggal: '2026-06-05', lokasi: 'Kantor PT. JLM & Lokasi Kerja',
-    peserta: 3, status: 'done', year: 2026,
-    keterangan: 'Hasil assessment: skor CSMS 78 (cukup). Rekomendasi perbaikan APD dan JSA.'
-  },
-]
 
 // ─── Activity Modal ───────────────────────────────────────────────────────
 function ActivityModal({ initialData, onClose, onSave }) {
@@ -130,20 +98,31 @@ function ActivityModal({ initialData, onClose, onSave }) {
 export default function K3KegiatanPage() {
   const { isAdminK3 } = useAuth()
   const { filters } = useFilter()
-  const [activities, setActivities] = useState(() => {
-    const saved = localStorage.getItem('k3_kegiatan_mock')
-    return saved ? JSON.parse(saved) : MOCK_ACTIVITIES
-  })
-
-  // Sinkronisasi ke localStorage setiap kali activities berubah
-  React.useEffect(() => {
-    localStorage.setItem('k3_kegiatan_mock', JSON.stringify(activities))
-  }, [activities])
+  const [activities, setActivities] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   const [showAdd, setShowAdd]       = useState(false)
   const [editingItem, setEditingItem] = useState(null)
   const [activeJenis, setActiveJenis] = useState('all')
   const [search, setSearch]         = useState('')
+
+  const fetchActivities = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await api.get('/k3/activities', { params: { tahun: filters.year, jenis: activeJenis } })
+      setActivities(res.data)
+    } catch (err) {
+      console.error('Gagal memuat kegiatan K3', err)
+      setError(err.message || 'Gagal memuat data')
+    } finally {
+      setLoading(false)
+    }
+  }, [filters.year, activeJenis])
+
+  useEffect(() => {
+    fetchActivities()
+  }, [fetchActivities])
 
   const filtered = activities.filter(a => {
     const matchJenis  = activeJenis === 'all' || a.jenis === activeJenis
@@ -161,6 +140,12 @@ export default function K3KegiatanPage() {
         icon={Calendar}
         iconColor="#0070C0"
       />
+
+      {loading && activities.length === 0 && (
+        <div className="flex h-40 items-center justify-center">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#0070C0]"></div>
+        </div>
+      )}
 
       {/* Filter & Add */}
       <div style={{
@@ -266,9 +251,14 @@ export default function K3KegiatanPage() {
                     }}
                   ><Edit size={12} /> Edit</button>
                   <button
-                    onClick={() => {
+                    onClick={async () => {
                       if (confirm('Yakin ingin menghapus kegiatan ini?')) {
-                        setActivities(prev => prev.filter(x => x.id !== a.id))
+                        try {
+                          await api.delete(`/k3/activities/${a.id}`)
+                          await fetchActivities()
+                        } catch (err) {
+                          alert(err.response?.data?.message || 'Gagal menghapus kegiatan')
+                        }
                       }
                     }}
                     style={{
@@ -280,7 +270,14 @@ export default function K3KegiatanPage() {
                   ><Trash2 size={12} /> Hapus</button>
                   {isPlanned && (
                     <button
-                      onClick={() => setActivities(prev => prev.map(x => x.id === a.id ? { ...x, status: 'done' } : x))}
+                      onClick={async () => {
+                        try {
+                          await api.put(`/k3/activities/${a.id}`, { status: 'done' })
+                          await fetchActivities()
+                        } catch (err) {
+                          alert(err.response?.data?.message || 'Gagal memperbarui status')
+                        }
+                      }}
                       style={{
                         padding: '6px 14px', borderRadius: 9, border: '1px solid #16A34A',
                         background: '#F0FDF4', color: '#16A34A',
@@ -299,10 +296,19 @@ export default function K3KegiatanPage() {
         <ActivityModal
           initialData={editingItem}
           onClose={() => { setShowAdd(false); setEditingItem(null); }}
-          onSave={a => {
-            const withYear = { ...a, year: a.year || (a.tanggal ? new Date(a.tanggal).getFullYear() : new Date().getFullYear()) }
-            if (editingItem) setActivities(p => p.map(x => x.id === withYear.id ? withYear : x))
-            else setActivities(p => [withYear, ...p])
+          onSave={async (a) => {
+            try {
+              if (editingItem) {
+                await api.put(`/k3/activities/${editingItem.id}`, a)
+              } else {
+                await api.post('/k3/activities', a)
+              }
+              await fetchActivities()
+              setShowAdd(false)
+              setEditingItem(null)
+            } catch (err) {
+              alert(err.response?.data?.message || 'Gagal menyimpan kegiatan')
+            }
           }}
         />
       )}

@@ -265,6 +265,7 @@ export default function GangguanTmPage() {
                   fill={COLORS.realisasi} 
                   radius={[4, 4, 0, 0]} 
                   maxBarSize={40}
+                  minPointSize={5}
                   onClick={(data) => {
                     if (data && data.bulan) {
                       setSelectedDetailMonth(data.bulan);
@@ -582,21 +583,45 @@ export default function GangguanTmPage() {
 
       {/* Charts & Tables */}
       {activeTab === 'semua' ? (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mt-4">
-          <div className="xl:col-span-1">
-            {renderChart('lebih_5_mnt', 'Gangguan > 5 Menit')}
-          </div>
-          <div className="xl:col-span-1">
-            {renderChart('kurang_5_mnt', 'Gangguan < 5 Menit')}
-          </div>
+        <div className="mt-4 flex flex-col gap-6">
+          <ChartWrapper
+            title="Total Gangguan TM (Lebih & Kurang dari 5 Menit)"
+            subtitle="Grafik gabungan bulanan tahun 2026"
+            empty={!dataRekap}
+            height={360}
+          >
+            <ResponsiveContainer width="100%" height={360}>
+              <BarChart 
+                data={MONTHS_FULL.map((m, i) => {
+                  const b = i + 1;
+                  const L = dataRekap?.lebih_5_mnt?.monthly[b];
+                  const K = dataRekap?.kurang_5_mnt?.monthly[b];
+                  const realL = L ? (typeof L === 'object' ? L.realisasi : L) : null;
+                  const realK = K ? (typeof K === 'object' ? K.realisasi : K) : null;
+                  return {
+                    label: m.substring(0, 3),
+                    Lebih5: realL !== null ? realL : 0,
+                    Kurang5: realK !== null ? realK : 0,
+                  }
+                }).filter(d => d.Lebih5 > 0 || d.Kurang5 > 0)}
+                margin={{ top: 20, right: 30, left: -10, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} />
+                <Tooltip cursor={{fill: 'rgba(0,0,0,0.05)'}} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
+                <Legend iconType="circle" wrapperStyle={{paddingTop: '20px', fontSize: '12px'}} />
+                <Bar dataKey="Lebih5" name="> 5 Menit" stackId="a" fill="#3b82f6" maxBarSize={50} minPointSize={5} radius={[0, 0, 0, 0]} />
+                <Bar dataKey="Kurang5" name="< 5 Menit" stackId="a" fill="#10b981" maxBarSize={50} minPointSize={5} radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartWrapper>
         </div>
       ) : (
         <div className="mt-4 flex flex-col gap-6">
           {renderChart(activeTab, `Tren Bulanan: ${TABS.find(t => t.id === activeTab)?.label}`)}
           {renderRekapTable(activeTab)}
           {renderUp3Table(activeTab)}
-          
-
         </div>
       )}
       <DetailGangguanTmModal 

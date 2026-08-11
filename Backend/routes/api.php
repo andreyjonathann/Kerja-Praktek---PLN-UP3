@@ -217,6 +217,16 @@ Route::middleware('api')->group(function () {
         Route::put('/k3/activities/{id}',    [\App\Http\Controllers\Api\K3ActivityController::class, 'update']);
         Route::delete('/k3/activities/{id}', [\App\Http\Controllers\Api\K3ActivityController::class, 'destroy']);
         
+        // K3 Findings
+        Route::get('/k3/findings', [\App\Http\Controllers\Api\K3FindingController::class, 'index']);
+        Route::post('/k3/findings', [\App\Http\Controllers\Api\K3FindingController::class, 'store']);
+        Route::put('/k3/findings/{id}', [\App\Http\Controllers\Api\K3FindingController::class, 'update']);
+        Route::delete('/k3/findings/{id}', [\App\Http\Controllers\Api\K3FindingController::class, 'destroy']);
+        Route::patch('/k3/findings/{id}/status', [\App\Http\Controllers\Api\K3FindingController::class, 'changeStatus']);
+        Route::post('/k3/findings/{id}/progress', [\App\Http\Controllers\Api\K3FindingController::class, 'addProgress']);
+        Route::delete('/k3/findings/{id}/progress/{progressId}/attachment', [\App\Http\Controllers\Api\K3FindingController::class, 'deleteProgressAttachment']);
+        Route::post('/k3/findings/{id}/progress/{progressId}/attachment', [\App\Http\Controllers\Api\K3FindingController::class, 'addProgressAttachment']);
+        
         // Data Jaringan (Dashboard)
         Route::get('/jaringan/dashboard', [DataJaringanController::class, 'getDashboardData']);
         Route::get('/jaringan/gangguan-list', [DataJaringanController::class, 'getGangguanList']);

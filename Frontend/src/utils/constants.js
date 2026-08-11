@@ -61,13 +61,13 @@ export const NAV_ITEMS = [
         type: 'subgroup',
         group: 'KELOLA TARGET',
         items: [
-
           { key: 'kt-jaringan', label: 'JARINGAN', path: '/kelola-target?bidang=jaringan' },
           { key: 'kt-pemasaran', label: 'PEMASARAN', path: '/kelola-target?bidang=pemasaran' },
           { key: 'kt-transaksi-energi', label: 'TRANSAKSI ENERGI', path: '/kelola-target?bidang=transaksi-energi' },
           { key: 'kt-aset', label: 'ASET', path: '/kelola-target?bidang=aset' },
           { key: 'kt-niaga', label: 'NIAGA', path: '/kelola-target?bidang=niaga' },
           { key: 'kt-keuangan', label: 'KEUANGAN', path: '/kelola-target?bidang=keuangan' },
+          { key: 'k3-nko', label: 'K3', path: '/k3/nko' },
         ]
       },
     ],
@@ -144,7 +144,6 @@ export const NAV_ITEMS = [
         group: 'K3',
         items: [
           { key: 'k3-dashboard', label: 'DASHBOARD', path: '/k3/dashboard', icon: 'LayoutDashboard' },
-          { key: 'k3-nko',       label: 'NKO',       path: '/k3/nko',       icon: 'Target' },
           { key: 'k3-kegiatan', label: 'KEGIATAN K3',            path: '/k3/kegiatan', icon: 'Activity' },
           { key: 'k3-temuan',   label: 'TEMUAN & TINDAK LANJUT', path: '/k3/temuan',   icon: 'AlertTriangle' },
           { key: 'k3-assessment-lmc', label: 'LMC', path: '/k3/assessment/lmc', icon: 'FileText' },
