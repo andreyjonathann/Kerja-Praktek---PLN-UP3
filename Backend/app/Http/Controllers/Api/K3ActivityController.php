@@ -12,7 +12,7 @@ class K3ActivityController extends Controller
 
     private function isAdminK3(Request $request): bool
     {
-        return in_array($request->user()?->role, ['admin_k3', 'admin']);
+        return in_array($request->user()?->role, ['pic_k3', 'admin_k3', 'admin']);
     }
 
     private function forbiddenJson(string $message = 'Anda tidak berwenang.')

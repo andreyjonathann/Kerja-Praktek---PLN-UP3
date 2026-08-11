@@ -638,13 +638,24 @@ class K3Controller extends Controller
         $gap = ($avgScore !== null && $avgTarget !== null) ? round($avgScore - $avgTarget, 2) : null;
 
         // ── Tren 4 semester terakhir ─────────────────────────────────────────
-        $currentYear = (int) date('Y');
-        $periods = [
-            ($currentYear - 1) . '-S1',
-            ($currentYear - 1) . '-S2',
-            $currentYear . '-S1',
-            $currentYear . '-S2',
-        ];
+        $selectedYear = (int) $tahun;
+        $selectedSem = strtoupper($semester);
+
+        if ($selectedSem === 'S2') {
+            $periods = [
+                ($selectedYear - 1) . '-S1',
+                ($selectedYear - 1) . '-S2',
+                $selectedYear . '-S1',
+                $selectedYear . '-S2',
+            ];
+        } else {
+            $periods = [
+                ($selectedYear - 2) . '-S2',
+                ($selectedYear - 1) . '-S1',
+                ($selectedYear - 1) . '-S2',
+                $selectedYear . '-S1',
+            ];
+        }
 
         $trendAssessments = K3Assessment::whereIn('period', $periods)
             ->whereIn('criteria_id', $criteriaIds)

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, CheckCircle, Activity, Save, ClipboardList, Crown } from 'lucide-react'
 import notify from '@/utils/notify'
 import { k3AssessmentService } from '@/services/k3AssessmentService'
@@ -63,8 +63,9 @@ function LevelSelector({ criteriaId, levels, selected, onChange, readOnly }) {
   )
 }
 
-export default function LmcInputPage() {
+export default function AssessmentInputPage() {
   const navigate = useNavigate()
+  const { category: catParam } = useParams()
   
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
@@ -86,10 +87,10 @@ export default function LmcInputPage() {
   useEffect(() => {
     k3AssessmentService.getCategories().then(data => {
       setCategories(data)
-      const cat = data.find(c => c.code.toLowerCase() === 'lmc')
+      const cat = data.find(c => c.code.toLowerCase() === (catParam || 'lmc').toLowerCase())
       setActiveCategory(cat)
     }).catch(err => console.error("Gagal memuat kategori:", err))
-  }, [])
+  }, [catParam])
 
   const handleLanjutStep1 = async (e) => {
     e.preventDefault()
@@ -152,16 +153,16 @@ export default function LmcInputPage() {
       }))
       
       setSuccess(true)
-      notify.success("Berhasil menyimpan penilaian LMC.")
+      notify.success(`Berhasil menyimpan penilaian ${activeCategory?.code || ''}.`)
       window.scrollTo({ top: 0, behavior: 'smooth' })
       
       setTimeout(() => {
-        navigate('/k3/assessment/lmc')
+        navigate(`/k3/assessment/${activeCategory?.code.toLowerCase() || 'lmc'}`)
       }, 2000)
       
     } catch(err) {
       console.error(err)
-      notify.error("Gagal menyimpan penilaian LMC.")
+      notify.error(`Gagal menyimpan penilaian ${activeCategory?.code || ''}.`)
     } finally {
       setLoading(false)
     }
@@ -185,7 +186,7 @@ export default function LmcInputPage() {
             <ArrowLeft size={16} /> Kembali
           </button>
           <div>
-            <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#1e293b' }}>Input LMC</h1>
+            <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#1e293b' }}>Input {activeCategory?.code || 'Penilaian'}</h1>
             <p style={{ margin: 0, fontSize: '0.78rem', color: '#94a3b8', fontWeight: 500 }}>
               {step === 1 ? 'Langkah 1: Pilih Periode' : step === 2 ? 'Langkah 2: Pilih Kriteria' : 'Langkah 3: Isi Penilaian'}
             </p>

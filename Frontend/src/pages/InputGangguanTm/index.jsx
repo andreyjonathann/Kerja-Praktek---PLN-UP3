@@ -54,8 +54,8 @@ export default function InputGangguanTmPage() {
 
   const isDuplicate = React.useMemo(() => {
     if (!dashboardData || !selectedMonth) return false;
-    const ggnLebih = dashboardData['lebih_5_mnt']?.monthly[parseInt(selectedMonth)];
-    const ggnKurang = dashboardData['kurang_5_mnt']?.monthly[parseInt(selectedMonth)];
+    const ggnLebih = dashboardData['lebih_5_mnt']?.monthly[parseInt(selectedMonth)]?.realisasi;
+    const ggnKurang = dashboardData['kurang_5_mnt']?.monthly[parseInt(selectedMonth)]?.realisasi;
     
     const isLebihFilled = ggnLebih !== null && ggnLebih !== undefined;
     const isKurangFilled = ggnKurang !== null && ggnKurang !== undefined;
@@ -68,8 +68,8 @@ export default function InputGangguanTmPage() {
 
   const existingData = React.useMemo(() => {
     if (!dashboardData || !selectedMonth) return { lebih: false, kurang: false };
-    const ggnLebih = dashboardData['lebih_5_mnt']?.monthly[parseInt(selectedMonth)];
-    const ggnKurang = dashboardData['kurang_5_mnt']?.monthly[parseInt(selectedMonth)];
+    const ggnLebih = dashboardData['lebih_5_mnt']?.monthly[parseInt(selectedMonth)]?.realisasi;
+    const ggnKurang = dashboardData['kurang_5_mnt']?.monthly[parseInt(selectedMonth)]?.realisasi;
     return {
       lebih: ggnLebih !== null && ggnLebih !== undefined,
       kurang: ggnKurang !== null && ggnKurang !== undefined
@@ -78,8 +78,8 @@ export default function InputGangguanTmPage() {
 
   useEffect(() => {
     if (selectedMonth && dashboardData) {
-      const ggnLebih = dashboardData['lebih_5_mnt']?.monthly[parseInt(selectedMonth)];
-      const ggnKurang = dashboardData['kurang_5_mnt']?.monthly[parseInt(selectedMonth)];
+      const ggnLebih = dashboardData['lebih_5_mnt']?.monthly[parseInt(selectedMonth)]?.realisasi;
+      const ggnKurang = dashboardData['kurang_5_mnt']?.monthly[parseInt(selectedMonth)]?.realisasi;
       
       reset({
         tahun: selectedYear,

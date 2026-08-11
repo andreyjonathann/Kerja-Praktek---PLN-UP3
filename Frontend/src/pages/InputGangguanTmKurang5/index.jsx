@@ -67,13 +67,13 @@ export default function InputGangguanTmKurang5Page() {
 
   const isDuplicate = React.useMemo(() => {
     if (!dashboardData || !selectedMonth) return false;
-    const ggnKurang = dashboardData['kurang_5_mnt']?.monthly[parseInt(selectedMonth)];
+    const ggnKurang = dashboardData['kurang_5_mnt']?.monthly[parseInt(selectedMonth)]?.realisasi;
     return ggnKurang !== null && ggnKurang !== undefined;
   }, [dashboardData, selectedMonth]);
 
   useEffect(() => {
     if (selectedMonth && dashboardData) {
-      const ggnKurang = dashboardData['kurang_5_mnt']?.monthly[parseInt(selectedMonth)];
+      const ggnKurang = dashboardData['kurang_5_mnt']?.monthly[parseInt(selectedMonth)]?.realisasi;
       
       setExistingData({
         kurang: ggnKurang !== null && ggnKurang !== undefined
