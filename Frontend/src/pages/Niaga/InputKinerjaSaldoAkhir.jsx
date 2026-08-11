@@ -1,12 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useForm, useWatch, Controller } from 'react-hook-form';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '@/services/api';
 import { MONTHS } from '@/utils/constants';
-import { Activity, Target, Save, ChevronDown, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Activity, Target, Save, ChevronDown, CheckCircle, AlertCircle, ArrowLeft, AlertTriangle } from 'lucide-react';
+
+import { useFilter } from '@/context/FilterContext';
 
 export default function InputKinerjaSaldoAkhirPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const mode = searchParams.get('mode');
+  const paramMonth = searchParams.get('bulan');
+  const paramYear = searchParams.get('tahun');
+
+  const { filters } = useFilter();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [niagaData, setNiagaData] = useState([]);
@@ -14,8 +22,8 @@ export default function InputKinerjaSaldoAkhirPage() {
 
   const { register, handleSubmit, formState: { errors }, reset, control, setValue } = useForm({
     defaultValues: {
-      tahun: new Date().getFullYear().toString(),
-      periode_id: '',
+      tahun: (paramYear || filters.year || new Date().getFullYear()).toString(),
+      periode_id: (paramMonth || filters.month || '').toString(),
       pal_gol_0: '',
       pal_gol_1: '',
       pal_gol_2: '',
@@ -94,8 +102,11 @@ export default function InputKinerjaSaldoAkhirPage() {
       const fetchNiagaData = async () => {
         setLoadingData(true);
         try {
-          const res = await api.get(`/kinerja/niaga?tahun=${selectedYear}`);
-          setNiagaData(res.data || []);
+          const res = await api.get(`/v1/kinerja/niaga?tahun=${selectedYear}`);
+          const items = Array.isArray(res.data) ? res.data 
+            : Array.isArray(res.data?.data) ? res.data.data 
+            : [];
+          setNiagaData(items);
         } catch (err) {
           console.error('Gagal mengambil data Niaga:', err);
         } finally {
@@ -111,17 +122,22 @@ export default function InputKinerjaSaldoAkhirPage() {
       const record = niagaData.find(d => d.periode && parseInt(d.periode.bulan) === parseInt(selectedMonth));
       if (record && record.data_realisasi) {
         const raw = record.data_realisasi;
-        setValue('pal_gol_0', raw.pal_gol_0 != null ? formatInputSeparator(raw.pal_gol_0) : '');
-        setValue('pal_gol_1', raw.pal_gol_1 != null ? formatInputSeparator(raw.pal_gol_1) : '');
-        setValue('pal_gol_2', raw.pal_gol_2 != null ? formatInputSeparator(raw.pal_gol_2) : '');
-        setValue('pal_gol_3', raw.pal_gol_3 != null ? formatInputSeparator(raw.pal_gol_3) : '');
-        setValue('pal_gol_4', raw.pal_gol_4 != null ? formatInputSeparator(raw.pal_gol_4) : '');
+        const scaleUp = (v) => {
+          if (v == null || v === '') return '';
+          const num = parseFloat(v);
+          return (num > 0 && num < 1000) ? num * 1000000000 : num;
+        };
+        setValue('pal_gol_0', raw.pal_gol_0 != null ? formatInputSeparator(scaleUp(raw.pal_gol_0)) : '');
+        setValue('pal_gol_1', raw.pal_gol_1 != null ? formatInputSeparator(scaleUp(raw.pal_gol_1)) : '');
+        setValue('pal_gol_2', raw.pal_gol_2 != null ? formatInputSeparator(scaleUp(raw.pal_gol_2)) : '');
+        setValue('pal_gol_3', raw.pal_gol_3 != null ? formatInputSeparator(scaleUp(raw.pal_gol_3)) : '');
+        setValue('pal_gol_4', raw.pal_gol_4 != null ? formatInputSeparator(scaleUp(raw.pal_gol_4)) : '');
         
-        setValue('ts_gol_0', raw.ts_gol_0 != null ? formatInputSeparator(raw.ts_gol_0) : '');
-        setValue('ts_gol_1', raw.ts_gol_1 != null ? formatInputSeparator(raw.ts_gol_1) : '');
-        setValue('ts_gol_2', raw.ts_gol_2 != null ? formatInputSeparator(raw.ts_gol_2) : '');
-        setValue('ts_gol_3', raw.ts_gol_3 != null ? formatInputSeparator(raw.ts_gol_3) : '');
-        setValue('ts_gol_4', raw.ts_gol_4 != null ? formatInputSeparator(raw.ts_gol_4) : '');
+        setValue('ts_gol_0', raw.ts_gol_0 != null ? formatInputSeparator(scaleUp(raw.ts_gol_0)) : '');
+        setValue('ts_gol_1', raw.ts_gol_1 != null ? formatInputSeparator(scaleUp(raw.ts_gol_1)) : '');
+        setValue('ts_gol_2', raw.ts_gol_2 != null ? formatInputSeparator(scaleUp(raw.ts_gol_2)) : '');
+        setValue('ts_gol_3', raw.ts_gol_3 != null ? formatInputSeparator(scaleUp(raw.ts_gol_3)) : '');
+        setValue('ts_gol_4', raw.ts_gol_4 != null ? formatInputSeparator(scaleUp(raw.ts_gol_4)) : '');
       } else {
         resetFormValues();
       }
@@ -143,10 +159,20 @@ export default function InputKinerjaSaldoAkhirPage() {
     setValue('ts_gol_4', '');
   };
 
-  const currentMonthData = niagaData.find(d => d.periode && parseInt(d.periode.bulan) === parseInt(selectedMonth));
-  const hasExistingData = !!(selectedMonth && currentMonthData && currentMonthData.data_realisasi);
+  const isFormLocked = !selectedMonth || !selectedYear;
+  const isPeriodDisabled = mode === 'edit';
+  const hasExistingData = mode !== 'edit' && selectedMonth && niagaData.some(d => d.periode && parseInt(d.periode.bulan) === parseInt(selectedMonth));
 
   const onSubmit = async (data) => {
+    if (isFormLocked) {
+      alert('Silakan pilih Bulan dan Tahun terlebih dahulu.');
+      return;
+    }
+    if (hasExistingData) {
+      alert('Data sudah ada! Tidak bisa menginput dari halaman Tambah.');
+      return;
+    }
+
     setLoading(true);
     setSuccess(false);
     try {
@@ -173,11 +199,15 @@ export default function InputKinerjaSaldoAkhirPage() {
         tindak_lanjut_lbkb: totalSaldoAkhir
       };
       
-      await api.post('/kinerja/niaga', payload);
+      await api.post('/v1/kinerja/niaga', payload);
+      window.dispatchEvent(new Event('sigap:refresh'));
       setSuccess(true);
-      navigate('/niaga/saldo-akhir');
+      setTimeout(() => {
+        navigate('/niaga/saldo-akhir');
+      }, 1000);
     } catch (err) {
-      alert("Error: " + err.message);
+      console.error('Gagal menyimpan Saldo Akhir PRR:', err);
+      alert(err.response?.data?.message || err.message || 'Gagal menyimpan data');
     } finally {
       setLoading(false);
     }
@@ -187,11 +217,12 @@ export default function InputKinerjaSaldoAkhirPage() {
     width: '100%', padding: '10px 14px', borderRadius: 10,
     border: '1px solid #e2e8f0', background: dis ? '#f1f5f9' : '#f8fafc',
     fontSize: '0.9rem', color: dis ? '#94a3b8' : '#334155', outline: 'none',
+    cursor: dis ? 'not-allowed' : 'text',
   });
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col animate-fade-in py-12">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 640, margin: '0 auto', width: '100%', padding: '0 20px' }}>
+    <div className="min-h-screen bg-slate-50 flex flex-col animate-fade-in py-10 pb-28">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 680, margin: '0 auto', width: '100%', padding: '0 20px' }}>
 
         {/* HEADER */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -210,6 +241,18 @@ export default function InputKinerjaSaldoAkhirPage() {
           </div>
         </div>
 
+        {/* WARNING ALERT FOR MONTH & YEAR SELECTION */}
+        {isFormLocked && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px',
+            borderRadius: 10, background: '#fffbe3', border: '1px solid #fde68a',
+            color: '#b45309', fontWeight: 650, fontSize: '0.86rem', boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
+          }}>
+            <AlertCircle size={18} className="flex-shrink-0" />
+            <span>PENTING: Silakan pilih <strong>Bulan</strong> dan <strong>Tahun</strong> terlebih dahulu untuk mengaktifkan formulir input realisasi.</span>
+          </div>
+        )}
+
         {/* SUCCESS */}
         {success && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 16px', borderRadius: 10, background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#16a34a', fontWeight: 600, fontSize: '0.86rem' }}>
@@ -219,8 +262,21 @@ export default function InputKinerjaSaldoAkhirPage() {
 
         {/* MODE EDIT INFO */}
         {hasExistingData && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 16px', borderRadius: 10, background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', fontWeight: 600, fontSize: '0.86rem' }}>
-            <Activity size={16} /> Mode Edit: Data untuk periode ini sudah ada. Mengklik simpan akan memperbarui data.
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 16px', borderRadius: 10, background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 600, fontSize: '0.86rem' }}>
+            <AlertTriangle size={16} className="flex-shrink-0" />
+            <span>Data untuk periode ini sudah ada. Anda tidak dapat mengubah data melalui halaman ini. Silakan gunakan fitur Edit.</span>
+          </div>
+        )}
+
+        {/* EDIT MODE WARNING */}
+        {mode === 'edit' && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10, padding: '11px 16px',
+            borderRadius: 10, background: '#eff6ff', border: '1px solid #bfdbfe',
+            color: '#1d4ed8', fontWeight: 600, fontSize: '0.86rem', boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
+          }}>
+            <AlertCircle size={18} className="flex-shrink-0" />
+            <span>Mode Edit: Anda sedang mengubah data Saldo Akhir untuk periode ini.</span>
           </div>
         )}
 
@@ -236,48 +292,65 @@ export default function InputKinerjaSaldoAkhirPage() {
               <div className="flex gap-4">
                 <div className="w-1/2">
                   <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#64748b', marginBottom: 5 }}>Bulan</label>
-                  <select {...register('periode_id', { required: true })} style={inputStyle(false)}>
+                  <select {...register('periode_id', { required: true })} disabled={isPeriodDisabled} style={inputStyle(isPeriodDisabled)}>
                     <option value="">Pilih Bulan</option>
                     {MONTHS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
                   </select>
                 </div>
                 <div className="w-1/2">
                   <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#64748b', marginBottom: 5 }}>Tahun</label>
-                  <input type="number" {...register('tahun', { required: true })} placeholder="Tahun" style={inputStyle(false)} />
+                  <input type="number" {...register('tahun', { required: true })} placeholder="Tahun" disabled={isPeriodDisabled} style={inputStyle(isPeriodDisabled)} />
                 </div>
               </div>
             </div>
           </div>
 
           {/* CARD DETAIL PAL */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-            <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center"><Activity size={16} /></div>
-                <h3 className="font-bold text-slate-800 text-sm tracking-wide uppercase">BREAKDOWN PAL</h3>
+          <div className={`bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden transition-all ${(isFormLocked || hasExistingData) ? 'opacity-60 grayscale' : ''}`}>
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-white">
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                  <Activity size={15} />
+                </div>
+                <h3 className="font-bold text-slate-800 text-xs tracking-wider uppercase">BREAKDOWN PAL</h3>
               </div>
-              <span className="text-xs font-extrabold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full">
-                Total PAL: {formatInputSeparator(totalPal)}
+              <span className="text-xs font-extrabold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">
+                Total PAL: Rp {formatInputSeparator(totalPal)}
               </span>
             </div>
-            <div className="p-5 flex flex-col gap-3">
-              {[0, 1, 2, 3, 4].map(num => (
-                <div key={num} className="flex items-center justify-between p-3 bg-white border border-[#f3f4f6] rounded-xl gap-4 hover:bg-slate-50 transition">
-                  <label className="font-semibold text-slate-700 text-[13px]">Golongan {num} (Rp)</label>
+
+            <div className="divide-y divide-slate-100">
+              {[
+                { num: 0, bg: 'bg-emerald-100', text: 'text-emerald-700' },
+                { num: 1, bg: 'bg-blue-100', text: 'text-blue-700' },
+                { num: 2, bg: 'bg-amber-100', text: 'text-amber-700' },
+                { num: 3, bg: 'bg-purple-100', text: 'text-purple-700' },
+                { num: 4, bg: 'bg-rose-100', text: 'text-rose-700' },
+              ].map(item => (
+                <div key={item.num} className="flex items-center justify-between p-3.5 px-4 hover:bg-slate-50/50 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-7 h-7 rounded-full ${item.bg} ${item.text} font-extrabold text-[11px] flex items-center justify-center shadow-xs`}>
+                      G{item.num}
+                    </div>
+                    <span className="font-semibold text-slate-700 text-sm">Golongan {item.num} (Rp)</span>
+                  </div>
                   <Controller
-                    name={`pal_gol_${num}`}
+                    name={`pal_gol_${item.num}`}
                     control={control}
                     render={({ field: { value, onChange } }) => (
                       <input 
                         type="text" 
+                        disabled={isFormLocked || hasExistingData}
                         value={value != null && value !== '' ? formatInputSeparator(value) : ''}
                         onChange={(e) => {
                           const rawVal = e.target.value;
                           const cleaned = rawVal.replace(/\./g, '').replace(/,/g, '.');
                           onChange(cleaned);
                         }}
-                        className="w-[180px] border border-gray-200 rounded-lg px-3 py-2 text-[13px] shadow-sm text-right outline-none focus:border-blue-500 bg-white font-semibold"
-                        placeholder="0" 
+                        placeholder="-"
+                        className={`w-[140px] h-8 border border-slate-200 rounded-full px-3 text-xs text-right font-medium outline-none transition-all ${
+                          (isFormLocked || hasExistingData) ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-white text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-100'
+                        }`}
                       />
                     )}
                   />
@@ -287,34 +360,51 @@ export default function InputKinerjaSaldoAkhirPage() {
           </div>
 
           {/* CARD DETAIL TS */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-            <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center"><Activity size={16} /></div>
-                <h3 className="font-bold text-slate-800 text-sm tracking-wide uppercase">BREAKDOWN TS</h3>
+          <div className={`bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden transition-all ${(isFormLocked || hasExistingData) ? 'opacity-60 grayscale' : ''}`}>
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-white">
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center font-bold">
+                  <Activity size={15} />
+                </div>
+                <h3 className="font-bold text-slate-800 text-xs tracking-wider uppercase">BREAKDOWN TS</h3>
               </div>
               <span className="text-xs font-extrabold text-orange-600 bg-orange-50 px-2.5 py-1 rounded-full">
-                Total TS: {formatInputSeparator(totalTs)}
+                Total TS: Rp {formatInputSeparator(totalTs)}
               </span>
             </div>
-            <div className="p-5 flex flex-col gap-3">
-              {[0, 1, 2, 3, 4].map(num => (
-                <div key={num} className="flex items-center justify-between p-3 bg-white border border-[#f3f4f6] rounded-xl gap-4 hover:bg-slate-50 transition">
-                  <label className="font-semibold text-slate-700 text-[13px]">Golongan {num} (Rp)</label>
+
+            <div className="divide-y divide-slate-100">
+              {[
+                { num: 0, bg: 'bg-emerald-100', text: 'text-emerald-700' },
+                { num: 1, bg: 'bg-blue-100', text: 'text-blue-700' },
+                { num: 2, bg: 'bg-amber-100', text: 'text-amber-700' },
+                { num: 3, bg: 'bg-purple-100', text: 'text-purple-700' },
+                { num: 4, bg: 'bg-rose-100', text: 'text-rose-700' },
+              ].map(item => (
+                <div key={item.num} className="flex items-center justify-between p-3.5 px-4 hover:bg-slate-50/50 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-7 h-7 rounded-full ${item.bg} ${item.text} font-extrabold text-[11px] flex items-center justify-center shadow-xs`}>
+                      G{item.num}
+                    </div>
+                    <span className="font-semibold text-slate-700 text-sm">Golongan {item.num} (Rp)</span>
+                  </div>
                   <Controller
-                    name={`ts_gol_${num}`}
+                    name={`ts_gol_${item.num}`}
                     control={control}
                     render={({ field: { value, onChange } }) => (
                       <input 
                         type="text" 
+                        disabled={isFormLocked || hasExistingData}
                         value={value != null && value !== '' ? formatInputSeparator(value) : ''}
                         onChange={(e) => {
                           const rawVal = e.target.value;
                           const cleaned = rawVal.replace(/\./g, '').replace(/,/g, '.');
                           onChange(cleaned);
                         }}
-                        className="w-[180px] border border-gray-200 rounded-lg px-3 py-2 text-[13px] shadow-sm text-right outline-none focus:border-blue-500 bg-white font-semibold"
-                        placeholder="0" 
+                        placeholder="-"
+                        className={`w-[140px] h-8 border border-slate-200 rounded-full px-3 text-xs text-right font-medium outline-none transition-all ${
+                          (isFormLocked || hasExistingData) ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-white text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-100'
+                        }`}
                       />
                     )}
                   />
@@ -324,43 +414,45 @@ export default function InputKinerjaSaldoAkhirPage() {
           </div>
 
           {/* TOTAL SALDO AKHIR PREVIEW */}
-          <div className="flex items-center justify-between p-4 bg-emerald-50 border border-emerald-200 rounded-2xl gap-4 shadow-sm">
+          <div className="flex items-center justify-between p-3.5 px-4 bg-slate-50/80 border border-slate-200 rounded-2xl gap-4 shadow-sm">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-emerald-500 text-white flex items-center justify-center font-extrabold text-base shadow-sm">
+              <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-extrabold text-sm shadow-xs">
                 ∑
               </div>
               <div>
-                <label className="font-extrabold text-slate-800 text-sm block">Total Saldo Akhir (Rp)</label>
-                <span className="text-[11px] font-semibold text-slate-500">PAL + TS</span>
+                <label className="font-bold text-slate-800 text-xs block">Total Saldo Akhir (Rp)</label>
+                <span className="text-[10px] font-semibold text-slate-500">PAL + TS</span>
               </div>
             </div>
-            <span className="text-lg font-black text-emerald-600">
-              {formatInputSeparator(totalSaldoAkhir)}
+            <span className="text-base font-extrabold text-blue-600">
+              Rp {formatInputSeparator(totalSaldoAkhir)}
             </span>
           </div>
 
           {/* SUBMIT BUTTON */}
-          <button type="submit" disabled={loading}
+          <button
+            type="submit"
+            disabled={loading || isFormLocked || hasExistingData}
             style={{
               width: '100%',
               padding: '14px',
               borderRadius: 12,
-              background: loading ? '#93c5fd' : '#3b82f6',
+              background: (loading || isFormLocked || hasExistingData) ? '#93c5fd' : '#3b82f6',
               color: '#fff',
               fontSize: '0.95rem',
               fontWeight: 700,
               border: 'none',
-              cursor: loading ? 'not-allowed' : 'pointer',
+              cursor: (loading || isFormLocked || hasExistingData) ? 'not-allowed' : 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: 8,
-              boxShadow: loading ? 'none' : '0 4px 14px rgba(59,130,246,0.3)',
+              boxShadow: (loading || isFormLocked || hasExistingData) ? 'none' : '0 4px 14px rgba(59,130,246,0.3)',
               transition: 'all 0.2s'
             }}
           >
-            {loading ? <div style={{width:20,height:20,border:'2px solid rgba(255,255,255,0.5)',borderTop:'2px solid white',borderRadius:'50%',animation:'spin 1s linear infinite'}}/> : <Save size={18} />}
-            {hasExistingData ? 'Simpan Perubahan' : 'Simpan Data'}
+            {loading ? <div className="w-5 h-5 border-2 border-white/50 border-t-white rounded-full animate-spin" /> : <Save size={18} />}
+            {loading ? 'Menyimpan Data...' : hasExistingData ? 'Data Sudah Ada' : 'Simpan Data'}
           </button>
 
         </form>

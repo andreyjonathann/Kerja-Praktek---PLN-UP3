@@ -1,12 +1,58 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { AlertTriangle } from 'lucide-react'
+import api from '@/services/api'
 
-export default function TargetWarning({ up3, year, isVisible, monthName }) {
-  if (!isVisible) return null;
+export default function TargetWarning({ up3, year, isVisible: propIsVisible, monthName, indicator, indicators }) {
+  const [isVisible, setIsVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    // If indicator/indicators are not passed, fall back to old behavior using propIsVisible
+    if (indicator === undefined && indicators === undefined) {
+      setIsVisible(!!propIsVisible);
+      return;
+    }
+
+    const checkCompleteness = async () => {
+      setLoading(true);
+      try {
+        const queryYear = year || new Date().getFullYear();
+        const res = await api.get(`/v1/targets?tahun=${queryYear}`);
+        const targets = res.data || [];
+        const searchList = indicator ? [indicator] : (indicators || []);
+        
+        let complete = true;
+        for (const ind of searchList) {
+          const found = targets.find(t => t.indikator === ind);
+          if (!found) {
+            complete = false;
+            break;
+          }
+          // Check all 12 months
+          const months = ['jan', 'feb', 'mar', 'apr', 'mei', 'jun', 'jul', 'agu', 'sep', 'okt', 'nov', 'des'];
+          const hasNull = months.some(m => found[`target_${m}`] === null || found[`target_${m}`] === undefined);
+          if (hasNull) {
+            complete = false;
+            break;
+          }
+        }
+        setIsVisible(!complete);
+      } catch (err) {
+        console.error('Error checking target completeness:', err);
+        setIsVisible(true); // default to warning on error
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkCompleteness();
+  }, [year, propIsVisible, indicator, JSON.stringify(indicators)]);
+
+  if (loading || !isVisible) return null;
 
   return (
     <div 
-      className="w-full p-4 rounded-lg shadow-sm border-l-4" 
+      className="w-full p-4 rounded-lg shadow-sm border-l-4 animate-fade-in" 
       style={{ 
         backgroundColor: 'rgba(239, 68, 68, 0.1)', // Light Red Background
         borderColor: '#EF4444', // Solid Red Border

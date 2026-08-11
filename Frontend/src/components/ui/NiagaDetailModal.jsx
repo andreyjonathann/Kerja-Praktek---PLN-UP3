@@ -1,33 +1,21 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { X, Edit2, Trash2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { MONTHS_ID } from '@/utils/formatters'
 import { useAuth } from '@/context/AuthContext'
-import { deleteRealisasi } from '@/services/pemasaranDataService'
+import api from '@/services/api'
 
 const MONTH_MAP = {
   'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'Mei': 5, 'Jun': 6,
   'Jul': 7, 'Agu': 8, 'Ags': 8, 'Sep': 9, 'Okt': 10, 'Nov': 11, 'Des': 12
 }
 
-const TARIF_LABELS = {
-  s: 'Sosial',
-  r: 'Rumah Tangga',
-  b: 'Bisnis',
-  i: 'Industri',
-  p: 'Pemerintah / Publik',
-  t: 'Traksi',
-  l: 'Layanan Khusus',
-  c: 'Curah'
-}
-
-export default function PemasaranDetailModal({
+export default function NiagaDetailModal({
   open,
   onOpenChange,
   rowData,
-  type = 'penjualan',
-  isCumulative = false,
+  type = 'pelunasan',
   year,
   onDeleteSuccess,
 }) {
@@ -38,70 +26,47 @@ export default function PemasaranDetailModal({
 
   if (!open || !rowData) return null
 
-  // ── Derive values from rowData ─────────────────────────────────────────
   const label = rowData.label || ''
   const bulanNum = MONTH_MAP[label] || rowData.bulan || 1
   const bulanName = MONTHS_ID[bulanNum] || label || ''
   const tahun = year ?? new Date().getFullYear()
 
-  let titlePrefix = 'Penjualan'
-  let unit = 'kWh'
+  let titlePrefix = 'Pelunasan PRR'
   let target = 0
   let realisasi = 0
   let subItems = []
 
   const fmt = (v) => {
     if (v == null) return '—'
-    return Number(v).toLocaleString('id-ID')
+    return 'Rp ' + Number(v).toLocaleString('id-ID')
   }
 
-  if (type === 'penjualan') {
-    titlePrefix = 'Penjualan'
-    unit = 'kWh'
-    target = isCumulative ? rowData.c_penjualan_target : rowData.penjualan_target
-    realisasi = isCumulative ? rowData.c_penjualan_total : rowData.penjualan_total
-    subItems = Object.keys(TARIF_LABELS).map(k => ({
-      label: TARIF_LABELS[k],
-      val: rowData[`penjualan_${k}`] ?? 0
-    }))
-  } else if (type === 'pelanggan') {
-    titlePrefix = 'Pelanggan Baru'
-    unit = 'Pelanggan'
-    target = isCumulative ? rowData.c_jumlah_pelanggan_target : rowData.jumlah_pelanggan_target
-    realisasi = isCumulative ? rowData.c_jumlah_pelanggan : rowData.jumlah_pelanggan
-    subItems = Object.keys(TARIF_LABELS).map(k => ({
-      label: TARIF_LABELS[k],
-      val: rowData[`pelanggan_${k}`] ?? 0
-    }))
-  } else if (type === 'daya') {
-    titlePrefix = 'Daya Tersambung'
-    unit = 'kVA'
-    target = isCumulative ? rowData.c_daya_tersambung_target : rowData.daya_tersambung_target
-    realisasi = isCumulative ? rowData.c_daya_tersambung : rowData.daya_tersambung
-    subItems = Object.keys(TARIF_LABELS).map(k => ({
-      label: TARIF_LABELS[k],
-      val: rowData[`daya_${k}`] ?? 0
-    }))
-  } else if (type === 'pendapatan') {
-    titlePrefix = 'Pendapatan BP'
-    unit = 'Rupiah'
-    const rawTarget = isCumulative ? rowData.c_pendapatan_target : rowData.pendapatan_target
-    const rawReal = isCumulative ? rowData.c_pendapatan_total : rowData.pendapatan_total
-    target = rawTarget != null ? rawTarget * 1000000 : null
-    realisasi = rawReal != null ? rawReal * 1000000 : null
+  if (type === 'pelunasan') {
+    titlePrefix = 'Pelunasan PRR & Piutang'
+    target = rowData.target ?? 0
+    realisasi = rowData.realisasi ?? 0
     subItems = [
-      { label: 'Biaya Pasang Baru (BP)', val: rowData.pendapatan_pb != null ? rowData.pendapatan_pb * 1000000 : 0 },
-      { label: 'Biaya Tambah Daya (TD)', val: rowData.pendapatan_td != null ? rowData.pendapatan_td * 1000000 : 0 }
+      { label: 'Tunai PRR', val: rowData.tunai_prr ?? 0 },
+      { label: 'Cicil PRR', val: rowData.cicil_prr ?? 0 },
+      { label: 'TS Prabayar', val: rowData.ts_prabayar ?? 0 }
     ]
-  } else if (type === 'pln_mobile') {
-    titlePrefix = 'PLN Mobile'
-    unit = ''
-    target = null
-    realisasi = null
+  } else if (type === 'saldo_akhir') {
+    titlePrefix = 'Saldo Akhir PRR'
+    target = rowData.target ?? 0
+    realisasi = rowData.realisasi ?? 0
     subItems = [
-      { label: 'Jumlah Pengguna PLN Mobile', val: rowData.pln_mobile_pengguna ?? 0, customUnit: 'Pelanggan' },
-      { label: 'Jumlah Kali Transaksi Keuangan', val: rowData.pln_mobile_transaksi ?? 0, customUnit: 'Kali Transaksi' },
-      { label: 'Jumlah Rupiah Transaksi Keuangan', val: rowData.pln_mobile_nilai != null ? rowData.pln_mobile_nilai / 1000 : 0, customUnit: 'Rp. Miliar' }
+      { label: 'PAL Golongan 0', val: rowData.pal_gol_0 ?? 0 },
+      { label: 'PAL Golongan 1', val: rowData.pal_gol_1 ?? 0 },
+      { label: 'PAL Golongan 2', val: rowData.pal_gol_2 ?? 0 },
+      { label: 'PAL Golongan 3', val: rowData.pal_gol_3 ?? 0 },
+      { label: 'PAL Golongan 4', val: rowData.pal_gol_4 ?? 0 },
+      { label: 'Total PAL', val: rowData.pal_total ?? 0, isBold: true },
+      { label: 'TS Golongan 0', val: rowData.ts_gol_0 ?? 0 },
+      { label: 'TS Golongan 1', val: rowData.ts_gol_1 ?? 0 },
+      { label: 'TS Golongan 2', val: rowData.ts_gol_2 ?? 0 },
+      { label: 'TS Golongan 3', val: rowData.ts_gol_3 ?? 0 },
+      { label: 'TS Golongan 4', val: rowData.ts_gol_4 ?? 0 },
+      { label: 'Total TS', val: rowData.ts_total ?? 0, isBold: true }
     ]
   }
 
@@ -109,14 +74,19 @@ export default function PemasaranDetailModal({
   const judul = `${titlePrefix} — ${bulanName} ${tahun}`
 
   const handleEdit = () => {
-    navigate(`/pemasaran/edit/${type}/${bulanNum}/${tahun}`)
+    navigate(`/niaga/${type === 'pelunasan' ? 'pelunasan' : 'saldo-akhir'}/input?mode=edit&bulan=${bulanNum}&tahun=${tahun}`)
     onOpenChange(false)
   }
 
   const handleDelete = async () => {
     setIsDeleting(true)
     try {
-      await deleteRealisasi(tahun, bulanNum)
+      await api.delete('/v1/kinerja/niaga', {
+        data: {
+          bulan: bulanNum,
+          tahun: tahun
+        }
+      })
       setIsDeleting(false)
       onOpenChange(false)
       setShowConfirm(false)
@@ -209,9 +179,6 @@ export default function PemasaranDetailModal({
             <h2 style={{ fontSize: 20, fontWeight: 700, color: '#0f172a', margin: 0, lineHeight: 1.3 }}>
               {judul}
             </h2>
-            <p style={{ fontSize: 13, color: '#94a3b8', marginTop: 4 }}>
-              Satuan: {unit}
-            </p>
           </div>
           <button
             onClick={closeModal}
@@ -236,20 +203,18 @@ export default function PemasaranDetailModal({
         </div>
 
         {/* INFO RINGKAS */}
-        {type !== 'pln_mobile' && (
-          <div style={{ display: 'flex', gap: 24, marginBottom: 24 }}>
-            <span style={{ fontSize: 14, color: '#64748b', fontWeight: 500 }}>
-              Target:{' '}
-              <strong style={{ color: '#0f172a' }}>{fmt(target)}</strong>
-            </span>
-            <span style={{ fontSize: 14, color: '#64748b', fontWeight: 500 }}>
-              Total Realisasi:{' '}
-              <strong style={{ color: isOverTarget ? '#16a34a' : '#dc2626' }}>
-                {fmt(realisasi)}
-              </strong>
-            </span>
-          </div>
-        )}
+        <div style={{ display: 'flex', gap: 24, marginBottom: 24 }}>
+          <span style={{ fontSize: 14, color: '#64748b', fontWeight: 500 }}>
+            Target:{' '}
+            <strong style={{ color: '#0f172a' }}>{fmt(target)}</strong>
+          </span>
+          <span style={{ fontSize: 14, color: '#64748b', fontWeight: 500 }}>
+            Total Realisasi:{' '}
+            <strong style={{ color: isOverTarget ? '#16a34a' : '#dc2626' }}>
+              {fmt(realisasi)}
+            </strong>
+          </span>
+        </div>
 
         {/* BREAKDOWN LIST */}
         <div style={{ marginBottom: 28 }}>
@@ -257,7 +222,7 @@ export default function PemasaranDetailModal({
             Breakdown Kategori
           </h3>
           <div style={{ border: '1px solid #f1f5f9', borderRadius: 8, overflow: 'hidden' }}>
-            {subItems.map(({ label, val, customUnit }) => (
+            {subItems.map(({ label, val, isBold }) => (
               <div
                 key={label}
                 style={{
@@ -266,12 +231,12 @@ export default function PemasaranDetailModal({
                   alignItems: 'center',
                   padding: '12px 16px',
                   borderBottom: '1px solid #f1f5f9',
-                  background: '#ffffff'
+                  background: isBold ? '#f8fafc' : '#ffffff'
                 }}
               >
-                <span style={{ fontSize: 13, color: '#475569', fontWeight: 500 }}>{label}</span>
+                <span style={{ fontSize: 13, color: '#475569', fontWeight: isBold ? 700 : 500 }}>{label}</span>
                 <span style={{ fontSize: 13, color: '#0f172a', fontWeight: 700 }}>
-                  {fmt(val)} <span style={{ fontSize: 11, color: '#64748b', fontWeight: 500, marginLeft: 4 }}>{customUnit || unit}</span>
+                  {fmt(val)}
                 </span>
               </div>
             ))}
@@ -279,7 +244,7 @@ export default function PemasaranDetailModal({
         </div>
 
         {/* FOOTER */}
-        {user?.role === 'pic_pemasaran' && (
+        {(user?.role === 'pic_niaga' || user?.role === 'admin') && (
           showConfirm ? (
             <div
               style={{
@@ -326,12 +291,12 @@ export default function PemasaranDetailModal({
               <button
                 onClick={handleEdit}
                 style={{
-                  padding: '8px 16px', borderRadius: 8, border: '1px solid #00A2B9',
-                  background: '#ffffff', color: '#00A2B9', fontSize: 13, fontWeight: 700,
+                  padding: '8px 16px', borderRadius: 8, border: '1px solid #4F46E5',
+                  background: '#ffffff', color: '#4F46E5', fontSize: 13, fontWeight: 700,
                   cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
                   transition: 'all 0.15s'
                 }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#f0fdfa' }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#eef2ff' }}
                 onMouseLeave={e => { e.currentTarget.style.background = '#ffffff' }}
               >
                 <Edit2 size={14} /> Edit Data

@@ -15,6 +15,12 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'block_perencanaan' => \App\Http\Middleware\BlockPerencanaanWrites::class,
         ]);
+        // Override the 'api' middleware group to remove default auth:sanctum
+        // so individual routes can opt-in to auth:sanctum as needed
+        $middleware->api(remove: [
+            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+        ]);
+        $middleware->statefulApi();
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

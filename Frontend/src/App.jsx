@@ -46,6 +46,8 @@ import PelunasanPrrPage from '@/pages/Niaga/PelunasanPrr'
 import InputKinerjaPelunasanPage from '@/pages/Niaga/InputKinerjaPelunasan'
 import PenghapusanPrrPage from '@/pages/Niaga/PenghapusanPrr'
 import InputKinerjaPenghapusanPage from '@/pages/Niaga/InputKinerjaPenghapusan'
+import TindakLanjutLbkbPage from '@/pages/Niaga/TindakLanjutLbkb'
+import InputKinerjaLbkbPage from '@/pages/Niaga/InputKinerjaLbkb'
 import SaldoAkhirPage from '@/pages/Niaga/SaldoAkhir'
 import InputKinerjaSaldoAkhirPage from '@/pages/Niaga/InputKinerjaSaldoAkhir'
 
@@ -79,22 +81,30 @@ import InputKinerjaGantiMeterPage from '@/pages/InputKinerjaGantiMeter'
 import EditKinerjaGantiMeterPage from '@/pages/EditKinerjaGantiMeter'
 
 // Admin Pages
-import KontrakPage from '@/pages/Pengadaan/Kontrak'
-import InputPengadaanPage from '@/pages/Pengadaan/InputPengadaan'
-import UbahStatusPengadaanPage from '@/pages/Pengadaan/UbahStatusPengadaan'
-import KelolaPaguAnggaranPage from '@/pages/Pengadaan/KelolaPaguAnggaran'
 import KelolaTargetPage from '@/pages/Admin/KelolaTarget'
 import KelolaTargetBulananPage from '@/pages/Admin/KelolaTargetBulanan'
+
+// Pengadaan Pages
+import PengadaanKontrakPage from '@/pages/Pengadaan/Kontrak'
+import KelolaPaguAnggaranPage from '@/pages/Pengadaan/KelolaPaguAnggaran'
+import InputPengadaanPage from '@/pages/Pengadaan/InputPengadaan'
+import UbahStatusPengadaanPage from '@/pages/Pengadaan/UbahStatusPengadaan'
 
 // K3 Pages
 import K3DashboardPage         from '@/pages/K3/Dashboard'
 
 import K3SelfAssessmentPage    from '@/pages/K3/SelfAssessment'
 import K3LmcPage               from '@/pages/K3/Lmc'
-import AssessmentInputPage     from '@/pages/K3/AssessmentInput'
+import AssessmentInputPage     from '@/pages/K3/LmcInput'
+import K3SelfAssessmentDetailPage from '@/pages/K3/SelfAssessment/Detail'
 import K3KegiatanPage          from '@/pages/K3/Kegiatan'
 import K3TemuanPage from '@/pages/K3/Temuan'
 import K3NkoPage from '@/pages/K3/Nko'
+import K3ApprovalPage from '@/pages/K3/Approval'
+import K3LaporanPage from '@/pages/K3/Laporan'
+import K3ManajemenPage from '@/pages/K3/Manajemen'
+import K3DokumenPage from '@/pages/K3/Dokumen'
+import K3NotifikasiPage from '@/pages/K3/Notifikasi'
 
 // Error Boundary
 import ErrorBoundary from '@/components/ui/ErrorBoundary'
@@ -182,10 +192,29 @@ function PengadaanProtectedRoute({ children }) {
   return <Layout>{children}</Layout>
 }
 
-// Role-based home: pic_pemasaran → /pemasaran, lainnya → Overview biasa
+// Role-based home redirects
 function RoleBasedHome() {
-  const { loading } = useAuth()
+  const { user, loading } = useAuth()
   if (loading) return null
+
+  if (user?.role === 'pic_pengadaan') {
+    return <Navigate to="/pengadaan/kontrak" replace />
+  }
+  if (user?.role === 'pic_pemasaran') {
+    return <Navigate to="/pemasaran" replace />
+  }
+  if (user?.role === 'pic_transaksi_energi') {
+    return <Navigate to="/susut" replace />
+  }
+  if (user?.role === 'pic_niaga') {
+    return <Navigate to="/niaga/pelunasan" replace />
+  }
+  if (user?.role === 'pic_jaringan') {
+    return <Navigate to="/saidi" replace />
+  }
+  if (user?.role === 'pic_k3') {
+    return <Navigate to="/k3/dashboard" replace />
+  }
   return (
     <ProtectedRoute>
       <OverviewPage />
@@ -318,33 +347,41 @@ export default function App() {
                 </ProtectedRoute>
               } />
 
+              {/* Pengadaan Routes */}
+              <Route path="/pengadaan" element={<Navigate to="/pengadaan/kontrak" replace />} />
               <Route path="/pengadaan/kontrak" element={
                 <ProtectedRoute>
-                  <KontrakPage />
+                  <PengadaanKontrakPage />
                 </ProtectedRoute>
               } />
-
+              <Route path="/pengadaan/kelola-pagu" element={
+                <ProtectedRoute>
+                  <KelolaPaguAnggaranPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/pengadaan/pagu" element={
+                <ProtectedRoute>
+                  <KelolaPaguAnggaranPage />
+                </ProtectedRoute>
+              } />
               <Route path="/pengadaan/input" element={
                 <PengadaanProtectedRoute>
                   <InputPengadaanPage />
                 </PengadaanProtectedRoute>
               } />
-
               <Route path="/pengadaan/edit/:id" element={
                 <PengadaanProtectedRoute>
                   <InputPengadaanPage />
                 </PengadaanProtectedRoute>
               } />
-
+              <Route path="/pengadaan/ubah-status" element={
+                <ProtectedRoute>
+                  <UbahStatusPengadaanPage />
+                </ProtectedRoute>
+              } />
               <Route path="/pengadaan/status/:id" element={
                 <PengadaanProtectedRoute>
                   <UbahStatusPengadaanPage />
-                </PengadaanProtectedRoute>
-              } />
-
-              <Route path="/pengadaan/pagu" element={
-                <PengadaanProtectedRoute>
-                  <KelolaPaguAnggaranPage />
                 </PengadaanProtectedRoute>
               } />
 
@@ -547,6 +584,7 @@ export default function App() {
               <Route path="/daya-sambung" element={<ProtectedRoute><DayaTersambungPage /></ProtectedRoute>} />
               <Route path="/penjualan" element={<ProtectedRoute><PenjualanTLPage /></ProtectedRoute>} />
               <Route path="/pendapatan" element={<ProtectedRoute><PendapatanTLPage /></ProtectedRoute>} />
+              {/* Transaksi Energi Routes (branch Eunike) */}
               <Route path="/susut" element={
                 <ProtectedRoute>
                   <SusutDistribusiPage />
@@ -677,6 +715,7 @@ export default function App() {
                 </ProtectedRoute>
               } />
 
+
               <Route path="/skki" element={
                 <ProtectedRoute>
                   <PlaceholderPage title="SKKI / Pengadaan" />
@@ -694,11 +733,7 @@ export default function App() {
                   <K3DashboardPage />
                 </ProtectedRoute>
               } />
-              <Route path="/k3/trend" element={
-                <ProtectedRoute>
-                  <K3TrendPage />
-                </ProtectedRoute>
-              } />
+
               <Route path="/k3/assessment/:category" element={
                 <ProtectedRoute>
                   <K3SelfAssessmentPage />

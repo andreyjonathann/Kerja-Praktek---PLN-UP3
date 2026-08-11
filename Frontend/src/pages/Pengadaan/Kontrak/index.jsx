@@ -232,21 +232,43 @@ export default function KontrakPage() {
         if (!v || v === '-') return <span style={{ color: 'var(--text-muted)' }}>—</span>
         if (v === 'BATAL')   return <span style={{ color: '#EF4444', fontWeight: 700 }}>BATAL</span>
         
-        if (row.file_kontrak_url) {
+        const hasFile1 = !!row.file_kontrak_url
+        const hasFile2 = !!row.file_kontrak_2_url
+
+        if (hasFile1 || hasFile2) {
+          const mainUrl = row.file_kontrak_url || row.file_kontrak_2_url
           return (
-            <a
-              href={row.file_kontrak_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Klik untuk membuka dokumen PDF di tab baru"
-              onClick={e => e.stopPropagation()}
-              style={{
-                fontFamily: 'monospace', fontSize: '0.74rem', fontWeight: 700,
-                color: '#0284C7', textDecoration: 'underline', cursor: 'pointer'
-              }}
-            >
-              {v}
-            </a>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <a
+                href={mainUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={`Klik untuk membuka Dokumen ${row.file_kontrak_url ? 'Utama' : 'Pendukung'} di tab baru`}
+                onClick={e => e.stopPropagation()}
+                style={{
+                  fontFamily: 'monospace', fontSize: '0.74rem', fontWeight: 700,
+                  color: '#0284C7', textDecoration: 'underline', cursor: 'pointer'
+                }}
+              >
+                {v}
+              </a>
+              {hasFile1 && hasFile2 && (
+                <a
+                  href={row.file_kontrak_2_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Klik untuk membuka Dokumen Pendukung di tab baru"
+                  onClick={e => e.stopPropagation()}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', padding: '2px 6px',
+                    background: 'rgba(2,132,199,0.08)', color: '#0284C7', border: '1px solid rgba(2,132,199,0.2)',
+                    borderRadius: 4, fontSize: '0.62rem', fontWeight: 700, textDecoration: 'none', cursor: 'pointer'
+                  }}
+                >
+                  File 2
+                </a>
+              )}
+            </div>
           )
         }
         return <span style={{ fontFamily: 'monospace', fontSize: '0.72rem' }}>{v}</span>

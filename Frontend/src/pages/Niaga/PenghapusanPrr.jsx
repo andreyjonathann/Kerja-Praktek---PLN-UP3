@@ -5,14 +5,17 @@ import {
   Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, ComposedChart
 } from 'recharts'
-import { TrendingDown, TrendingUp, Plus, Activity } from 'lucide-react'
+import { TrendingDown, TrendingUp, Plus, Activity, FileText, ExternalLink } from 'lucide-react'
 import KpiCard from '@/components/ui/KpiCard'
 import ChartWrapper from '@/components/ui/ChartWrapper'
 import DataTable from '@/components/ui/DataTable'
 import ExportModal from '@/components/ui/ExportModal'
+import PenghapusanPrrDetailModal from '@/components/ui/PenghapusanPrrDetailModal'
 import { useFilter } from '@/context/FilterContext'
 import { getNiagaData } from '@/services/niagaDataService'
 import { formatNumber } from '@/utils/formatters'
+import { calculateAchievement, calculateKPI } from '@/utils/kpiHelpers'
+import TargetWarning from '@/components/ui/TargetWarning'
 
 const TOOLTIP = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
@@ -41,6 +44,10 @@ export default function PenghapusanPrrPage() {
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  
+  // Modal state
+  const [selectedBulan, setSelectedBulan] = useState(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   const fetchData = useCallback(async (bg = false) => {
     if (!bg) setLoading(true)
@@ -72,10 +79,12 @@ export default function PenghapusanPrrPage() {
 
   const filled = data.filter(d => d.penghapusan_real !== null)
   const lastRow = filled[filled.length - 1]
+  const targetRow = filled.length > 0 ? filled[filled.length - 1] : (data.filter(d => d.c_penghapusan_target > 0).slice(-1)[0] || data[0])
   const ytdReal = lastRow?.c_penghapusan_real ?? 0
-  const ytdTgt = lastRow?.c_penghapusan_target ?? 0
+  const ytdTgt = targetRow?.c_penghapusan_target ?? 0
   const lastReal = lastRow?.penghapusan_real ?? 0
-  const ach = ytdTgt > 0 ? (ytdReal / ytdTgt) * 100 : 0
+  const achActual = calculateAchievement(ytdReal, ytdTgt) * 100
+  const achKPI = calculateKPI(ytdReal, ytdTgt) * 100
 
   const chartKey = tab === 'monthly' ? 'penghapusan_real' : 'c_penghapusan_real'
   const tgtKey = tab === 'monthly' ? 'penghapusan_target' : 'c_penghapusan_target'
@@ -84,6 +93,13 @@ export default function PenghapusanPrrPage() {
   const trend = prevLastRow?.penghapusan_real
     ? ((lastReal - prevLastRow.penghapusan_real) / prevLastRow.penghapusan_real) * 100
     : null
+
+  const handleOpenDetail = (row) => {
+    if (row && row.bulan) {
+      setSelectedBulan(row.bulan)
+      setIsModalOpen(true)
+    }
+  }
 
   const tableColumns = [
     { key: 'label', label: 'Bulan', width: '72px', align: 'center' },
@@ -94,25 +110,133 @@ export default function PenghapusanPrrPage() {
         : <span className="text-slate-400 text-xs font-bold">—</span>
     },
     {
-      key: '_ach', label: '% Pencapaian', align: 'center', render: (_, row) => {
+      key: '_ach_actual',
+      label: 'Pencapaian Aktual',
+      align: 'center',
+      render: (_, row) => {
         const t = row[tgtKey]
         const r = row[chartKey]
-        if (t === 0 || r == null) return '—'
-        const p = (r / t) * 100
+        if (t === 0 || r == null) return <span className="text-slate-400 font-bold">—</span>
+        const p = calculateAchievement(r, t) * 100
+        return (
+          <span className="font-bold text-slate-700">
+            {p.toFixed(1)}%
+          </span>
+        )
+      }
+    },
+    {
+      key: '_kpi_score',
+      label: 'Nilai KPI',
+      align: 'center',
+      render: (_, row) => {
+        const t = row[tgtKey]
+        const r = row[chartKey]
+        if (t === 0 || r == null) return <span className="text-slate-400 font-bold">—</span>
+        const kpi = calculateKPI(r, t) * 100
         return (
           <span style={{
             display: 'inline-flex', padding: '2px 10px', borderRadius: 99, fontSize: '0.78rem', fontWeight: 750,
-            background: p >= 100 ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)',
-            color: p >= 100 ? '#10B981' : '#EF4444',
-            border: `1px solid ${p >= 100 ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)'}`,
-          }}>{p.toFixed(1)}%</span>
+            background: kpi >= 100 ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)',
+            color: kpi >= 100 ? '#10B981' : '#EF4444',
+            border: `1px solid ${kpi >= 100 ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)'}`,
+          }}>{kpi.toFixed(1)}%</span>
         )
       }
+    },
+    {
+      key: '_surat',
+      label: 'Surat Usulan',
+      align: 'left',
+      render: (_, row) => {
+        const details = row.penghapusan_details || []
+        const withSurat = details.filter(d => d.no_surat)
+        if (withSurat.length === 0) return <span className="text-slate-400 text-xs font-semibold">—</span>
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-start' }}>
+            {withSurat.map((d, idx) => (
+              d.file_surat_url ? (
+                <a
+                  key={d.id || idx}
+                  href={d.file_surat_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    padding: '2px 8px',
+                    borderRadius: 6,
+                    background: 'rgba(59, 130, 246, 0.08)',
+                    color: '#2563eb',
+                    border: '1px solid rgba(59, 130, 246, 0.15)',
+                    fontSize: '0.74rem',
+                    fontWeight: 700,
+                    textDecoration: 'none',
+                    transition: 'all 0.15s'
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.background = 'rgba(59, 130, 246, 0.15)'
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.background = 'rgba(59, 130, 246, 0.08)'
+                  }}
+                >
+                  <FileText size={12} />
+                  <span>{d.no_surat}</span>
+                  <ExternalLink size={10} />
+                </a>
+              ) : (
+                <span
+                  key={d.id || idx}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    padding: '2px 8px',
+                    borderRadius: 6,
+                    background: 'var(--bg-muted, #f1f5f9)',
+                    color: 'var(--text-secondary, #475569)',
+                    border: '1px solid var(--border, #cbd5e1)',
+                    fontSize: '0.74rem',
+                    fontWeight: 700
+                  }}
+                >
+                  <FileText size={12} />
+                  <span>{d.no_surat}</span>
+                </span>
+              )
+            ))}
+          </div>
+        )
+      }
+    },
+    {
+      key: '_action', label: 'Detail', align: 'center', render: (_, row) => (
+        <button
+          onClick={() => handleOpenDetail(row)}
+          style={{
+            padding: '3px 10px', borderRadius: 6, fontSize: '0.74rem', fontWeight: 700,
+            background: 'rgba(139, 92, 246, 0.1)', color: '#8B5CF6', border: '1px solid rgba(139, 92, 246, 0.2)',
+            cursor: 'pointer', transition: 'all 0.15s ease'
+          }}
+        >
+          Rincian
+        </button>
+      )
     }
   ]
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }} className="animate-fade-in">
+
+      <PenghapusanPrrDetailModal
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        bulan={selectedBulan}
+        tahun={filters.year}
+        onSuccess={fetchData}
+      />
 
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -127,15 +251,17 @@ export default function PenghapusanPrrPage() {
           </div>
           <h1 className="page-heading">Penghapusan PRR</h1>
         </div>
-        <p className="page-description">Realisasi penghapusan piutang ragu-ragu (PRR) · Tahun {filters.year}</p>
+        <p className="page-description">Realisasi penghapusan piutang ragu-ragu (PRR) per usulan tahap · Tahun {filters.year}</p>
       </div>
+
+      <TargetWarning indicator="Penghapusan PRR" year={filters.year} />
 
       {/* ── KPI Cards ─────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-        <KpiCard title="Realisasi Rp YTD" value={formatNumber(ytdReal)} unit="Rp M" icon={TrendingDown} color="purple" achievement={ach} loading={loading} />
+        <KpiCard title="Realisasi Rp YTD" value={formatNumber(ytdReal)} unit="Rp M" icon={TrendingDown} color="purple" achievement={achKPI} loading={loading} />
         <KpiCard title="Target Rp YTD" value={formatNumber(ytdTgt)} unit="Rp M" icon={TrendingDown} color="blue" loading={loading} />
         <KpiCard title="Bulan Terakhir" value={formatNumber(lastReal)} unit="Rp M" icon={TrendingDown} color="yellow" trend={trend} loading={loading} />
-        <KpiCard title="Pencapaian" value={ach.toFixed(1) + '%'} icon={TrendingUp} color={ach >= 100 ? 'green' : ach >= 90 ? 'yellow' : 'red'} loading={loading} />
+        <KpiCard title="Nilai KPI YTD" value={achKPI.toFixed(1) + '%'} icon={TrendingUp} color={achKPI >= 100 ? 'green' : achKPI >= 90 ? 'yellow' : 'red'} subText={`Pencapaian Aktual: ${achActual.toFixed(1)}%`} loading={loading} />
       </div>
 
       {/* ── Tab Toggle & Action Buttons ─────────────────────────────────── */}
@@ -172,7 +298,7 @@ export default function PenghapusanPrrPage() {
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
           <ExportModal kpiType="Penghapusan PRR" />
-          {user?.role === 'pic_niaga' && (
+          {(user?.role === 'pic_niaga' || user?.role === 'admin' || user?.role === 'superadmin' || !user?.role) && (
             <div style={{
               display: 'inline-flex',
               background: 'rgba(139, 92, 246, 0.05)',
@@ -229,7 +355,17 @@ export default function PenghapusanPrrPage() {
               <YAxis tick={{ fontSize: 12.5, fontWeight: 650 }} />
               <Tooltip content={<TOOLTIP />} />
               <Legend wrapperStyle={{ fontSize: 13, fontWeight: 600 }} />
-              <Bar dataKey={chartKey} name="Realisasi" fill="#8B5CF6" radius={[4, 4, 0, 0]} />
+              <Bar
+                dataKey={chartKey}
+                name="Realisasi"
+                fill="#8B5CF6"
+                radius={[4, 4, 0, 0]}
+                style={{ cursor: 'pointer' }}
+                onClick={(barData) => {
+                  const match = data.find(d => d.label === barData.label)
+                  if (match) handleOpenDetail(match)
+                }}
+              />
               <Line dataKey={tgtKey} name="Target" stroke="#EF4444" strokeWidth={2.5} strokeDasharray="5 5" dot={{ r: 4, fill: '#EF4444' }} />
             </ComposedChart>
           </ResponsiveContainer>

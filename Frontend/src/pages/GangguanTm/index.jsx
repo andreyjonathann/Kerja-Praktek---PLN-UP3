@@ -496,22 +496,20 @@ export default function GangguanTmPage() {
       </div>
 
       {/* Tabs */}
-      <div className="w-full flex justify-center mb-6">
-        <div className="flex bg-slate-100 rounded-xl p-1 w-full max-w-xl shadow-none">
-          {TABS.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 py-2.5 px-4 text-sm font-semibold rounded-lg transition-all duration-200 ${
-                activeTab === tab.id 
-                  ? 'bg-white text-blue-600 shadow-sm' 
-                  : 'text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+      <div className="flex border-b border-slate-200 mb-6 w-full max-w-2xl bg-white rounded-lg shadow-sm overflow-hidden">
+        {TABS.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex-1 py-3 px-4 text-sm font-semibold transition-colors duration-200 ${
+              activeTab === tab.id 
+                ? 'border-b-2 border-blue-600 text-blue-600' 
+                : 'text-slate-500 hover:text-slate-700 hover:border-slate-300 border-b-2 border-transparent'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
       <TargetWarning up3={filters.up3} year={filters.year} isVisible={!summary.has_target} />
@@ -523,13 +521,12 @@ export default function GangguanTmPage() {
           value={Number(summary.ytd).toLocaleString('id-ID')}
           unit="Kali"
           icon={Activity}
-          trend={isGood ? 'good' : 'bad'}
           color="blue"
         />
         <KpiCard
           title="Target YTD"
           value={summary.target !== null ? Number(summary.target).toLocaleString('id-ID') : '-'}
-          subtitle={summary.target === null ? 'Belum ada target' : undefined}
+          subText={summary.target === null ? 'Belum ada target' : undefined}
           unit={summary.target !== null ? "Kali" : ""}
           icon={Target}
           color="red"

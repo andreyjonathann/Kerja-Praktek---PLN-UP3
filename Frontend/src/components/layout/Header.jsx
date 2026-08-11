@@ -69,7 +69,7 @@ export default function Header({ onMenuToggle, onRefresh, refreshing }) {
     PIC:    { bg:'rgba(245,158,11,0.15)',  color:'#FCD34D',  border:'rgba(245,158,11,0.25)'  },
     Viewer: { bg:'rgba(16,185,129,0.15)', color:'#34D399',  border:'rgba(16,185,129,0.25)' },
   }
-  const rc = roleColor[user?.role] || roleColor.Viewer
+  const rc = user?.role === 'admin' ? roleColor.Admin : user?.role?.startsWith('pic_') ? roleColor.PIC : roleColor.Viewer
 
   return (
     <header className="page-header">

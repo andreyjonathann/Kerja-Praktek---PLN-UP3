@@ -12,6 +12,7 @@ import KpiCard      from '@/components/ui/KpiCard'
 import ChartWrapper from '@/components/ui/ChartWrapper'
 import DataTable    from '@/components/ui/DataTable'
 import { getPemasaranData, TARIF_KEYS, TARIF_LABELS } from '@/services/pemasaranDataService'
+import { calculateAchievement, calculateKPI } from '@/utils/kpiHelpers'
 
 const TARIF_COLORS = ['#14A2BA','#10B981','#F59E0B','#7C3AED','#EF4444','#0891B2','#BE185D','#059669']
 
@@ -73,7 +74,8 @@ export default function JumlahPelangganPage() {
   const ytdReal  = lastRow?.c_pelanggan_total  ?? 0
   const ytdTgt   = lastRow?.c_pelanggan_target ?? 0
   const lastReal = lastRow?.pelanggan_total     ?? 0
-  const ach      = ytdTgt > 0 ? (ytdReal / ytdTgt) * 100 : null
+  const achActual = calculateAchievement(ytdReal, ytdTgt) * 100
+  const achKPI = calculateKPI(ytdReal, ytdTgt) * 100
 
   const chartKey = tab === 'monthly' ? 'pelanggan_total'  : 'c_pelanggan_total'
   const tgtKey   = tab === 'monthly' ? 'pelanggan_target' : 'c_pelanggan_target'
@@ -101,14 +103,25 @@ export default function JumlahPelangganPage() {
       ? <span className={`font-bold ${v < row[tgtKey] ? 'text-red-500' : 'text-emerald-500'}`}>{formatNumber(v)}</span>
       : <span style={{ color:'var(--text-muted)', fontSize:'0.78rem' }}>Belum diinput</span>
     },
-    { key:'_ach', label:'% Capai', align:'center',
+    { key:'_ach_actual', label:'Pencapaian Aktual', align:'center',
       render: (_, row) => {
-        const p = row[tgtKey] > 0 && row[chartKey] != null ? Math.round(row[chartKey] / row[tgtKey] * 100) : null
-        if (p == null) return <span style={{ color:'var(--text-muted)', fontSize:'0.78rem' }}>—</span>
+        const t = row[tgtKey]
+        const r = row[chartKey]
+        if (t === 0 || r == null) return <span style={{ color:'var(--text-muted)', fontSize:'0.78rem' }}>—</span>
+        const p = calculateAchievement(r, t) * 100
+        return <span className="font-bold text-slate-600">{p.toFixed(1)}%</span>
+      }
+    },
+    { key:'_kpi_score', label:'Nilai KPI', align:'center',
+      render: (_, row) => {
+        const t = row[tgtKey]
+        const r = row[chartKey]
+        if (t === 0 || r == null) return <span style={{ color:'var(--text-muted)', fontSize:'0.78rem' }}>—</span>
+        const kpi = calculateKPI(r, t) * 100
         return <span style={{ display:'inline-flex', padding:'2px 8px', borderRadius:99, fontSize:'0.78rem', fontWeight:750,
-          background: p>=100?'rgba(16,185,129,0.08)':'rgba(239,68,68,0.08)',
-          color: p>=100?'#10B981':'#EF4444',
-          border:`1px solid ${p>=100?'rgba(16,185,129,0.15)':'rgba(239,68,68,0.15)'}` }}>{p}%</span>
+          background: kpi>=100?'rgba(16,185,129,0.08)':'rgba(239,68,68,0.08)',
+          color: kpi>=100?'#10B981':'#EF4444',
+          border:`1px solid ${kpi>=100?'rgba(16,185,129,0.15)':'rgba(239,68,68,0.15)'}` }}>{kpi.toFixed(1)}%</span>
       }
     },
     ...TARIF_KEYS.map((k,i) => ({
@@ -143,10 +156,10 @@ export default function JumlahPelangganPage() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-        <KpiCard title="Realisasi YTD"  value={hasAnyData ? formatNumber(ytdReal) : '—'} unit="plg" icon={Users} color="blue"   achievement={hasAnyData && ach !== null ? ach : undefined} loading={loading} />
+        <KpiCard title="Realisasi YTD"  value={hasAnyData ? formatNumber(ytdReal) : '—'} unit="plg" icon={Users} color="blue"   achievement={hasAnyData ? achKPI : undefined} loading={loading} />
         <KpiCard title="Target YTD"     value={formatNumber(ytdTgt)} unit="plg" icon={Users} color="green"  loading={loading} />
         <KpiCard title="Bulan Terakhir" value={hasAnyData ? formatNumber(lastReal) : '—'} unit="plg" icon={Users} color="yellow" trend={hasAnyData ? trend : null} loading={loading} />
-        <KpiCard title="Pencapaian"     value={hasAnyData && ach !== null ? ach.toFixed(1)+'%' : '—'} icon={Users} color={ach != null ? (ach>=100?'green':ach>=90?'yellow':'red') : 'blue'} loading={loading} />
+        <KpiCard title="Nilai KPI YTD"  value={hasAnyData ? achKPI.toFixed(1)+'%' : '—'} icon={Users} color={hasAnyData ? (achKPI>=100?'green':achKPI>=90?'yellow':'red') : 'blue'} subText={hasAnyData ? `Pencapaian Aktual: ${achActual.toFixed(1)}%` : undefined} loading={loading} />
       </div>
 
       {/* Tab */}

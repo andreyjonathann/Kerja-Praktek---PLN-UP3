@@ -15,6 +15,7 @@ import { useFilter } from '@/context/FilterContext'
 import { CHART_COLORS } from '@/utils/constants'
 import { getPemasaranData } from '@/services/pemasaranDataService'
 import { formatNumber } from '@/utils/formatters'
+import TargetWarning from '@/components/ui/TargetWarning'
 
 const PIE_COLORS = ['#14A2BA', '#16A34A']
 
@@ -27,7 +28,7 @@ const TOOLTIP = ({ active, payload, label }) => {
         <div key={i} style={{ display:'flex', alignItems:'center', gap:8, fontSize:'0.85rem', marginBottom:2 }}>
           <span style={{ width:8, height:8, borderRadius:2, background:p.color||p.fill, display:'inline-block', flexShrink:0 }} />
           <span style={{ color:'var(--text-muted)', fontWeight:600 }}>{p.name}:</span>
-          <span style={{ color:'var(--text-primary)', fontWeight:700 }}>Rp {formatNumber(p.value)} jt</span>
+          <span style={{ color:'var(--text-primary)', fontWeight:700 }}>Rp {formatNumber(p.value * 1000000)}</span>
         </div>
       ))}
     </div>
@@ -91,9 +92,9 @@ export default function PendapatanBPPage() {
         'Sep': 'September', 'Okt': 'Oktober', 'Nov': 'November', 'Des': 'Desember'
       })[v] || v
     },
-    { key:tgtKey,        label:'Target (Jt)',    align:'center', render: v => v != null ? 'Rp ' + formatNumber(v) : '-' },
-    { key:chartKey,      label:'Realisasi (Jt)', align:'center', render: (v, row) => v != null
-      ? <span className={`font-bold ${v < row[tgtKey] ? 'text-red-500' : 'text-emerald-500'}`}>Rp {formatNumber(v)}</span>
+    { key:tgtKey,        label:'Target',    align:'center', render: v => v != null ? 'Rp ' + formatNumber(v * 1000000) : '-' },
+    { key:chartKey,      label:'Realisasi', align:'center', render: (v, row) => v != null
+      ? <span className={`font-bold ${v < row[tgtKey] ? 'text-red-500' : 'text-emerald-500'}`}>Rp {formatNumber(v * 1000000)}</span>
       : <span className="text-slate-400 text-xs font-bold">-</span>
     },
   ]
@@ -116,11 +117,13 @@ export default function PendapatanBPPage() {
         <p className="page-description">Realisasi pendapatan biaya pasang baru (PB) dan tambah daya (TD) · Tahun {filters.year}</p>
       </div>
 
+      <TargetWarning indicator="Pendapatan BP" year={filters.year} />
+
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-        <KpiCard title="Realisasi Rp YTD"  value={`Rp ${(ytdReal/1000).toFixed(1)}M`}  icon={Wallet} color="purple" achievement={ach} loading={loading} />
-        <KpiCard title="Target Rp YTD"     value={`Rp ${(ytdTgt/1000).toFixed(1)}M`}   icon={Wallet} color="blue"   loading={loading} />
-        <KpiCard title="Bulan Terakhir"    value={`Rp ${(lastReal/1000).toFixed(1)}M`} icon={Wallet} color="yellow" trend={trend} loading={loading} />
+        <KpiCard title="Realisasi Rp YTD"  value={`Rp ${formatNumber(ytdReal * 1000000)}`}  icon={Wallet} color="purple" achievement={ach} loading={loading} />
+        <KpiCard title="Target Rp YTD"     value={`Rp ${formatNumber(ytdTgt * 1000000)}`}   icon={Wallet} color="blue"   loading={loading} />
+        <KpiCard title="Bulan Terakhir"    value={`Rp ${formatNumber(lastReal * 1000000)}`} icon={Wallet} color="yellow" trend={trend} loading={loading} />
         <KpiCard title="Pencapaian"        value={ach.toFixed(1) + '%'}                 icon={TrendingUp} color={ach >= 100 ? 'green' : ach >= 90 ? 'yellow' : 'red'} loading={loading} />
       </div>
 
@@ -235,7 +238,7 @@ export default function PendapatanBPPage() {
               >
                 {pieData.map((e, i) => <Cell key={i} fill={e.color} />)}
               </Pie>
-              <Tooltip formatter={v => ['Rp ' + formatNumber(v) + ' jt']} />
+              <Tooltip formatter={v => ['Rp ' + formatNumber(v * 1000000)]} />
               <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{ fontSize:11 }} />
             </PieChart>
           </ResponsiveContainer>
@@ -245,7 +248,7 @@ export default function PendapatanBPPage() {
       {/* Detail Table */}
       <div className="card p-5">
         <h3 className="section-title mb-4">
-          Detail Data Pendapatan BP {tab === 'monthly' ? 'Bulanan' : 'Kumulatif'} (Juta Rp)
+          Detail Data Pendapatan BP {tab === 'monthly' ? 'Bulanan' : 'Kumulatif'}
         </h3>
         <DataTable 
           columns={tableColumns} 

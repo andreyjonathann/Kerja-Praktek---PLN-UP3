@@ -15,6 +15,7 @@ import { useFilter } from '@/context/FilterContext'
 import { CHART_COLORS, TARIFF_SEGMENTS } from '@/utils/constants'
 import { getPemasaranData } from '@/services/pemasaranDataService'
 import { formatNumber } from '@/utils/formatters'
+import TargetWarning from '@/components/ui/TargetWarning'
 
 const TARIF_KEYS = ['s','r','b','i','p','t','l','c']
 const TARIF_COLORS = CHART_COLORS
@@ -100,17 +101,19 @@ export default function PenjualanPage() {
       <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
         <div style={{ display:'flex', alignItems:'center', gap:10 }}>
           <div className="icon-wrapper-interactive" style={{
-            width:28, height:28, borderRadius:8,
+            width:34, height:34, borderRadius:12,
             background:'linear-gradient(135deg, rgba(20,162,186,0.2), rgba(20,162,186,0.08))',
             border:'1px solid rgba(20,162,186,0.25)',
             display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0,
           }}>
-            <ShoppingCart size={14} style={{ color:'#14A2BA' }} />
+            <ShoppingCart size={16} style={{ color:'#14A2BA' }} />
           </div>
           <h1 className="page-heading">PENJUALAN — Energi Listrik (kWh)</h1>
         </div>
         <p className="page-description">Realisasi penjualan energi listrik per golongan tarif · Tahun {filters.year}</p>
       </div>
+
+      <TargetWarning indicator="Penjualan TL" year={filters.year} />
 
       {/* ── 4 KpiCard ──────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">

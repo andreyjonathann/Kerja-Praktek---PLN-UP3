@@ -119,7 +119,8 @@ export const NAV_ITEMS = [
         type: 'subgroup',
         group: 'PENGADAAN',
         items: [
-          { key: 'pengadaan-kontrak', label: 'KONTRAK', path: '/pengadaan/kontrak', icon: 'FileText' },
+          { key: 'pengadaan-kontrak', label: 'PENGADAAN (KONTRAK)', path: '/pengadaan/kontrak', icon: 'FileText' },
+          { key: 'pengadaan-pagu', label: 'PAGU ANGGARAN', path: '/pengadaan/kelola-pagu', icon: 'Wallet' },
         ],
       },
       {
@@ -128,7 +129,7 @@ export const NAV_ITEMS = [
         items: [
           { key: 'niaga-pelunasan',   label: 'PELUNASAN PRR',   path: '/niaga/pelunasan',   icon: 'Briefcase' },
           { key: 'niaga-penghapusan',  label: 'PENGHAPUSAN PRR',  path: '/niaga/penghapusan',  icon: 'TrendingDown' },
-          { key: 'niaga-saldo-akhir',  label: 'SALDO AKHIR',        path: '/niaga/saldo-akhir',  icon: 'Activity' },
+          { key: 'niaga-saldo-akhir',  label: 'SALDO AKHIR PRR',  path: '/niaga/saldo-akhir',  icon: 'Wallet' },
         ],
       },
       {

@@ -192,11 +192,18 @@ class TargetTahunanSeeder extends Seeder
                 'polaritas' => 'MAXIMIZE',
                 'bobot' => 30.00
             ],
+            'Saldo Akhir PRR' => [
+                'bidang' => 'Niaga',
+                'indikator' => 'Saldo Akhir PRR',
+                'satuan' => 'Rp Miliar',
+                'polaritas' => 'MINIMIZE',
+                'bobot' => 30.00
+            ],
             'Tindak Lanjut LBKB' => [
                 'bidang' => 'Niaga',
-                'indikator' => 'Tindak Lanjut LBKB',
-                'satuan' => 'Laporan',
-                'polaritas' => 'MAXIMIZE',
+                'indikator' => 'Saldo Akhir PRR',
+                'satuan' => 'Rp Miliar',
+                'polaritas' => 'MINIMIZE',
                 'bobot' => 30.00
             ],
             'Saldo Rata-Rata Akhir Bulan' => [

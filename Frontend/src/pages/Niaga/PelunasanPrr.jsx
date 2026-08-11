@@ -13,6 +13,9 @@ import ExportModal from '@/components/ui/ExportModal'
 import { useFilter } from '@/context/FilterContext'
 import { getNiagaData } from '@/services/niagaDataService'
 import { formatNumber } from '@/utils/formatters'
+import { calculateAchievement, calculateKPI } from '@/utils/kpiHelpers'
+import TargetWarning from '@/components/ui/TargetWarning'
+import NiagaDetailModal from '@/components/ui/NiagaDetailModal'
 
 const TOOLTIP = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
@@ -41,6 +44,8 @@ export default function PelunasanPrrPage() {
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [selectedRow, setSelectedRow] = useState(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   const fetchData = useCallback(async (bg = false) => {
     if (!bg) setLoading(true)
@@ -72,10 +77,12 @@ export default function PelunasanPrrPage() {
 
   const filled = data.filter(d => d.pelunasan_real !== null)
   const lastRow = filled[filled.length - 1]
+  const targetRow = filled.length > 0 ? filled[filled.length - 1] : (data.filter(d => d.c_pelunasan_target > 0).slice(-1)[0] || data[0])
   const ytdReal = lastRow?.c_pelunasan_real ?? 0
-  const ytdTgt = lastRow?.c_pelunasan_target ?? 0
+  const ytdTgt = targetRow?.c_pelunasan_target ?? 0
   const lastReal = lastRow?.pelunasan_real ?? 0
-  const ach = ytdTgt > 0 ? (ytdReal / ytdTgt) * 100 : 0
+  const achActual = calculateAchievement(ytdReal, ytdTgt) * 100
+  const achKPI = calculateKPI(ytdReal, ytdTgt) * 100
 
   const chartKey = tab === 'monthly' ? 'pelunasan_real' : 'c_pelunasan_real'
   const tgtKey = tab === 'monthly' ? 'pelunasan_target' : 'c_pelunasan_target'
@@ -100,18 +107,37 @@ export default function PelunasanPrrPage() {
         : <span className="text-slate-400 text-xs font-bold">—</span>
     },
     {
-      key: '_ach', label: '% Pencapaian', align: 'center', render: (_, row) => {
+      key: '_ach_actual',
+      label: 'Pencapaian Aktual',
+      align: 'center',
+      render: (_, row) => {
         const t = row[tgtKey]
         const r = row[chartKey]
-        if (t === 0 || r == null) return '—'
-        const p = (r / t) * 100
+        if (t === 0 || r == null) return <span className="text-slate-400 font-bold">—</span>
+        const p = calculateAchievement(r, t) * 100
+        return (
+          <span className="font-bold text-slate-600">
+            {p.toFixed(1)}%
+          </span>
+        )
+      }
+    },
+    {
+      key: '_kpi_score',
+      label: 'Nilai KPI',
+      align: 'center',
+      render: (_, row) => {
+        const t = row[tgtKey]
+        const r = row[chartKey]
+        if (t === 0 || r == null) return <span className="text-slate-400 font-bold">—</span>
+        const kpi = calculateKPI(r, t) * 100
         return (
           <span style={{
             display: 'inline-flex', padding: '2px 10px', borderRadius: 99, fontSize: '0.78rem', fontWeight: 750,
-            background: p >= 100 ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)',
-            color: p >= 100 ? '#10B981' : '#EF4444',
-            border: `1px solid ${p >= 100 ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)'}`,
-          }}>{p.toFixed(1)}%</span>
+            background: kpi >= 100 ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)',
+            color: kpi >= 100 ? '#10B981' : '#EF4444',
+            border: `1px solid ${kpi >= 100 ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)'}`,
+          }}>{kpi.toFixed(1)}%</span>
         )
       }
     }
@@ -119,6 +145,15 @@ export default function PelunasanPrrPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }} className="animate-fade-in">
+
+      <NiagaDetailModal
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        rowData={selectedRow}
+        type="pelunasan"
+        year={filters.year}
+        onDeleteSuccess={fetchData}
+      />
 
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -136,12 +171,14 @@ export default function PelunasanPrrPage() {
         <p className="page-description">Realisasi pelunasan PRR dan piutang lancar/ragu-ragu · Tahun {filters.year}</p>
       </div>
 
+      <TargetWarning indicator="Pelunasan PRR & Piutang" year={filters.year} />
+
       {/* ── KPI Cards ─────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-        <KpiCard title="Realisasi Rp YTD" value={formatNumber(ytdReal)} unit="Rp" icon={Briefcase} color="indigo" achievement={ach} loading={loading} />
+        <KpiCard title="Realisasi Rp YTD" value={formatNumber(ytdReal)} unit="Rp" icon={Briefcase} color="indigo" achievement={achKPI} loading={loading} />
         <KpiCard title="Target Rp YTD" value={formatNumber(ytdTgt)} unit="Rp" icon={Briefcase} color="blue" loading={loading} />
         <KpiCard title="Bulan Terakhir" value={formatNumber(lastReal)} unit="Rp" icon={Briefcase} color="yellow" trend={trend} loading={loading} />
-        <KpiCard title="Pencapaian" value={ach.toFixed(1) + '%'} icon={TrendingUp} color={ach >= 100 ? 'green' : ach >= 90 ? 'yellow' : 'red'} loading={loading} />
+        <KpiCard title="Nilai KPI YTD" value={achKPI.toFixed(1) + '%'} icon={TrendingUp} color={achKPI >= 100 ? 'green' : achKPI >= 90 ? 'yellow' : 'red'} subText={`Pencapaian Aktual: ${achActual.toFixed(1)}%`} loading={loading} />
       </div>
 
       {/* ── Tab Toggle & Action Buttons ─────────────────────────────────── */}
@@ -178,7 +215,7 @@ export default function PelunasanPrrPage() {
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
           <ExportModal kpiType="Pelunasan PRR" />
-          {user?.role === 'pic_niaga' && (
+          {(user?.role === 'pic_niaga' || user?.role === 'admin' || user?.role === 'superadmin' || !user?.role) && (
             <div style={{
               display: 'inline-flex',
               background: 'rgba(79, 70, 229, 0.05)',
@@ -247,7 +284,7 @@ export default function PelunasanPrrPage() {
         <h3 className="section-title mb-4">
           Detail Data Pelunasan {tab === 'monthly' ? 'Bulanan' : 'Kumulatif'} (Rp)
         </h3>
-        <DataTable columns={tableColumns} data={data} paginated={false} searchable={false} />
+        <DataTable columns={tableColumns} data={data} paginated={false} searchable={false} onRowClick={row => { setSelectedRow(row); setIsModalOpen(true) }} />
       </div>
     </div>
   )

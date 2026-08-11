@@ -13,6 +13,9 @@ import ExportModal from '@/components/ui/ExportModal'
 import { useFilter } from '@/context/FilterContext'
 import { getNiagaData } from '@/services/niagaDataService'
 import { formatNumber } from '@/utils/formatters'
+import { calculateAchievement, calculateKPI } from '@/utils/kpiHelpers'
+import TargetWarning from '@/components/ui/TargetWarning'
+import NiagaDetailModal from '@/components/ui/NiagaDetailModal'
 
 const TOOLTIP = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
@@ -40,6 +43,8 @@ export default function SaldoAkhirPage() {
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [selectedRow, setSelectedRow] = useState(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   const fetchData = useCallback(async (bg = false) => {
     if (!bg) setLoading(true)
@@ -74,7 +79,8 @@ export default function SaldoAkhirPage() {
   const ytdReal = lastRow?.rata_rata_saldo ?? 0
   const ytdTgt = lastRow?.saldo_akhir_target ?? 0
   const lastReal = lastRow?.saldo_akhir_real ?? 0
-  const ach = lastRow?.saldo_akhir_ach ?? 0
+  const achActual = calculateAchievement(ytdReal, ytdTgt) * 100
+  const achKPI = calculateKPI(ytdReal, ytdTgt) * 100
 
   const chartKey = 'rata_rata_saldo'
   const tgtKey = 'saldo_akhir_target'
@@ -92,15 +98,37 @@ export default function SaldoAkhirPage() {
     { key: 'rata_rata_saldo', label: 'Rata-rata saldo (Rp)', align: 'right', render: v => v != null ? formatNumber(v) : '—' },
     { key: tgtKey, label: 'Target (Rp)', align: 'right', render: v => v != null ? formatNumber(v) : '—' },
     {
-      key: 'saldo_akhir_ach', label: '% Pencapaian', align: 'center', render: (v) => {
-        if (v == null) return '—'
+      key: 'saldo_akhir_ach_actual',
+      label: 'Pencapaian Aktual',
+      align: 'center',
+      render: (_, row) => {
+        const v = row.rata_rata_saldo
+        const t = row.saldo_akhir_target
+        if (v == null || t === 0) return <span className="text-slate-400 font-bold">—</span>
+        const p = calculateAchievement(v, t) * 100
+        return (
+          <span className="font-bold text-slate-700">
+            {p.toFixed(2)}%
+          </span>
+        )
+      }
+    },
+    {
+      key: 'saldo_akhir_kpi_score',
+      label: 'Nilai KPI',
+      align: 'center',
+      render: (_, row) => {
+        const v = row.rata_rata_saldo
+        const t = row.saldo_akhir_target
+        if (v == null || t === 0) return <span className="text-slate-400 font-bold">—</span>
+        const kpi = calculateKPI(v, t) * 100
         return (
           <span style={{
             display: 'inline-flex', padding: '2px 10px', borderRadius: 99, fontSize: '0.78rem', fontWeight: 750,
-            background: v >= 100 ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)',
-            color: v >= 100 ? '#10B981' : '#EF4444',
-            border: `1px solid ${v >= 100 ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)'}`,
-          }}>{v.toFixed(2)}%</span>
+            background: kpi >= 100 ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)',
+            color: kpi >= 100 ? '#10B981' : '#EF4444',
+            border: `1px solid ${kpi >= 100 ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)'}`,
+          }}>{kpi.toFixed(2)}%</span>
         )
       }
     }
@@ -111,6 +139,15 @@ export default function SaldoAkhirPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }} className="animate-fade-in">
+
+      <NiagaDetailModal
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        rowData={selectedRow}
+        type="saldo_akhir"
+        year={filters.year}
+        onDeleteSuccess={fetchData}
+      />
 
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -128,12 +165,14 @@ export default function SaldoAkhirPage() {
         <p className="page-description">Realisasi saldo akhir PAL &amp; TS serta perhitungan rata-rata saldo · Tahun {filters.year}</p>
       </div>
 
+      <TargetWarning indicator="Saldo Akhir PRR" year={filters.year} />
+
       {/* ── KPI Cards ─────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-        <KpiCard title="Rata-rata Saldo YTD" value={formatNumber(ytdReal)} unit="Rp" icon={Activity} color="cyan" achievement={ach} loading={loading} />
+        <KpiCard title="Rata-rata Saldo YTD" value={formatNumber(ytdReal)} unit="Rp" icon={Activity} color="cyan" achievement={achKPI} loading={loading} />
         <KpiCard title="Target Saldo" value={formatNumber(ytdTgt)} unit="Rp" icon={Activity} color="blue" loading={loading} />
         <KpiCard title="Bulan Terakhir" value={formatNumber(lastReal)} unit="Rp" icon={Activity} color="yellow" trend={trend} loading={loading} />
-        <KpiCard title="Pencapaian" value={ach.toFixed(2) + '%'} icon={TrendingUp} color={ach >= 100 ? 'green' : ach >= 90 ? 'yellow' : 'red'} loading={loading} />
+        <KpiCard title="Nilai KPI YTD" value={achKPI.toFixed(2) + '%'} icon={TrendingUp} color={achKPI >= 100 ? 'green' : achKPI >= 90 ? 'yellow' : 'red'} subText={`Pencapaian Aktual: ${achActual.toFixed(2)}%`} loading={loading} />
       </div>
 
       {/* ── Action Buttons ─────────────────────────────────── */}
@@ -147,7 +186,7 @@ export default function SaldoAkhirPage() {
       }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
           <ExportModal kpiType="Saldo Akhir" />
-          {user?.role === 'pic_niaga' && (
+          {(user?.role === 'pic_niaga' || user?.role === 'admin' || user?.role === 'superadmin' || !user?.role) && (
             <div style={{
               display: 'inline-flex',
               background: 'rgba(6, 182, 212, 0.05)',
@@ -216,7 +255,7 @@ export default function SaldoAkhirPage() {
         <h3 className="section-title mb-4">
           Detail Data Saldo Akhir (Rp)
         </h3>
-        <DataTable columns={tableColumns} data={data} paginated={false} searchable={false} />
+        <DataTable columns={tableColumns} data={data} paginated={false} searchable={false} onRowClick={row => { setSelectedRow(row); setIsModalOpen(true) }} />
       </div>
     </div>
   )

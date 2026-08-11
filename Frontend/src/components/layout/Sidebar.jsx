@@ -62,6 +62,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
       'pic_pengadaan': 'PENGADAAN',
       'pic_niaga': 'NIAGA',
       'pic_keuangan': 'KEUANGAN',
+      'pic_aset': 'ASET',
       'pic_k3': 'K3',
       'admin_k3': 'K3'
     };
@@ -71,6 +72,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
     
     return NAV_ITEMS.flatMap(item => {
       if (item.key === 'home') return [item];
+      if (item.k3 && user?.role !== 'admin_k3' && user?.role !== 'pic_k3') return []; // Hide K3 groups for non-K3 PIC roles
       
       if (item.group === 'NKO') {
          // Hide NKO for roles that only have their own specific page / module
@@ -108,9 +110,6 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
              type: subItem.type || 'item' 
          }));
       }
-      
-      // Keep K3 groups visible for K3 roles
-      if (item.k3) return [item];
       
       return [];
     });
