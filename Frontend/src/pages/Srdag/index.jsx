@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, ComposedChart, Area
 } from 'recharts'
-import { Clock, TrendingUp, Target, Activity, Plus, CheckCircle, XCircle } from 'lucide-react'
+import { Clock, TrendingUp, Target, Activity, Plus, CheckCircle, XCircle, FileSpreadsheet } from 'lucide-react'
 import ChartWrapper from '@/components/ui/ChartWrapper'
 import KpiCard from '@/components/ui/KpiCard'
 import DataTable from '@/components/ui/DataTable'
@@ -16,10 +16,13 @@ import { useFilter } from '@/context/FilterContext'
 import { useAuth } from '@/context/AuthContext'
 import { MONTHS_ID } from '@/utils/formatters'
 import api from '@/services/api'
+import { toPng } from 'html-to-image'
+import { exportToExcel } from '@/utils/exportExcel'
 
 export default function SrdagPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const chartRef = useRef(null)
   const { filters } = useFilter()
   const [data, setData] = useState({
     summary: {},
@@ -207,6 +210,27 @@ export default function SrdagPage() {
         gap: '12px',
         margin: '12px 0 24px',
       }}>
+        <ActionButton
+          icon={FileSpreadsheet}
+          label="Export Excel"
+          onClick={async () => {
+            let chartBase64 = null;
+            if (chartRef.current) {
+              try { chartBase64 = await toPng(chartRef.current, { cacheBust: true, backgroundColor: '#ffffff' }); } catch(e) { console.error(e); }
+            }
+            const tableData = tableDataBulan.map(row => ({
+              'Bulan': row.bulan,
+              'Dispatch Berhasil (Kali)': row.jumlah_berhasil ?? '-',
+              'Total Gangguan (Kali)': row.jumlah_total ?? '-',
+              'Success Rate (%)': row.sr_realisasi != null ? (row.sr_realisasi * 100).toFixed(2) : '-',
+              'Target Minimum (%)': row.target != null ? (row.target * 100).toFixed(2) : '-',
+              'Status': row.status
+            }));
+            await exportToExcel(tableData, `SRDAG_${filters.year}`, chartBase64);
+          }}
+          colorHex="#10B981"
+          colorRgb="16, 185, 129"
+        />
         {user?.role === 'admin' && (
           <ActionButton 
             icon={Target} 
@@ -233,6 +257,7 @@ export default function SrdagPage() {
         loading={loading}
         error={error}
       >
+        <div ref={chartRef}>
         <div className="h-[350px] mt-4">
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
@@ -246,6 +271,7 @@ export default function SrdagPage() {
               <Line type="monotone" dataKey="Realisasi (%)" stroke="#10B981" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
             </ComposedChart>
           </ResponsiveContainer>
+        </div>
         </div>
       </ChartWrapper>
 

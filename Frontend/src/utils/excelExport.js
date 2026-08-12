@@ -1,4 +1,5 @@
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 
 const kpiConfig = {
   saidi: {
@@ -119,153 +120,191 @@ const kpiConfig = {
   }
 };
 
-export const exportToExcel = (kpiType, startYear, endYear, dataMap) => {
-  const wb = XLSX.utils.book_new();
-  
-  // Prepare data rows
-  const wsData = [];
+const monthLabels = [
+  "s.d. Jan", "s.d. Feb", "s.d. Mar", "s.d. Apr",
+  "s.d. Mei", "s.d. Jun", "s.d. Jul", "s.d. Agu",
+  "s.d. Sep", "s.d. Okt", "s.d. Nov", "s.d. Des"
+];
+
+// Helper: style a header row with blue background
+function styleHeaderRow(row, numCols) {
+  row.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+  row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E6FBB' } };
+  row.alignment = { horizontal: 'center', vertical: 'middle' };
+  row.height = 20;
+  for (let c = 1; c <= numCols; c++) {
+    const cell = row.getCell(c);
+    cell.border = {
+      top: { style: 'thin' }, bottom: { style: 'thin' },
+      left: { style: 'thin' }, right: { style: 'thin' }
+    };
+  }
+}
+
+// Helper: style a title row
+function styleTitleRow(row, numCols, worksheet) {
+  worksheet.mergeCells(row.number, 1, row.number, numCols);
+  row.font = { bold: true, size: 12, color: { argb: 'FF1E3A5F' } };
+  row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD6E4F0' } };
+  row.alignment = { horizontal: 'center', vertical: 'middle' };
+  row.height = 22;
+}
+
+export const exportToExcel = async (kpiType, startYear, endYear, dataMap, chartBase64 = null, breakdownBase64 = null) => {
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = 'PLN UP3 System';
+  workbook.created = new Date();
+
+  const worksheet = workbook.addWorksheet(`Data ${kpiType}`);
+
   const typeKey = kpiType.toLowerCase().replace(/ /g, '_');
   const cfg = kpiConfig[typeKey] || kpiConfig.saidi;
-  
-  // ========== TABLE 1: AKUMULASI ==========
+
   const years = [];
-  for (let y = startYear; y <= endYear; y++) {
-    years.push(y);
-  }
-  
-  // Title Row
-  const titleRow1 = [`${endYear} Akumulasi`];
-  wsData.push(titleRow1);
-  
-  // Header Row
-  const headerRow1 = [""];
-  years.forEach(y => headerRow1.push(y));
-  headerRow1.push("Target", "Pencapaian");
-  wsData.push(headerRow1);
-  
-  // Data Rows
-  const monthLabels = [
-    "s.d. Jan", "s.d. Feb", "s.d. Mar", "s.d. Apr", 
-    "s.d. Mei", "s.d. Jun", "s.d. Jul", "s.d. Agu", 
-    "s.d. Sep", "s.d. Okt", "s.d. Nov", "s.d. Des"
+  for (let y = startYear; y <= endYear; y++) years.push(y);
+
+  const totalCols = years.length + 3; // Bulan + years + Target + Pencapaian
+
+  // Set column widths
+  worksheet.columns = [
+    { width: 14 },
+    ...years.map(() => ({ width: 13 })),
+    { width: 13 },
+    { width: 13 },
   ];
-  
+
+  // ========== TABLE 1: AKUMULASI ==========
+  let titleRow1 = worksheet.addRow([`${endYear} Akumulasi — ${kpiType.toUpperCase()}`]);
+  styleTitleRow(titleRow1, totalCols, worksheet);
+
+  let headerRow1 = worksheet.addRow(["", ...years, "Target", "Pencapaian"]);
+  styleHeaderRow(headerRow1, totalCols);
+
   for (let monthIdx = 0; monthIdx < 12; monthIdx++) {
+    const bulanNum = monthIdx + 1;
     const row = [monthLabels[monthIdx]];
-    const targetBulan = monthIdx + 1;
-    
-    // Add cumulative value for each year
+
     years.forEach(y => {
-      const monthData = dataMap[y] ? dataMap[y].find(d => parseInt(d.bulan) === targetBulan) : null;
-      const val = monthData ? (monthData[cfg.cumRealKey] ?? monthData[cfg.monthlyRealKey] ?? 0) : "";
-      row.push(val);
+      const monthData = dataMap[y]?.find(d => parseInt(d.bulan) === bulanNum);
+      row.push(monthData ? (monthData[cfg.cumRealKey] ?? monthData[cfg.monthlyRealKey] ?? '') : '');
     });
-    
-    // Add Target and Pencapaian for endYear
-    const endYearData = dataMap[endYear] ? dataMap[endYear].find(d => parseInt(d.bulan) === targetBulan) : null;
-    const target = endYearData ? (endYearData[cfg.cumTargetKey] ?? endYearData[cfg.monthlyTargetKey] ?? 0) : "";
-    
-    let pencapaian = "";
+
+    const endYearData = dataMap[endYear]?.find(d => parseInt(d.bulan) === bulanNum);
+    const target = endYearData ? (endYearData[cfg.cumTargetKey] ?? endYearData[cfg.monthlyTargetKey] ?? '') : '';
+    let pencapaian = '';
     if (endYearData) {
       const real = endYearData[cfg.cumRealKey] ?? endYearData[cfg.monthlyRealKey] ?? 0;
       const tgt = endYearData[cfg.cumTargetKey] ?? endYearData[cfg.monthlyTargetKey] ?? 0;
       if (tgt > 0) {
-        if (cfg.isInverse) {
-          pencapaian = real > 0 ? (tgt / real) : 0;
-        } else if (cfg.isMinimize) {
-          pencapaian = 2 - (real / tgt);
-        } else {
-          // Formatted as decimal representing percentage
-          pencapaian = real / tgt;
-        }
+        pencapaian = cfg.isInverse ? (real > 0 ? tgt / real : 0)
+          : cfg.isMinimize ? 2 - real / tgt
+          : real / tgt;
       }
     }
-    
-    row.push(target);
-    row.push(pencapaian);
-    
-    wsData.push(row);
-  }
-  
-  // Empty space
-  wsData.push([]);
-  wsData.push([]);
-  
-  // ========== TABLE 2: BULANAN ==========
-  const titleRow2 = [`${endYear} Bulanan`];
-  wsData.push(titleRow2);
-  
-  const headerRow2 = ["", `${kpiType.toUpperCase()} Bulanan (${cfg.unit})`];
-  wsData.push(headerRow2);
-  
-  for (let monthIdx = 0; monthIdx < 12; monthIdx++) {
-    const row = [monthLabels[monthIdx]];
-    const targetBulan = monthIdx + 1;
-    
-    const endYearData = dataMap[endYear] ? dataMap[endYear].find(d => parseInt(d.bulan) === targetBulan) : null;
-    const val = endYearData ? (endYearData[cfg.monthlyRealKey] ?? 0) : "";
-    
-    row.push(val);
-    wsData.push(row);
-  }
-  
-  // ========== TABLE 3: BREAKDOWN KOMPONEN ==========
-  wsData.push([]);
-  wsData.push([]);
-  wsData.push([`${endYear} Detail Komponen Input`]);
-  
-  wsData.push(cfg.detailHeaders);
-  
-  for (let monthIdx = 0; monthIdx < 12; monthIdx++) {
-    const row = [monthLabels[monthIdx]];
-    const targetBulan = monthIdx + 1;
-    const endYearData = dataMap[endYear] ? dataMap[endYear].find(d => parseInt(d.bulan) === targetBulan) : null;
-    
-    if (endYearData) {
-      cfg.detailKeys.forEach(k => {
-        row.push(endYearData[k] ?? "");
-      });
-    } else {
-      cfg.detailKeys.forEach(() => {
-        row.push("");
-      });
-    }
-    wsData.push(row);
-  }
-  
-  // Create Worksheet
-  const ws = XLSX.utils.aoa_to_sheet(wsData);
-  
-  // Number Formatting
-  // Apply formats to columns B to ... depending on year span
-  const range = XLSX.utils.decode_range(ws['!ref']);
-  for (let R = range.s.r; R <= range.e.r; ++R) {
-    for (let C = range.s.c; C <= range.e.c; ++C) {
-      const cellAddress = {c:C, r:R};
-      const cellRef = XLSX.utils.encode_cell(cellAddress);
-      const cell = ws[cellRef];
-      if (!cell || cell.t !== 'n') continue;
-      
-      // Formatting
-      if (C === years.length + 2 && R >= 2 && R <= 13) {
-        // Pencapaian column (Akumulasi table)
-        cell.z = "0%";
-      } else if (R !== 1) { // Skip header row 1 where years are placed
-        // Use custom format or default
-        cell.z = cfg.format || "#,##0.00";
-      }
-    }
-  }
-  
-  // Set column widths
-  const wscols = [
-    { wch: 15 }, // Bulan
-  ];
-  for (let i = 0; i < years.length + 2; i++) {
-    wscols.push({ wch: 12 });
-  }
-  ws['!cols'] = wscols;
 
-  XLSX.utils.book_append_sheet(wb, ws, `Data ${kpiType}`);
-  XLSX.writeFile(wb, `Export_${kpiType}_${startYear}-${endYear}.xlsx`);
+    const dataRow = worksheet.addRow([...row, target, pencapaian]);
+    dataRow.alignment = { horizontal: 'center', vertical: 'middle' };
+    dataRow.eachCell(cell => {
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: monthIdx % 2 === 0 ? 'FFFFFFFF' : 'FFF0F7FF' } };
+      cell.border = { bottom: { style: 'hair' }, left: { style: 'hair' }, right: { style: 'hair' } };
+    });
+  }
+
+  worksheet.addRow([]);
+  worksheet.addRow([]);
+
+  // ========== TABLE 2: BULANAN ==========
+  let titleRow2 = worksheet.addRow([`${endYear} Bulanan — ${kpiType.toUpperCase()} (${cfg.unit})`]);
+  styleTitleRow(titleRow2, 2, worksheet);
+
+  let headerRow2 = worksheet.addRow(["Bulan", `${kpiType.toUpperCase()} Bulanan (${cfg.unit})`]);
+  styleHeaderRow(headerRow2, 2);
+
+  for (let monthIdx = 0; monthIdx < 12; monthIdx++) {
+    const bulanNum = monthIdx + 1;
+    const endYearData = dataMap[endYear]?.find(d => parseInt(d.bulan) === bulanNum);
+    const val = endYearData ? (endYearData[cfg.monthlyRealKey] ?? '') : '';
+    const dataRow = worksheet.addRow([monthLabels[monthIdx], val]);
+    dataRow.alignment = { horizontal: 'center', vertical: 'middle' };
+    dataRow.eachCell(cell => {
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: monthIdx % 2 === 0 ? 'FFFFFFFF' : 'FFF0F7FF' } };
+      cell.border = { bottom: { style: 'hair' }, left: { style: 'hair' }, right: { style: 'hair' } };
+    });
+  }
+
+  worksheet.addRow([]);
+  worksheet.addRow([]);
+
+  // ========== TABLE 3: DETAIL KOMPONEN ==========
+  const detailCols = cfg.detailHeaders.length;
+  let titleRow3 = worksheet.addRow([`${endYear} Detail Komponen Input`]);
+  styleTitleRow(titleRow3, detailCols, worksheet);
+
+  let headerRow3 = worksheet.addRow(cfg.detailHeaders);
+  styleHeaderRow(headerRow3, detailCols);
+
+  for (let monthIdx = 0; monthIdx < 12; monthIdx++) {
+    const bulanNum = monthIdx + 1;
+    const endYearData = dataMap[endYear]?.find(d => parseInt(d.bulan) === bulanNum);
+    const row = [monthLabels[monthIdx], ...cfg.detailKeys.map(k => endYearData ? (endYearData[k] ?? '') : '')];
+    const dataRow = worksheet.addRow(row);
+    dataRow.alignment = { horizontal: 'center', vertical: 'middle' };
+    dataRow.eachCell(cell => {
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: monthIdx % 2 === 0 ? 'FFFFFFFF' : 'FFF0F7FF' } };
+      cell.border = { bottom: { style: 'hair' }, left: { style: 'hair' }, right: { style: 'hair' } };
+    });
+  }
+
+  // ========== CHART IMAGES ==========
+  if (chartBase64 || breakdownBase64) {
+    worksheet.addRow([]);
+    worksheet.addRow([]);
+
+    let currentIdx = worksheet.rowCount + 1;
+
+    if (chartBase64) {
+      const labelRow = worksheet.getRow(currentIdx);
+      labelRow.getCell(1).value = '📊 Grafik Tren ' + kpiType.toUpperCase();
+      labelRow.getCell(1).font = { bold: true, size: 12, color: { argb: 'FF1E3A5F' } };
+      labelRow.height = 20;
+
+      const rawBase64 = chartBase64.includes(',') ? chartBase64.split(',')[1] : chartBase64;
+      try {
+        const imageId = workbook.addImage({ base64: rawBase64, extension: 'png' });
+        worksheet.addImage(imageId, {
+          tl: { col: 0, row: currentIdx + 1 },
+          ext: { width: 850, height: 350 }
+        });
+        currentIdx += 20; // Move down for the next chart
+      } catch (e) {
+        console.error('Gagal menyisipkan grafik utama:', e);
+      }
+    }
+
+    if (breakdownBase64) {
+      if (chartBase64) currentIdx += 2; // Add some gap
+      const labelRow = worksheet.getRow(currentIdx);
+      labelRow.getCell(1).value = '📊 Grafik Breakdown Penyebab ' + kpiType.toUpperCase();
+      labelRow.getCell(1).font = { bold: true, size: 12, color: { argb: 'FF1E3A5F' } };
+      labelRow.height = 20;
+
+      const rawBase64 = breakdownBase64.includes(',') ? breakdownBase64.split(',')[1] : breakdownBase64;
+      try {
+        const imageId = workbook.addImage({ base64: rawBase64, extension: 'png' });
+        worksheet.addImage(imageId, {
+          tl: { col: 0, row: currentIdx + 1 },
+          ext: { width: 850, height: 350 }
+        });
+      } catch (e) {
+        console.error('Gagal menyisipkan grafik breakdown:', e);
+      }
+    }
+  }
+
+  // Generate and download
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  });
+  saveAs(blob, `Export_${kpiType}_${startYear}-${endYear}.xlsx`);
 };

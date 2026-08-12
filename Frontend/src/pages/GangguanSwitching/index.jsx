@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ComposedChart,
@@ -16,12 +16,14 @@ import api from '@/services/api'
 
 import { useFilter } from '@/context/FilterContext'
 import { useAuth } from '@/context/AuthContext'
-import { Activity, Plus, Target, AlertTriangle, Edit3, Trash2, X, Shield, TrendingUp, TrendingDown, CheckCircle, XCircle } from 'lucide-react'
+import { Activity, Plus, Target, AlertTriangle, Edit3, Trash2, X, Shield, TrendingUp, TrendingDown, CheckCircle, XCircle, FileSpreadsheet } from 'lucide-react'
 import KpiCard from '@/components/ui/KpiCard'
 import TargetWarning from '@/components/ui/TargetWarning'
 import DataTable from '@/components/ui/DataTable'
 import ChartWrapper from '@/components/ui/ChartWrapper'
 import GangguanDetailModal from '@/components/ui/GangguanDetailModal'
+import { toPng } from 'html-to-image'
+import { exportToExcel } from '@/utils/exportExcel'
 
 
 const MONTHS_FULL = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
@@ -89,6 +91,7 @@ function GangguanSwitchingContent() {
   const navigate = useNavigate()
   const { filters } = useFilter()
   const { user, isAdmin } = useAuth()
+  const chartRef = useRef(null)
   
   const [dataDashboard, setDataDashboard] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -181,6 +184,42 @@ function GangguanSwitchingContent() {
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Export Excel Button */}
+          <div style={{
+            display: 'inline-flex',
+            background: 'rgba(16, 185, 129, 0.05)',
+            padding: 4,
+            borderRadius: 12,
+            border: '1px solid rgba(16, 185, 129, 0.15)',
+          }}>
+            <button
+              onClick={async () => {
+                let chartBase64 = null;
+                if (chartRef.current) {
+                  try { chartBase64 = await toPng(chartRef.current, { cacheBust: true, backgroundColor: '#ffffff' }); } catch(e) { console.error(e); }
+                }
+                const tableData = trendData.map(row => ({
+                  'Bulan': MONTHS_FULL[row.bulan - 1] || row.bulan,
+                  'Switching Bulanan': row.switching_bulanan ?? '-',
+                  'Target Switching Bulanan': row.target_switching_bulanan ?? '-',
+                  'Trafo Bulanan': row.trafo_bulanan ?? '-',
+                  'Target Trafo Bulanan': row.target_trafo_bulanan ?? '-',
+                  'Acc Switching': row.switching ?? '-',
+                  'Acc Trafo': row.trafo ?? '-',
+                }));
+                await exportToExcel(tableData, `Gangguan_Switching_${filters.year}`, chartBase64);
+              }}
+              style={{
+                padding: '6px 16px', borderRadius: 9, fontSize: '0.85rem', fontWeight: 700,
+                transition: 'all 0.2s ease', border: 'none', cursor: 'pointer',
+                background: 'var(--bg-card)', color: '#10B981',
+                boxShadow: '0 2px 8px rgba(16,185,129,0.15)',
+                display: 'flex', alignItems: 'center', gap: '8px'
+              }}
+            >
+              <FileSpreadsheet size={16} /> Export Excel
+            </button>
+          </div>
           {isAdmin && (
             <div style={{
               display: 'inline-flex',
@@ -365,7 +404,7 @@ function GangguanSwitchingContent() {
                 title="Perbandingan Gangguan Bulanan" 
                 subtitle={`Switching vs Trafo per bulan — Tahun ${filters.year}`}
               >
-                <div className="h-[400px] mt-4">
+                <div ref={chartRef} className="h-[400px] mt-4">
                   <ResponsiveContainer width="100%" height="100%">
                     <ComposedChart data={trendData} margin={{ top: 20, right: 30, left: 20, bottom: 10 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />

@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, ComposedChart, Area
 } from 'recharts'
-import { Clock, TrendingUp, Target, Activity, Plus } from 'lucide-react'
+import { Clock, TrendingUp, Target, Activity, Plus, FileSpreadsheet } from 'lucide-react'
 import ChartWrapper from '@/components/ui/ChartWrapper'
 import KpiCard from '@/components/ui/KpiCard'
 import DataTable from '@/components/ui/DataTable'
@@ -16,10 +16,13 @@ import { useAuth } from '@/context/AuthContext'
 import { MONTHS_ID } from '@/utils/formatters'
 import api from '@/services/api'
 import MttrDetailModal from '@/components/ui/MttrDetailModal'
+import { toPng } from 'html-to-image'
+import { exportToExcel } from '@/utils/exportExcel'
 
 export default function MttrPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const chartRef = useRef(null)
   const { filters } = useFilter()
   const [data, setData] = useState({
     summary: {},
@@ -188,6 +191,24 @@ export default function MttrPage() {
         gap: '12px',
         margin: '12px 0 24px',
       }}>
+        <ActionButton
+          icon={FileSpreadsheet}
+          label="Export Excel"
+          onClick={async () => {
+            let chartBase64 = null;
+            if (chartRef.current) {
+              try { chartBase64 = await toPng(chartRef.current, { cacheBust: true, backgroundColor: '#ffffff' }); } catch(e) { console.error(e); }
+            }
+            const tableData = (data?.per_bulan || []).map(row => ({
+              'Bulan': MONTHS_ID[row.bulan] || row.bulan,
+              'MTTR Bulan Ini (%)': row.realisasi_bulan_ini ?? '-',
+              'Target Minimum (%)': row.target ?? '-',
+            }));
+            await exportToExcel(tableData, `MTTR_Siaga1_${filters.year}`, chartBase64);
+          }}
+          colorHex="#10B981"
+          colorRgb="16, 185, 129"
+        />
         {user?.role === 'admin' && (
           <ActionButton 
             icon={Target} 
@@ -214,6 +235,7 @@ export default function MttrPage() {
         loading={loading}
         error={error}
       >
+        <div ref={chartRef}>
         <ResponsiveContainer width="100%" height={300}>
           <ComposedChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
@@ -226,6 +248,7 @@ export default function MttrPage() {
             <Line type="monotone" dataKey="Realisasi (%)" stroke="#10B981" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
           </ComposedChart>
         </ResponsiveContainer>
+        </div>
       </ChartWrapper>
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mt-6">

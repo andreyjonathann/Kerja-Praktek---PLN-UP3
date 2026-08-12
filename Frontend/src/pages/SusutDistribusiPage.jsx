@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Activity, AlertCircle, Target, Plus, Zap, CheckCircle2 } from 'lucide-react';
+import { Activity, AlertCircle, Target, Plus, Zap, CheckCircle2, Download } from 'lucide-react';
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import PageHeader from '@/components/ui/PageHeader';
 import KpiCard from '@/components/ui/KpiCard';
@@ -12,6 +12,8 @@ import { useAuth } from '@/context/AuthContext';
 import { MONTHS_ID } from '@/utils/formatters';
 import api from '@/services/api';
 import SusutDistribusiDetailModal from '@/components/ui/SusutDistribusiDetailModal';
+import { exportToExcel } from '@/utils/exportExcel';
+import { toPng } from 'html-to-image';
 
 export default function SusutDistribusiPage() {
   const navigate = useNavigate();
@@ -25,6 +27,7 @@ export default function SusutDistribusiPage() {
   const [selectedRow, setSelectedRow] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [tab, setTab] = useState('monthly');
+  const chartRef = useRef(null);
 
   const isViewer = user?.role === 'viewer';
 
@@ -237,6 +240,28 @@ export default function SusutDistribusiPage() {
     );
   };
 
+  const handleExportExcel = async () => {
+    let chartBase64 = null;
+    if (chartRef.current) {
+      try {
+        chartBase64 = await toPng(chartRef.current, { cacheBust: true, backgroundColor: '#ffffff' });
+      } catch (err) {
+        console.error('Failed to capture chart:', err);
+      }
+    }
+
+    const dataToExport = tableDataBulan.map(row => ({
+      'Bulan': row.bulan,
+      'KWh Netto': row.kwh_netto ?? '-',
+      'PSSD': row.pssd ?? '-',
+      'KWh Jual 309': row.kwh_jual_309 ?? '-',
+      'Realisasi Susut (%)': row.realisasi_persen != null ? Number(row.realisasi_persen).toFixed(4) : '-',
+      'Target (%)': row.target != null ? Number(row.target).toFixed(4) : '-',
+      'Keterangan': row.keterangan || '-'
+    }));
+    await exportToExcel(dataToExport, `Realisasi_Susut_Distribusi_${filters.year || new Date().getFullYear()}`, chartBase64);
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--page-gap, 20px)' }} className="animate-fade-in">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
@@ -246,21 +271,36 @@ export default function SusutDistribusiPage() {
           icon={Activity}
           iconColor="#2563eb"
         />
-        {!isViewer && (
+        <div style={{ display: 'flex', gap: 10 }}>
           <button
-            onClick={() => navigate('/susut/input')}
+            onClick={handleExportExcel}
             style={{
               padding: '10px 20px', borderRadius: 10, fontSize: '0.85rem', fontWeight: 700,
-              transition: 'all 0.2s ease', border: '1.5px solid #2563eb', cursor: 'pointer',
-              background: 'transparent', color: '#2563eb',
+              transition: 'all 0.2s ease', border: '1.5px solid #10b981', cursor: 'pointer',
+              background: 'transparent', color: '#10b981',
               display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0,
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#2563eb'; e.currentTarget.style.color = '#FFFFFF' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#2563eb' }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#10b981'; e.currentTarget.style.color = '#FFFFFF' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#10b981' }}
           >
-            <Plus size={16} /> Tambah Data
+            <Download size={16} /> Export Excel
           </button>
-        )}
+          {!isViewer && (
+            <button
+              onClick={() => navigate('/susut/input')}
+              style={{
+                padding: '10px 20px', borderRadius: 10, fontSize: '0.85rem', fontWeight: 700,
+                transition: 'all 0.2s ease', border: '1.5px solid #2563eb', cursor: 'pointer',
+                background: 'transparent', color: '#2563eb',
+                display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0,
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#2563eb'; e.currentTarget.style.color = '#FFFFFF' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#2563eb' }}
+            >
+              <Plus size={16} /> Tambah Data
+            </button>
+          )}
+        </div>
       </div>
 
       <TargetWarning 
@@ -321,34 +361,36 @@ export default function SusutDistribusiPage() {
       </div>
 
       {/* Chart Realisasi vs Target */}
-      <ChartWrapper
-        title={tab === 'monthly' ? "Tren Susut Distribusi Bulanan" : "Tren Susut Distribusi Kumulatif (YTD)"}
-        subtitle={`Realisasi vs Target · Tahun ${filters.year || new Date().getFullYear()}`}
-        loading={loading}
-        error={error}
-        empty={!trendData}
-        height={280}
-        onRetry={fetchData}
-      >
-        <ResponsiveContainer width="100%" height={280}>
-          <ComposedChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--border, #e2e8f0)" />
-            <XAxis dataKey="label" tick={{ fontSize: 12.5, fontWeight: 650 }} />
-            <YAxis tick={{ fontSize: 12.5, fontWeight: 650 }} unit="%" />
-            <Tooltip content={<CustomTooltip />} />
-            <Legend wrapperStyle={{ fontSize: 13, fontWeight: 600 }} />
-            <Bar dataKey={tab === 'monthly' ? "realisasi" : "cumulativeReal"} name="Realisasi" fill="#2563eb" radius={[4, 4, 0, 0]} />
-            <Line
-              dataKey={tab === 'monthly' ? "target" : "cumulativeTgt"}
-              name="Target"
-              stroke="#EF4444"
-              strokeWidth={2}
-              strokeDasharray="5 5"
-              dot={{ r: 4, fill: '#EF4444' }}
-            />
-          </ComposedChart>
-        </ResponsiveContainer>
-      </ChartWrapper>
+      <div ref={chartRef} style={{ background: '#ffffff', padding: '10px', borderRadius: '8px' }}>
+        <ChartWrapper
+          title={tab === 'monthly' ? "Tren Susut Distribusi Bulanan" : "Tren Susut Distribusi Kumulatif (YTD)"}
+          subtitle={`Realisasi vs Target · Tahun ${filters.year || new Date().getFullYear()}`}
+          loading={loading}
+          error={error}
+          empty={!trendData}
+          height={280}
+          onRetry={fetchData}
+        >
+          <ResponsiveContainer width="100%" height={280}>
+            <ComposedChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border, #e2e8f0)" />
+              <XAxis dataKey="label" tick={{ fontSize: 12.5, fontWeight: 650 }} />
+              <YAxis tick={{ fontSize: 12.5, fontWeight: 650 }} unit="%" />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend wrapperStyle={{ fontSize: 13, fontWeight: 600 }} />
+              <Bar dataKey={tab === 'monthly' ? "realisasi" : "cumulativeReal"} name="Realisasi" fill="#2563eb" radius={[4, 4, 0, 0]} />
+              <Line
+                dataKey={tab === 'monthly' ? "target" : "cumulativeTgt"}
+                name="Target"
+                stroke="#EF4444"
+                strokeWidth={2}
+                strokeDasharray="5 5"
+                dot={{ r: 4, fill: '#EF4444' }}
+              />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </ChartWrapper>
+      </div>
 
       {/* Table */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mt-2">

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ComposedChart, Line, XAxis, YAxis, CartesianGrid,
@@ -17,13 +17,16 @@ import { MONTHS_ID } from '@/utils/formatters'
 import { CHART_COLORS, YEARS } from '@/utils/constants'
 import api from '@/services/api'
 import { useAuth } from '@/context/AuthContext'
-import * as XLSX from 'xlsx'
+import ExcelJS from 'exceljs'
+import { saveAs } from 'file-saver'
+import { toPng } from 'html-to-image'
 import RptDetailModal from '@/components/ui/RptDetailModal'
 
 export default function RptGangguanPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { filters } = useFilter()
+  const chartRef = useRef(null)
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -53,30 +56,115 @@ export default function RptGangguanPage() {
     fetchData()
   }, [fetchData])
 
-  const exportExcel = () => {
+  const exportExcel = async () => {
     if (!data?.trend_bulanan) return;
-    
-    const wsData = [
-      ['Data RPT Gangguan PLN UP3', filters.up3 || 'UP3 Kebon Jeruk', 'Tahun', filters.year],
-      [],
-      ['Bulan', 'Total Gangguan', 'Rata-rata RPT (mnt)', 'Target (mnt)', 'Status']
-    ];
+    const year = filters.year || new Date().getFullYear();
 
-    tableDataBulan.forEach(row => {
-      wsData.push([
-        row.bulan,
-        row.total_gangguan ?? '—',
-        row.rpt_realisasi ?? '—',
-        row.target_menit ?? '—',
-        row.status
-      ]);
+    // Capture chart image
+    let chartBase64 = null;
+    if (chartRef.current) {
+      try { chartBase64 = await toPng(chartRef.current, { cacheBust: true, backgroundColor: '#ffffff' }); } catch(e) { console.warn(e); }
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'PLN UP3 System';
+    workbook.created = new Date();
+
+    const worksheet = workbook.addWorksheet("RPT Gangguan");
+
+    const headers = ['Bulan', 'Total Gangguan (Kali)', 'Rata-rata RPT (Menit)', 'Target (Menit)', 'Status'];
+    worksheet.columns = headers.map(h => ({ header: '', width: Math.max(h.length + 3, 20) }));
+
+    // Title
+    const titleRow = worksheet.addRow([`REKAPITULASI RPT GANGGUAN`]);
+    worksheet.mergeCells(1, 1, 1, 5);
+    titleRow.font = { bold: true, size: 13, color: { argb: 'FF1E3A5F' } };
+    titleRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD6E4F0' } };
+    titleRow.alignment = { horizontal: 'center', vertical: 'middle' };
+    titleRow.height = 26;
+
+    const subTitleRow = worksheet.addRow([`Unit: ${filters.up3 || 'UP3 Kebon Jeruk'} | Tahun ${year}`]);
+    worksheet.mergeCells(2, 1, 2, 5);
+    subTitleRow.font = { italic: true, size: 10, color: { argb: 'FF4F5B66' } };
+    subTitleRow.alignment = { horizontal: 'center', vertical: 'middle' };
+    subTitleRow.height = 18;
+
+    worksheet.addRow([]); // space
+
+    // Header row
+    const headerRow = worksheet.addRow(headers);
+    headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+    headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E6FBB' } };
+    headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
+    headerRow.height = 22;
+
+    headerRow.eachCell(cell => {
+      cell.border = {
+        top: { style: 'thin', color: { argb: 'FF1E6FBB' } },
+        bottom: { style: 'medium', color: { argb: 'FFFFFFFF' } },
+        left: { style: 'thin', color: { argb: 'FF1A5C9C' } },
+        right: { style: 'thin', color: { argb: 'FF1A5C9C' } },
+      };
     });
 
-    const ws = XLSX.utils.aoa_to_sheet(wsData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "RPT Gangguan");
-    XLSX.writeFile(wb, `Rekap_RPT_Gangguan_${filters.year}.xlsx`);
-  }
+    // Data rows
+    tableDataBulan.forEach((row, idx) => {
+      const dataRow = worksheet.addRow([
+        row.bulan,
+        row.total_gangguan ?? '-',
+        row.rpt_realisasi ?? '-',
+        row.target_menit ?? '-',
+        row.status
+      ]);
+      dataRow.alignment = { vertical: 'middle', horizontal: 'center' };
+      dataRow.height = 19;
+
+      dataRow.getCell(2).numFmt = '#,##0';
+      dataRow.getCell(3).numFmt = '#,##0.00';
+      dataRow.getCell(4).numFmt = '#,##0.00';
+
+      const isStripe = idx % 2 === 1;
+      dataRow.eachCell(cell => {
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: isStripe ? 'FFF0F7FF' : 'FFFFFFFF' }
+        };
+        cell.border = {
+          bottom: { style: 'hair', color: { argb: 'FFCFE2F3' } },
+          left: { style: 'hair', color: { argb: 'FFCFE2F3' } },
+          right: { style: 'hair', color: { argb: 'FFCFE2F3' } },
+        };
+      });
+    });
+
+    // Add chart image
+    if (chartBase64) {
+      worksheet.addRow([]);
+      worksheet.addRow([]);
+      
+      const currentIdx = worksheet.rowCount;
+      const labelRow = worksheet.getRow(currentIdx);
+      labelRow.getCell(1).value = '📊 Grafik Tren RPT Bulanan';
+      labelRow.getCell(1).font = { bold: true, size: 12, color: { argb: 'FF1E3A5F' } };
+      labelRow.height = 22;
+
+      const rawBase64 = chartBase64.includes(',') ? chartBase64.split(',')[1] : chartBase64;
+      try {
+        const imageId = workbook.addImage({ base64: rawBase64, extension: 'png' });
+        worksheet.addImage(imageId, {
+          tl: { col: 0, row: currentIdx + 1 },
+          ext: { width: 850, height: 350 }
+        });
+      } catch (e) {
+        console.error('Gagal memasukkan grafik RPT ke Excel:', e);
+      }
+    }
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    saveAs(blob, `Rekap_RPT_Gangguan_${year}.xlsx`);
+  };
 
   if (loading && !data) {
     return (
@@ -212,12 +300,14 @@ export default function RptGangguanPage() {
           status={summary.rpt_rata_ytd <= summary.target_menit ? 'good' : 'bad'}
           color="blue"
           isInverse={true}
+          loading={loading}
         />
         <KpiCard
           title="Target YTD"
           value={`${summary.target_menit} mnt`}
           icon={Target}
           color="blue"
+          loading={loading}
         />
         <KpiCard
           title="Status Kinerja"
@@ -225,6 +315,7 @@ export default function RptGangguanPage() {
           icon={summary.rpt_rata_ytd <= summary.target_menit ? CheckCircle : XCircle}
           color={summary.rpt_rata_ytd <= summary.target_menit ? 'green' : 'red'}
           badgeText={summary.target_menit > 0 ? `Pencapaian: ${Math.max(0, ((2 - (summary.rpt_rata_ytd / summary.target_menit)) * 100)).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%` : null}
+          loading={loading}
         />
       </div>
 
@@ -238,11 +329,10 @@ export default function RptGangguanPage() {
       }}>
         <ActionButton 
           icon={FileSpreadsheet} 
-          label="Export" 
+          label="Export Excel" 
           onClick={exportExcel}
-          colorHex="#059669"
-          colorRgb="5, 150, 105"
-          variant="secondary"
+          colorHex="#10B981"
+          colorRgb="16, 185, 129"
         />
         {user?.role === 'pic_jaringan' && (
           <ActionButton 
@@ -257,7 +347,7 @@ export default function RptGangguanPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
         <ChartWrapper title="Trend RPT Bulanan" subtitle="Realisasi vs Target">
-            <div className="h-[350px] mt-4">
+            <div className="h-[350px] mt-4" ref={chartRef}>
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />

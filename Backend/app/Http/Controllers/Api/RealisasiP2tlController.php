@@ -76,7 +76,7 @@ class RealisasiP2tlController extends Controller
         }
 
         if ($user->role === 'pic_transaksi_energi') {
-            $up3 = $user->up3;
+            $up3 = $user->up3 ?? Up3Constants::DEFAULT_UP3;
         } else {
             $up3 = $request->up3 ?? Up3Constants::DEFAULT_UP3;
         }

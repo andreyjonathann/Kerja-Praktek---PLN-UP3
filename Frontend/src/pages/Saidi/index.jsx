@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import {
@@ -100,8 +100,10 @@ const BREAKDOWN_TOOLTIP = ({ active, payload, label }) => {
 }
 
 export default function SaidiPage() {
-  const { user } = useAuth()
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const chartRef = useRef(null)
+  const breakdownRef = useRef(null)
   const { filters }        = useFilter()
   const [tab, setTab]      = useState('monthly')
   const [selectedRow, setSelectedRow] = useState(null)
@@ -273,7 +275,7 @@ export default function SaidiPage() {
               </button>
             </div>
           )}
-          <ExportModal kpiType="SAIDI" />
+          <ExportModal kpiType="SAIDI" chartRef={chartRef} breakdownRef={breakdownRef} />
         </div>
       </div>
 
@@ -285,6 +287,7 @@ export default function SaidiPage() {
           subtitle={`Target vs Realisasi ${filters.year}`}
           loading={loading} error={error} empty={data.length === 0} height={280} onRetry={fetchData}
         >
+          <div ref={chartRef}>
           <ResponsiveContainer width="100%" height={280}>
             <ComposedChart data={data}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
@@ -300,6 +303,7 @@ export default function SaidiPage() {
               />
             </ComposedChart>
           </ResponsiveContainer>
+          </div>
         </ChartWrapper>
 
         {/* Breakdown Distribusi / Transmisi / Pembangkit */}
@@ -308,6 +312,7 @@ export default function SaidiPage() {
           subtitle="Distribusi · Transmisi · Pembangkit (hover distribusi untuk detail)"
           loading={loading} empty={breakdownChartData.length === 0} height={280}
         >
+          <div ref={breakdownRef}>
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={breakdownChartData} barCategoryGap="30%">
               <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
@@ -320,6 +325,7 @@ export default function SaidiPage() {
               <Bar dataKey="pembangkit" name="Pembangkit" fill="#F59E0B" radius={[4,4,0,0]} />
             </BarChart>
           </ResponsiveContainer>
+          </div>
         </ChartWrapper>
       </div>
 

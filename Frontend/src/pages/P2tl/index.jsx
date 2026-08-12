@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Activity, AlertCircle, Target, Plus, Zap, TrendingUp } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Activity, AlertCircle, Target, Plus, Zap, TrendingUp, Download } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
 import KpiCard from '@/components/ui/KpiCard';
 import DataTable from '@/components/ui/DataTable';
@@ -12,6 +12,8 @@ import { useNavigate } from 'react-router-dom';
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import ChartWrapper from '@/components/ui/ChartWrapper';
 import TargetWarning from '@/components/ui/TargetWarning';
+import { exportToExcel } from '@/utils/exportExcel';
+import { toPng } from 'html-to-image';
 
 export default function P2tlPage() {
   const navigate = useNavigate();
@@ -25,6 +27,7 @@ export default function P2tlPage() {
   const [selectedRow, setSelectedRow] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [tab, setTab] = useState('monthly');
+  const chartRef = useRef(null);
 
   const isViewer = user?.role === 'viewer';
 
@@ -219,6 +222,36 @@ export default function P2tlPage() {
     },
   ];
 
+  const handleExportExcel = async () => {
+    let chartBase64 = null;
+    if (chartRef.current) {
+      try {
+        chartBase64 = await toPng(chartRef.current, { cacheBust: true, backgroundColor: '#ffffff' });
+      } catch (err) {
+        console.error('Failed to capture chart:', err);
+      }
+    }
+
+    const fmt = (v) => v != null ? v : '-';
+
+    const dataToExport = tableDataBulan.map(row => ({
+      'Bulan': row.bulan,
+      'Jml Plg P1': fmt(row.jml_plg_p1),
+      'Jml Plg P2': fmt(row.jml_plg_p2),
+      'kWh P2': fmt(row.kwh_p2),
+      'Jml Plg P3': fmt(row.jml_plg_p3),
+      'kWh P3': fmt(row.kwh_p3),
+      'Jml Plg P4': fmt(row.jml_plg_p4),
+      'kWh P4': fmt(row.kwh_p4),
+      'Jml Plg K2': fmt(row.jml_plg_k2),
+      'kWh K2': fmt(row.kwh_k2),
+      'Total Realisasi kWh': fmt(row.realisasi_kwh),
+      'Target kWh P2TL': fmt(row.target),
+      'Keterangan': row.keterangan || '-'
+    }));
+    await exportToExcel(dataToExport, `Realisasi_kWh_P2TL_${filters.year || new Date().getFullYear()}`, chartBase64);
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--page-gap, 20px)' }} className="animate-fade-in">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
@@ -228,21 +261,36 @@ export default function P2tlPage() {
           icon={Activity}
           iconColor="#2563eb"
         />
-        {!isViewer && (
+        <div style={{ display: 'flex', gap: 10 }}>
           <button
-            onClick={() => navigate('/p2tl/input')}
+            onClick={handleExportExcel}
             style={{
               padding: '10px 20px', borderRadius: 10, fontSize: '0.85rem', fontWeight: 700,
-              transition: 'all 0.2s ease', border: '1.5px solid #2563eb', cursor: 'pointer',
-              background: 'transparent', color: '#2563eb',
+              transition: 'all 0.2s ease', border: '1.5px solid #10b981', cursor: 'pointer',
+              background: 'transparent', color: '#10b981',
               display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0,
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#2563eb'; e.currentTarget.style.color = '#FFFFFF' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#2563eb' }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#10b981'; e.currentTarget.style.color = '#FFFFFF' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#10b981' }}
           >
-            <Plus size={16} /> Tambah Data
+            <Download size={16} /> Export Excel
           </button>
-        )}
+          {!isViewer && (
+            <button
+              onClick={() => navigate('/p2tl/input')}
+              style={{
+                padding: '10px 20px', borderRadius: 10, fontSize: '0.85rem', fontWeight: 700,
+                transition: 'all 0.2s ease', border: '1.5px solid #2563eb', cursor: 'pointer',
+                background: 'transparent', color: '#2563eb',
+                display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0,
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#2563eb'; e.currentTarget.style.color = '#FFFFFF' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#2563eb' }}
+            >
+              <Plus size={16} /> Tambah Data
+            </button>
+          )}
+        </div>
       </div>
 
       <TargetWarning 
@@ -302,19 +350,21 @@ export default function P2tlPage() {
         </div>
       </div>
 
-      <ChartWrapper title={tab === 'monthly' ? "Tren Perolehan kWh P2TL Bulanan" : "Tren Perolehan kWh P2TL Kumulatif (YTD)"} subtitle={`Realisasi vs Target · Tahun ${filters.year || new Date().getFullYear()}`} loading={loading} error={error} empty={!trendData} height={280} onRetry={fetchData}>
-        <ResponsiveContainer width="100%" height={280}>
-          <ComposedChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--border, #e2e8f0)" />
-            <XAxis dataKey="label" tick={{ fontSize: 12.5, fontWeight: 650 }} />
-            <YAxis tick={{ fontSize: 12.5, fontWeight: 650 }} />
-            <Tooltip content={<CustomTooltip />} />
-            <Legend wrapperStyle={{ fontSize: 13, fontWeight: 600 }} />
-            <Bar dataKey={tab === 'monthly' ? "realisasi" : "cumulativeReal"} name="Realisasi" fill="#2563eb" radius={[4, 4, 0, 0]} />
-            <Line dataKey={tab === 'monthly' ? "target" : "cumulativeTgt"} name="Target" stroke="#EF4444" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 4, fill: '#EF4444' }} />
-          </ComposedChart>
-        </ResponsiveContainer>
-      </ChartWrapper>
+      <div ref={chartRef} style={{ background: '#ffffff', padding: '10px', borderRadius: '8px' }}>
+        <ChartWrapper title={tab === 'monthly' ? "Tren Perolehan kWh P2TL Bulanan" : "Tren Perolehan kWh P2TL Kumulatif (YTD)"} subtitle={`Realisasi vs Target · Tahun ${filters.year || new Date().getFullYear()}`} loading={loading} error={error} empty={!trendData} height={280} onRetry={fetchData}>
+          <ResponsiveContainer width="100%" height={280}>
+            <ComposedChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border, #e2e8f0)" />
+              <XAxis dataKey="label" tick={{ fontSize: 12.5, fontWeight: 650 }} />
+              <YAxis tick={{ fontSize: 12.5, fontWeight: 650 }} />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend wrapperStyle={{ fontSize: 13, fontWeight: 600 }} />
+              <Bar dataKey={tab === 'monthly' ? "realisasi" : "cumulativeReal"} name="Realisasi" fill="#2563eb" radius={[4, 4, 0, 0]} />
+              <Line dataKey={tab === 'monthly' ? "target" : "cumulativeTgt"} name="Target" stroke="#EF4444" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 4, fill: '#EF4444' }} />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </ChartWrapper>
+      </div>
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mt-2">
         <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">

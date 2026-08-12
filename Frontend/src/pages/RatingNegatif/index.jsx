@@ -1,9 +1,8 @@
 import notify from '@/utils/notify';
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ComposedChart,
-  BarChart,
   Bar,
   Line,
   XAxis,
@@ -16,13 +15,16 @@ import {
 } from 'recharts'
 import api from '@/services/api'
 import { useFilter } from '@/context/FilterContext'
-import * as XLSX from 'xlsx'
+import ExcelJS from 'exceljs'
+import { saveAs } from 'file-saver'
+import { toPng } from 'html-to-image'
 import { Activity, Plus, Download, Target, TrendingDown, TrendingUp, FileSpreadsheet, CheckCircle, XCircle } from 'lucide-react'
 import KpiCard from '@/components/ui/KpiCard'
 import DataTable from '@/components/ui/DataTable'
 import ChartWrapper from '@/components/ui/ChartWrapper'
 import TargetWarning from '@/components/ui/TargetWarning'
 import RatingNegatifDetailModal from '@/components/ui/RatingNegatifDetailModal'
+
 // Custom colors
 const COLORS = {
   target: '#ef4444',
@@ -67,6 +69,8 @@ const renderCustomBarLabel = ({ x, y, width, value }) => {
 export default function RatingNegatifPage() {
   const navigate = useNavigate()
   const { filters } = useFilter()
+  const chartBulRef = useRef(null)
+  const chartKumRef = useRef(null)
   const [data, setData] = useState(null)
   const [rekapData, setRekapData] = useState([])
   const [loading, setLoading] = useState(true)
@@ -125,39 +129,153 @@ export default function RatingNegatifPage() {
     return rows;
   }, [rekapData, data]);
 
-  const exportToExcel = () => {
+  const exportToExcel = async () => {
     if (rekapData.length === 0) return;
     
     const year = filters.year || new Date().getFullYear();
-    const wsData = [];
-    
-    // Header
-    const up3Names = rekapData.map(r => r.up3);
-    wsData.push(['REKAPITULASI RATING NEGATIF PLN MOBILE', '', '', ...up3Names.map(() => '')]);
-    wsData.push([`TAHUN ${year}`, '', '', ...up3Names.map(() => '')]);
-    wsData.push([]);
-    wsData.push(['BULAN', 'TARGET (Kali)', 'REALISASI (Kali)', ...up3Names]);
-    
-    // Data
-    pivotedData.forEach(row => {
-        const rowData = [row.bulan];
-        const monthNum = MONTHS_FULL.indexOf(row.bulan) + 1;
-        const detail = data?.monthly?.find(m => m.bulan === monthNum);
-        
-        rowData.push(detail && detail.target !== null ? detail.target : '-');
-        rowData.push(detail && detail.jml_rating_negatif !== null ? detail.jml_rating_negatif : '-');
 
-        up3Names.forEach(up3 => {
-            rowData.push(row[up3] !== null ? `${Number(row[up3]).toLocaleString('id-ID', {minimumFractionDigits: 2, maximumFractionDigits: 2})}%` : '-');
-        });
-        wsData.push(rowData);
-    });
+    // Capture chart images
+    let chartBulBase64 = null;
+    let chartKumBase64 = null;
+    if (chartBulRef.current) {
+      try { chartBulBase64 = await toPng(chartBulRef.current, { cacheBust: true, backgroundColor: '#ffffff' }); } catch(e) { console.warn(e); }
+    }
+    if (chartKumRef.current) {
+      try { chartKumBase64 = await toPng(chartKumRef.current, { cacheBust: true, backgroundColor: '#ffffff' }); } catch(e) { console.warn(e); }
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'PLN UP3 System';
+    workbook.created = new Date();
+
+    const worksheet = workbook.addWorksheet("Rating Negatif");
+
+    const up3Names = rekapData.map(r => r.up3);
+    const headers = ['BULAN', 'TARGET (Kali)', 'REALISASI (Kali)', ...up3Names];
     
-    const ws = XLSX.utils.aoa_to_sheet(wsData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Rating Negatif");
-    XLSX.writeFile(wb, `Rekap_Rating_Negatif_${year}.xlsx`);
-  }
+    worksheet.columns = headers.map(h => ({ header: '', width: Math.max(h.length + 3, 18) }));
+
+    // Title
+    const titleRow = worksheet.addRow([`REKAPITULASI RATING NEGATIF PLN MOBILE`]);
+    worksheet.mergeCells(1, 1, 1, headers.length);
+    titleRow.font = { bold: true, size: 13, color: { argb: 'FF1E3A5F' } };
+    titleRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD6E4F0' } };
+    titleRow.alignment = { horizontal: 'center', vertical: 'middle' };
+    titleRow.height = 26;
+
+    const subTitleRow = worksheet.addRow([`TAHUN ${year}`]);
+    worksheet.mergeCells(2, 1, 2, headers.length);
+    subTitleRow.font = { italic: true, size: 10, color: { argb: 'FF4F5B66' } };
+    subTitleRow.alignment = { horizontal: 'center', vertical: 'middle' };
+    subTitleRow.height = 18;
+
+    worksheet.addRow([]); // Blank spacing row
+
+    // Header row
+    const headerRow = worksheet.addRow(headers);
+    headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+    headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E6FBB' } };
+    headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
+    headerRow.height = 22;
+
+    headerRow.eachCell(cell => {
+      cell.border = {
+        top: { style: 'thin', color: { argb: 'FF1E6FBB' } },
+        bottom: { style: 'medium', color: { argb: 'FFFFFFFF' } },
+        left: { style: 'thin', color: { argb: 'FF1A5C9C' } },
+        right: { style: 'thin', color: { argb: 'FF1A5C9C' } },
+      };
+    });
+
+    // Write Data rows
+    pivotedData.forEach((row, idx) => {
+      const monthNum = MONTHS_FULL.indexOf(row.bulan) + 1;
+      const detail = data?.monthly?.find(m => m.bulan === monthNum);
+
+      const targetVal = detail && detail.target !== null ? detail.target : '';
+      const realisasiVal = detail && detail.jml_rating_negatif !== null ? detail.jml_rating_negatif : '';
+      
+      const rowVals = [
+        row.bulan,
+        targetVal,
+        realisasiVal
+      ];
+
+      up3Names.forEach(up3 => {
+        rowVals.push(row[up3] !== null ? row[up3] / 100 : ''); // Store as percentage fraction for Excel cell formatting
+      });
+
+      const dataRow = worksheet.addRow(rowVals);
+      dataRow.alignment = { vertical: 'middle', horizontal: 'center' };
+      dataRow.height = 19;
+
+      // Formatting: columns 2 & 3 are integers, other columns are percentages
+      dataRow.getCell(2).numFmt = '#,##0';
+      dataRow.getCell(3).numFmt = '#,##0';
+      
+      for (let c = 4; c <= headers.length; c++) {
+        dataRow.getCell(c).numFmt = '0.00%';
+      }
+
+      const isStripe = idx % 2 === 1;
+      dataRow.eachCell(cell => {
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: isStripe ? 'FFF0F7FF' : 'FFFFFFFF' }
+        };
+        cell.border = {
+          bottom: { style: 'hair', color: { argb: 'FFCFE2F3' } },
+          left: { style: 'hair', color: { argb: 'FFCFE2F3' } },
+          right: { style: 'hair', color: { argb: 'FFCFE2F3' } },
+        };
+      });
+    });
+
+    // Embed chart images if present
+    let currentIdx = worksheet.rowCount + 3;
+
+    if (chartBulBase64) {
+      const labelRow = worksheet.getRow(currentIdx);
+      labelRow.getCell(1).value = '📊 Grafik Rating Negatif Bulanan';
+      labelRow.getCell(1).font = { bold: true, size: 12, color: { argb: 'FF1E3A5F' } };
+      labelRow.height = 22;
+
+      const rawBase64 = chartBulBase64.includes(',') ? chartBulBase64.split(',')[1] : chartBulBase64;
+      try {
+        const imageId = workbook.addImage({ base64: rawBase64, extension: 'png' });
+        worksheet.addImage(imageId, {
+          tl: { col: 0, row: currentIdx + 1 },
+          ext: { width: 850, height: 350 }
+        });
+        currentIdx += 20;
+      } catch (e) {
+        console.error('Gagal memasukkan grafik Bulanan ke Excel:', e);
+      }
+    }
+
+    if (chartKumBase64) {
+      const labelRow = worksheet.getRow(currentIdx);
+      labelRow.getCell(1).value = '📊 Grafik Rating Negatif Kumulatif (YTD)';
+      labelRow.getCell(1).font = { bold: true, size: 12, color: { argb: 'FF1E3A5F' } };
+      labelRow.height = 22;
+
+      const rawBase64 = chartKumBase64.includes(',') ? chartKumBase64.split(',')[1] : chartKumBase64;
+      try {
+        const imageId = workbook.addImage({ base64: rawBase64, extension: 'png' });
+        worksheet.addImage(imageId, {
+          tl: { col: 0, row: currentIdx + 1 },
+          ext: { width: 850, height: 350 }
+        });
+      } catch (e) {
+        console.error('Gagal memasukkan grafik Kumulatif ke Excel:', e);
+      }
+    }
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    saveAs(blob, `Rekap_Rating_Negatif_${year}.xlsx`);
+  };
 
   if (loading && !data) {
     return (
@@ -208,13 +326,8 @@ export default function RatingNegatifPage() {
       targetYtd = 0;
   }
 
-  // Use NKO Score from backend
-  const persentase = data?.nko_score ?? 0;
-
   // For negative rating, lower is better. So if ytdRealisasi <= targetYtd, it's good (green).
   const isGood = targetYtd !== null ? ytdRealisasi <= targetYtd : true;
-
-  const targetValue = data.target || 0;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--page-gap, 20px)' }} className="animate-fade-in">
@@ -366,36 +479,8 @@ export default function RatingNegatifPage() {
           loading={loading} 
           empty={!data || !data.monthly || data.monthly.length === 0} 
           height={280}
-          actions={
-            <div style={{
-              display: 'inline-flex',
-              background: 'rgba(0, 162, 185, 0.05)',
-              padding: 4,
-              borderRadius: 12,
-              border: '1px solid rgba(0, 162, 185, 0.15)',
-            }}>
-              <select
-                value={filters.year || new Date().getFullYear()}
-                disabled
-                style={{
-                  padding: '2px 24px 2px 8px',
-                  borderRadius: 9,
-                  fontSize: '0.85rem',
-                  fontWeight: 700,
-                  transition: 'all 0.2s ease',
-                  border: 'none',
-                  cursor: 'default',
-                  background: 'transparent',
-                  color: '#00A2B9',
-                  outline: 'none',
-                  appearance: 'none'
-                }}
-              >
-                <option value={filters.year || new Date().getFullYear()}>{filters.year || new Date().getFullYear()}</option>
-              </select>
-            </div>
-          }
         >
+          <div ref={chartBulRef}>
           <ResponsiveContainer width="100%" height={280}>
             <ComposedChart data={data.monthly} margin={{ top: 20, right: 20, bottom: 0, left: -10 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
@@ -411,6 +496,7 @@ export default function RatingNegatifPage() {
               <Line type="monotone" dataKey="target" name="Target" stroke={COLORS.target} strokeWidth={3} dot={{r: 4, strokeWidth: 2, fill: '#fff'}} activeDot={{r: 6}} />
             </ComposedChart>
           </ResponsiveContainer>
+          </div>
         </ChartWrapper>
 
         {/* Kumulatif */}
@@ -420,36 +506,8 @@ export default function RatingNegatifPage() {
           loading={loading} 
           empty={!data || !data.cumulative || data.cumulative.length === 0} 
           height={280}
-          actions={
-            <div style={{
-              display: 'inline-flex',
-              background: 'rgba(0, 162, 185, 0.05)',
-              padding: 4,
-              borderRadius: 12,
-              border: '1px solid rgba(0, 162, 185, 0.15)',
-            }}>
-              <select
-                value={filters.year || new Date().getFullYear()}
-                disabled
-                style={{
-                  padding: '2px 24px 2px 8px',
-                  borderRadius: 9,
-                  fontSize: '0.85rem',
-                  fontWeight: 700,
-                  transition: 'all 0.2s ease',
-                  border: 'none',
-                  cursor: 'default',
-                  background: 'transparent',
-                  color: '#00A2B9',
-                  outline: 'none',
-                  appearance: 'none'
-                }}
-              >
-                <option value={filters.year || new Date().getFullYear()}>{filters.year || new Date().getFullYear()}</option>
-              </select>
-            </div>
-          }
         >
+          <div ref={chartKumRef}>
           <ResponsiveContainer width="100%" height={280}>
             <ComposedChart data={data.cumulative} margin={{ top: 20, right: 20, bottom: 0, left: -10 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
@@ -465,6 +523,7 @@ export default function RatingNegatifPage() {
               <Line type="monotone" dataKey="cumulativeTgt" name="Target" stroke={COLORS.target} strokeWidth={3} dot={{r: 4, strokeWidth: 2, fill: '#fff'}} activeDot={{r: 6}} />
             </ComposedChart>
           </ResponsiveContainer>
+          </div>
         </ChartWrapper>
       </div>
 
@@ -509,7 +568,8 @@ export default function RatingNegatifPage() {
             ...rekapData.map(up3Data => ({
               key: up3Data.up3,
               label: <span style={{ color: 'var(--text-muted)' }}>{up3Data.up3}</span>,
-              align: 'center',              render: (v, row) => {
+              align: 'center',
+              render: (v, row) => {
                 const monthNum = MONTHS_FULL.indexOf(row.bulan) + 1;
                 const detail = data?.monthly?.find(m => m.bulan === monthNum);
 
@@ -545,14 +605,12 @@ export default function RatingNegatifPage() {
                 )
               }
             })),
-
           ]}
           data={pivotedData}
           paginated={false}
           searchable={false}
         />
       </div>
-
 
       <RatingNegatifDetailModal 
         open={detailModalOpen}

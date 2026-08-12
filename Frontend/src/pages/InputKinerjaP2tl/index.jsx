@@ -164,6 +164,13 @@ export default function InputKinerjaP2tlPage() {
           </div>
         )}
 
+        {/* VALIDATION ERRORS */}
+        {Object.keys(errors).length > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 16px', borderRadius: 10, background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 600, fontSize: '0.86rem' }}>
+            <AlertCircle size={16} /> Nilai tidak boleh negatif. Harap periksa kembali input Anda.
+          </div>
+        )}
+
         <form style={{ display: 'flex', flexDirection: 'column', gap: 14 }} onSubmit={handleSubmit(onSubmit)}>
 
           {/* CARD PERIODE */}
@@ -264,14 +271,14 @@ export default function InputKinerjaP2tlPage() {
                   <div className="w-9 h-9 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center flex-shrink-0"><AlertTriangle size={15} /></div>
                   <label className="font-semibold text-slate-700 text-[13px]">K2 — Jumlah Pelanggan</label>
                 </div>
-                <input readOnly={isDuplicate} type="number" step="1" {...register('jml_plg_k2', { min: { value: 0, message: 'Tidak boleh negatif' } })} className={fieldInputClass} placeholder="-" />
+                <input readOnly={isDuplicate} type="number" step="1" min="0" {...register('jml_plg_k2', { min: { value: 0, message: 'Tidak boleh negatif' } })} className={`${fieldInputClass} ${errors.jml_plg_k2 ? 'border-red-400' : ''}`} placeholder="-" />
               </div>
               <div className="flex items-center justify-between p-3 bg-white border border-[#f3f4f6] rounded-xl gap-4 hover:bg-slate-50 transition">
                 <div className="flex items-center gap-3 flex-1">
                   <div className="w-9 h-9 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center flex-shrink-0"><AlertTriangle size={15} /></div>
                   <label className="font-semibold text-slate-700 text-[13px]">K2 — kWh</label>
                 </div>
-                <input readOnly={isDuplicate} type="number" step="any" {...register('kwh_k2', { min: { value: 0, message: 'Tidak boleh negatif' } })} className={fieldInputClass} placeholder="-" />
+                <input readOnly={isDuplicate} type="number" step="any" min="0" {...register('kwh_k2', { min: { value: 0, message: 'Tidak boleh negatif' } })} className={`${fieldInputClass} ${errors.kwh_k2 ? 'border-red-400' : ''}`} placeholder="-" />
               </div>
 
               <div style={{ borderTop: '1px dashed #e2e8f0', margin: '4px 0' }} />

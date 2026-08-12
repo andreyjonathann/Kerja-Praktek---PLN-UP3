@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ComposedChart,
@@ -15,7 +15,9 @@ import {
 import api from '@/services/api'
 import { useFilter } from '@/context/FilterContext'
 import { useAuth } from '@/context/AuthContext'
-import * as XLSX from 'xlsx'
+import ExcelJS from 'exceljs'
+import { saveAs } from 'file-saver'
+import { toPng } from 'html-to-image'
 import { Activity, Plus, FileSpreadsheet, Target, TrendingDown, TrendingUp, AlertTriangle, CheckCircle, XCircle } from 'lucide-react'
 import KpiCard from '@/components/ui/KpiCard'
 import TargetWarning from '@/components/ui/TargetWarning'
@@ -70,6 +72,8 @@ export default function GangguanTmPage() {
   const { filters } = useFilter()
   const { isAdmin } = useAuth()
   const navigate = useNavigate()
+  const chartLebihRef = useRef(null)
+  const chartKurangRef = useRef(null)
   
   const [activeTab, setActiveTab] = useState('semua')
   const [chartView, setChartView] = useState('monthly')
@@ -172,39 +176,125 @@ export default function GangguanTmPage() {
     return { ytd, target, sisa, persen, has_target };
   }
 
-  const exportToExcel = () => {
+  const exportToExcel = async () => {
     if (!dataRekap) return;
     const year = filters.year || new Date().getFullYear();
-    const wb = XLSX.utils.book_new();
 
-    ['lebih_5_mnt', 'kurang_5_mnt'].forEach((tipe, i) => {
+    // Capture chart images
+    let chartLebihBase64 = null;
+    let chartKurangBase64 = null;
+    if (chartLebihRef.current) {
+      try { chartLebihBase64 = await toPng(chartLebihRef.current, { cacheBust: true, backgroundColor: '#ffffff' }); } catch(e) { console.warn(e); }
+    }
+    if (chartKurangRef.current) {
+      try { chartKurangBase64 = await toPng(chartKurangRef.current, { cacheBust: true, backgroundColor: '#ffffff' }); } catch(e) { console.warn(e); }
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'PLN UP3 System';
+    workbook.created = new Date();
+
+    const targets = ['lebih_5_mnt', 'kurang_5_mnt'];
+    for (let i = 0; i < targets.length; i++) {
+      const tipe = targets[i];
       const tipeData = dataRekap[tipe];
-      if (!tipeData) return;
-      
+      if (!tipeData) continue;
+
       const chartData = processChartData(tipeData);
-      const wsData = [];
       const title = TABS[i+1].label;
+      const sheetName = title.replace(/[><\/]/g, '').trim();
+
+      const worksheet = workbook.addWorksheet(sheetName);
       
-      wsData.push([`REKAPITULASI GANGGUAN TM ${title}`]);
-      wsData.push([`TAHUN ${year}`]);
-      wsData.push([]);
-      wsData.push(['Bulan', 'Target Bulanan', 'Realisasi Bulanan']);
-      
-      chartData.forEach(row => {
-        const rowData = [
+      const headers = ['Bulan', 'Target Bulanan', 'Realisasi Bulanan'];
+      worksheet.columns = headers.map(h => ({ header: '', width: Math.max(h.length + 3, 20) }));
+
+      // Title
+      const titleRow = worksheet.addRow([`REKAPITULASI GANGGUAN TM ${title.toUpperCase()}`]);
+      worksheet.mergeCells(1, 1, 1, 3);
+      titleRow.font = { bold: true, size: 12, color: { argb: 'FF1E3A5F' } };
+      titleRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD6E4F0' } };
+      titleRow.alignment = { horizontal: 'center', vertical: 'middle' };
+      titleRow.height = 24;
+
+      const subTitleRow = worksheet.addRow([`TAHUN ${year}`]);
+      worksheet.mergeCells(2, 1, 2, 3);
+      subTitleRow.font = { italic: true, size: 10, color: { argb: 'FF4F5B66' } };
+      subTitleRow.alignment = { horizontal: 'center', vertical: 'middle' };
+      subTitleRow.height = 18;
+
+      worksheet.addRow([]); // space
+
+      // Header row
+      const headerRow = worksheet.addRow(headers);
+      headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+      headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E6FBB' } };
+      headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
+      headerRow.height = 20;
+
+      headerRow.eachCell(cell => {
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FF1E6FBB' } },
+          bottom: { style: 'medium', color: { argb: 'FFFFFFFF' } },
+          left: { style: 'thin', color: { argb: 'FF1A5C9C' } },
+          right: { style: 'thin', color: { argb: 'FF1A5C9C' } },
+        };
+      });
+
+      // Data
+      chartData.forEach((row, idx) => {
+        const dataRow = worksheet.addRow([
           MONTHS_FULL[row.bulan - 1],
           row.targetBulanan !== null ? row.targetBulanan : '-',
           row.realisasi !== null ? row.realisasi : '-'
-        ];
-        wsData.push(rowData);
+        ]);
+        dataRow.alignment = { vertical: 'middle', horizontal: 'center' };
+        dataRow.height = 18;
+
+        const isStripe = idx % 2 === 1;
+        dataRow.eachCell(cell => {
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: isStripe ? 'FFF0F7FF' : 'FFFFFFFF' }
+          };
+          cell.border = {
+            bottom: { style: 'hair', color: { argb: 'FFCFE2F3' } },
+            left: { style: 'hair', color: { argb: 'FFCFE2F3' } },
+            right: { style: 'hair', color: { argb: 'FFCFE2F3' } },
+          };
+        });
       });
 
-      const ws = XLSX.utils.aoa_to_sheet(wsData);
-      XLSX.utils.book_append_sheet(wb, ws, title.replace(/[><\/]/g, '').trim()); // sanitize sheet name
-    });
+      // Add chart image
+      const chartBase64 = tipe === 'lebih_5_mnt' ? chartLebihBase64 : chartKurangBase64;
+      if (chartBase64) {
+        worksheet.addRow([]);
+        worksheet.addRow([]);
+        
+        const currentIdx = worksheet.rowCount;
+        const labelRow = worksheet.getRow(currentIdx);
+        labelRow.getCell(1).value = `📊 Grafik Gangguan TM ${title}`;
+        labelRow.getCell(1).font = { bold: true, size: 11, color: { argb: 'FF1E3A5F' } };
+        labelRow.height = 20;
 
-    XLSX.writeFile(wb, `Rekap_Gangguan_TM_${year}.xlsx`);
-  }
+        const rawBase64 = chartBase64.includes(',') ? chartBase64.split(',')[1] : chartBase64;
+        try {
+          const imageId = workbook.addImage({ base64: rawBase64, extension: 'png' });
+          worksheet.addImage(imageId, {
+            tl: { col: 0, row: currentIdx + 1 },
+            ext: { width: 850, height: 350 }
+          });
+        } catch (e) {
+          console.error(`Gagal memasukkan grafik ${title} ke Excel:`, e);
+        }
+      }
+    }
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    saveAs(blob, `Rekap_Gangguan_TM_${year}.xlsx`);
+  };
 
   if (loading && !dataRekap) {
     return (
@@ -248,6 +338,7 @@ export default function GangguanTmPage() {
         empty={!cData || cData.length === 0}
         height={320}
       >
+        <div ref={tipe === 'lebih_5_mnt' ? chartLebihRef : chartKurangRef}>
         <ResponsiveContainer width="100%" height={320}>
           <ComposedChart data={cData} margin={{ top: 20, right: 20, bottom: 0, left: -10 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
@@ -283,6 +374,7 @@ export default function GangguanTmPage() {
             )}
           </ComposedChart>
         </ResponsiveContainer>
+        </div>
       </ChartWrapper>
     );
   }
@@ -430,6 +522,37 @@ export default function GangguanTmPage() {
 
         {/* Action Buttons */}
         <div className="flex items-center gap-3">
+          <div style={{
+            display: 'inline-flex',
+            background: 'rgba(16, 185, 129, 0.05)',
+            padding: 4,
+            borderRadius: 12,
+            border: '1px solid rgba(16, 185, 129, 0.15)',
+            cursor: 'pointer'
+          }}>
+            <button
+              onClick={exportToExcel}
+              style={{
+                padding: '6px 16px',
+                borderRadius: 9,
+                fontSize: '0.85rem',
+                fontWeight: 700,
+                transition: 'all 0.2s ease',
+                border: 'none',
+                cursor: 'pointer',
+                background: 'var(--bg-card)',
+                color: '#10B981',
+                boxShadow: '0 2px 8px rgba(16, 185, 129, 0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+              title="Export ke Excel"
+            >
+              <FileSpreadsheet size={16} /> Export Excel
+            </button>
+          </div>
+          
           <div style={{
             display: 'inline-flex',
             background: 'rgba(0, 162, 185, 0.05)',

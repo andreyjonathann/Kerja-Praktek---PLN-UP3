@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import {
@@ -161,6 +161,8 @@ export default function EnsPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const { filters } = useFilter()
+  const chartBulRef = useRef(null)
+  const chartKumRef = useRef(null)
   const [data, setData] = useState([])
   const [hasTarget, setHasTarget] = useState(true)
   const [loading, setLoading] = useState(true)
@@ -346,7 +348,7 @@ export default function EnsPage() {
 
         {/* Action Buttons */}
         <div className="flex items-center gap-3">
-          <EnsExportModal />
+          <EnsExportModal chartBulRef={chartBulRef} chartKumRef={chartKumRef} />
           {user?.role === 'pic_jaringan' && (
             <div style={{
               display: 'inline-flex',
@@ -415,7 +417,7 @@ export default function EnsPage() {
         {/* ENS Bulanan */}
         <div className="card p-5 flex flex-col h-[400px]">
           <h2 className="text-lg font-bold text-slate-800 mb-4 text-center">ENS BULANAN (MWh)</h2>
-          <div className="flex-1 w-full">
+          <div className="flex-1 w-full" ref={chartBulRef}>
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={data} margin={{ top: 20, right: 20, bottom: 0, left: -10 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" className="" />
@@ -441,7 +443,7 @@ export default function EnsPage() {
         {/* ENS Kumulatif */}
         <div className="card p-5 flex flex-col h-[400px]">
           <h2 className="text-lg font-bold text-slate-800 mb-4 text-center">ENS KUMULATIF (MWh)</h2>
-          <div className="flex-1 w-full">
+          <div className="flex-1 w-full" ref={chartKumRef}>
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={data} margin={{ top: 20, right: 20, bottom: 0, left: -10 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" className="" />

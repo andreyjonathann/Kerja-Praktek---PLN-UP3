@@ -5,8 +5,9 @@ import { X, Download, FileSpreadsheet } from 'lucide-react';
 import { getDashboardData } from '@/services/dashboardDataService';
 import { getNiagaData } from '@/services/niagaDataService';
 import { exportToExcel } from '@/utils/excelExport';
+import { toPng } from 'html-to-image';
 
-export default function ExportModal({ kpiType }) {
+export default function ExportModal({ kpiType, chartRef, breakdownRef }) {
   const [open, setOpen] = useState(false);
   const [startYear, setStartYear] = useState(2024);
   const [endYear, setEndYear] = useState(new Date().getFullYear());
@@ -32,8 +33,39 @@ export default function ExportModal({ kpiType }) {
           dataMap[y] = res[kpiType.toLowerCase()] || [];
         }
       }
+
+      // Capture chart images if refs provided
+      let chartBase64 = null;
+      let breakdownBase64 = null;
       
-      exportToExcel(kpiType, startYear, endYear, dataMap);
+      const captureOptions = (node) => ({
+        cacheBust: true, 
+        backgroundColor: '#ffffff',
+        width: node.offsetWidth || 850,
+        height: node.offsetHeight || 350,
+        style: {
+          width: (node.offsetWidth || 850) + 'px',
+          height: (node.offsetHeight || 350) + 'px',
+        }
+      });
+
+      if (chartRef?.current) {
+        try {
+          chartBase64 = await toPng(chartRef.current, captureOptions(chartRef.current));
+        } catch (imgErr) {
+          console.warn('Gagal capture grafik utama:', imgErr);
+        }
+      }
+      
+      if (breakdownRef?.current) {
+        try {
+          breakdownBase64 = await toPng(breakdownRef.current, captureOptions(breakdownRef.current));
+        } catch (imgErr) {
+          console.warn('Gagal capture grafik breakdown:', imgErr);
+        }
+      }
+      
+      await exportToExcel(kpiType, startYear, endYear, dataMap, chartBase64, breakdownBase64);
       setOpen(false);
     } catch (err) {
       console.error(err);

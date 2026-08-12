@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Activity, AlertCircle, FileSpreadsheet, Target, Plus, CheckCircle2, TrendingUp } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Activity, AlertCircle, FileSpreadsheet, Target, Plus, CheckCircle2, TrendingUp, Download } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
 import KpiCard from '@/components/ui/KpiCard';
 import DataTable from '@/components/ui/DataTable';
@@ -13,6 +13,8 @@ import { useNavigate } from 'react-router-dom';
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import ChartWrapper from '@/components/ui/ChartWrapper';
 import TargetWarning from '@/components/ui/TargetWarning';
+import { exportToExcel } from '@/utils/exportExcel';
+import { toPng } from 'html-to-image';
 
 export default function GantiMeterPage() {
   const navigate = useNavigate();
@@ -26,8 +28,27 @@ export default function GantiMeterPage() {
   const [selectedRow, setSelectedRow] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [tab, setTab] = useState('monthly');
+  const chartRef = useRef(null);
 
   const isViewer = user?.role === 'viewer';
+
+  const handleExportExcel = async () => {
+    let chartBase64 = null;
+    if (chartRef.current) {
+      try {
+        chartBase64 = await toPng(chartRef.current, { cacheBust: true, backgroundColor: '#ffffff' });
+      } catch (err) {
+        console.error('Failed to capture chart:', err);
+      }
+    }
+    const dataToExport = tableDataBulan.map(row => ({
+      'Bulan': row.bulan,
+      'Target Bulanan (Unit)': row.target_unit ?? '-',
+      'Realisasi (Unit)': row.jumlah_unit ?? '-',
+      'Keterangan': row.keterangan || '-'
+    }));
+    await exportToExcel(dataToExport, `Realisasi_Ganti_Meter_${filters.year || new Date().getFullYear()}`, chartBase64);
+  };
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -203,21 +224,36 @@ export default function GantiMeterPage() {
           icon={Activity}
           iconColor="#2563eb"
         />
-        {!isViewer && (
+        <div style={{ display: 'flex', gap: 10 }}>
           <button
-            onClick={() => navigate('/ganti-meter/input')}
+            onClick={handleExportExcel}
             style={{
               padding: '10px 20px', borderRadius: 10, fontSize: '0.85rem', fontWeight: 700,
-              transition: 'all 0.2s ease', border: '1.5px solid #2563eb', cursor: 'pointer',
-              background: 'transparent', color: '#2563eb',
+              transition: 'all 0.2s ease', border: '1.5px solid #10b981', cursor: 'pointer',
+              background: 'transparent', color: '#10b981',
               display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0,
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#2563eb'; e.currentTarget.style.color = '#FFFFFF' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#2563eb' }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#10b981'; e.currentTarget.style.color = '#FFFFFF' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#10b981' }}
           >
-            <Plus size={16} /> Tambah Data
+            <Download size={16} /> Export Excel
           </button>
-        )}
+          {!isViewer && (
+            <button
+              onClick={() => navigate('/ganti-meter/input')}
+              style={{
+                padding: '10px 20px', borderRadius: 10, fontSize: '0.85rem', fontWeight: 700,
+                transition: 'all 0.2s ease', border: '1.5px solid #2563eb', cursor: 'pointer',
+                background: 'transparent', color: '#2563eb',
+                display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0,
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#2563eb'; e.currentTarget.style.color = '#FFFFFF' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#2563eb' }}
+            >
+              <Plus size={16} /> Tambah Data
+            </button>
+          )}
+        </div>
       </div>
 
       <TargetWarning 
@@ -277,30 +313,32 @@ export default function GantiMeterPage() {
         </div>
       </div>
 
-      <ChartWrapper title={tab === 'monthly' ? "Tren Ganti Meter Bulanan" : "Tren Ganti Meter Kumulatif (YTD)"} subtitle={`Realisasi vs Target · Tahun ${filters.year || new Date().getFullYear()}`} loading={loading} error={error} empty={!trendData} height={280} onRetry={fetchData}>
-        <ResponsiveContainer width="100%" height={280}>
-          <ComposedChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--border, #e2e8f0)" />
-            <XAxis dataKey="label" tick={{ fontSize: 12.5, fontWeight: 650 }} />
-            <YAxis tick={{ fontSize: 12.5, fontWeight: 650 }} />
-            <Tooltip content={<CustomTooltip />} />
-            <Legend wrapperStyle={{ fontSize: 13, fontWeight: 600 }} />
-            <Bar
-              dataKey={tab === 'monthly' ? "realisasi" : "cumulativeReal"}
-              name="Realisasi"
-              fill="#2563eb"
-              radius={[4, 4, 0, 0]}
-              style={{ cursor: 'pointer' }}
-              onClick={(barData) => {
-                const bulanNum = MONTHS_ID.findIndex((m, idx) => m?.substring(0, 3) === barData.label) ;
-                const matchedRow = tableDataBulan.find(r => r.bulan_angka === (bulanNum >= 0 ? bulanNum : null)) || tableDataBulan.find(r => r.bulan === barData.label);
-                if (matchedRow) { setSelectedRow(matchedRow); setIsModalOpen(true); }
-              }}
-            />
-            <Line dataKey={tab === 'monthly' ? "target" : "cumulativeTgt"} name="Target" stroke="#EF4444" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 4, fill: '#EF4444' }} />
-          </ComposedChart>
-        </ResponsiveContainer>
-      </ChartWrapper>
+      <div ref={chartRef} style={{ background: '#ffffff', padding: '10px', borderRadius: '8px' }}>
+        <ChartWrapper title={tab === 'monthly' ? "Tren Ganti Meter Bulanan" : "Tren Ganti Meter Kumulatif (YTD)"} subtitle={`Realisasi vs Target · Tahun ${filters.year || new Date().getFullYear()}`} loading={loading} error={error} empty={!trendData} height={280} onRetry={fetchData}>
+          <ResponsiveContainer width="100%" height={280}>
+            <ComposedChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border, #e2e8f0)" />
+              <XAxis dataKey="label" tick={{ fontSize: 12.5, fontWeight: 650 }} />
+              <YAxis tick={{ fontSize: 12.5, fontWeight: 650 }} />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend wrapperStyle={{ fontSize: 13, fontWeight: 600 }} />
+              <Bar
+                dataKey={tab === 'monthly' ? "realisasi" : "cumulativeReal"}
+                name="Realisasi"
+                fill="#2563eb"
+                radius={[4, 4, 0, 0]}
+                style={{ cursor: 'pointer' }}
+                onClick={(barData) => {
+                  const bulanNum = MONTHS_ID.findIndex((m, idx) => m?.substring(0, 3) === barData.label);
+                  const matchedRow = tableDataBulan.find(r => r.bulan_angka === (bulanNum >= 0 ? bulanNum : null)) || tableDataBulan.find(r => r.bulan === barData.label);
+                  if (matchedRow) { setSelectedRow(matchedRow); setIsModalOpen(true); }
+                }}
+              />
+              <Line dataKey={tab === 'monthly' ? "target" : "cumulativeTgt"} name="Target" stroke="#EF4444" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 4, fill: '#EF4444' }} />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </ChartWrapper>
+      </div>
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mt-2">
         <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">

@@ -2,10 +2,12 @@ import notify from '@/utils/notify';
 import React, { useState } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import { X, Download, FileSpreadsheet } from 'lucide-react'
-import * as XLSX from 'xlsx'
+import ExcelJS from 'exceljs'
+import { saveAs } from 'file-saver'
+import { toPng } from 'html-to-image'
 import { getDashboardData } from '@/services/dashboardDataService'
 
-export default function EnsExportModal() {
+export default function EnsExportModal({ chartBulRef, chartKumRef }) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
 
@@ -59,21 +61,180 @@ export default function EnsExportModal() {
         'Status': row.b_realisasi > row.b_target ? 'Over' : 'Aman'
       }))
 
-      exportData.push({
-        'Bulan': 'Total (Rentang Dipilih)',
-        'Terencana': filteredData.reduce((s, x) => s + (x.b_terencana || 0), 0),
-        'Tidak Terencana': filteredData.reduce((s, x) => s + (x.b_tidakTerencana || 0), 0),
-        'Bencana Alam': filteredData.reduce((s, x) => s + (x.b_bencanaAlam || 0), 0),
-        'Total Realisasi': filteredData.reduce((s, x) => s + (x.b_realisasi || 0), 0),
-        'Target': filteredData.reduce((s, x) => s + (x.b_target || 0), 0),
-        'Status': filteredData.reduce((s, x) => s + (x.b_realisasi || 0), 0) > filteredData.reduce((s, x) => s + (x.b_target || 0), 0) ? 'Over' : 'Aman'
-      })
+      // Totals
+      const totalTerencana = filteredData.reduce((s, x) => s + (x.b_terencana || 0), 0);
+      const totalTidak = filteredData.reduce((s, x) => s + (x.b_tidakTerencana || 0), 0);
+      const totalBencana = filteredData.reduce((s, x) => s + (x.b_bencanaAlam || 0), 0);
+      const totalReal = filteredData.reduce((s, x) => s + (x.b_realisasi || 0), 0);
+      const totalTgt = filteredData.reduce((s, x) => s + (x.b_target || 0), 0);
+      const totalStatus = totalReal > totalTgt ? 'Over' : 'Aman';
 
-      const worksheet = XLSX.utils.json_to_sheet(exportData)
-      const workbook = XLSX.utils.book_new()
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Data ENS")
-      XLSX.writeFile(workbook, `Rekapitulasi_ENS_${MONTH_NAMES[startMonth-1]}_${startYear}_to_${MONTH_NAMES[endMonth-1]}_${endYear}.xlsx`)
+      // Capture chart images
+      let chartBulBase64 = null;
+      let chartKumBase64 = null;
+      if (chartBulRef?.current) {
+        try { chartBulBase64 = await toPng(chartBulRef.current, { cacheBust: true, backgroundColor: '#ffffff' }); } catch (e) { console.warn(e); }
+      }
+      if (chartKumRef?.current) {
+        try { chartKumBase64 = await toPng(chartKumRef.current, { cacheBust: true, backgroundColor: '#ffffff' }); } catch (e) { console.warn(e); }
+      }
+
+      // Setup ExcelJS workbook
+      const workbook = new ExcelJS.Workbook();
+      workbook.creator = 'PLN UP3 System';
+      workbook.created = new Date();
+
+      const worksheet = workbook.addWorksheet('Data ENS');
+
+      const headers = ['Bulan', 'Terencana (MWh)', 'Tidak Terencana (MWh)', 'Bencana Alam (MWh)', 'Total Realisasi (MWh)', 'Target (MWh)', 'Status'];
+      
+      // Column widths
+      worksheet.columns = headers.map(h => ({ header: '', width: Math.max(h.length + 3, 18) }));
+
+      // Add Title
+      const titleRow = worksheet.addRow([`REKAPITULASI KINERJA ENS (Energy Not Supplied)`]);
+      worksheet.mergeCells(1, 1, 1, headers.length);
+      titleRow.font = { bold: true, size: 13, color: { argb: 'FF1E3A5F' } };
+      titleRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD6E4F0' } };
+      titleRow.alignment = { horizontal: 'center', vertical: 'middle' };
+      titleRow.height = 26;
+
+      const subTitleRow = worksheet.addRow([`Periode: ${MONTH_NAMES[startMonth-1]} ${startYear} s.d. ${MONTH_NAMES[endMonth-1]} ${endYear}`]);
+      worksheet.mergeCells(2, 1, 2, headers.length);
+      subTitleRow.font = { italic: true, size: 10, color: { argb: 'FF4F5B66' } };
+      subTitleRow.alignment = { horizontal: 'center', vertical: 'middle' };
+      subTitleRow.height = 20;
+
+      worksheet.addRow([]); // Blank spacing row
+
+      // Header row
+      const headerRow = worksheet.addRow(headers);
+      headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+      headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E6FBB' } };
+      headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
+      headerRow.height = 22;
+
+      headerRow.eachCell(cell => {
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FF1E6FBB' } },
+          bottom: { style: 'medium', color: { argb: 'FFFFFFFF' } },
+          left: { style: 'thin', color: { argb: 'FF1A5C9C' } },
+          right: { style: 'thin', color: { argb: 'FF1A5C9C' } },
+        };
+      });
+
+      // Data rows
+      exportData.forEach((row, idx) => {
+        const dataRow = worksheet.addRow([
+          row['Bulan'],
+          row['Terencana'],
+          row['Tidak Terencana'],
+          row['Bencana Alam'],
+          row['Total Realisasi'],
+          row['Target'],
+          row['Status']
+        ]);
+        dataRow.alignment = { vertical: 'middle', horizontal: 'center' };
+        dataRow.height = 19;
+        
+        // Formats for numbers
+        dataRow.getCell(2).numFmt = '#,##0.0000';
+        dataRow.getCell(3).numFmt = '#,##0.0000';
+        dataRow.getCell(4).numFmt = '#,##0.0000';
+        dataRow.getCell(5).numFmt = '#,##0.0000';
+        dataRow.getCell(6).numFmt = '#,##0.0000';
+
+        const isStripe = idx % 2 === 1;
+        dataRow.eachCell(cell => {
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: isStripe ? 'FFF0F7FF' : 'FFFFFFFF' }
+          };
+          cell.border = {
+            bottom: { style: 'hair', color: { argb: 'FFCFE2F3' } },
+            left: { style: 'hair', color: { argb: 'FFCFE2F3' } },
+            right: { style: 'hair', color: { argb: 'FFCFE2F3' } },
+          };
+        });
+      });
+
+      // Total row
+      const totalRow = worksheet.addRow([
+        'Total (Rentang Dipilih)',
+        totalTerencana,
+        totalTidak,
+        totalBencana,
+        totalReal,
+        totalTgt,
+        totalStatus
+      ]);
+      totalRow.font = { bold: true, color: { argb: 'FF1E3A5F' } };
+      totalRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE6F0FA' } };
+      totalRow.alignment = { vertical: 'middle', horizontal: 'center' };
+      totalRow.height = 20;
+
+      // Formats for total numbers
+      totalRow.getCell(2).numFmt = '#,##0.0000';
+      totalRow.getCell(3).numFmt = '#,##0.0000';
+      totalRow.getCell(4).numFmt = '#,##0.0000';
+      totalRow.getCell(5).numFmt = '#,##0.0000';
+      totalRow.getCell(6).numFmt = '#,##0.0000';
+
+      totalRow.eachCell(cell => {
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FF1E6FBB' } },
+          bottom: { style: 'double', color: { argb: 'FF1E6FBB' } },
+          left: { style: 'thin', color: { argb: 'FFCFE2F3' } },
+          right: { style: 'thin', color: { argb: 'FFCFE2F3' } },
+        };
+      });
+
+      // Add chart images if present
+      let currentIdx = worksheet.rowCount + 3;
+
+      if (chartBulBase64) {
+        const labelRow = worksheet.getRow(currentIdx);
+        labelRow.getCell(1).value = '📊 Grafik ENS Bulanan';
+        labelRow.getCell(1).font = { bold: true, size: 12, color: { argb: 'FF1E3A5F' } };
+        labelRow.height = 22;
+
+        const rawBase64 = chartBulBase64.includes(',') ? chartBulBase64.split(',')[1] : chartBulBase64;
+        try {
+          const imageId = workbook.addImage({ base64: rawBase64, extension: 'png' });
+          worksheet.addImage(imageId, {
+            tl: { col: 0, row: currentIdx + 1 },
+            ext: { width: 850, height: 380 }
+          });
+          currentIdx += 21; // skip rows for image height
+        } catch (e) {
+          console.error('Gagal memasukkan grafik Bulanan ke Excel:', e);
+        }
+      }
+
+      if (chartKumBase64) {
+        const labelRow = worksheet.getRow(currentIdx);
+        labelRow.getCell(1).value = '📊 Grafik ENS Kumulatif';
+        labelRow.getCell(1).font = { bold: true, size: 12, color: { argb: 'FF1E3A5F' } };
+        labelRow.height = 22;
+
+        const rawBase64 = chartKumBase64.includes(',') ? chartKumBase64.split(',')[1] : chartKumBase64;
+        try {
+          const imageId = workbook.addImage({ base64: rawBase64, extension: 'png' });
+          worksheet.addImage(imageId, {
+            tl: { col: 0, row: currentIdx + 1 },
+            ext: { width: 850, height: 380 }
+          });
+        } catch (e) {
+          console.error('Gagal memasukkan grafik Kumulatif ke Excel:', e);
+        }
+      }
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      saveAs(blob, `Rekapitulasi_ENS_${MONTH_NAMES[startMonth-1]}_${startYear}_to_${MONTH_NAMES[endMonth-1]}_${endYear}.xlsx`);
       setOpen(false)
+
     } catch (err) {
       console.error(err)
       notify.error(err.message, 'Gagal mengekspor data')

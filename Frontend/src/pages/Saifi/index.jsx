@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import {
@@ -105,6 +105,8 @@ const BREAKDOWN_TOOLTIP = ({ active, payload, label }) => {
 export default function SaifiPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const chartRef = useRef(null)
+  const breakdownRef = useRef(null)
   const { filters }         = useFilter()
   const [tab,    setTab]    = useState('monthly')
   const [selectedRow, setSelectedRow] = useState(null)
@@ -313,7 +315,7 @@ export default function SaifiPage() {
               </button>
             </div>
           )}
-          <ExportModal kpiType="SAIFI" />
+          <ExportModal kpiType="SAIFI" chartRef={chartRef} breakdownRef={breakdownRef} />
         </div>
       </div>
 
@@ -327,6 +329,7 @@ export default function SaifiPage() {
           height={280} 
           onRetry={fetchData}
         >
+          <div ref={chartRef}>
           <ResponsiveContainer width="100%" height={280}>
             <ComposedChart data={data}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
@@ -345,9 +348,11 @@ export default function SaifiPage() {
               />
             </ComposedChart>
           </ResponsiveContainer>
+          </div>
         </ChartWrapper>
 
         <ChartWrapper title="Breakdown Penyebab SAIFI" subtitle="Komposisi frekuensi per kategori" loading={loading} empty={breakdownChartData.length === 0} height={280}>
+          <div ref={breakdownRef}>
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={breakdownChartData} barCategoryGap="30%">
               <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
@@ -360,6 +365,7 @@ export default function SaifiPage() {
               <Bar dataKey="pembangkit" name="Pembangkit" fill="#F59E0B" radius={[4,4,0,0]} />
             </BarChart>
           </ResponsiveContainer>
+          </div>
         </ChartWrapper>
       </div>
 

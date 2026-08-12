@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, ComposedChart, Area
 } from 'recharts'
-import { Clock, Target, Activity, Plus, Zap, AlertTriangle } from 'lucide-react'
+import { Clock, Target, Activity, Plus, Zap, AlertTriangle, FileSpreadsheet } from 'lucide-react'
 import ChartWrapper from '@/components/ui/ChartWrapper'
 import KpiCard from '@/components/ui/KpiCard'
 import DataTable from '@/components/ui/DataTable'
@@ -17,10 +17,13 @@ import { useAuth } from '@/context/AuthContext'
 import { MONTHS_ID } from '@/utils/formatters'
 import api from '@/services/api'
 import MvodDetailModal from '@/components/ui/MvodDetailModal'
+import { toPng } from 'html-to-image'
+import { exportToExcel } from '@/utils/exportExcel'
 
 export default function MvodPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const chartRef = useRef(null)
   const { filters } = useFilter()
   const [data, setData] = useState({
     summary: {},
@@ -211,6 +214,29 @@ export default function MvodPage() {
         gap: '12px',
         margin: '12px 0 24px',
       }}>
+        <ActionButton
+          icon={FileSpreadsheet}
+          label="Export Excel"
+          onClick={async () => {
+            let chartBase64 = null;
+            if (chartRef.current) {
+              try { chartBase64 = await toPng(chartRef.current, { cacheBust: true, backgroundColor: '#ffffff' }); } catch(e) { console.error(e); }
+            }
+            const tableData = (per_bulan || []).map(row => ({
+              'Bulan': MONTHS_ID[row.bulan] || row.bulan,
+              'RCT GI (mnt)': row.gi_rct ?? '-',
+              'Target GI (mnt)': row.gi_target ?? '-',
+              'RCT JTM (mnt)': row.jtm_rct ?? '-',
+              'Target JTM (mnt)': row.jtm_target ?? '-',
+              'RCT GD (mnt)': row.gd_rct ?? '-',
+              'Target GD (mnt)': row.gd_target ?? '-',
+              'MVOD Gabungan (%)': row.mvod_gabungan ?? '-',
+            }));
+            await exportToExcel(tableData, `MVOD_${filters.year}`, chartBase64);
+          }}
+          colorHex="#10B981"
+          colorRgb="16, 185, 129"
+        />
         {user?.role === 'admin' && (
           <ActionButton 
             icon={Target} 
@@ -248,6 +274,7 @@ export default function MvodPage() {
             </button>
           ))}
         </div>
+        <div ref={chartRef}>
         <ResponsiveContainer width="100%" height={300}>
           <ComposedChart data={currentChartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
@@ -260,6 +287,7 @@ export default function MvodPage() {
             <Line name="Rata-rata Realisasi" type="monotone" dataKey="Realisasi (Menit)" stroke="#3B82F6" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
           </ComposedChart>
         </ResponsiveContainer>
+        </div>
       </ChartWrapper>
 
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
