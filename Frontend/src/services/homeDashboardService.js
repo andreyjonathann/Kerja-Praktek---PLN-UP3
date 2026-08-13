@@ -14,6 +14,19 @@ import { getNiagaData } from './niagaDataService';
 
 const MONTH_WEIGHTS = [0.077, 0.074, 0.082, 0.080, 0.083, 0.081, 0.086, 0.088, 0.085, 0.084, 0.083, 0.077];
 
+const getMonthlyDbTarget = (targetObj, month, annualDefault, scale = 1) => {
+  if (!targetObj) return annualDefault * MONTH_WEIGHTS[month - 1] * scale;
+  const monthNames = ['jan', 'feb', 'mar', 'apr', 'mei', 'jun', 'jul', 'agu', 'sep', 'okt', 'nov', 'des'];
+  const monthKey = 'target_' + monthNames[month - 1];
+  const val = targetObj[monthKey];
+  if (val !== null && val !== undefined && val !== '') {
+    const numericVal = parseFloat(val);
+    return numericVal < 100000 ? numericVal * scale : numericVal;
+  }
+  const annualVal = targetObj.target !== null && targetObj.target !== undefined ? parseFloat(targetObj.target) : annualDefault;
+  return annualVal * MONTH_WEIGHTS[month - 1] * scale;
+};
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 /** Achievement percentage, respecting inverse polarity */
@@ -87,7 +100,7 @@ async function buildPemasaranCard(year) {
   try {
     const targetsRes = await api.get(`/targets?tahun=${year}`);
     const targets = targetsRes.data || [];
-    const pen = targets.find(t => t.indikator === 'Penjualan TL');
+    const pen = targets.find(t => t.indikator === 'Penjualan');
     if (pen) annualPenjualanGwh = parseFloat(pen.target);
     const pel = targets.find(t => t.indikator === 'Jumlah Pelanggan');
     if (pel) annualPelanggan = parseFloat(pel.target);
@@ -118,11 +131,12 @@ async function buildPemasaranCard(year) {
   });
 
   // Target YTD up to lastFilledMonth
-  const wtSum = lastFilledMonth > 0
-    ? MONTH_WEIGHTS.slice(0, lastFilledMonth).reduce((s, w) => s + w, 0)
-    : 0;
-  const ytdPenjTarget = annualPenjualanGwh * 1_000_000 * wtSum; // kWh
-  const ytdPlgTarget  = annualPelanggan * wtSum;
+  let ytdPenjTarget = 0; // kWh
+  let ytdPlgTarget  = 0;
+  for (let m = 1; m <= lastFilledMonth; m++) {
+    ytdPenjTarget += getMonthlyDbTarget(pen, m, annualPenjualanGwh, 1000000);
+    ytdPlgTarget += getMonthlyDbTarget(pel, m, annualPelanggan, 1);
+  }
 
   const penjAch = calcAch(cumPenjKwh, ytdPenjTarget);
   const plgAch  = calcAch(cumPelanggan, ytdPlgTarget);

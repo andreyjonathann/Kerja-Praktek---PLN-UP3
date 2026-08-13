@@ -27,6 +27,17 @@ export default function InputPengadaanPage() {
   const [success, setSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
+  const formatInputSeparator = (val) => {
+    if (val == null || val === '') return '';
+    let str = val.toString().replace('.', ',');
+    let parts = str.split(',');
+    parts[0] = parts[0].replace(/\./g, '');
+    if (parts[0]) {
+      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    }
+    return parts.join(',');
+  };
+
   const { register, handleSubmit, watch, setValue, formState: { errors }, reset } = useForm({
     defaultValues: {
       direksi_pekerjaan: '',
@@ -83,8 +94,8 @@ export default function InputPengadaanPage() {
             no_kontrak: d.no_kontrak || '',
             tgl_awal: d.tgl_awal || '',
             tgl_akhir: d.tgl_akhir || '',
-            rp_kontrak: d.rp_kontrak ?? '',
-            rab: d.rab ?? '',
+            rp_kontrak: d.rp_kontrak != null ? formatInputSeparator(d.rp_kontrak) : '',
+            rab: d.rab != null ? formatInputSeparator(d.rab) : '',
             no_nd_bidang: d.no_nd_bidang || '',
             skko_skki: d.skko_skki || 'SKKO',
             jenis_kontrak: d.jenis_kontrak || 'KR',
@@ -141,9 +152,19 @@ export default function InputPengadaanPage() {
 
     try {
       const formData = new FormData();
-      Object.keys(data).forEach(key => {
-        if (data[key] !== null && data[key] !== undefined && data[key] !== '') {
-          formData.append(key, data[key]);
+      
+      const cleanMoney = (val) => {
+        if (val == null || val === '') return '';
+        return val.toString().replace(/\./g, '').replace(/,/g, '.');
+      };
+      
+      const cleanData = { ...data };
+      if (cleanData.rab) cleanData.rab = cleanMoney(cleanData.rab);
+      if (cleanData.rp_kontrak) cleanData.rp_kontrak = cleanMoney(cleanData.rp_kontrak);
+
+      Object.keys(cleanData).forEach(key => {
+        if (cleanData[key] !== null && cleanData[key] !== undefined && cleanData[key] !== '') {
+          formData.append(key, cleanData[key]);
         }
       });
 
@@ -505,11 +526,41 @@ export default function InputPengadaanPage() {
               <div className="flex gap-4">
                 <div className="w-1/2">
                   <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#64748b', marginBottom: 5 }}>RAB (Rencana Anggaran Biaya)</label>
-                  <input type="number" step="1" {...register('rab')} placeholder="Rp" style={inputStyle} />
+                  <input
+                    type="text"
+                    placeholder="Rp"
+                    style={inputStyle}
+                    {...register('rab', {
+                      onChange: (e) => {
+                        let val = e.target.value.replace(/[^0-9.,]/g, '');
+                        let cleanVal = val.replace(/\./g, '');
+                        let parts = cleanVal.split(',');
+                        if (parts[0]) {
+                          parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                        }
+                        setValue('rab', parts.join(','));
+                      }
+                    })}
+                  />
                 </div>
                 <div className="w-1/2">
                   <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#64748b', marginBottom: 5 }}>Rp Kontrak (Nilai Realisasi)</label>
-                  <input type="number" step="1" {...register('rp_kontrak')} placeholder="Rp" style={inputStyle} />
+                  <input
+                    type="text"
+                    placeholder="Rp"
+                    style={inputStyle}
+                    {...register('rp_kontrak', {
+                      onChange: (e) => {
+                        let val = e.target.value.replace(/[^0-9.,]/g, '');
+                        let cleanVal = val.replace(/\./g, '');
+                        let parts = cleanVal.split(',');
+                        if (parts[0]) {
+                          parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                        }
+                        setValue('rp_kontrak', parts.join(','));
+                      }
+                    })}
+                  />
                 </div>
               </div>
             </div>

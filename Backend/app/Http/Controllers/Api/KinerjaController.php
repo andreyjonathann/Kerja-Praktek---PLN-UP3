@@ -25,7 +25,7 @@ class KinerjaController extends Controller
     public function index($bidang, Request $request)
     {
         $user = $request->user();
-        if ($user->role !== 'admin' && $user->role !== 'viewer') {
+        if ($user && $user->role !== 'admin' && $user->role !== 'viewer') {
             $roleMap = [
                 'aset' => 'pic_pengadaan',
                 'pengadaan' => 'pic_pengadaan', // Akomodasi route baru

@@ -405,7 +405,7 @@ class NkoParameterSeeder extends Seeder
 
         NkoParameter::create([
             'parent_id' => $p11->id,
-            'nama' => 'Tindak Lanjut LBKB',
+            'nama' => 'Saldo Akhir',
             'polaritas' => 'MAXIMIZE',
             'satuan' => '%',
             'bobot' => 1.00,

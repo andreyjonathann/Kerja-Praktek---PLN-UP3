@@ -114,7 +114,7 @@ const HIERARCHY_TEMPLATE = [
     key: 'kinerja_pemasaran',
     label: 'KINERJA PEMASARAN',
     children: [
-      { key: 'Penjualan TL', label: 'a. Penjualan TL' },
+      { key: 'Penjualan', label: 'a. Penjualan' },
       { key: 'Jumlah Pelanggan', label: 'b. Jumlah Pelanggan' },
       { key: 'Daya Tersambung', label: 'c. Daya Tersambung' },
       { key: 'Pendapatan BP', label: 'd. Pendapatan BP' },
@@ -128,7 +128,7 @@ const HIERARCHY_TEMPLATE = [
     children: [
       { key: 'Pelunasan PRR & Piutang', label: 'a. Pelunasan PRR & Piutang' },
       { key: 'Penghapusan PRR', label: 'b. Penghapusan PRR' },
-      { key: 'Tindak Lanjut LBKB', label: 'c. Saldo Akhir' },
+      { key: 'Saldo Akhir', label: 'c. Saldo Akhir' },
     ]
   },
   {

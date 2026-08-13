@@ -260,7 +260,7 @@ export default function OverviewPemasaranPage() {
             onClick={() => navigate('/daya-tersambung')}
           />
           <KpiCard
-            label="Penjualan TL" unit="GWh" color={C.penjualan} icon={BarChart2}
+            label="Penjualan" unit="GWh" color={C.penjualan} icon={BarChart2}
             value={cur.penjualan.toFixed(2)} realisasi={cur.penjualan} target={cur.penjTarget}
             delta={getDelta('penjualan').delta} deltaPct={getDelta('penjualan').deltaPct}
             onClick={() => navigate('/penjualan-tl')}
@@ -280,7 +280,7 @@ export default function OverviewPemasaranPage() {
           {[
             { label: 'Pelanggan', r: cur.pelanggan, t: cur.pelTarget, color: C.pelanggan },
             { label: 'Daya Tersambung', r: cur.daya, t: cur.dayaTarget, color: C.daya },
-            { label: 'Penjualan TL', r: cur.penjualan, t: cur.penjTarget, color: C.penjualan },
+            { label: 'Penjualan', r: cur.penjualan, t: cur.penjTarget, color: C.penjualan },
             { label: 'Pendapatan TL', r: cur.pendapatan, t: cur.pendTarget, color: C.pendapatan },
           ].map(item => {
             const p = pct(item.r, item.t)
@@ -349,7 +349,7 @@ export default function OverviewPemasaranPage() {
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
           <div style={{ padding: '16px 22px', borderBottom: '1px solid var(--border)', background: 'var(--bg-elevated)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <h2 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>Penjualan TL (GWh)</h2>
+              <h2 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>Penjualan (GWh)</h2>
               <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>Realisasi vs Target {filters.year}</p>
             </div>
             <button onClick={() => navigate('/penjualan-tl')} style={{ fontSize: '0.75rem', fontWeight: 700, color: C.penjualan, background: 'none', border: 'none', cursor: 'pointer' }}>Lihat Detail →</button>
@@ -485,7 +485,7 @@ export default function OverviewPemasaranPage() {
         {[
           { label: 'Jumlah Pelanggan', path: '/jml-pelanggan',   color: C.pelanggan,  icon: Users },
           { label: 'Daya Tersambung',  path: '/daya-tersambung', color: C.daya,       icon: Zap },
-          { label: 'Penjualan TL',     path: '/penjualan-tl',    color: C.penjualan,  icon: BarChart2 },
+          { label: 'Penjualan',        path: '/penjualan-tl',    color: C.penjualan,  icon: BarChart2 },
           { label: 'Pendapatan TL',    path: '/pendapatan-tl',   color: C.pendapatan, icon: DollarSign },
           { label: 'Data Per Tarif',   path: '/data-tarif',      color: '#0891B2',    icon: Table2 },
         ].map(item => (

@@ -128,7 +128,7 @@ export default function PenjualanTLPage() {
               border:'1px solid rgba(22,163,74,0.25)', display:'flex', alignItems:'center', justifyContent:'center' }}>
               <BarChart2 size={16} style={{ color:'#16A34A' }} />
             </div>
-            <h1 className="page-heading">PENJUALAN TL — Energi Listrik (kWh)</h1>
+            <h1 className="page-heading">PENJUALAN — Energi Listrik (kWh)</h1>
           </div>
           <button onClick={handleExport} className="btn-secondary" style={{ display:'flex', alignItems:'center', gap:6, fontSize:'0.82rem', padding:'6px 14px' }}>
             <Download size={14}/> Export Excel
@@ -195,7 +195,7 @@ export default function PenjualanTLPage() {
       </div>
 
       <div className="card p-5">
-        <h3 className="section-title mb-4">Detail Data Penjualan TL {tab==='monthly'?'Bulanan':'Kumulatif'} (kWh)</h3>
+        <h3 className="section-title mb-4">Detail Data Penjualan {tab==='monthly'?'Bulanan':'Kumulatif'} (kWh)</h3>
         <DataTable columns={tableColumns} data={data} paginated={false} searchable={false}
           emptyMessage="Belum ada data. Silakan input di menu Input KPI." />
       </div>

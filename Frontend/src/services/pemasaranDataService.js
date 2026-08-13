@@ -26,6 +26,30 @@ const MONTH_WEIGHTS = [0.077,0.074,0.082,0.080,0.083,0.081,0.086,0.088,0.085,0.0
 
 let targetCache = {}
 
+const distributeTarget = (total, hardcodedMap, hardcodedSum, keys) => {
+  const rounded = {};
+  let sum = 0;
+  keys.forEach(k => {
+    const val = Math.round(total * (hardcodedMap[k] / hardcodedSum));
+    rounded[k] = val;
+    sum += val;
+  });
+
+  const diff = Math.round(total) - sum;
+  if (diff !== 0 && keys.length > 0) {
+    let maxKey = keys[0];
+    let maxVal = hardcodedMap[keys[0]];
+    keys.forEach(k => {
+      if (hardcodedMap[k] > maxVal) {
+        maxVal = hardcodedMap[k];
+        maxKey = k;
+      }
+    });
+    rounded[maxKey] += diff;
+  }
+  return rounded;
+};
+
 // Fetch targets from backend and scale them dynamically based on Google Sheet targets
 export async function getMonthlyTarget(year, month) {
   const w = MONTH_WEIGHTS[month - 1];
@@ -52,22 +76,18 @@ export async function getMonthlyTarget(year, month) {
   let dbMobileTrxTgt = 1704000;
   let dbMobileNilaiTgt = 105;
 
-  const pen = dbTargets.find(t => t.indikator === 'Penjualan TL');
-  if (pen) dbPenjualanTgt = parseFloat(pen.target);
-
+  const pen = dbTargets.find(t => t.indikator === 'Penjualan');
   const pel = dbTargets.find(t => t.indikator === 'Jumlah Pelanggan');
-  if (pel) dbPelangganTgt = parseFloat(pel.target);
-
   const day = dbTargets.find(t => t.indikator === 'Daya Tersambung');
-  if (day) dbDayaTgt = parseFloat(day.target);
-
   const penBp = dbTargets.find(t => t.indikator === 'Pendapatan BP');
-  if (penBp) dbPendapatanTgt = parseFloat(penBp.target);
-
   const mobTr = dbTargets.find(t => t.indikator === 'PLN Mobile Transaksi');
-  if (mobTr) dbMobileTrxTgt = parseFloat(mobTr.target);
-
   const mobNi = dbTargets.find(t => t.indikator === 'PLN Mobile Nilai');
+
+  if (pen) dbPenjualanTgt = parseFloat(pen.target);
+  if (pel) dbPelangganTgt = parseFloat(pel.target);
+  if (day) dbDayaTgt = parseFloat(day.target);
+  if (penBp) dbPendapatanTgt = parseFloat(penBp.target);
+  if (mobTr) dbMobileTrxTgt = parseFloat(mobTr.target);
   if (mobNi) dbMobileNilaiTgt = parseFloat(mobNi.target);
 
   // Convert targets to form units
@@ -81,38 +101,79 @@ export async function getMonthlyTarget(year, month) {
   const annualMobileTrx = dbMobileTrxTgt;
   const annualMobileNilaiJuta = dbMobileNilaiTgt * 1000;
 
-  // Sum of hardcoded targets
   const hardcodedPenjualanSum = TARIF_KEYS.reduce((s, k) => s + ANNUAL_TARGET_2026.penjualan_kwh[k], 0);
   const hardcodedPelangganSum = TARIF_KEYS.reduce((s, k) => s + ANNUAL_TARGET_2026.jumlah_pelanggan[k], 0);
   const hardcodedDayaSum = TARIF_KEYS.reduce((s, k) => s + ANNUAL_TARGET_2026.daya_va[k], 0);
 
-  const monthlyPenj = annualPenjualanKwh * w;
-  const monthlyPelg = annualPelanggan * w;
-  const monthlyDaya = annualDayaVa * w;
-  const monthlyPend = annualPendapatanJuta * w;
-  const monthlyMobileTrx = annualMobileTrx * w;
-  const monthlyMobileNilai = annualMobileNilaiJuta * w;
+  const monthNames = ['jan', 'feb', 'mar', 'apr', 'mei', 'jun', 'jul', 'agu', 'sep', 'okt', 'nov', 'des'];
+  const monthKey = 'target_' + monthNames[month - 1];
+
+  // Penjualan
+  let monthlyPenj;
+  if (pen && pen[monthKey] !== null && pen[monthKey] !== undefined && pen[monthKey] !== '') {
+    const val = parseFloat(pen[monthKey]);
+    monthlyPenj = val < 100000 ? val * 1000000 : val; // GWh -> kWh (scale only if it looks like GWh, e.g. < 100000)
+  } else {
+    monthlyPenj = annualPenjualanKwh * w;
+  }
+
+  // Pelanggan
+  let monthlyPelg;
+  if (pel && pel[monthKey] !== null && pel[monthKey] !== undefined && pel[monthKey] !== '') {
+    monthlyPelg = parseFloat(pel[monthKey]);
+  } else {
+    monthlyPelg = annualPelanggan * w;
+  }
+
+  // Daya
+  let monthlyDaya;
+  if (day && day[monthKey] !== null && day[monthKey] !== undefined && day[monthKey] !== '') {
+    const val = parseFloat(day[monthKey]);
+    monthlyDaya = val < 100000 ? val * 1000000 : val; // MVA -> VA (scale only if < 100000)
+  } else {
+    monthlyDaya = annualDayaVa * w;
+  }
+
+  // Pendapatan
+  let monthlyPend;
+  if (penBp && penBp[monthKey] !== null && penBp[monthKey] !== undefined && penBp[monthKey] !== '') {
+    const val = parseFloat(penBp[monthKey]);
+    monthlyPend = val < 100000 ? val * 1000 : val; // Rp Miliar -> Juta Rp (scale only if < 100000)
+  } else {
+    monthlyPend = annualPendapatanJuta * w;
+  }
+
+  // Mobile Transaksi
+  let monthlyMobileTrx;
+  if (mobTr && mobTr[monthKey] !== null && mobTr[monthKey] !== undefined && mobTr[monthKey] !== '') {
+    monthlyMobileTrx = parseFloat(mobTr[monthKey]);
+  } else {
+    monthlyMobileTrx = annualMobileTrx * w;
+  }
+
+  // Mobile Nilai
+  let monthlyMobileNilai;
+  if (mobNi && mobNi[monthKey] !== null && mobNi[monthKey] !== undefined && mobNi[monthKey] !== '') {
+    const val = parseFloat(mobNi[monthKey]);
+    monthlyMobileNilai = val < 100000 ? val * 1000 : val; // Rp Miliar -> Juta Rp (scale only if < 100000)
+  } else {
+    monthlyMobileNilai = annualMobileNilaiJuta * w;
+  }
 
   return {
     // Penjualan kWh per tarif
-    penjualan_kwh: Object.fromEntries(
-      TARIF_KEYS.map(k => [k, Math.round(monthlyPenj * (ANNUAL_TARGET_2026.penjualan_kwh[k] / hardcodedPenjualanSum))])
-    ),
+    penjualan_kwh: distributeTarget(monthlyPenj, ANNUAL_TARGET_2026.penjualan_kwh, hardcodedPenjualanSum, TARIF_KEYS),
     // Jumlah pelanggan baru per tarif
-    jumlah_pelanggan: Object.fromEntries(
-      TARIF_KEYS.map(k => [k, Math.round(monthlyPelg * (ANNUAL_TARGET_2026.jumlah_pelanggan[k] / hardcodedPelangganSum))])
-    ),
+    jumlah_pelanggan: distributeTarget(monthlyPelg, ANNUAL_TARGET_2026.jumlah_pelanggan, hardcodedPelangganSum, TARIF_KEYS),
     // Daya tersambung (VA) per tarif
-    daya_va: Object.fromEntries(
-      TARIF_KEYS.map(k => [k, Math.round(monthlyDaya * (ANNUAL_TARGET_2026.daya_va[k] / hardcodedDayaSum))])
-    ),
+    daya_va: distributeTarget(monthlyDaya, ANNUAL_TARGET_2026.daya_va, hardcodedDayaSum, TARIF_KEYS),
     // Pendapatan BP
     pendapatan_rp: Math.round(monthlyPend),
     // PLN Mobile
     pln_mobile_pengguna_target: Math.round(ANNUAL_TARGET_2026.pln_mobile.pengguna_target * w * yearScale),
     pln_mobile_transaksi_target: Math.round(monthlyMobileTrx),
     pln_mobile_nilai_target: Math.round(monthlyMobileNilai),
-  }
+  };
 }
 
 // ─── localStorage helpers ─────────────────────────────────────────────────────

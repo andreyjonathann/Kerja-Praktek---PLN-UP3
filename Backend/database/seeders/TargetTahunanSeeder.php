@@ -4,13 +4,14 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use App\Services\TargetSyncService;
 
 class TargetTahunanSeeder extends Seeder
 {
     public function run(): void
     {
         // Clear existing data to avoid duplicates
-        DB::table('targets')->truncate();
+        DB::table('target_tahunan')->truncate();
 
         $data = [
             [
@@ -108,7 +109,7 @@ class TargetTahunanSeeder extends Seeder
             [
                 'id' => 12,
                 'bidang' => 'Pemasaran',
-                'indikator' => 'Penjualan TL',
+                'indikator' => 'Penjualan',
                 'satuan' => 'GWh',
                 'polaritas' => 'MAXIMIZE',
                 'bobot' => 25.00,
@@ -959,7 +960,7 @@ class TargetTahunanSeeder extends Seeder
             [
                 'id' => 20,
                 'bidang' => 'Niaga',
-                'indikator' => 'Tindak Lanjut LBKB',
+                'indikator' => 'Saldo Akhir',
                 'satuan' => 'Laporan',
                 'polaritas' => 'MAXIMIZE',
                 'bobot' => 30.00,
@@ -1030,7 +1031,13 @@ class TargetTahunanSeeder extends Seeder
         // Insert in chunks to avoid large query errors
         $chunks = array_chunk($data, 50);
         foreach ($chunks as $chunk) {
-            DB::table('targets')->insert($chunk);
+            DB::table('target_tahunan')->insert($chunk);
+        }
+
+        // Sync all targets to the respective module tables
+        $targets = \App\Models\TargetTahunan::all();
+        foreach ($targets as $target) {
+            TargetSyncService::sync($target);
         }
     }
 }

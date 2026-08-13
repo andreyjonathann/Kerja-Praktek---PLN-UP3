@@ -52,7 +52,9 @@ export default function PaguAnggaranModal({ isOpen, onClose, year, onSuccess }) 
     e.preventDefault();
     setErrorMsg('');
 
-    if (!nominal || isNaN(nominal) || Number(nominal) <= 0) {
+    const cleanNominal = parseFloat(nominal.toString().replace(/\./g, '').replace(/,/g, '.')) || 0;
+
+    if (!nominal || cleanNominal <= 0) {
       setErrorMsg('Masukkan nominal anggaran yang valid (> 0)');
       return;
     }
@@ -67,7 +69,7 @@ export default function PaguAnggaranModal({ isOpen, onClose, year, onSuccess }) 
         skko_skki: katObj.skko_skki,
         klasifikasi: katObj.klasifikasi,
         jenis_transaksi: jenisTx,
-        nominal: Number(nominal),
+        nominal: cleanNominal,
         keterangan: keterangan || (jenisTx === 'awal' ? 'Pagu Anggaran Awal Tahun' : 'Penambahan / Top-up Anggaran'),
       });
 
@@ -216,11 +218,18 @@ export default function PaguAnggaranModal({ isOpen, onClose, year, onSuccess }) 
               <div>
                 <label className="block text-xs sm:text-sm font-bold text-slate-700 mb-1.5">Nominal Anggaran (Rp) *</label>
                 <input
-                  type="number"
-                  step="1"
-                  placeholder="Contoh: 500000000"
+                  type="text"
+                  placeholder="Contoh: 500.000.000"
                   value={nominal}
-                  onChange={e => setNominal(e.target.value)}
+                  onChange={e => {
+                    let val = e.target.value.replace(/[^0-9.,]/g, '');
+                    let cleanVal = val.replace(/\./g, '');
+                    let parts = cleanVal.split(',');
+                    if (parts[0]) {
+                      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                    }
+                    setNominal(parts.join(','));
+                  }}
                   className="w-full p-3 rounded-xl border border-slate-300 text-xs sm:text-sm font-semibold text-slate-700 outline-none focus:border-pln-blue-mid bg-white shadow-sm"
                 />
               </div>

@@ -21,6 +21,32 @@ const MONTHS = [
   { key: 'target_des', label: 'Desember' }
 ];
 
+const isMoneyUnit = (unit) => {
+  if (!unit) return false;
+  const u = String(unit).toLowerCase();
+  return u.includes('rp') || u.includes('rupiah') || u.includes('miliar') || u.includes('juta');
+};
+
+const formatIndonesianInput = (value) => {
+  if (value === null || value === undefined || value === '') return '';
+  let cleanValue = String(value).replace(/[^0-9,]/g, '');
+  const commaCount = (cleanValue.match(/,/g) || []).length;
+  if (commaCount > 1) {
+    const parts = cleanValue.split(',');
+    cleanValue = parts[0] + ',' + parts.slice(1).join('');
+  }
+  const [integerPart, decimalPart] = cleanValue.split(',');
+  const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return decimalPart !== undefined ? `${formattedInteger},${decimalPart}` : formattedInteger;
+};
+
+const parseIndonesianNumber = (value) => {
+  if (value === null || value === undefined || value === '') return null;
+  const clean = String(value).replace(/\./g, '').replace(/,/g, '.');
+  const num = parseFloat(clean);
+  return isNaN(num) ? null : num;
+};
+
 function TargetSection({ bidang, indikator, tahun, isDecimal }) {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -29,6 +55,7 @@ function TargetSection({ bidang, indikator, tahun, isDecimal }) {
   const [isOverride, setIsOverride] = useState({});
   const [harianModalOpen, setHarianModalOpen] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(null);
+  const [satuan, setSatuan] = useState('');
 
   const { isAdmin } = useAuth();
   const isGantiMeter = String(indikator).toUpperCase() === 'GANTI METER';
@@ -40,6 +67,7 @@ function TargetSection({ bidang, indikator, tahun, isDecimal }) {
   });
 
   const step = isDecimal ? "0.0001" : "1";
+  const isMoney = true; // Always format targets with thousands separators for readability
 
   useEffect(() => {
     if (String(tahun).length !== 4) return;
@@ -48,9 +76,17 @@ function TargetSection({ bidang, indikator, tahun, isDecimal }) {
       try {
         const res = await api.get(`/target/${bidang}/${encodeURIComponent(indikator)}?tahun=${tahun}`);
         const data = res.data;
+        const currentSatuan = data.satuan || '';
+        setSatuan(currentSatuan);
+        
         const newForm = {};
         MONTHS.forEach(m => {
-          newForm[m.key] = data[m.key] !== null && data[m.key] !== undefined ? String(data[m.key]) : '';
+          let val = data[m.key] !== null && data[m.key] !== undefined ? String(data[m.key]) : '';
+          if (val !== '') {
+            val = val.replace('.', ',');
+            val = formatIndonesianInput(val);
+          }
+          newForm[m.key] = val;
         });
         setForm(newForm);
         setOriginalForm(newForm);
@@ -66,7 +102,8 @@ function TargetSection({ bidang, indikator, tahun, isDecimal }) {
   }, [tahun, bidang, indikator]);
 
   const handleChange = (key, value) => {
-    setForm(prev => ({ ...prev, [key]: value }));
+    let val = formatIndonesianInput(value);
+    setForm(prev => ({ ...prev, [key]: val }));
   };
 
   const handleSave = async () => {
@@ -74,7 +111,7 @@ function TargetSection({ bidang, indikator, tahun, isDecimal }) {
     try {
       const payload = {};
       MONTHS.forEach(m => {
-        payload[m.key] = form[m.key] === '' ? null : parseFloat(form[m.key]);
+        payload[m.key] = form[m.key] === '' ? null : parseIndonesianNumber(form[m.key]);
       });
       await api.put(`/target/${bidang}/${encodeURIComponent(indikator)}/${tahun}`, payload);
       setSuccessMsg(`Target ${indikator} berhasil disimpan!`);
@@ -103,9 +140,17 @@ function TargetSection({ bidang, indikator, tahun, isDecimal }) {
       // Refresh data
       const res = await api.get(`/target/${bidang}/${encodeURIComponent(indikator)}?tahun=${tahun}`);
       const data = res.data;
+      const currentSatuan = data.satuan || '';
+      setSatuan(currentSatuan);
+
       const newForm = {};
       MONTHS.forEach(m => {
-        newForm[m.key] = data[m.key] !== null && data[m.key] !== undefined ? String(data[m.key]) : '';
+        let val = data[m.key] !== null && data[m.key] !== undefined ? String(data[m.key]) : '';
+        if (val !== '') {
+          val = val.replace('.', ',');
+          val = formatIndonesianInput(val);
+        }
+        newForm[m.key] = val;
       });
       setForm(newForm);
       setOriginalForm(newForm);
@@ -285,8 +330,8 @@ function TargetSection({ bidang, indikator, tahun, isDecimal }) {
                       </td>
                       <td className="py-3 px-6 align-middle text-center">
                         <input
-                          type="number"
-                          step={step}
+                          type={isMoney ? "text" : "number"}
+                          step={isMoney ? undefined : step}
                           placeholder="-"
                           value={form[m.key]}
                           disabled={!isEditing}

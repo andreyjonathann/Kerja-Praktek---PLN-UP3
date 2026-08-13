@@ -214,8 +214,8 @@ class NkoController extends Controller
                             $realisasi = $data['pelunasan_real'] ?? $data['pelunasan_prr_&_piutang'] ?? null;
                         } elseif ($indikator_key === 'penghapusan_prr') {
                             $realisasi = $data['penghapusan_real'] ?? $data['penghapusan_prr'] ?? null;
-                        } elseif ($indikator_key === 'tindak_lanjut_lbkb') {
-                            $realisasi = $data['lbkb_real'] ?? $data['tindak_lanjut_lbkb'] ?? null;
+                        } elseif ($indikator_key === 'tindak_lanjut_lbkb' || $indikator_key === 'saldo_akhir') {
+                            $realisasi = $data['saldo_akhir_real'] ?? $data['lbkb_real'] ?? $data['tindak_lanjut_lbkb'] ?? null;
                         } else {
                             $realisasi = $data[$indikator_key] ?? null;
                         }

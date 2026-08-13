@@ -49,4 +49,14 @@ class TargetTahunan extends Model
         'target_des' => 'float',
         'is_override' => 'array',
     ];
+
+    /**
+     * Booted method to handle model events.
+     */
+    protected static function booted()
+    {
+        static::saved(function ($targetTahunan) {
+            \App\Services\TargetSyncService::sync($targetTahunan);
+        });
+    }
 }

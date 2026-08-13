@@ -36,7 +36,7 @@ class TargetTahunanController extends Controller
         $query = TargetTahunan::query();
         if ($request->tahun) $query->where('tahun', $request->tahun);
 
-        if ($user->role !== 'admin' && $user->role !== 'viewer') {
+        if ($user && $user->role !== 'admin' && $user->role !== 'viewer') {
             // PIC role: force filter to own bidang only
             $ownBidang = $this->roleToBidang[$user->role] ?? null;
             if (!$ownBidang) {
@@ -140,6 +140,9 @@ class TargetTahunanController extends Controller
             'target_jul' => $target->target_jul, 'target_agu' => $target->target_agu, 'target_sep' => $target->target_sep,
             'target_okt' => $target->target_okt, 'target_nov' => $target->target_nov, 'target_des' => $target->target_des,
             'is_override' => $target->is_override ?? [],
+            'satuan' => $target->satuan,
+            'indikator' => $target->indikator,
+            'bidang' => $target->bidang,
         ]);
     }
 
