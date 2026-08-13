@@ -135,8 +135,8 @@ export default function KelolaTargetPage() {
   }).length;
 
   return (
-    <div className="min-h-screen w-full flex flex-col gap-6 animate-fade-in pb-20">
-      <div className="px-4 sm:px-6 md:px-8 py-6 flex flex-col gap-6 max-w-7xl mx-auto w-full">
+    <div className="min-h-screen w-full flex flex-col gap-6 animate-fade-in pb-20 pt-12">
+      <div className="px-6 py-6 flex flex-col gap-6 w-full">
 
         {/* ── Page Header ── */}
         <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm px-6 py-5 flex items-center justify-between">
@@ -154,7 +154,7 @@ export default function KelolaTargetPage() {
         </div>
 
         {/* ── Summary Cards (using KpiCard for perfect styling & K3 NKO Page consistency) ── */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch w-full">
           <KpiCard
             title="TOTAL INDIKATOR"
             value={totalIndicatorsCount > 0 ? String(totalIndicatorsCount) : '0'}
