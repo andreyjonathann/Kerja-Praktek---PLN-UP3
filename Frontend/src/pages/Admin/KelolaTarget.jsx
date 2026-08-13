@@ -190,14 +190,16 @@ export default function KelolaTargetPage() {
               <div key={bidang} className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
 
                 {/* Card Title */}
-                <div className="px-6 pt-5 pb-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                <div className="px-6 pt-5 pb-5 border-b border-[#e5e7eb] flex items-start justify-between bg-slate-50/50">
                   <div>
                     <h2 className="text-[15px] font-bold text-slate-800 uppercase tracking-wide">
                       Daftar Target — Bidang {bidang}
                     </h2>
-                    <p className="text-xs text-slate-400 mt-2 font-medium">Klik pada indikator atau tombol aksi untuk mengubah target bulanan</p>
+                    <p className="text-xs text-slate-400 mt-2 font-medium" style={{ marginBottom: '20px' }}>
+                      Klik pada indikator atau tombol aksi untuk mengubah target bulanan
+                    </p>
                   </div>
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-xs shadow-sm" style={{ backgroundColor: getBidangColor(bidang) }}>
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-xs shadow-sm mt-0.5" style={{ backgroundColor: getBidangColor(bidang) }}>
                     {bidang.substring(0, 2)}
                   </div>
                 </div>
@@ -207,12 +209,12 @@ export default function KelolaTargetPage() {
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="bg-slate-50/30 border-b border-slate-150">
-                        <th className="py-4 px-6 text-[10px] font-bold text-slate-400 tracking-wider uppercase text-center w-[80px]">KODE</th>
-                        <th className="py-4 px-6 text-[10px] font-bold text-slate-400 tracking-wider uppercase">INDIKATOR</th>
-                        <th className="py-4 px-6 text-[10px] font-bold text-slate-400 tracking-wider uppercase text-center w-[140px]">POLARITAS</th>
-                        <th className="py-4 px-6 text-[10px] font-bold text-slate-400 tracking-wider uppercase text-center w-[120px]">SATUAN</th>
-                        <th className="py-4 px-6 text-[10px] font-bold text-slate-400 tracking-wider uppercase text-right w-[180px]">TARGET TAHUNAN</th>
-                        <th className="py-4 px-6 text-[10px] font-bold text-slate-400 tracking-wider uppercase text-center w-[130px]">AKSI</th>
+                        <th className="px-6 text-[10px] font-bold text-slate-400 tracking-wider uppercase text-center w-[80px]" style={{ paddingTop: '16px', paddingBottom: '16px' }}>KODE</th>
+                        <th className="px-6 text-[10px] font-bold text-slate-400 tracking-wider uppercase" style={{ paddingTop: '16px', paddingBottom: '16px' }}>INDIKATOR</th>
+                        <th className="px-6 text-[10px] font-bold text-slate-400 tracking-wider uppercase text-center w-[140px]" style={{ paddingTop: '16px', paddingBottom: '16px' }}>POLARITAS</th>
+                        <th className="px-6 text-[10px] font-bold text-slate-400 tracking-wider uppercase text-center w-[120px]" style={{ paddingTop: '16px', paddingBottom: '16px' }}>SATUAN</th>
+                        <th className="px-6 text-[10px] font-bold text-slate-400 tracking-wider uppercase text-right w-[180px]" style={{ paddingTop: '16px', paddingBottom: '16px' }}>TARGET TAHUNAN</th>
+                        <th className="px-6 text-[10px] font-bold text-slate-400 tracking-wider uppercase text-center w-[130px]" style={{ paddingTop: '16px', paddingBottom: '16px' }}>AKSI</th>
                       </tr>
                     </thead>
                     <tbody>
