@@ -192,7 +192,7 @@ export default function KelolaTargetPage() {
                 {/* Card Title */}
                 <div className="px-6 pt-5 pb-5 border-b border-[#e5e7eb] flex items-start justify-between bg-slate-50/50">
                   <div>
-                    <h2 className="text-[15px] font-bold text-slate-800 uppercase tracking-wide">
+                    <h2 className="text-[18px] font-bold text-slate-800 uppercase tracking-wide">
                       Daftar Target — Bidang {bidang}
                     </h2>
                     <p className="text-xs text-slate-400 mt-2 font-medium" style={{ marginBottom: '20px' }}>
