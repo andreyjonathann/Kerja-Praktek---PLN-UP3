@@ -84,12 +84,14 @@ export default function PemasaranDetailModal({
     }))
   } else if (type === 'pendapatan') {
     titlePrefix = 'Pendapatan BP'
-    unit = 'Juta Rp'
-    target = isCumulative ? rowData.c_pendapatan_target : rowData.pendapatan_target
-    realisasi = isCumulative ? rowData.c_pendapatan_total : rowData.pendapatan_total
+    unit = 'Rupiah'
+    const rawTarget = isCumulative ? rowData.c_pendapatan_target : rowData.pendapatan_target
+    const rawReal = isCumulative ? rowData.c_pendapatan_total : rowData.pendapatan_total
+    target = rawTarget != null ? rawTarget * 1000000 : null
+    realisasi = rawReal != null ? rawReal * 1000000 : null
     subItems = [
-      { label: 'Biaya Pasang Baru (BP)', val: rowData.pendapatan_pb ?? 0 },
-      { label: 'Biaya Tambah Daya (TD)', val: rowData.pendapatan_td ?? 0 }
+      { label: 'Biaya Pasang Baru (BP)', val: rowData.pendapatan_pb != null ? rowData.pendapatan_pb * 1000000 : 0 },
+      { label: 'Biaya Tambah Daya (TD)', val: rowData.pendapatan_td != null ? rowData.pendapatan_td * 1000000 : 0 }
     ]
   } else if (type === 'pln_mobile') {
     titlePrefix = 'PLN Mobile'

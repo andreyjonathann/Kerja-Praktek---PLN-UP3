@@ -15,6 +15,7 @@ import { useFilter } from '@/context/FilterContext'
 import { CHART_COLORS } from '@/utils/constants'
 import { getPemasaranData } from '@/services/pemasaranDataService'
 import { formatNumber } from '@/utils/formatters'
+import TargetWarning from '@/components/ui/TargetWarning'
 
 const TARIF_KEYS   = ['s','r','b','i','p','t','l','c']
 const TARIF_COLORS = CHART_COLORS
@@ -111,10 +112,12 @@ export default function DayaTersambungV2Page() {
         <p className="page-description">Realisasi penambahan daya tersambung per golongan tarif · Tahun {filters.year}</p>
       </div>
 
+      <TargetWarning indicator="Daya Tersambung" year={filters.year} />
+
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-        <KpiCard title="Realisasi VA YTD"  value={formatNumber(ytdReal)}  unit="kVA" icon={Zap} color="yellow" achievement={ach} loading={loading} />
-        <KpiCard title="Target VA YTD"     value={formatNumber(ytdTgt)}   unit="kVA" icon={Zap} color="blue"   loading={loading} />
+        <KpiCard title="Realisasi kVA YTD" value={formatNumber(ytdReal)}  unit="kVA" icon={Zap} color="yellow" achievement={ach} loading={loading} />
+        <KpiCard title="Target kVA YTD"    value={formatNumber(ytdTgt)}   unit="kVA" icon={Zap} color="blue"   loading={loading} />
         <KpiCard title="Bulan Terakhir"    value={formatNumber(lastReal)} unit="kVA" icon={Zap} color="orange" trend={trend} loading={loading} />
         <KpiCard title="Pencapaian"        value={ach.toFixed(1) + '%'}   icon={TrendingUp} color={ach >= 100 ? 'green' : ach >= 90 ? 'yellow' : 'red'} loading={loading} />
       </div>

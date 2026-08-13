@@ -29,8 +29,11 @@ export default function InputKinerjaLbkbPage() {
       const fetchNiagaData = async () => {
         setLoadingData(true);
         try {
-          const res = await api.get(`/kinerja/niaga?tahun=${selectedYear}`);
-          const mapped = res.data.map(item => ({
+          const res = await api.get(`/v1/kinerja/niaga?tahun=${selectedYear}`);
+          const items = Array.isArray(res.data) ? res.data 
+            : Array.isArray(res.data?.data) ? res.data.data 
+            : [];
+          const mapped = items.map(item => ({
             bulan: item.periode?.bulan,
             realisasi: item.data_realisasi?.lbkb_real ?? null
           }));
@@ -59,7 +62,7 @@ export default function InputKinerjaLbkbPage() {
         lbkb_real: data.lbkb_real ? parseFloat(data.lbkb_real) : 0
       };
       
-      await api.post('/kinerja/niaga', payload);
+      await api.post('/v1/kinerja/niaga', payload);
       setSuccess(true);
       navigate('/niaga/lbkb');
     } catch (err) {

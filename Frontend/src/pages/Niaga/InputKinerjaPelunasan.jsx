@@ -1,22 +1,29 @@
-import notify from '@/utils/notify';
 import React, { useState, useEffect } from 'react';
 import { useForm, useWatch, Controller } from 'react-hook-form';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '@/services/api';
 import { MONTHS } from '@/utils/constants';
-import { Activity, Target, Save, ChevronDown, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Activity, Target, Save, CheckCircle, AlertCircle, ArrowLeft, AlertTriangle } from 'lucide-react';
+
+import { useFilter } from '@/context/FilterContext';
 
 export default function InputKinerjaPelunasanPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const mode = searchParams.get('mode');
+  const paramMonth = searchParams.get('bulan');
+  const paramYear = searchParams.get('tahun');
+
+  const { filters } = useFilter();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [niagaData, setNiagaData] = useState([]);
   const [loadingData, setLoadingData] = useState(false);
 
-  const { register, handleSubmit, formState: { errors }, reset, control, setValue } = useForm({
+  const { register, handleSubmit, control, setValue } = useForm({
     defaultValues: {
-      tahun: new Date().getFullYear().toString(),
-      periode_id: '',
+      tahun: (paramYear || filters.year || new Date().getFullYear()).toString(),
+      periode_id: (paramMonth || filters.month || '').toString(),
       tunai_prr: '',
       cicil_prr: '',
       ts_prabayar: '',
@@ -64,8 +71,9 @@ export default function InputKinerjaPelunasanPage() {
       const fetchNiagaData = async () => {
         setLoadingData(true);
         try {
-          const res = await api.get(`/kinerja/niaga?tahun=${selectedYear}`);
-          setNiagaData(res.data || []);
+          const res = await api.get(`/v1/kinerja/niaga?tahun=${selectedYear}`);
+          const items = Array.isArray(res.data) ? res.data : (Array.isArray(res.data?.data) ? res.data.data : []);
+          setNiagaData(items);
         } catch (err) {
           console.error('Gagal mengambil data Niaga:', err);
         } finally {
@@ -81,9 +89,14 @@ export default function InputKinerjaPelunasanPage() {
       const record = niagaData.find(d => parseInt(d.periode?.bulan) === parseInt(selectedMonth));
       if (record && record.data_realisasi) {
         const raw = record.data_realisasi;
-        setValue('tunai_prr', raw.tunai_prr != null ? formatInputSeparator(raw.tunai_prr) : '');
-        setValue('cicil_prr', raw.cicil_prr != null ? formatInputSeparator(raw.cicil_prr) : '');
-        setValue('ts_prabayar', raw.ts_prabayar != null ? formatInputSeparator(raw.ts_prabayar) : '');
+        const scaleUp = (v) => {
+          if (v == null || v === '') return '';
+          const num = parseFloat(v);
+          return (num > 0 && num < 1000) ? num * 1000000000 : num;
+        };
+        setValue('tunai_prr', raw.tunai_prr != null ? formatInputSeparator(scaleUp(raw.tunai_prr)) : '');
+        setValue('cicil_prr', raw.cicil_prr != null ? formatInputSeparator(scaleUp(raw.cicil_prr)) : '');
+        setValue('ts_prabayar', raw.ts_prabayar != null ? formatInputSeparator(scaleUp(raw.ts_prabayar)) : '');
       } else {
         setValue('tunai_prr', '');
         setValue('cicil_prr', '');
@@ -96,10 +109,26 @@ export default function InputKinerjaPelunasanPage() {
     }
   }, [selectedMonth, niagaData, setValue]);
 
-  const currentMonthData = niagaData.find(d => parseInt(d.periode?.bulan) === parseInt(selectedMonth));
-  const hasExistingData = !!(selectedMonth && currentMonthData && currentMonthData.data_realisasi);
+  const currentMonthData = selectedMonth && niagaData.find(d => parseInt(d.periode?.bulan) === parseInt(selectedMonth));
+  const isDuplicate = mode !== 'edit' && !!(currentMonthData && currentMonthData.data_realisasi && (
+    currentMonthData.data_realisasi.tunai_prr !== null ||
+    currentMonthData.data_realisasi.cicil_prr !== null ||
+    currentMonthData.data_realisasi.ts_prabayar !== null
+  ));
+
+  const isFormLocked = !selectedMonth || !selectedYear;
+  const isPeriodDisabled = mode === 'edit';
 
   const onSubmit = async (data) => {
+    if (isFormLocked) {
+      alert('Silakan pilih Bulan dan Tahun terlebih dahulu.');
+      return;
+    }
+    if (isDuplicate) {
+      alert('Data sudah ada! Tidak bisa menginput dari halaman Tambah.');
+      return;
+    }
+
     setLoading(true);
     setSuccess(false);
     try {
@@ -114,11 +143,15 @@ export default function InputKinerjaPelunasanPage() {
         'pelunasan_prr_&_piutang': totalRealisasi
       };
       
-      await api.post('/kinerja/niaga', payload);
+      await api.post('/v1/kinerja/niaga', payload);
+      window.dispatchEvent(new Event('sigap:refresh'));
       setSuccess(true);
-      navigate('/niaga/pelunasan');
+      setTimeout(() => {
+        navigate('/niaga/pelunasan');
+      }, 1000);
     } catch (err) {
-      notify.error(err.response?.data?.message || err.message);
+      console.error('Gagal menyimpan Pelunasan PRR:', err);
+      alert(err.response?.data?.message || err.message || 'Gagal menyimpan data');
     } finally {
       setLoading(false);
     }
@@ -128,11 +161,12 @@ export default function InputKinerjaPelunasanPage() {
     width: '100%', padding: '10px 14px', borderRadius: 10,
     border: '1px solid #e2e8f0', background: dis ? '#f1f5f9' : '#f8fafc',
     fontSize: '0.9rem', color: dis ? '#94a3b8' : '#334155', outline: 'none',
+    cursor: dis ? 'not-allowed' : 'text',
   });
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col animate-fade-in py-12">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 640, margin: '0 auto', width: '100%', padding: '0 20px' }}>
+    <div className="min-h-screen bg-slate-50 flex flex-col animate-fade-in py-10 pb-28">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 680, margin: '0 auto', width: '100%', padding: '0 20px' }}>
 
         {/* HEADER */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -151,178 +185,210 @@ export default function InputKinerjaPelunasanPage() {
           </div>
         </div>
 
-        {/* SUCCESS */}
+        {/* WARNING ALERT FOR MONTH & YEAR SELECTION */}
+        {isFormLocked && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px',
+            borderRadius: 10, background: '#fffbe3', border: '1px solid #fde68a',
+            color: '#b45309', fontWeight: 650, fontSize: '0.86rem', boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
+          }}>
+            <AlertCircle size={18} className="flex-shrink-0" />
+            <span>PENTING: Silakan pilih <strong>Bulan</strong> dan <strong>Tahun</strong> terlebih dahulu untuk mengaktifkan formulir input realisasi.</span>
+          </div>
+        )}
+
+        {/* SUCCESS ALERT */}
         {success && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 16px', borderRadius: 10, background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#16a34a', fontWeight: 600, fontSize: '0.86rem' }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10, padding: '11px 16px',
+            borderRadius: 10, background: '#f0fdf4', border: '1px solid #bbf7d0',
+            color: '#16a34a', fontWeight: 600, fontSize: '0.86rem'
+          }}>
             <CheckCircle size={16} /> Data Pelunasan PRR Berhasil Disimpan!
           </div>
         )}
 
-        {/* MODE EDIT INFO */}
-        {hasExistingData && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 16px', borderRadius: 10, background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', fontWeight: 600, fontSize: '0.86rem' }}>
-            <Activity size={16} /> Mode Edit: Data untuk periode ini sudah ada. Mengklik simpan akan memperbarui data.
+        {/* DUPLICATE WARNING */}
+        {isDuplicate && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10, padding: '11px 16px',
+            borderRadius: 10, background: '#fef2f2', border: '1px solid #fecaca',
+            color: '#dc2626', fontWeight: 600, fontSize: '0.86rem', boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
+          }}>
+            <AlertTriangle size={18} className="flex-shrink-0" />
+            <span>Data untuk periode ini sudah ada. Anda tidak dapat mengubah data melalui halaman ini. Silakan gunakan fitur Edit.</span>
           </div>
         )}
 
-        <form style={{ display: 'flex', flexDirection: 'column', gap: 14 }} onSubmit={handleSubmit(onSubmit)}>
+        {/* EDIT MODE WARNING */}
+        {mode === 'edit' && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10, padding: '11px 16px',
+            borderRadius: 10, background: '#eff6ff', border: '1px solid #bfdbfe',
+            color: '#1d4ed8', fontWeight: 600, fontSize: '0.86rem', boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
+          }}>
+            <AlertCircle size={18} className="flex-shrink-0" />
+            <span>Mode Edit: Anda sedang mengubah data Pelunasan PRR untuk periode ini.</span>
+          </div>
+        )}
 
-          {/* CARD PERIODE */}
+        <form style={{ display: 'flex', flexDirection: 'column', gap: 20 }} onSubmit={handleSubmit(onSubmit)}>
+
+          {/* PERIODE SELECTION */}
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             <div className="p-4 border-b border-slate-100 flex items-center gap-2 bg-slate-50/50">
-              <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center"><Activity size={16} /></div>
+              <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
+                <Activity size={16} />
+              </div>
               <h3 className="font-bold text-slate-800 text-sm tracking-wide">PILIH PERIODE</h3>
             </div>
-            <div className="p-5 flex flex-col gap-4">
-              <div className="flex gap-4">
-                <div className="w-1/2">
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#64748b', marginBottom: 5 }}>Bulan</label>
-                  <select {...register('periode_id', { required: true })} style={inputStyle(false)}>
-                    <option value="">Pilih Bulan</option>
-                    {MONTHS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-                  </select>
-                </div>
-                <div className="w-1/2">
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#64748b', marginBottom: 5 }}>Tahun</label>
-                  <input type="number" {...register('tahun', { required: true })} placeholder="Tahun" style={inputStyle(false)} />
-                </div>
+            <div className="p-5 flex gap-4">
+              <div className="w-1/2">
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#64748b', marginBottom: 5 }}>Bulan</label>
+                <select
+                  {...register('periode_id', { required: 'Pilih bulan' })}
+                  disabled={isPeriodDisabled}
+                  style={inputStyle(isPeriodDisabled)}
+                >
+                  <option value="">Pilih Bulan</option>
+                  {MONTHS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+                </select>
+              </div>
+              <div className="w-1/2">
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#64748b', marginBottom: 5 }}>Tahun</label>
+                <input
+                  type="number"
+                  {...register('tahun', { required: 'Isi tahun' })}
+                  placeholder="Tahun"
+                  disabled={isPeriodDisabled}
+                  style={inputStyle(isPeriodDisabled)}
+                />
               </div>
             </div>
           </div>
 
-          {/* CARD DETAIL REALISASI */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+          {/* REALISASI INPUTS */}
+          <div className={`bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden transition-all ${(isFormLocked || isDuplicate) ? 'opacity-60 grayscale' : ''}`}>
             <div className="p-4 border-b border-slate-100 flex items-center gap-2 bg-slate-50/50">
-              <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center"><Activity size={16} /></div>
+              <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
+                <Target size={16} />
+              </div>
               <h3 className="font-bold text-slate-800 text-sm tracking-wide uppercase">DETAIL REALISASI</h3>
             </div>
-            <div className="p-5 flex flex-col gap-3">
+
+            <div className="divide-y divide-slate-100">
               {/* Tunai PRR */}
-              <div className="flex items-center justify-between p-3 bg-white border border-[#f3f4f6] rounded-xl gap-4 hover:bg-slate-50 transition">
-                <div className="flex items-center gap-3 flex-1">
-                  <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-extrabold text-[13px] shadow-sm flex-shrink-0">
+              <div className="flex items-center justify-between p-4 hover:bg-slate-50/60 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 font-extrabold text-xs flex items-center justify-center shadow-xs">
                     TN
                   </div>
-                  <label className="font-semibold text-slate-700 text-[13px]">Tunai PRR (Rp)</label>
+                  <span className="font-semibold text-slate-700 text-sm">Tunai PRR (Rp)</span>
                 </div>
                 <Controller
                   name="tunai_prr"
                   control={control}
-                  render={({ field: { value, onChange } }) => (
-                    <input 
-                      type="text" 
-                      value={value != null && value !== '' ? formatInputSeparator(value) : ''}
-                      onChange={(e) => {
-                        const rawVal = e.target.value;
-                        const cleaned = rawVal.replace(/\./g, '').replace(/,/g, '.');
-                        onChange(cleaned);
-                      }}
-                      className="w-[180px] border border-gray-200 rounded-lg px-3 py-2 text-[13px] shadow-sm text-right outline-none focus:border-blue-500 bg-white font-semibold"
-                      placeholder="0" 
+                  render={({ field }) => (
+                    <input
+                      {...field}
+                      disabled={isFormLocked || isDuplicate}
+                      onChange={(e) => field.onChange(formatInputSeparator(e.target.value))}
+                      placeholder="-"
+                      className={`w-[160px] h-9 border border-slate-200 rounded-full px-4 text-xs text-right font-semibold outline-none transition-all ${
+                        (isFormLocked || isDuplicate) ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-white text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-100'
+                      }`}
                     />
                   )}
                 />
               </div>
 
               {/* Cicil PRR */}
-              <div className="flex items-center justify-between p-3 bg-white border border-[#f3f4f6] rounded-xl gap-4 hover:bg-slate-50 transition">
-                <div className="flex items-center gap-3 flex-1">
-                  <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-extrabold text-[13px] shadow-sm flex-shrink-0">
+              <div className="flex items-center justify-between p-4 hover:bg-slate-50/60 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-extrabold text-xs flex items-center justify-center shadow-xs">
                     CC
                   </div>
-                  <label className="font-semibold text-slate-700 text-[13px]">Cicil PRR (Rp)</label>
+                  <span className="font-semibold text-slate-700 text-sm">Cicil PRR (Rp)</span>
                 </div>
                 <Controller
                   name="cicil_prr"
                   control={control}
-                  render={({ field: { value, onChange } }) => (
-                    <input 
-                      type="text" 
-                      value={value != null && value !== '' ? formatInputSeparator(value) : ''}
-                      onChange={(e) => {
-                        const rawVal = e.target.value;
-                        const cleaned = rawVal.replace(/\./g, '').replace(/,/g, '.');
-                        onChange(cleaned);
-                      }}
-                      className="w-[180px] border border-gray-200 rounded-lg px-3 py-2 text-[13px] shadow-sm text-right outline-none focus:border-blue-500 bg-white font-semibold"
-                      placeholder="0" 
+                  render={({ field }) => (
+                    <input
+                      {...field}
+                      disabled={isFormLocked || isDuplicate}
+                      onChange={(e) => field.onChange(formatInputSeparator(e.target.value))}
+                      placeholder="-"
+                      className={`w-[160px] h-9 border border-slate-200 rounded-full px-4 text-xs text-right font-semibold outline-none transition-all ${
+                        (isFormLocked || isDuplicate) ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-white text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-100'
+                      }`}
                     />
                   )}
                 />
               </div>
 
               {/* TS Prabayar */}
-              <div className="flex items-center justify-between p-3 bg-white border border-[#f3f4f6] rounded-xl gap-4 hover:bg-slate-50 transition">
-                <div className="flex items-center gap-3 flex-1">
-                  <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-extrabold text-[13px] shadow-sm flex-shrink-0">
+              <div className="flex items-center justify-between p-4 hover:bg-slate-50/60 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-purple-100 text-purple-700 font-extrabold text-xs flex items-center justify-center shadow-xs">
                     TS
                   </div>
-                  <label className="font-semibold text-slate-700 text-[13px]">TS Prabayar (Rp)</label>
+                  <span className="font-semibold text-slate-700 text-sm">TS Prabayar (Rp)</span>
                 </div>
                 <Controller
                   name="ts_prabayar"
                   control={control}
-                  render={({ field: { value, onChange } }) => (
-                    <input 
-                      type="text" 
-                      value={value != null && value !== '' ? formatInputSeparator(value) : ''}
-                      onChange={(e) => {
-                        const rawVal = e.target.value;
-                        const cleaned = rawVal.replace(/\./g, '').replace(/,/g, '.');
-                        onChange(cleaned);
-                      }}
-                      className="w-[180px] border border-gray-200 rounded-lg px-3 py-2 text-[13px] shadow-sm text-right outline-none focus:border-blue-500 bg-white font-semibold"
-                      placeholder="0" 
+                  render={({ field }) => (
+                    <input
+                      {...field}
+                      disabled={isFormLocked || isDuplicate}
+                      onChange={(e) => field.onChange(formatInputSeparator(e.target.value))}
+                      placeholder="-"
+                      className={`w-[160px] h-9 border border-slate-200 rounded-full px-4 text-xs text-right font-semibold outline-none transition-all ${
+                        (isFormLocked || isDuplicate) ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-white text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-100'
+                      }`}
                     />
                   )}
                 />
               </div>
+            </div>
 
-              <hr className="my-1 border-slate-100" />
-
-              {/* Total Realisasi (Computed) */}
-              <div className="flex items-center justify-between p-3 bg-slate-50 border border-[#f3f4f6] rounded-xl gap-4 hover:bg-slate-100 transition">
-                <div className="flex items-center gap-3 flex-1">
-                  <div className="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-extrabold text-[13px] shadow-sm flex-shrink-0">
-                    ∑
-                  </div>
-                  <label className="font-bold text-slate-800 text-[13px]">Total Realisasi Pelunasan (Rp)</label>
-                </div>
-                <input 
-                  readOnly 
-                  type="text" 
-                  value={formatInputSeparator(totalRealisasi)}
-                  className="w-[180px] border border-emerald-200 rounded-lg px-3 py-2 text-[13px] shadow-sm text-right outline-none bg-emerald-50/50 font-extrabold text-emerald-600"
-                  placeholder="0" 
-                />
-              </div>
+            {/* LIVE TOTAL PREVIEW */}
+            <div className="p-4 px-5 bg-slate-50/80 border-t border-slate-100 flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-600">
+                Total Realisasi Pelunasan (Rp):
+              </span>
+              <span className="text-sm font-extrabold text-blue-600">
+                Rp {totalRealisasi.toLocaleString('id-ID')}
+              </span>
             </div>
           </div>
 
-          {/* SUBMIT BUTTON */}
-          <button type="submit" disabled={loading}
+          {/* SUBMIT BUTTON (Consistent with Jaringan, Pemasaran, etc.) */}
+          <button
+            type="submit"
+            disabled={loading || isFormLocked || isDuplicate}
             style={{
               width: '100%',
               padding: '14px',
               borderRadius: 12,
-              background: loading ? '#93c5fd' : '#3b82f6',
+              background: (loading || isFormLocked || isDuplicate) ? '#93c5fd' : '#3b82f6',
               color: '#fff',
               fontSize: '0.95rem',
               fontWeight: 700,
               border: 'none',
-              cursor: loading ? 'not-allowed' : 'pointer',
+              cursor: (loading || isFormLocked || isDuplicate) ? 'not-allowed' : 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: 8,
-              boxShadow: loading ? 'none' : '0 4px 14px rgba(59,130,246,0.3)',
+              boxShadow: (loading || isFormLocked || isDuplicate) ? 'none' : '0 4px 14px rgba(59,130,246,0.3)',
               transition: 'all 0.2s'
             }}
           >
-            {loading ? <div style={{width:20,height:20,border:'2px solid rgba(255,255,255,0.5)',borderTop:'2px solid white',borderRadius:'50%',animation:'spin 1s linear infinite'}}/> : <Save size={18} />}
-            {hasExistingData ? 'Simpan Perubahan' : 'Simpan Data'}
+            {loading ? <div className="w-5 h-5 border-2 border-white/50 border-t-white rounded-full animate-spin" /> : <Save size={18} />}
+            {loading ? 'Menyimpan Data...' : isDuplicate ? 'Data Sudah Ada' : 'Simpan Data'}
           </button>
-
         </form>
       </div>
     </div>

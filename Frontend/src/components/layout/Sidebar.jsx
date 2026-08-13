@@ -4,7 +4,9 @@ import {
   LayoutDashboard, Target, Clock, Zap, Battery, AlertTriangle,
   Users, Plug, ShoppingCart, Wallet, TrendingDown, Search,
   Settings, Briefcase, FileText, Building2, ChevronDown, X,
-  Home, Info, TrendingUp, Activity, ChevronRight
+  Home, Info, TrendingUp, Activity, ChevronRight,
+  ShieldCheck, ClipboardList, CheckSquare, BookOpen, Bell,
+  MessageSquare, BarChart2, AlertCircle, AlertOctagon, Download, Tag
 } from 'lucide-react'
 import { NAV_ITEMS } from '@/utils/constants'
 import { useAuth } from '@/context/AuthContext'
@@ -13,7 +15,9 @@ import PlnLogo from '@/components/ui/PlnLogo'
 const ICON_MAP = {
   LayoutDashboard, Target, Clock, Zap, Battery, AlertTriangle,
   Users, Plug, ShoppingCart, Wallet, TrendingDown, Search,
-  Settings, Briefcase, FileText, Building2, Home, Info, TrendingUp, Activity
+  Settings, Briefcase, FileText, Building2, Home, Info, TrendingUp, Activity,
+  ShieldCheck, ClipboardList, CheckSquare, BookOpen, Bell,
+  MessageSquare, BarChart2, AlertCircle, AlertOctagon, Download, Tag
 }
 
 export default function Sidebar({ mobileOpen, onMobileClose }) {
@@ -23,8 +27,33 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
 
   const toggle = (g) => setCollapsed(p => ({ ...p, [g]: !p[g] }))
 
+  // ─── Helper: check if any path in nested items is active ──────────────────
+  const isPathMatch = (path) => {
+    if (!path) return false
+    const itemPath   = path.split('?')[0]
+    const itemSearch = path.includes('?') ? path.split('?')[1] : ''
+    if (itemSearch) {
+      const itemParams = new URLSearchParams(itemSearch)
+      const locParams  = new URLSearchParams(location.search)
+      let matches = location.pathname === itemPath
+      itemParams.forEach((v, k) => { if (locParams.get(k) !== v) matches = false })
+      return matches
+    }
+    return location.pathname === itemPath || (itemPath !== '/' && location.pathname.startsWith(itemPath + '/'))
+  }
+
+  const isAnyChildActive = (items) => {
+    if (!items) return false
+    return items.some(child => {
+      if (child.path && isPathMatch(child.path)) return true
+      if (child.items) return isAnyChildActive(child.items)
+      return false
+    })
+  }
+
   const getFilteredNavItems = () => {
-    if (isAdmin) return NAV_ITEMS;
+    // Full admin → everything
+    if (isAdmin) return NAV_ITEMS
     
     const roleMap = {
       'pic_jaringan': 'JARINGAN',
@@ -33,19 +62,21 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
       'pic_pengadaan': 'PENGADAAN',
       'pic_niaga': 'NIAGA',
       'pic_keuangan': 'KEUANGAN',
-      'pic_k3': 'K3'
+      'pic_aset': 'ASET',
+      'pic_k3': 'K3',
+      'admin_k3': 'K3'
     };
     
     const isPerencanaan = user?.role === 'perencanaan';
     const userGroup = user ? roleMap[user.role] : null;
     
     return NAV_ITEMS.flatMap(item => {
-      // Keep HOME
       if (item.key === 'home') return [item];
+      if (item.k3 && user?.role !== 'admin_k3' && user?.role !== 'pic_k3') return []; // Hide K3 groups for non-K3 PIC roles
       
       if (item.group === 'NKO') {
          // Hide NKO for roles that only have their own specific page / module
-         const noNkoRoles = ['pic_jaringan', 'pic_pengadaan', 'pic_transaksi_energi', 'pic_k3'];
+         const noNkoRoles = ['pic_jaringan', 'pic_pengadaan', 'pic_transaksi_energi', 'pic_k3', 'admin_k3'];
          if (user && noNkoRoles.includes(user.role)) return [];
          const filteredItems = item.items.filter(i => i.group !== 'KELOLA TARGET');
          return [{ ...item, items: filteredItems }];
@@ -133,30 +164,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
               const renderItem = (navItem, depth = 0) => {
                 if (navItem.type === 'item' || (!navItem.type && navItem.path)) {
                   const IconComp = ICON_MAP[navItem.icon] || LayoutDashboard
-                  
-                  const itemPath = navItem.path.split('?')[0];
-                  const searchParams = new URLSearchParams(location.search);
-                  const bidangParam = searchParams.get('bidang');
-                  const itemBidang = navItem.path.includes('bidang=') 
-                    ? new URLSearchParams(navItem.path.split('?')[1]).get('bidang') 
-                    : null;
-                  
-                  let isActive = false;
-                  if (itemPath === '/kelola-target' && itemBidang) {
-                      isActive = location.pathname === itemPath && bidangParam === itemBidang;
-                  } else if (itemPath === '/kelola-target' && !itemBidang) {
-                      isActive = location.pathname === itemPath && !bidangParam;
-                  } else {
-                      isActive = location.pathname === itemPath || (itemPath !== '/' && location.pathname.startsWith(itemPath + '/'));
-                  }
-                    
-                  if (navItem.path === '/saidi' && (location.pathname === '/input' || location.pathname.includes('/saidi'))) {
-                    isActive = true;
-                  } else if (navItem.path === '/saifi' && location.pathname.includes('/saifi')) {
-                    isActive = true;
-                  } else if (navItem.path === '/ens' && location.pathname.includes('/ens')) {
-                    isActive = true;
-                  }
+                  const isActive = isPathMatch(navItem.path)
                   
                   return (
                     <li key={navItem.key}>
@@ -190,35 +198,9 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
                 }
 
                 if (navItem.type === 'group' || navItem.type === 'subgroup') {
-                  const isCollapsed = collapsed[navItem.group]
-                  const IconComp = navItem.icon ? ICON_MAP[navItem.icon] : null
-
-                  const isChildActive = navItem.items && navItem.items.some(child => {
-                    if (!child.path) return false;
-                    
-                    const childPath = child.path.split('?')[0];
-                    const childSearch = child.path.includes('?') ? '?' + child.path.split('?')[1] : '';
-
-                    let active = false;
-                    if (childSearch) {
-                        active = location.pathname === childPath && location.search === childSearch;
-                    } else {
-                        if (childPath === '/kelola-target') {
-                            active = location.pathname === childPath && location.search === '';
-                        } else {
-                            active = location.pathname === childPath || (childPath !== '/' && location.pathname.startsWith(childPath + '/'));
-                        }
-                    }
-                      
-                    if (child.path === '/saidi' && (location.pathname === '/input' || location.pathname.includes('/saidi'))) {
-                      active = true;
-                    } else if (child.path === '/saifi' && location.pathname.includes('/saifi')) {
-                      active = true;
-                    } else if (child.path === '/ens' && location.pathname.includes('/ens')) {
-                      active = true;
-                    }
-                    return active;
-                  });
+                  const isCollapsed    = collapsed[navItem.group]
+                  const IconComp       = navItem.icon ? ICON_MAP[navItem.icon] : null
+                  const isChildActive  = isAnyChildActive(navItem.items)
 
                   return (
                     <div key={navItem.group}>

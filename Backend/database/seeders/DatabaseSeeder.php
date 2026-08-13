@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
                 'role' => 'admin',
                 'is_active' => true,
             ],
+            // Branch Andrey: Pengadaan
             [
                 'name' => 'PIC Pengadaan',
                 'username' => 'pic_pengadaan',
@@ -31,6 +32,7 @@ class DatabaseSeeder extends Seeder
                 'up3' => 'UP3 Kebon Jeruk',
                 'is_active' => true,
             ],
+            // Branch Eunike: Jaringan
             [
                 'name' => 'PIC Jaringan',
                 'username' => 'pic_jaringan',
@@ -40,6 +42,7 @@ class DatabaseSeeder extends Seeder
                 'up3' => 'UP3 Kebon Jeruk',
                 'is_active' => true,
             ],
+            // Branch Eunike: Transaksi Energi (TE)
             [
                 'name' => 'PIC Transaksi Energi',
                 'username' => 'pic_transaksi_energi',
@@ -49,6 +52,7 @@ class DatabaseSeeder extends Seeder
                 'up3' => 'UP3 Kebon Jeruk',
                 'is_active' => true,
             ],
+            // Branch Andrey: Niaga
             [
                 'name' => 'PIC Niaga',
                 'username' => 'pic_niaga',
@@ -58,6 +62,7 @@ class DatabaseSeeder extends Seeder
                 'up3' => 'UP3 Kebon Jeruk',
                 'is_active' => true,
             ],
+            // Branch Andrey: Pemasaran
             [
                 'name' => 'PIC Pemasaran',
                 'username' => 'pic_pemasaran',
@@ -67,12 +72,23 @@ class DatabaseSeeder extends Seeder
                 'up3' => 'UP3 Kebon Jeruk',
                 'is_active' => true,
             ],
+            // General: Keuangan
             [
                 'name' => 'PIC Keuangan',
                 'username' => 'pic_keuangan',
                 'email' => 'keuangan@pln.co.id',
                 'password' => Hash::make('password'),
                 'role' => 'pic_keuangan',
+                'up3' => 'UP3 Kebon Jeruk',
+                'is_active' => true,
+            ],
+            // Branch Early: K3
+            [
+                'name' => 'Admin K3',
+                'username' => 'admin_k3',
+                'email' => 'admin_k3@pln.co.id',
+                'password' => Hash::make('password'),
+                'role' => 'admin_k3',
                 'up3' => 'UP3 Kebon Jeruk',
                 'is_active' => true,
             ],
@@ -105,6 +121,8 @@ class DatabaseSeeder extends Seeder
         $this->call(TargetTahunanSeeder::class);
         $this->call(TargetTahunanRatingNegatifSeeder::class);
         $this->call(NkoParameterSeeder::class);
-        $this->call(PengadaanSeeder::class);
+        if (class_exists(PengadaanSeeder::class)) {
+            $this->call(PengadaanSeeder::class);
+        }
     }
 }

@@ -12,64 +12,92 @@ const MONTHS_SHORT = {
 const MONTH_WEIGHTS = [0.077, 0.074, 0.082, 0.080, 0.083, 0.081, 0.086, 0.088, 0.085, 0.084, 0.083, 0.077];
 
 export async function getNiagaData(year = 2026) {
+  const currentYear = parseInt(year) || new Date().getFullYear();
+
   // 1. Fetch annual targets from DB
   let targetPelunasan = 40000000000; // Rp (40 Miliar)
   let targetPenghapusan = 30.0; // Rp Miliar
   let targetSaldoAkhir = 571575272; // Rp (Absolute)
 
   try {
-    const targetsRes = await api.get(`/targets?tahun=${year}`);
+    const targetsRes = await api.get(`/v1/targets?tahun=${currentYear}`);
     const dbTargets = targetsRes.data || [];
     
-    const pel = dbTargets.find(t => t.indikator === 'Pelunasan PRR & Piutang');
+    const pel = dbTargets.find(t => t.indikator === 'Pelunasan PRR' || t.indikator === 'Pelunasan PRR & Piutang');
     if (pel && pel.target != null) {
       const val = parseFloat(pel.target);
       targetPelunasan = val < 1000 ? val * 1000000000 : val;
     }
 
     const pen = dbTargets.find(t => t.indikator === 'Penghapusan PRR');
-    if (pen) targetPenghapusan = parseFloat(pen.target);
+    if (pen && pen.target != null) {
+      targetPenghapusan = parseFloat(pen.target);
+    }
 
-    const lbkb = dbTargets.find(t => t.indikator === 'Tindak Lanjut LBKB');
+    const lbkb = dbTargets.find(t => t.indikator === 'Saldo Akhir PRR' || t.indikator === 'Tindak Lanjut LBKB');
     if (lbkb && lbkb.target != null) {
       const val = parseFloat(lbkb.target);
       targetSaldoAkhir = val < 1000 ? val * 1000000000 : val;
     }
   } catch (e) {
-    console.warn("Failed to fetch Niaga targets, using fallback defaults", e);
+    console.warn("Failed to fetch Niaga targets, using defaults", e);
+  }
+
+  // Fetch Penghapusan PRR detail totals from v1/niaga/penghapusan
+  let penghapusanMap = {};
+  let penghapusanDetailsMap = {};
+  try {
+    const penRes = await api.get(`/v1/niaga/penghapusan?tahun=${currentYear}`);
+    if (penRes.data && penRes.data.monthly) {
+      penRes.data.monthly.forEach(item => {
+        penghapusanMap[parseInt(item.bulan)] = parseFloat(item.total_nominal || 0);
+      });
+    }
+    if (penRes.data && penRes.data.details) {
+      penRes.data.details.forEach(item => {
+        const b = parseInt(item.bulan);
+        if (!penghapusanDetailsMap[b]) {
+          penghapusanDetailsMap[b] = [];
+        }
+        penghapusanDetailsMap[b].push(item);
+      });
+    }
+  } catch (e) {
+    console.warn("Failed to fetch Penghapusan PRR details total", e);
   }
 
   // Fetch previous year's realisations for baseline (Desember tahun sebelumnya)
   let baselineRecord = null;
   try {
-    const prevRes = await api.get(`/kinerja/niaga?tahun=${year - 1}`);
+    const prevRes = await api.get(`/v1/kinerja/niaga?tahun=${currentYear - 1}`);
     if (prevRes.data && Array.isArray(prevRes.data)) {
       const decItem = prevRes.data.find(item => item.periode && parseInt(item.periode.bulan) === 12);
       if (decItem) {
         const raw = decItem.data_realisasi;
-        baselineRecord = raw != null && (typeof raw === 'object' || Array.isArray(raw))
-          ? raw
-          : JSON.parse(raw || '{}');
+        baselineRecord = (typeof raw === 'string') ? JSON.parse(raw || '{}') : (raw || {});
       }
     }
   } catch (e) {
-    console.warn("Failed to fetch previous year's baseline", e);
+    console.warn("Failed to fetch previous year baseline", e);
   }
+
 
   // 2. Fetch monthly realisations from DB
   const realMap = {};
   try {
-    const res = await api.get(`/kinerja/niaga?tahun=${year}`);
-    if (res.data && Array.isArray(res.data)) {
-      res.data.forEach(item => {
-        if (item.periode) {
-          const raw = item.data_realisasi;
-          realMap[item.periode.bulan] = raw != null && (typeof raw === 'object' || Array.isArray(raw))
-            ? raw
-            : JSON.parse(raw || '{}');
-        }
-      });
-    }
+    const res = await api.get(`/v1/kinerja/niaga?tahun=${currentYear}`);
+    // v1 API returns {value: [...]} (PowerShell ConvertTo-Json format) OR plain array
+    const items = Array.isArray(res.data) ? res.data 
+      : Array.isArray(res.data?.value) ? res.data.value
+      : Array.isArray(res.data?.data) ? res.data.data 
+      : [];
+    items.forEach(item => {
+      if (item.periode && item.periode.bulan) {
+        const raw = item.data_realisasi;
+        const parsed = (typeof raw === 'string') ? JSON.parse(raw || '{}') : (raw || {});
+        realMap[parseInt(item.periode.bulan)] = parsed;
+      }
+    });
   } catch (e) {
     console.warn("Failed to fetch Niaga realisations from backend", e);
   }
@@ -154,64 +182,72 @@ export async function getNiagaData(year = 2026) {
     let tsPrabayar = null;
 
     if (real) {
-      if (real['pelunasan_prr_&_piutang'] !== undefined) {
+      if (real['pelunasan_prr_&_piutang'] !== undefined && real['pelunasan_prr_&_piutang'] !== null) {
         realPelunasan = parseFloat(real['pelunasan_prr_&_piutang']);
-      } else if (real['pelunasan_real'] !== undefined) {
+      } else if (real['pelunasan_real'] !== undefined && real['pelunasan_real'] !== null) {
         realPelunasan = parseFloat(real['pelunasan_real']);
       }
       
       // Auto-scale old database values entered in Rp Miliar (e.g. 0.015 instead of 15000000)
-      if (realPelunasan !== null && realPelunasan < 1000) {
+      if (realPelunasan !== null && realPelunasan < 1000 && realPelunasan > 0) {
         realPelunasan = realPelunasan * 1000000000;
       }
 
-      tunaiPrr = real['tunai_prr'] !== undefined ? parseFloat(real['tunai_prr']) : null;
-      if (tunaiPrr !== null && tunaiPrr < 1000 && realPelunasan !== null) {
-        if (real['pelunasan_real'] < 1000 || real['pelunasan_prr_&_piutang'] < 1000) {
+      if (real['tunai_prr'] !== undefined && real['tunai_prr'] !== null) {
+        tunaiPrr = parseFloat(real['tunai_prr']);
+        if (tunaiPrr < 1000 && realPelunasan !== null && realPelunasan > 1000) {
           tunaiPrr = tunaiPrr * 1000000000;
         }
       }
 
-      cicilPrr = real['cicil_prr'] !== undefined ? parseFloat(real['cicil_prr']) : null;
-      if (cicilPrr !== null && cicilPrr < 1000 && realPelunasan !== null) {
-        if (real['pelunasan_real'] < 1000 || real['pelunasan_prr_&_piutang'] < 1000) {
+      if (real['cicil_prr'] !== undefined && real['cicil_prr'] !== null) {
+        cicilPrr = parseFloat(real['cicil_prr']);
+        if (cicilPrr < 1000 && realPelunasan !== null && realPelunasan > 1000) {
           cicilPrr = cicilPrr * 1000000000;
         }
       }
 
-      tsPrabayar = real['ts_prabayar'] !== undefined ? parseFloat(real['ts_prabayar']) : null;
-      if (tsPrabayar !== null && tsPrabayar < 1000 && realPelunasan !== null) {
-        if (real['pelunasan_real'] < 1000 || real['pelunasan_prr_&_piutang'] < 1000) {
+      if (real['ts_prabayar'] !== undefined && real['ts_prabayar'] !== null) {
+        tsPrabayar = parseFloat(real['ts_prabayar']);
+        if (tsPrabayar < 1000 && realPelunasan !== null && realPelunasan > 1000) {
           tsPrabayar = tsPrabayar * 1000000000;
         }
       }
     }
 
-    const realPenghapusan = real && real['penghapusan_prr'] !== undefined ? parseFloat(real['penghapusan_prr']) : null;
+    const realPenghapusan = penghapusanMap[m] !== undefined && penghapusanMap[m] > 0
+      ? penghapusanMap[m]
+      : (real && (real['penghapusan_prr'] !== undefined || real['penghapusan_real'] !== undefined)
+          ? parseFloat(real['penghapusan_prr'] ?? real['penghapusan_real'])
+          : null);
     
     // Saldo Akhir realisations
     let realSaldoAkhir = null;
     let palTotal = null;
     let tsTotal = null;
     if (real) {
-      if (real['tindak_lanjut_lbkb'] !== undefined) {
+      if (real['tindak_lanjut_lbkb'] !== undefined && real['tindak_lanjut_lbkb'] !== null) {
         realSaldoAkhir = parseFloat(real['tindak_lanjut_lbkb']);
-      } else if (real['saldo_akhir_real'] !== undefined) {
+      } else if (real['saldo_akhir_real'] !== undefined && real['saldo_akhir_real'] !== null) {
         realSaldoAkhir = parseFloat(real['saldo_akhir_real']);
       }
       
-      if (realSaldoAkhir !== null && realSaldoAkhir < 1000) {
+      if (realSaldoAkhir !== null && realSaldoAkhir < 1000 && realSaldoAkhir > 0) {
         realSaldoAkhir = realSaldoAkhir * 1000000000;
       }
       
-      palTotal = real['pal_total'] !== undefined ? parseFloat(real['pal_total']) : null;
-      if (palTotal !== null && palTotal < 1000 && realSaldoAkhir !== null && realSaldoAkhir < 1000) {
-        palTotal = palTotal * 1000000000;
+      if (real['pal_total'] !== undefined && real['pal_total'] !== null) {
+        palTotal = parseFloat(real['pal_total']);
+        if (palTotal < 1000 && realSaldoAkhir !== null && realSaldoAkhir > 1000) {
+          palTotal = palTotal * 1000000000;
+        }
       }
 
-      tsTotal = real['ts_total'] !== undefined ? parseFloat(real['ts_total']) : null;
-      if (tsTotal !== null && tsTotal < 1000 && realSaldoAkhir !== null && realSaldoAkhir < 1000) {
-        tsTotal = tsTotal * 1000000000;
+      if (real['ts_total'] !== undefined && real['ts_total'] !== null) {
+        tsTotal = parseFloat(real['ts_total']);
+        if (tsTotal < 1000 && realSaldoAkhir !== null && realSaldoAkhir > 1000) {
+          tsTotal = tsTotal * 1000000000;
+        }
       }
     }
 
@@ -233,7 +269,8 @@ export async function getNiagaData(year = 2026) {
       pal_total: palTotal,
       ts_total: tsTotal,
 
-      _hasData: !!real,
+      _hasData: !!real || (penghapusanMap[m] !== undefined && penghapusanMap[m] > 0),
+      penghapusan_details: penghapusanDetailsMap[m] || [],
     });
   }
 
@@ -252,6 +289,10 @@ export async function getNiagaData(year = 2026) {
     if (r.isBaseline) {
       r.rata_rata_saldo = r.saldo_akhir_real;
       r.saldo_akhir_ach = null;
+      if (r.saldo_akhir_real !== null) {
+        sumSaldo += r.saldo_akhir_real;
+        countSaldo += 1;
+      }
       return;
     }
 
@@ -273,18 +314,14 @@ export async function getNiagaData(year = 2026) {
     r.c_penghapusan_target = cumPenghapusanTgt;
     r.c_penghapusan_real = r.penghapusan_real !== null ? cumPenghapusanReal : null;
 
-    // Saldo Akhir calculations: cumulative average and minimize achievement
     if (r.saldo_akhir_real !== null) {
       sumSaldo += r.saldo_akhir_real;
-      countSaldo++;
-      r.rata_rata_saldo = sumSaldo / countSaldo;
+      countSaldo += 1;
+      const avg = sumSaldo / countSaldo;
+      r.rata_rata_saldo = avg;
+      r.saldo_akhir_ach = (r.saldo_akhir_target > 0) ? (2 - avg / r.saldo_akhir_target) * 100 : null;
     } else {
-      r.rata_rata_saldo = null;
-    }
-
-    if (r.rata_rata_saldo !== null && r.saldo_akhir_target !== null && r.saldo_akhir_target > 0) {
-      r.saldo_akhir_ach = (2 - r.rata_rata_saldo / r.saldo_akhir_target) * 100;
-    } else {
+      r.rata_rata_saldo = countSaldo > 0 ? (sumSaldo / countSaldo) : null;
       r.saldo_akhir_ach = null;
     }
   });

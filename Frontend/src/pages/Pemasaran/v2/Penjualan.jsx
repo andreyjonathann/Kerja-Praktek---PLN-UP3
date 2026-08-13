@@ -15,6 +15,7 @@ import { useFilter } from '@/context/FilterContext'
 import { CHART_COLORS, TARIFF_SEGMENTS } from '@/utils/constants'
 import { getPemasaranData } from '@/services/pemasaranDataService'
 import { formatNumber } from '@/utils/formatters'
+import TargetWarning from '@/components/ui/TargetWarning'
 
 const TARIF_KEYS = ['s','r','b','i','p','t','l','c']
 const TARIF_COLORS = CHART_COLORS
@@ -111,6 +112,8 @@ export default function PenjualanPage() {
         </div>
         <p className="page-description">Realisasi penjualan energi listrik per golongan tarif · Tahun {filters.year}</p>
       </div>
+
+      <TargetWarning indicator="Penjualan TL" year={filters.year} />
 
       {/* ── 4 KpiCard ──────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">

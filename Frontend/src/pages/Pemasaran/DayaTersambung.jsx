@@ -12,6 +12,7 @@ import ChartWrapper from '@/components/ui/ChartWrapper'
 import DataTable    from '@/components/ui/DataTable'
 import { getPemasaranData, TARIF_KEYS, TARIF_LABELS } from '@/services/pemasaranDataService'
 import { CHART_COLORS } from '@/utils/constants'
+import { calculateAchievement, calculateKPI } from '@/utils/kpiHelpers'
 
 const TOOLTIP = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
@@ -67,7 +68,8 @@ export default function DayaTersambungPage() {
   const ytdReal = lastRow?.c_daya_total  ?? 0
   const ytdTgt  = lastRow?.c_daya_target ?? 0
   const lastReal= lastRow?.daya_total     ?? 0
-  const ach     = ytdTgt > 0 ? (ytdReal / ytdTgt) * 100 : null
+  const achActual = calculateAchievement(ytdReal, ytdTgt) * 100
+  const achKPI = calculateKPI(ytdReal, ytdTgt) * 100
   const hasData = filled.length > 0
 
   const chartKey = tab === 'monthly' ? 'daya_total'  : 'c_daya_total'
@@ -88,14 +90,25 @@ export default function DayaTersambungPage() {
       ? <span className={`font-bold ${v < row[tgtKey] ? 'text-red-500' : 'text-emerald-500'}`}>{formatNumber(v)}</span>
       : <span style={{ color:'var(--text-muted)', fontSize:'0.78rem' }}>Belum diinput</span>
     },
-    { key:'_ach', label:'% Capai', align:'center',
+    { key:'_ach_actual', label:'Pencapaian Aktual', align:'center',
       render: (_, row) => {
-        const p = row[tgtKey] > 0 && row[chartKey] != null ? Math.round(row[chartKey] / row[tgtKey] * 100) : null
-        if (p == null) return <span style={{ color:'var(--text-muted)' }}>—</span>
+        const t = row[tgtKey]
+        const r = row[chartKey]
+        if (t === 0 || r == null) return <span style={{ color:'var(--text-muted)' }}>—</span>
+        const p = calculateAchievement(r, t) * 100
+        return <span className="font-bold text-slate-600">{p.toFixed(1)}%</span>
+      }
+    },
+    { key:'_kpi_score', label:'Nilai KPI', align:'center',
+      render: (_, row) => {
+        const t = row[tgtKey]
+        const r = row[chartKey]
+        if (t === 0 || r == null) return <span style={{ color:'var(--text-muted)' }}>—</span>
+        const kpi = calculateKPI(r, t) * 100
         return <span style={{ display:'inline-flex', padding:'2px 8px', borderRadius:99, fontSize:'0.78rem', fontWeight:750,
-          background: p>=100?'rgba(16,185,129,0.08)':'rgba(239,68,68,0.08)',
-          color: p>=100?'#10B981':'#EF4444',
-          border:`1px solid ${p>=100?'rgba(16,185,129,0.15)':'rgba(239,68,68,0.15)'}` }}>{p}%</span>
+          background: kpi>=100?'rgba(16,185,129,0.08)':'rgba(239,68,68,0.08)',
+          color: kpi>=100?'#10B981':'#EF4444',
+          border:`1px solid ${kpi>=100?'rgba(16,185,129,0.15)':'rgba(239,68,68,0.15)'}` }}>{kpi.toFixed(1)}%</span>
       }
     },
     ...TARIF_KEYS.map(k => ({
@@ -127,10 +140,10 @@ export default function DayaTersambungPage() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-        <KpiCard title="Realisasi VA YTD"  value={hasData?formatNumber(ytdReal):'—'} unit="kVA" icon={Zap} color="yellow" achievement={hasData && ach !== null ? ach : undefined} loading={loading} />
+        <KpiCard title="Realisasi VA YTD"  value={hasData?formatNumber(ytdReal):'—'} unit="kVA" icon={Zap} color="yellow" achievement={hasData ? achKPI : undefined} loading={loading} />
         <KpiCard title="Target VA YTD"     value={formatNumber(ytdTgt)} unit="kVA" icon={Zap} color="blue"  loading={loading} />
         <KpiCard title="Bulan Terakhir"    value={hasData?formatNumber(lastReal):'—'} unit="kVA" icon={Zap} color="orange" loading={loading} />
-        <KpiCard title="Pencapaian"        value={hasData && ach !== null ? ach.toFixed(1)+'%':'—'} icon={TrendingUp} color={ach != null ? (ach>=100?'green':ach>=90?'yellow':'red') : 'blue'} loading={loading} />
+        <KpiCard title="Nilai KPI YTD"     value={hasData ? achKPI.toFixed(1)+'%':'—'} icon={TrendingUp} color={hasData ? (achKPI>=100?'green':achKPI>=90?'yellow':'red') : 'blue'} subText={hasData ? `Pencapaian Aktual: ${achActual.toFixed(1)}%` : undefined} loading={loading} />
       </div>
 
       <div style={{ display:'inline-flex', background:'rgba(20, 162, 186,0.05)', padding:4, borderRadius:12, border:'1px solid rgba(20, 162, 186,0.08)', alignSelf:'flex-start', margin:'8px 0 12px' }}>

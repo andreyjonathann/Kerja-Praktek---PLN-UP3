@@ -1028,7 +1028,7 @@ class TargetTahunanSeeder extends Seeder
         ];
 
         // Insert in chunks to avoid large query errors
-         = array_chunk($data, 50);
+        $chunks = array_chunk($data, 50);
         foreach ($chunks as $chunk) {
             DB::table('targets')->insert($chunk);
         }

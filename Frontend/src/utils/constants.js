@@ -49,6 +49,7 @@ export const TARIFF_SEGMENTS = [
 
 export const NAV_ITEMS = [
   { type: 'item', key: 'home', label: 'HOME', icon: 'Home', path: '/' },
+  { type: 'item', key: 'unit-up3', label: 'UNIT UP3', icon: 'Building2', path: '/unit-up3', k3: true },
   {
     type: 'group',
     group: 'NKO',
@@ -118,7 +119,8 @@ export const NAV_ITEMS = [
         type: 'subgroup',
         group: 'PENGADAAN',
         items: [
-          { key: 'pengadaan-kontrak', label: 'KONTRAK', path: '/pengadaan/kontrak', icon: 'FileText' },
+          { key: 'pengadaan-kontrak', label: 'PENGADAAN (KONTRAK)', path: '/pengadaan/kontrak', icon: 'FileText' },
+          { key: 'pengadaan-pagu', label: 'PAGU ANGGARAN', path: '/pengadaan/kelola-pagu', icon: 'Wallet' },
         ],
       },
       {
@@ -127,7 +129,7 @@ export const NAV_ITEMS = [
         items: [
           { key: 'niaga-pelunasan',   label: 'PELUNASAN PRR',   path: '/niaga/pelunasan',   icon: 'Briefcase' },
           { key: 'niaga-penghapusan',  label: 'PENGHAPUSAN PRR',  path: '/niaga/penghapusan',  icon: 'TrendingDown' },
-          { key: 'niaga-saldo-akhir',  label: 'SALDO AKHIR',        path: '/niaga/saldo-akhir',  icon: 'Activity' },
+          { key: 'niaga-saldo-akhir',  label: 'SALDO AKHIR PRR',  path: '/niaga/saldo-akhir',  icon: 'Wallet' },
         ],
       },
       {
@@ -154,4 +156,16 @@ export const NAV_ITEMS = [
       },
     ],
   },
+  {
+    type: 'group',
+    group: 'ANGGARAN',
+    icon: 'Target',
+    items: [
+      { key: 'skki-luncuran', label: 'SKKI LUNCURAN', path: '/skki-luncuran' },
+      { key: 'skki-murni', label: 'SKKI MURNI', path: '/skki-murni' },
+      { key: 'skko', label: 'SKKO', path: '/skko' },
+    ],
+  },
+  { type: 'item', key: 'informasi-gi', label: 'INFORMASI GI', icon: 'FileText', path: '/informasi-gi' },
+  { type: 'item', key: 'spreadsheet', label: 'LIVE SPREADSHEET', icon: 'LayoutDashboard', path: '/spreadsheet' },
 ]

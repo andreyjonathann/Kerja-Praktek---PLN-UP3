@@ -15,6 +15,7 @@ import { useFilter } from '@/context/FilterContext'
 import { CHART_COLORS } from '@/utils/constants'
 import { getPemasaranData } from '@/services/pemasaranDataService'
 import { formatNumber } from '@/utils/formatters'
+import TargetWarning from '@/components/ui/TargetWarning'
 
 const TARIF_KEYS   = ['s','r','b','i','p','t','l','c']
 const TARIF_COLORS = CHART_COLORS
@@ -116,6 +117,8 @@ export default function PelangganPage() {
         </div>
         <p className="page-description">Realisasi penambahan pelanggan baru per golongan tarif · Tahun {filters.year}</p>
       </div>
+
+      <TargetWarning indicator="Jumlah Pelanggan" year={filters.year} />
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">

@@ -10,7 +10,8 @@ import { exportToExcel } from '@/utils/exportExcel'
 import KpiCard      from '@/components/ui/KpiCard'
 import ChartWrapper from '@/components/ui/ChartWrapper'
 import DataTable    from '@/components/ui/DataTable'
-import { getPemasaranData } from '@/services/pemasaranDataService'
+import { getPemasaranData, TARIF_KEYS, TARIF_LABELS } from '@/services/pemasaranDataService'
+import { calculateAchievement, calculateKPI } from '@/utils/kpiHelpers'
 
 const PIE_COLORS = ['#7C3AED','#10B981']
 
@@ -23,7 +24,7 @@ const TOOLTIP_RP = ({ active, payload, label }) => {
         <div key={i} style={{ display:'flex', alignItems:'center', gap:8, fontSize:'0.82rem', marginBottom:2 }}>
           <span style={{ width:8, height:8, borderRadius:2, background:p.color||p.fill, flexShrink:0 }} />
           <span style={{ color:'var(--text-muted)', fontWeight:600 }}>{p.name}:</span>
-          <span style={{ color:'var(--text-primary)', fontWeight:700 }}>Rp {formatNumber(p.value)} jt</span>
+          <span style={{ color:'var(--text-primary)', fontWeight:700 }}>Rp {formatNumber(p.value * 1000000)}</span>
         </div>
       ))}
     </div>
@@ -68,7 +69,8 @@ export default function PendapatanTLPage() {
   const ytdReal = lastRow?.c_pendapatan_total  ?? 0
   const ytdTgt  = lastRow?.c_pendapatan_target ?? 0
   const lastReal= lastRow?.pendapatan_total     ?? 0
-  const ach     = ytdTgt > 0 ? (ytdReal / ytdTgt) * 100 : null
+  const achActual = calculateAchievement(ytdReal, ytdTgt) * 100
+  const achKPI = calculateKPI(ytdReal, ytdTgt) * 100
   const hasData = filled.length > 0
 
   const chartKey = tab === 'monthly' ? 'pendapatan_total'  : 'c_pendapatan_total'
@@ -89,23 +91,34 @@ export default function PendapatanTLPage() {
 
   const tableColumns = [
     { key:'label',  label:'Bulan', width:'72px', align:'center' },
-    { key:tgtKey,   label:'Target (Jt Rp)',    align:'right', render: v => v != null ? 'Rp '+formatNumber(v) : '—' },
-    { key:chartKey, label:'Realisasi (Jt Rp)', align:'right', render: (v, row) => v != null
-      ? <span className={`font-bold ${v < row[tgtKey] ? 'text-red-500' : 'text-emerald-500'}`}>Rp {formatNumber(v)}</span>
+    { key:tgtKey,   label:'Target',    align:'right', render: v => v != null ? 'Rp '+formatNumber(v * 1000000) : '—' },
+    { key:chartKey, label:'Realisasi', align:'right', render: (v, row) => v != null
+      ? <span className={`font-bold ${v < row[tgtKey] ? 'text-red-500' : 'text-emerald-500'}`}>Rp {formatNumber(v * 1000000)}</span>
       : <span style={{ color:'var(--text-muted)', fontSize:'0.78rem' }}>Belum diinput</span>
     },
     { key:'pendapatan_pb', label:'Pasang Baru', align:'right',
-      render: v => v != null ? <span style={{ background:'var(--bg-elevated)', border:'1px solid var(--border)', color:'var(--text-secondary)', padding:'2px 8px', borderRadius:6, fontWeight:600, fontSize:'0.75rem' }}>Rp {formatNumber(v)}</span> : '—' },
+      render: v => v != null ? <span style={{ background:'var(--bg-elevated)', border:'1px solid var(--border)', color:'var(--text-secondary)', padding:'2px 8px', borderRadius:6, fontWeight:600, fontSize:'0.75rem' }}>Rp {formatNumber(v * 1000000)}</span> : '—' },
     { key:'pendapatan_td', label:'Tambah Daya', align:'right',
-      render: v => v != null ? <span style={{ background:'var(--bg-elevated)', border:'1px solid var(--border)', color:'var(--text-secondary)', padding:'2px 8px', borderRadius:6, fontWeight:600, fontSize:'0.75rem' }}>Rp {formatNumber(v)}</span> : '—' },
-    { key:'_ach', label:'% Capai', align:'center',
+      render: v => v != null ? <span style={{ background:'var(--bg-elevated)', border:'1px solid var(--border)', color:'var(--text-secondary)', padding:'2px 8px', borderRadius:6, fontWeight:600, fontSize:'0.75rem' }}>Rp {formatNumber(v * 1000000)}</span> : '—' },
+    { key:'_ach_actual', label:'Pencapaian Aktual', align:'center',
       render: (_, row) => {
-        const p = row[tgtKey] > 0 && row[chartKey] != null ? Math.round(row[chartKey] / row[tgtKey] * 100) : null
-        if (p == null) return <span style={{ color:'var(--text-muted)' }}>—</span>
+        const t = row[tgtKey]
+        const r = row[chartKey]
+        if (t === 0 || r == null) return <span style={{ color:'var(--text-muted)' }}>—</span>
+        const p = calculateAchievement(r, t) * 100
+        return <span className="font-bold text-slate-600">{p.toFixed(1)}%</span>
+      }
+    },
+    { key:'_kpi_score', label:'Nilai KPI', align:'center',
+      render: (_, row) => {
+        const t = row[tgtKey]
+        const r = row[chartKey]
+        if (t === 0 || r == null) return <span style={{ color:'var(--text-muted)' }}>—</span>
+        const kpi = calculateKPI(r, t) * 100
         return <span style={{ display:'inline-flex', padding:'2px 8px', borderRadius:99, fontSize:'0.78rem', fontWeight:750,
-          background: p>=100?'rgba(16,185,129,0.08)':'rgba(239,68,68,0.08)',
-          color: p>=100?'#10B981':'#EF4444',
-          border:`1px solid ${p>=100?'rgba(16,185,129,0.15)':'rgba(239,68,68,0.15)'}` }}>{p}%</span>
+          background: kpi>=100?'rgba(16,185,129,0.08)':'rgba(239,68,68,0.08)',
+          color: kpi>=100?'#10B981':'#EF4444',
+          border:`1px solid ${kpi>=100?'rgba(16,185,129,0.15)':'rgba(239,68,68,0.15)'}` }}>{kpi.toFixed(1)}%</span>
       }
     },
   ]
@@ -133,10 +146,10 @@ export default function PendapatanTLPage() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-        <KpiCard title="Realisasi YTD"  value={hasData?`Rp ${(ytdReal/1000).toFixed(1)}M`:'—'} icon={Wallet} color="purple" achievement={hasData && ach !== null ? ach : undefined} loading={loading} />
-        <KpiCard title="Target YTD"     value={`Rp ${(ytdTgt/1000).toFixed(1)}M`}              icon={Wallet} color="blue"   loading={loading} />
-        <KpiCard title="Bulan Terakhir" value={hasData?`Rp ${(lastReal/1000).toFixed(1)}M`:'—'} icon={Wallet} color="yellow" loading={loading} />
-        <KpiCard title="Pencapaian"     value={hasData && ach !== null ? ach.toFixed(1)+'%':'—'} icon={TrendingUp} color={ach != null ? (ach>=100?'green':ach>=90?'yellow':'red') : 'blue'} loading={loading} />
+        <KpiCard title="Realisasi YTD"  value={hasData?`Rp ${formatNumber(ytdReal * 1000000)}`:'—'} icon={Wallet} color="purple" achievement={hasData ? achKPI : undefined} loading={loading} />
+        <KpiCard title="Target YTD"     value={`Rp ${formatNumber(ytdTgt * 1000000)}`}              icon={Wallet} color="blue"   loading={loading} />
+        <KpiCard title="Bulan Terakhir" value={hasData?`Rp ${formatNumber(lastReal * 1000000)}`:'—'} icon={Wallet} color="yellow" loading={loading} />
+        <KpiCard title="Nilai KPI YTD"  value={hasData ? achKPI.toFixed(1)+'%':'—'} icon={TrendingUp} color={hasData ? (achKPI>=100?'green':achKPI>=90?'yellow':'red') : 'blue'} subText={hasData ? `Pencapaian Aktual: ${achActual.toFixed(1)}%` : undefined} loading={loading} />
       </div>
 
       <div style={{ display:'inline-flex', background:'rgba(20, 162, 186,0.05)', padding:4, borderRadius:12, border:'1px solid rgba(20, 162, 186,0.08)', alignSelf:'flex-start', margin:'8px 0 12px' }}>
@@ -180,7 +193,7 @@ export default function PendapatanTLPage() {
                 label={({ name, percent }) => `${(percent*100).toFixed(0)}%`}>
                 {pieData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i]} />)}
               </Pie>
-              <Tooltip formatter={v => ['Rp '+formatNumber(v)+' jt']} />
+              <Tooltip formatter={v => ['Rp '+formatNumber(v * 1000000)]} />
               <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{ fontSize:12 }} />
             </PieChart>
           </ResponsiveContainer>

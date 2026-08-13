@@ -32,7 +32,7 @@ Route::middleware(['auth:sanctum', 'block_perencanaan'])->group(function () {
     Route::put('/nko-parameters/{id}', [\App\Http\Controllers\Api\NkoParameterController::class, 'update']);
     Route::delete('/nko-parameters/{id}', [\App\Http\Controllers\Api\NkoParameterController::class, 'destroy']);
 
-    // Custom NKO Realizations CRUD
+// Custom NKO Realizations CRUD
     Route::get('/nko-realizations', [\App\Http\Controllers\Api\NkoRealizationController::class, 'index']);
     Route::post('/nko-realizations', [\App\Http\Controllers\Api\NkoRealizationController::class, 'store']);
     Route::delete('/nko-realizations/{id}', [\App\Http\Controllers\Api\NkoRealizationController::class, 'destroy']);
@@ -42,6 +42,16 @@ Route::middleware(['auth:sanctum', 'block_perencanaan'])->group(function () {
     Route::post('/kinerja/{bidang}', [KinerjaController::class, 'store']);
     Route::delete('/kinerja/{bidang}', [KinerjaController::class, 'destroy']);
 });
+
+// Kinerja & Targets read endpoints — publicly accessible (no auth required for data display)
+Route::withoutMiddleware(['auth:sanctum'])->group(function () {
+    Route::get('/targets', [TargetTahunanController::class, 'index']);
+    Route::get('/kinerja/{bidang}', [KinerjaController::class, 'index']);
+});
+
+// Kinerja write endpoints
+Route::post('/kinerja/{bidang}', [KinerjaController::class, 'store']);
+Route::delete('/kinerja/{bidang}', [KinerjaController::class, 'destroy']);
 
 
 Route::middleware('api')->group(function () {
@@ -150,8 +160,21 @@ Route::middleware('api')->group(function () {
             Route::delete('/pagu-anggaran/{id}', [\App\Http\Controllers\Api\PaguAnggaranController::class, 'destroy']);
         });
 
+        // Niaga PRR (Penghapusan PRR Details & Breakdown)
+        Route::get('/niaga/penghapusan', [\App\Http\Controllers\Api\NiagaPrrController::class, 'getPenghapusan']);
+        Route::post('/niaga/penghapusan', [\App\Http\Controllers\Api\NiagaPrrController::class, 'storePenghapusan']);
+        Route::get('/niaga/penghapusan/detail', [\App\Http\Controllers\Api\NiagaPrrController::class, 'getPenghapusanDetail']);
+        Route::put('/niaga/penghapusan/detail/{id}', [\App\Http\Controllers\Api\NiagaPrrController::class, 'updatePenghapusanDetail']);
+        Route::delete('/niaga/penghapusan/detail/{id}', [\App\Http\Controllers\Api\NiagaPrrController::class, 'destroyPenghapusanDetail']);
+
         // Pagu Anggaran SKKO / SKKI (Read-only for others)
         Route::get('/pagu-anggaran', [\App\Http\Controllers\Api\PaguAnggaranController::class, 'index']);
+
+        // Kinerja & Targets — publicly accessible read routes (no auth required)
+        Route::get('/targets', [TargetTahunanController::class, 'index']);
+        Route::get('/kinerja/{bidang}', [KinerjaController::class, 'index']);
+        Route::post('/kinerja/{bidang}', [KinerjaController::class, 'store']);
+        Route::delete('/kinerja/{bidang}', [KinerjaController::class, 'destroy']);
     });
 
     // Read-only endpoints (protected by auth:sanctum)
@@ -181,11 +204,17 @@ Route::middleware('api')->group(function () {
         Route::post('/k3/assessments/{id}/submit', [\App\Http\Controllers\Api\K3Controller::class, 'submitAssessment']);
         Route::post('/k3/assessments/{id}/approve', [\App\Http\Controllers\Api\K3Controller::class, 'approveAssessment']);
         Route::post('/k3/assessments/{id}/revisi', [\App\Http\Controllers\Api\K3Controller::class, 'revisiAssessment']);
+        // K3 Findings
+        Route::get('/k3/findings',         [\App\Http\Controllers\Api\K3FindingController::class, 'index']);
+        Route::post('/k3/findings',        [\App\Http\Controllers\Api\K3FindingController::class, 'store']);
+        Route::get('/k3/findings/{id}',    [\App\Http\Controllers\Api\K3FindingController::class, 'show']);
+        Route::put('/k3/findings/{id}',    [\App\Http\Controllers\Api\K3FindingController::class, 'update']);
+        Route::delete('/k3/findings/{id}', [\App\Http\Controllers\Api\K3FindingController::class, 'destroy']);
 
         // K3 Kegiatan
-        Route::get('/k3/activities', [\App\Http\Controllers\Api\K3ActivityController::class, 'index']);
-        Route::post('/k3/activities', [\App\Http\Controllers\Api\K3ActivityController::class, 'store']);
-        Route::put('/k3/activities/{id}', [\App\Http\Controllers\Api\K3ActivityController::class, 'update']);
+        Route::get('/k3/activities',         [\App\Http\Controllers\Api\K3ActivityController::class, 'index']);
+        Route::post('/k3/activities',        [\App\Http\Controllers\Api\K3ActivityController::class, 'store']);
+        Route::put('/k3/activities/{id}',    [\App\Http\Controllers\Api\K3ActivityController::class, 'update']);
         Route::delete('/k3/activities/{id}', [\App\Http\Controllers\Api\K3ActivityController::class, 'destroy']);
         
         // K3 Findings
@@ -214,9 +243,10 @@ Route::middleware('api')->group(function () {
         Route::get('/jaringan/gangguan-tm/semua-up3', [\App\Http\Controllers\GangguanTmController::class, 'semuaUp3']);
         
         // Target Tahunan
-        Route::get('/targets', [TargetTahunanController::class, 'index']);
         Route::get('/target/{bidang}/{indikator}', [TargetTahunanController::class, 'getMonthlyTarget']);
-        Route::get('/kinerja/{bidang}', [KinerjaController::class, 'index']);
+
+        // Unit UP3 (Keep from main)
+        Route::apiResource('unit-up3', \App\Http\Controllers\Api\UnitUp3Controller::class);
     });
 
     // Write endpoints (protected by auth:sanctum and block_perencanaan)

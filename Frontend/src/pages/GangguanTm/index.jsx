@@ -527,7 +527,7 @@ export default function GangguanTmPage() {
         <KpiCard
           title="Target YTD"
           value={summary.target !== null ? Number(summary.target).toLocaleString('id-ID') : '-'}
-          subtitle={summary.target === null ? 'Belum ada target' : undefined}
+          subText={summary.target === null ? 'Belum ada target' : undefined}
           unit={summary.target !== null ? "Kali" : ""}
           icon={Target}
           color="red"

@@ -14,6 +14,7 @@ import PemasaranDetailModal from '@/components/ui/PemasaranDetailModal'
 import { useFilter } from '@/context/FilterContext'
 import { getPemasaranData } from '@/services/pemasaranDataService'
 import { formatNumber } from '@/utils/formatters'
+import TargetWarning from '@/components/ui/TargetWarning'
 
 const TOOLTIP_TRX = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
@@ -148,6 +149,8 @@ export default function PlnMobilePage() {
         </div>
         <p className="page-description">Realisasi jumlah pengguna, transaksi, dan nilai transaksi PLN Mobile · Tahun {filters.year}</p>
       </div>
+
+      <TargetWarning indicators={['PLN Mobile Transaksi', 'PLN Mobile Nilai']} year={filters.year} />
 
       {/* KPI Cards — 4 kartu */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">

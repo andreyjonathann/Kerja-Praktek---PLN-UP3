@@ -71,8 +71,9 @@ export default function TindakLanjutLbkbPage() {
 
   const filled = data.filter(d => d.lbkb_real !== null)
   const lastRow = filled[filled.length - 1]
+  const targetRow = filled.length > 0 ? filled[filled.length - 1] : (data.filter(d => d.c_lbkb_target > 0).slice(-1)[0] || data[0])
   const ytdReal = lastRow?.c_lbkb_real ?? 0
-  const ytdTgt = lastRow?.c_lbkb_target ?? 0
+  const ytdTgt = targetRow?.c_lbkb_target ?? 0
   const lastReal = lastRow?.lbkb_real ?? 0
   const ach = ytdTgt > 0 ? (ytdReal / ytdTgt) * 100 : 0
 

@@ -50,11 +50,12 @@ const getAchColors = (achKey, dark) => {
  */
 export default function KpiCard({
   title, value, unit = '', achievement, target, trend,
-  statusText, statusColor, badgeText, subText,
+  statusText, statusColor, subText, subtitle, badgeText,
   icon: Icon, color = 'blue', isInverse = false, polarity = 'higher_is_better', loading = false, onClick,
 }) {
   const { dark } = useTheme()
   const c = getColors(color, dark)
+  const displaySubText = subText || subtitle
 
   let achKey = 'good'
   if (achievement != null) {
@@ -150,9 +151,9 @@ export default function KpiCard({
               <span style={{ fontSize:'0.88rem', fontWeight:600, color:'var(--text-muted)' }}>{unit}</span>
             )}
           </div>
-          {subText && (
-            <div style={{ fontSize:'0.75rem', color: dark ? '#D1D5DB' : '#111827', fontWeight: 600, marginTop: 4, whiteSpace: 'pre-line' }}>
-              {subText}
+          {displaySubText && (
+            <div style={{ fontSize:'0.75rem', color: dark ? '#D1D5DB' : '#111827', fontWeight: 600, marginTop: 4, whiteSpace: 'pre-line', lineHeight: 1.3 }}>
+              {displaySubText}
             </div>
           )}
         </div>
@@ -169,12 +170,12 @@ export default function KpiCard({
               {formatPercent(achievement, 1)} vs Target
             </span>
           )}
-          {badgeText != null && (
+          {badgeText && (
             <span style={{
               display:'inline-flex', alignItems:'center', gap:4,
               padding:'3px 10px', borderRadius:99,
-              fontSize:'0.85rem', fontWeight:800,
-              background: c.bg, color: c.accent, border:`1px solid ${c.border}`,
+              fontSize:'0.78rem', fontWeight:750,
+              background: c.iconBg, color: c.accent, border:`1px solid ${c.accent}33`,
             }}>
               {badgeText}
             </span>
