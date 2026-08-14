@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import {
@@ -113,6 +113,7 @@ export default function SaifiPage() {
   const [hasTarget, setHasTarget] = useState(true)
   const [loading,setLoading]= useState(true)
   const [error,  setError]  = useState(null)
+  const chartRef = useRef(null)
   
 
   const fetchData = useCallback(async (isBackground = false) => {
@@ -313,11 +314,11 @@ export default function SaifiPage() {
               </button>
             </div>
           )}
-          <ExportModal kpiType="SAIFI" />
+          <ExportModal kpiType="SAIFI" chartRef={chartRef} />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div ref={chartRef} className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <ChartWrapper 
           title={tab === 'monthly' ? 'SAIFI Bulanan' : 'SAIFI Kumulatif'} 
           subtitle="Target vs Realisasi" 

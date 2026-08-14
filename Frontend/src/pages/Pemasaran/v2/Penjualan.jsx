@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import {
   Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
@@ -40,6 +40,7 @@ export default function PenjualanPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const { filters }          = useFilter()
+  const chartRef = useRef(null)
   const [tab, setTab]        = useState('monthly')
   const [data, setData]      = useState([])
   const [loading, setLoading]= useState(true)
@@ -195,12 +196,12 @@ export default function PenjualanPage() {
               </button>
             </div>
           )}
-          <ExportModal kpiType="Penjualan" />
+          <ExportModal kpiType="Penjualan" chartRef={chartRef} />
         </div>
       </div>
 
       {/* ── Charts ─────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div ref={chartRef} className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <ChartWrapper
           title={tab === 'monthly' ? 'Penjualan Bulanan' : 'Penjualan Kumulatif'}
           subtitle={`Target vs Realisasi kWh · ${filters.year}`}

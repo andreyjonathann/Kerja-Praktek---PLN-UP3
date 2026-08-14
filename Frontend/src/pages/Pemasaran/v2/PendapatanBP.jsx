@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import {
   Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
@@ -39,6 +39,7 @@ export default function PendapatanBPPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const { filters }          = useFilter()
+  const chartRef = useRef(null)
   const [tab, setTab]        = useState('monthly')
   const [data, setData]      = useState([])
   const [loading, setLoading]= useState(true)
@@ -77,11 +78,21 @@ export default function PendapatanBPPage() {
     ? ((lastReal - prevLastRow.pendapatan_total) / prevLastRow.pendapatan_total) * 100
     : null
 
-  // Pie: PB vs TD dari bulan terakhir
-  const pieData = lastRow ? [
-    { name: 'Pasang Baru (PB)', value: lastRow.pendapatan_pb, color: PIE_COLORS[0] },
-    { name: 'Tambah Daya (TD)', value: lastRow.pendapatan_td, color: PIE_COLORS[1] },
+  // Cari bulan terakhir yang memiliki realisasi non-zero untuk pasang baru atau tambah daya
+  const activeFilled = filled.filter(d => (d.pendapatan_pb || 0) + (d.pendapatan_td || 0) > 0)
+  const lastActiveRow = activeFilled[activeFilled.length - 1] || lastRow
+
+  // Pie: PB vs TD dari bulan terakhir yang memiliki data
+  const pieData = lastActiveRow ? [
+    { name: 'Pasang Baru (PB)', value: lastActiveRow.pendapatan_pb || 0, color: PIE_COLORS[0] },
+    { name: 'Tambah Daya (TD)', value: lastActiveRow.pendapatan_td || 0, color: PIE_COLORS[1] },
   ] : []
+
+  const getBulanName = (label) => ({
+    'Jan': 'Januari', 'Feb': 'Februari', 'Mar': 'Maret', 'Apr': 'April',
+    'Mei': 'Mei', 'Jun': 'Juni', 'Jul': 'Juli', 'Agu': 'Agustus', 'Ags': 'Agustus',
+    'Sep': 'September', 'Okt': 'Oktober', 'Nov': 'November', 'Des': 'Desember'
+  })[label] || label;
 
   const tableColumns = [
     { 
@@ -199,12 +210,12 @@ export default function PendapatanBPPage() {
               </button>
             </div>
           )}
-          <ExportModal kpiType="Pendapatan BP" />
+          <ExportModal kpiType="Pendapatan BP" chartRef={chartRef} />
         </div>
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div ref={chartRef} className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <ChartWrapper
           title={tab === 'monthly' ? 'Pendapatan BP Bulanan' : 'Pendapatan BP Kumulatif'}
           subtitle={`Target vs Realisasi Juta Rp · ${filters.year}`}
@@ -226,8 +237,8 @@ export default function PendapatanBPPage() {
 
         <ChartWrapper
           title="Komposisi Pendapatan PB vs TD"
-          subtitle={`Pasang Baru vs Tambah Daya bulan terakhir`}
-          loading={loading} empty={pieData.length === 0}
+          subtitle={lastActiveRow ? `Pasang Baru vs Tambah Daya bulan ${getBulanName(lastActiveRow.label)}` : 'Pasang Baru vs Tambah Daya bulan terakhir'}
+          loading={loading} empty={pieData.length === 0 || pieData.every(p => p.value === 0)}
           height={280}
         >
           <ResponsiveContainer width="100%" height={260}>

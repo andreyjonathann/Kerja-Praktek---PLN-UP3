@@ -311,16 +311,16 @@ class MttrController extends Controller
         for ($b = 1; $b <= 12; $b++) {
             $b_data = $realisasi->where('bulan', $b);
             
+            $target_persen_b = null;
+            if ($targetMaster) {
+                $targetCol = 'target_' . $bulanMap[$b];
+                $target_persen_b = $targetMaster->{$targetCol} !== null ? (float) $targetMaster->{$targetCol} : null;
+            }
+
             if ($b_data->count() > 0) {
                 $terpenuhi = $b_data->sum('jumlah_siaga1_terpenuhi');
                 $total = $b_data->sum('jumlah_siaga1_total');
                 $avg_realisasi = $this->calcWeightedMttr($b_data, $bobotAset) ?? 0;
-                
-                $target_persen_b = null;
-                if ($targetMaster) {
-                    $targetCol = 'target_' . $bulanMap[$b];
-                    $target_persen_b = $targetMaster->{$targetCol} !== null ? (float) $targetMaster->{$targetCol} : null;
-                }
                 
                 $pencapaian = null;
                 if ($target_persen_b !== null) {
@@ -349,6 +349,16 @@ class MttrController extends Controller
                     'total' => $total,
                     'persen_pencapaian' => $pencapaian !== null ? round($pencapaian, 2) : null,
                     'detail_aset' => $detail_aset
+                ];
+            } else {
+                $trend_bulanan[] = [
+                    'bulan' => $b,
+                    'realisasi' => null,
+                    'target' => $target_persen_b !== null ? round($target_persen_b, 2) : null,
+                    'terpenuhi' => null,
+                    'total' => null,
+                    'persen_pencapaian' => null,
+                    'detail_aset' => []
                 ];
             }
         }

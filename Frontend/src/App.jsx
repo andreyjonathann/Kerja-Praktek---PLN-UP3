@@ -90,6 +90,11 @@ import KelolaPaguAnggaranPage from '@/pages/Pengadaan/KelolaPaguAnggaran'
 import InputPengadaanPage from '@/pages/Pengadaan/InputPengadaan'
 import UbahStatusPengadaanPage from '@/pages/Pengadaan/UbahStatusPengadaan'
 
+// Keuangan Pages
+import DashboardKeuanganPage from '@/pages/Keuangan/DashboardKeuangan'
+import InputPaguPage from '@/pages/Keuangan/InputPaguPage'
+import KontrakDetailPage from '@/pages/Keuangan/KontrakDetailPage'
+
 // K3 Pages
 import K3DashboardPage         from '@/pages/K3/Dashboard'
 
@@ -214,6 +219,9 @@ function RoleBasedHome() {
   }
   if (user?.role === 'pic_k3') {
     return <Navigate to="/k3/dashboard" replace />
+  }
+  if (user?.role === 'pic_keuangan') {
+    return <Navigate to="/keuangan" replace />
   }
   return (
     <ProtectedRoute>
@@ -715,6 +723,23 @@ export default function App() {
                 </ProtectedRoute>
               } />
 
+
+              {/* ── Keuangan Routes ─────────────────────────────────── */}
+              <Route path="/keuangan" element={
+                <ProtectedRoute>
+                  <DashboardKeuanganPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/keuangan/input-pagu" element={
+                <ProtectedRoute>
+                  <InputPaguPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/keuangan/contract/:id" element={
+                <ProtectedRoute>
+                  <KontrakDetailPage />
+                </ProtectedRoute>
+              } />
 
               <Route path="/skki" element={
                 <ProtectedRoute>

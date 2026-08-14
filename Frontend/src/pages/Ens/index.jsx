@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import {
@@ -164,6 +164,7 @@ export default function EnsPage() {
   const [data, setData] = useState([])
   const [hasTarget, setHasTarget] = useState(true)
   const [loading, setLoading] = useState(true)
+  const chartRef = useRef(null)
   
   const [availableYears, setAvailableYears] = useState([])
   const [showYears, setShowYears] = useState({})
@@ -346,7 +347,7 @@ export default function EnsPage() {
 
         {/* Action Buttons */}
         <div className="flex items-center gap-3">
-          <EnsExportModal />
+          <EnsExportModal chartRef={chartRef} />
           {user?.role === 'pic_jaringan' && (
             <div style={{
               display: 'inline-flex',
@@ -410,7 +411,7 @@ export default function EnsPage() {
       </div>
 
       {/* Charts Grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+      <div ref={chartRef} className="grid grid-cols-1 xl:grid-cols-2 gap-8">
         
         {/* ENS Bulanan */}
         <div className="card p-5 flex flex-col h-[400px]">

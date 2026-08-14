@@ -240,11 +240,15 @@ export async function getNiagaData(year = 2026) {
       }
     }
 
-    const realPenghapusan = penghapusanMap[m] !== undefined && penghapusanMap[m] > 0
-      ? penghapusanMap[m]
-      : (real && (real['penghapusan_prr'] !== undefined || real['penghapusan_real'] !== undefined)
-          ? parseFloat(real['penghapusan_prr'] ?? real['penghapusan_real'])
-          : null);
+    let realPenghapusan = null;
+    if (penghapusanMap[m] !== undefined && penghapusanMap[m] > 0) {
+      realPenghapusan = penghapusanMap[m];
+    } else if (real) {
+      const val = real['penghapusan_prr'] ?? real['penghapusan_real'];
+      if (val !== undefined && val !== null && val !== '') {
+        realPenghapusan = parseFloat(val);
+      }
+    }
     
     // Saldo Akhir realisations
     let realSaldoAkhir = null;

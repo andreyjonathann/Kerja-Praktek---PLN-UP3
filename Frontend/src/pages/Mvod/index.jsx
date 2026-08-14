@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+  Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, ComposedChart, Area
 } from 'recharts'
-import { Clock, Target, Activity, Plus, Zap, AlertTriangle } from 'lucide-react'
+import { Clock, Target, Activity, Plus, Zap, AlertTriangle, FileSpreadsheet } from 'lucide-react'
 import ChartWrapper from '@/components/ui/ChartWrapper'
 import KpiCard from '@/components/ui/KpiCard'
 import DataTable from '@/components/ui/DataTable'
@@ -17,6 +17,7 @@ import { useAuth } from '@/context/AuthContext'
 import { MONTHS_ID } from '@/utils/formatters'
 import api from '@/services/api'
 import MvodDetailModal from '@/components/ui/MvodDetailModal'
+import { exportWithChart } from '@/utils/exportWithChart'
 
 export default function MvodPage() {
   const navigate = useNavigate()
@@ -33,6 +34,7 @@ export default function MvodPage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedMonthData, setSelectedMonthData] = useState(null)
+  const chartRef = useRef(null)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -58,6 +60,46 @@ export default function MvodPage() {
   }, [fetchData])
 
   const { summary, trend_bulanan, per_bulan } = data
+
+  const handleExportExcel = async () => {
+    const giTrend = trend_bulanan?.GI || [];
+    const jtmTrend = trend_bulanan?.JTM || [];
+    const gdTrend = trend_bulanan?.GD || [];
+
+    const exportData = Array.from({ length: 12 }, (_, idx) => {
+      const bulNum = idx + 1;
+      const giItem = giTrend.find(t => t.bulan === bulNum) || {};
+      const jtmItem = jtmTrend.find(t => t.bulan === bulNum) || {};
+      const gdItem = gdTrend.find(t => t.bulan === bulNum) || {};
+
+      return {
+        Bulan: MONTHS_ID[bulNum] || bulNum,
+        'RCT GI (Realisasi)': giItem.rata_rct != null ? giItem.rata_rct : '-',
+        'RCT GI (SLA)': giItem.sla != null ? giItem.sla : '-',
+        'RCT JTM (Realisasi)': jtmItem.rata_rct != null ? jtmItem.rata_rct : '-',
+        'RCT JTM (SLA)': jtmItem.sla != null ? jtmItem.sla : '-',
+        'RCT GD (Realisasi)': gdItem.rata_rct != null ? gdItem.rata_rct : '-',
+        'RCT GD (SLA)': gdItem.sla != null ? gdItem.sla : '-',
+      }
+    });
+
+    await exportWithChart({
+      data: exportData,
+      filename: `MVOD_${filters.year}`,
+      columns: [
+        { header: 'Bulan', key: 'Bulan' },
+        { header: 'RCT GI - Realisasi (Menit)', key: 'RCT GI (Realisasi)' },
+        { header: 'RCT GI - Batas SLA (Menit)', key: 'RCT GI (SLA)' },
+        { header: 'RCT JTM - Realisasi (Menit)', key: 'RCT JTM (Realisasi)' },
+        { header: 'RCT JTM - Batas SLA (Menit)', key: 'RCT JTM (SLA)' },
+        { header: 'RCT GD - Realisasi (Menit)', key: 'RCT GD (Realisasi)' },
+        { header: 'RCT GD - Batas SLA (Menit)', key: 'RCT GD (SLA)' },
+      ],
+      sheetName: 'MVOD',
+      chartRef,
+      title: `Data MVOD (Durasi Gangguan) Tahun ${filters.year}`,
+    })
+  }
 
   const currentChartData = (trend_bulanan?.[chartTab] || []).map(t => ({
     name: MONTHS_ID[t.bulan],
@@ -229,6 +271,17 @@ export default function MvodPage() {
             colorRgb="0, 162, 185"
           />
         )}
+        <button
+          onClick={handleExportExcel}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            padding: '6px 16px', borderRadius: 9, fontSize: '0.85rem', fontWeight: 700,
+            background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.2)',
+            color: '#10B981', cursor: 'pointer', transition: 'all 0.2s'
+          }}
+        >
+          <FileSpreadsheet size={16} /> Export Excel
+        </button>
       </div>
 
       <ChartWrapper 
@@ -237,29 +290,30 @@ export default function MvodPage() {
         loading={loading}
         error={error}
       >
-        <div className="flex gap-2 mb-4">
-          {['GI', 'JTM', 'GD'].map(t => (
-            <button
-              key={t}
-              onClick={() => setChartTab(t)}
-              className={`px-4 py-1.5 text-sm font-bold rounded-lg transition-colors ${chartTab === t ? 'bg-blue-100 text-blue-700' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
-            >
-              RCT {t}
-            </button>
-          ))}
-        </div>
-        <ResponsiveContainer width="100%" height={300}>
+        <div ref={chartRef}>
+          <div className="flex gap-2 mb-4">
+            {['GI', 'JTM', 'GD'].map(t => (
+              <button
+                key={t}
+                onClick={() => setChartTab(t)}
+                className={`px-4 py-1.5 text-sm font-bold rounded-lg transition-colors ${chartTab === t ? 'bg-blue-100 text-blue-700' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
+              >
+                RCT {t}
+              </button>
+            ))}
+          </div>
+          <ResponsiveContainer width="100%" height={300}>
           <ComposedChart data={currentChartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
             <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--text-muted)' }} dy={10} />
             <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--text-muted)' }} dx={-10} />
             <Tooltip content={<CustomTooltip />} />
             <Legend wrapperStyle={{ paddingTop: '20px' }} iconType="circle" />
-            <Line name="Batas SLA Maksimum" type="step" dataKey="SLA (Menit)" stroke="#F43F5E" strokeWidth={2} strokeDasharray="5 5" dot={false} />
-
-            <Line name="Rata-rata Realisasi" type="monotone" dataKey="Realisasi (Menit)" stroke="#3B82F6" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
+            <Bar name="Rata-rata Realisasi" dataKey="Realisasi (Menit)" fill="#3B82F6" radius={[4, 4, 0, 0]} />
+            <Bar name="Batas SLA Maksimum" dataKey="SLA (Menit)" fill="#F43F5E" radius={[4, 4, 0, 0]} />
           </ComposedChart>
         </ResponsiveContainer>
+        </div>
       </ChartWrapper>
 
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">

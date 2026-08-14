@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import * as XLSX from 'xlsx'
+import ExcelJS from 'exceljs';
+import { toPng } from 'html-to-image';
 import {
   Briefcase, Wallet, TrendingUp, TrendingDown,
   Search, Filter, FileText, RefreshCw, Plus, FileSpreadsheet
@@ -37,6 +38,7 @@ export default function KontrakPage() {
   const navigate    = useNavigate()
   const { user }    = useAuth()
   const { filters } = useFilter()
+  const chartRef = useRef(null)
 
   const [listData,      setListData]      = useState([])
   const [dashboardData, setDashboardData] = useState(null)
@@ -82,36 +84,81 @@ export default function KontrakPage() {
     setDireksi(''); setNoPr(''); setPtPelaksana(''); setNoKontrak('')
   }
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     if (!listData || listData.length === 0) return alert('Tidak ada data untuk diekspor')
     const year = filters.year || 2026
 
-    const wsData = [
-      ['MONITORING DATA PENGADAAN & KONTRAK'],
-      [`TAHUN ${year}`],
-      [],
-      [
-        'No.',
-        'Status',
-        'Direksi Pekerjaan',
-        'Uraian Pekerjaan',
-        'No PR',
-        'PT Pelaksana',
-        'No Kontrak',
-        'Tanggal Awal',
-        'Tanggal Akhir',
-        'Rp Kontrak',
-        'RAB',
-        'No ND Bidang',
-        'SKKO/SKKI',
-        'Jenis Kontrak',
-        'Klasifikasi'
-      ]
-    ]
+    const workbook = new ExcelJS.Workbook();
+    const ws = workbook.addWorksheet("Data Kontrak");
 
-    listData.forEach((row, idx) => {
-      wsData.push([
-        idx + 1,
+    // Ensure grid lines are visible
+    ws.views = [{ showGridLines: true }];
+
+    // Title rows
+    ws.mergeCells('A1:O1');
+    const titleCell = ws.getCell('A1');
+    titleCell.value = 'MONITORING DATA PENGADAAN & KONTRAK';
+    titleCell.font = { name: 'Arial', size: 14, bold: true, color: { argb: 'FF1E3A8A' } };
+    titleCell.alignment = { vertical: 'middle', horizontal: 'left' };
+    ws.getRow(1).height = 35;
+
+    ws.mergeCells('A2:O2');
+    const subtitleCell = ws.getCell('A2');
+    subtitleCell.value = `TAHUN ${year}`;
+    subtitleCell.font = { name: 'Arial', size: 11, bold: true, color: { argb: 'FF1E3A8A' } };
+    subtitleCell.alignment = { vertical: 'middle', horizontal: 'left' };
+    ws.getRow(2).height = 20;
+
+    // Headers
+    const headers = [
+      'No.',
+      'Status',
+      'Direksi Pekerjaan',
+      'Uraian Pekerjaan',
+      'No PR',
+      'PT Pelaksana',
+      'No Kontrak',
+      'Tanggal Awal',
+      'Tanggal Akhir',
+      'Rp Kontrak',
+      'RAB',
+      'No ND Bidang',
+      'SKKO/SKKI',
+      'Jenis Kontrak',
+      'Klasifikasi'
+    ];
+    const headerRow = ws.getRow(4);
+    headerRow.height = 28;
+    headers.forEach((h, idx) => {
+      const cell = headerRow.getCell(idx + 1);
+      cell.value = h;
+      cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF00A2B9' } // PLN Teal
+      };
+      cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+      cell.border = {
+        top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+        left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+        bottom: { style: 'medium', color: { argb: 'FF94A3B8' } },
+        right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+      };
+    });
+    headerRow.commit();
+
+    // Data rows
+    let currentRow = 5;
+    listData.forEach((row, rIdx) => {
+      const dataRow = ws.getRow(currentRow);
+      dataRow.height = 20;
+
+      const isEven = rIdx % 2 === 0;
+      const bgColor = isEven ? 'FFFFFFFF' : 'FFF8FAFC';
+
+      const cellsData = [
+        rIdx + 1,
         row.status || '—',
         row.direksi_pekerjaan || '—',
         row.uraian_pekerjaan || '—',
@@ -126,13 +173,96 @@ export default function KontrakPage() {
         row.skko_skki || '—',
         row.jenis_kontrak || '—',
         row.klasifikasi || '—'
-      ])
-    })
+      ];
 
-    const ws = XLSX.utils.aoa_to_sheet(wsData)
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, "Data Kontrak")
-    XLSX.writeFile(wb, `Monitoring_Pengadaan_Kontrak_${year}.xlsx`)
+      cellsData.forEach((val, idx) => {
+        const cell = dataRow.getCell(idx + 1);
+        cell.value = val;
+        
+        // Alignment & Formatting
+        if (idx === 9 || idx === 10) {
+          cell.numFmt = '#,##0';
+          cell.alignment = { vertical: 'middle', horizontal: 'right' };
+        } else if (idx === 0) {
+          cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        } else if (idx === 1) {
+          cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        } else {
+          cell.alignment = { vertical: 'middle', horizontal: 'left' };
+        }
+
+        cell.font = { name: 'Arial', size: 10, color: { argb: 'FF334155' } };
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: bgColor }
+        };
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+          left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+          bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+          right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+        };
+      });
+
+      dataRow.commit();
+      currentRow++;
+    });
+
+    // Auto-fit columns
+    headers.forEach((h, idx) => {
+      let maxLen = h.length;
+      listData.forEach(row => {
+        let val = '';
+        if (idx === 9) val = String(row.rp_kontrak ?? '');
+        else if (idx === 10) val = String(row.rab ?? '');
+        else if (idx === 7) val = row.tgl_awal ? new Date(row.tgl_awal).toLocaleDateString('id-ID') : '—';
+        else if (idx === 8) val = row.tgl_akhir ? new Date(row.tgl_akhir).toLocaleDateString('id-ID') : '—';
+        else val = String(row[Object.keys(row)[idx]] ?? '');
+        
+        if (val.length > maxLen) {
+          maxLen = val.length;
+        }
+      });
+      ws.getColumn(idx + 1).width = Math.min(maxLen + 6, 35);
+    });
+
+    // Capture and embed chart
+    if (chartRef && chartRef.current) {
+      try {
+        const imgDataUrl = await toPng(chartRef.current, {
+          quality: 1,
+          pixelRatio: 2,
+          backgroundColor: '#ffffff',
+        });
+
+        // Add sheet for Grafik
+        const wsChart = workbook.addWorksheet('Grafik');
+
+        // Add image to workbook
+        const imageId = workbook.addImage({
+          base64: imgDataUrl,
+          extension: 'png',
+        });
+
+        // Position the chart image
+        wsChart.addImage(imageId, {
+          tl: { col: 1, row: 1 },
+          ext: { width: 900, height: 450 }
+        });
+        
+      } catch (err) {
+        console.warn('[PengadaanKontrak] Gagal capture atau sematkan grafik:', err);
+      }
+    }
+
+    // Save workbook
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `Monitoring_Pengadaan_Kontrak_${year}.xlsx`;
+    link.click();
   }
 
   /* ── navigate to status page ── */
@@ -384,15 +514,7 @@ export default function KontrakPage() {
         gap: '12px',
         margin: '4px 0 16px',
       }}>
-        {user?.role === 'pic_pengadaan' && (
-          <ActionButton
-            icon={Wallet}
-            label="Kelola Pagu Anggaran"
-            onClick={() => navigate(`/pengadaan/pagu?tahun=${filters.year || 2026}`)}
-            colorHex="#0284C7"
-            colorRgb="2, 132, 199"
-          />
-        )}
+
         <ActionButton
           icon={FileSpreadsheet}
           label="Export Excel"
@@ -412,7 +534,7 @@ export default function KontrakPage() {
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div ref={chartRef} className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
         {/* Pie Charts */}
         <div className="lg:col-span-8">

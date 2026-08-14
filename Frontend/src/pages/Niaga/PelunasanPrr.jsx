@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import {
@@ -40,6 +40,7 @@ export default function PelunasanPrrPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const { filters } = useFilter()
+  const chartRef = useRef(null)
   const [tab, setTab] = useState('monthly')
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(true)
@@ -214,7 +215,7 @@ export default function PelunasanPrrPage() {
         </div>
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
-          <ExportModal kpiType="Pelunasan PRR" />
+          <ExportModal kpiType="Pelunasan PRR" chartRef={chartRef} />
           {(user?.role === 'pic_niaga' || user?.role === 'admin' || user?.role === 'superadmin' || !user?.role) && (
             <div style={{
               display: 'inline-flex',
@@ -258,7 +259,7 @@ export default function PelunasanPrrPage() {
       </div>
 
       {/* ── Charts ─────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 gap-5">
+      <div ref={chartRef} className="grid grid-cols-1 gap-5">
         <ChartWrapper
           title={tab === 'monthly' ? 'Pelunasan Bulanan' : 'Pelunasan Kumulatif'}
           subtitle={`Target vs Realisasi (Rp) · ${filters.year}`}

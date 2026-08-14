@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ComposedChart,
@@ -16,12 +16,13 @@ import api from '@/services/api'
 
 import { useFilter } from '@/context/FilterContext'
 import { useAuth } from '@/context/AuthContext'
-import { Activity, Plus, Target, AlertTriangle, Edit3, Trash2, X, Shield, TrendingUp, TrendingDown, CheckCircle, XCircle } from 'lucide-react'
+import { Activity, Plus, Target, AlertTriangle, Edit3, Trash2, X, Shield, TrendingUp, TrendingDown, CheckCircle, XCircle, FileSpreadsheet } from 'lucide-react'
 import KpiCard from '@/components/ui/KpiCard'
 import TargetWarning from '@/components/ui/TargetWarning'
 import DataTable from '@/components/ui/DataTable'
 import ChartWrapper from '@/components/ui/ChartWrapper'
 import GangguanDetailModal from '@/components/ui/GangguanDetailModal'
+import { exportWithChart } from '@/utils/exportWithChart'
 
 
 const MONTHS_FULL = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
@@ -92,6 +93,7 @@ function GangguanSwitchingContent() {
   
   const [dataDashboard, setDataDashboard] = useState(null)
   const [loading, setLoading] = useState(true)
+  const chartRef = useRef(null)
 
   // Table & Modal States
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -123,7 +125,39 @@ function GangguanSwitchingContent() {
 
   const summary = dataDashboard?.summary || {};
   const trendData = dataDashboard?.trend_bulanan || [];
-  const up3Data = dataDashboard?.per_up3 || [];
+  const up3Data = dataDashboard?.trend_up3 || [];
+
+  const handleExportExcel = async () => {
+    const exportData = trendData.map(row => ({
+      Bulan: MONTHS_FULL[row.bulan - 1] || row.bulan,
+      'Switching Bulanan': row.switching_bulanan != null ? row.switching_bulanan : '-',
+      'Target Switching Bulanan': row.target_switching_bulanan != null ? row.target_switching_bulanan : '-',
+      'Switching YTD': row.switching != null ? row.switching : '-',
+      'Target Switching Kumulatif': row.target_switching_kumulatif != null ? row.target_switching_kumulatif : '-',
+      'Trafo Bulanan': row.trafo_bulanan != null ? row.trafo_bulanan : '-',
+      'Target Trafo Bulanan': row.target_trafo_bulanan != null ? row.target_trafo_bulanan : '-',
+      'Trafo YTD': row.trafo != null ? row.trafo : '-',
+      'Target Trafo Kumulatif': row.target_trafo_kumulatif != null ? row.target_trafo_kumulatif : '-',
+    }))
+    await exportWithChart({
+      data: exportData,
+      filename: `Gangguan_Switching_dan_Trafo_${filters.year}`,
+      columns: [
+        { header: 'Bulan', key: 'Bulan' },
+        { header: 'Switching Bulanan (Kali)', key: 'Switching Bulanan' },
+        { header: 'Target Switching Bulanan', key: 'Target Switching Bulanan' },
+        { header: 'Switching YTD', key: 'Switching YTD' },
+        { header: 'Target Switching Kumulatif', key: 'Target Switching Kumulatif' },
+        { header: 'Trafo Bulanan (Kali)', key: 'Trafo Bulanan' },
+        { header: 'Target Trafo Bulanan', key: 'Target Trafo Bulanan' },
+        { header: 'Trafo YTD', key: 'Trafo YTD' },
+        { header: 'Target Trafo Kumulatif', key: 'Target Trafo Kumulatif' },
+      ],
+      sheetName: 'Gangguan Switching Trafo',
+      chartRef,
+      title: `Data Gangguan Switching dan Trafo Tahun ${filters.year}`,
+    })
+  }
 
   const calculateTrend = (key) => {
     if (trendData.length < 2) return null;
@@ -216,6 +250,7 @@ function GangguanSwitchingContent() {
               padding: 4,
               borderRadius: 12,
               border: '1px solid rgba(0, 162, 185, 0.15)',
+              gap: '12px'
             }}>
               <button
                 onClick={() => navigate('/jaringan/input-gangguan-switching')}
@@ -271,6 +306,19 @@ function GangguanSwitchingContent() {
               </button>
             </div>
           )}
+          <button
+            onClick={handleExportExcel}
+            style={{
+              padding: '8px 16px', borderRadius: 10, fontSize: '0.85rem', fontWeight: 700,
+              transition: 'all 0.2s ease', border: '1.5px solid #10B981', cursor: 'pointer',
+              background: 'transparent', color: '#10B981',
+              display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0,
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#10B981'; e.currentTarget.style.color = '#FFFFFF' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#10B981' }}
+          >
+            <FileSpreadsheet size={16} /> Export Excel
+          </button>
         </div>
       </div>
 
@@ -317,7 +365,7 @@ function GangguanSwitchingContent() {
             })()}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6">
+          <div ref={chartRef} className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6">
             <div className="lg:col-span-6">
               <ChartWrapper 
                 title="Tren Akumulasi Gangguan Switching & Target" 

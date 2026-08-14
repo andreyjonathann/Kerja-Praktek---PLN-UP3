@@ -2,10 +2,11 @@ import notify from '@/utils/notify';
 import React, { useState } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import { X, Download, FileSpreadsheet } from 'lucide-react'
-import * as XLSX from 'xlsx'
+import ExcelJS from 'exceljs'
+import { toPng } from 'html-to-image'
 import { getDashboardData } from '@/services/dashboardDataService'
 
-export default function EnsExportModal() {
+export default function EnsExportModal({ chartRef }) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
 
@@ -69,10 +70,79 @@ export default function EnsExportModal() {
         'Status': filteredData.reduce((s, x) => s + (x.b_realisasi || 0), 0) > filteredData.reduce((s, x) => s + (x.b_target || 0), 0) ? 'Over' : 'Aman'
       })
 
-      const worksheet = XLSX.utils.json_to_sheet(exportData)
-      const workbook = XLSX.utils.book_new()
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Data ENS")
-      XLSX.writeFile(workbook, `Rekapitulasi_ENS_${MONTH_NAMES[startMonth-1]}_${startYear}_to_${MONTH_NAMES[endMonth-1]}_${endYear}.xlsx`)
+      // ── exceljs Workbook ───────────────────────────────────────────────
+      const workbook = new ExcelJS.Workbook();
+      const wsData = workbook.addWorksheet("Data ENS");
+
+      // Set headers & styling
+      const headers = ['Bulan', 'Terencana', 'Tidak Terencana', 'Bencana Alam', 'Total Realisasi', 'Target', 'Status'];
+      const headerRow = wsData.getRow(1);
+      headers.forEach((h, idx) => {
+        headerRow.getCell(idx + 1).value = h;
+      });
+      headerRow.font = { bold: true };
+      headerRow.commit();
+
+      let currentRow = 2;
+      exportData.forEach(row => {
+        const dataRow = wsData.getRow(currentRow);
+        headers.forEach((h, idx) => {
+          const v = row[h];
+          dataRow.getCell(idx + 1).value = v != null ? v : '';
+        });
+        dataRow.commit();
+        currentRow++;
+      });
+
+      // Auto-fit column widths
+      headers.forEach((h, idx) => {
+        let maxLen = h.length;
+        exportData.forEach(row => {
+          const val = String(row[h] ?? '');
+          if (val.length > maxLen) {
+            maxLen = val.length;
+          }
+        });
+        wsData.getColumn(idx + 1).width = Math.min(maxLen + 4, 30);
+      });
+
+      // ── Capture and embed chart ─────────────────────────────────────────
+      if (chartRef && chartRef.current) {
+        try {
+          const imgDataUrl = await toPng(chartRef.current, {
+            quality: 1,
+            pixelRatio: 2,
+            backgroundColor: '#ffffff',
+          });
+
+          // Add sheet for Grafik
+          const wsChart = workbook.addWorksheet('Grafik');
+
+          // Add image to workbook
+          const imageId = workbook.addImage({
+            base64: imgDataUrl,
+            extension: 'png',
+          });
+
+          // Position the chart image
+          wsChart.addImage(imageId, {
+            tl: { col: 1, row: 1 },
+            ext: { width: 900, height: 450 }
+          });
+          
+        } catch (err) {
+          console.warn('[EnsExportModal] Gagal capture atau sematkan grafik:', err);
+        }
+      }
+
+      // ── Save workbook ───────────────────────────────────────────────────
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `Rekapitulasi_ENS_${MONTH_NAMES[startMonth-1]}_${startYear}_to_${MONTH_NAMES[endMonth-1]}_${endYear}.xlsx`;
+      link.click();
+      
       setOpen(false)
     } catch (err) {
       console.error(err)

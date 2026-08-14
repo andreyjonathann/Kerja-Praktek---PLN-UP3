@@ -312,28 +312,36 @@ class MvodController extends Controller
         for ($b = 1; $b <= 12; $b++) {
             $b_data = $realisasi->where('bulan', $b);
             
-            // Average across selected UP3s for this month
             foreach (['GI', 'JTM', 'GD'] as $tipe) {
                 $b_tipe_data = $b_data->where('tipe_rct', $tipe);
+                
+                $targetCol = 'target_' . $bulanMap[$b];
+                $avg_sla = null;
+                if ($tipe === 'GI' && $targetGI) $avg_sla = $targetGI->{$targetCol};
+                if ($tipe === 'JTM' && $targetJTM) $avg_sla = $targetJTM->{$targetCol};
+                if ($tipe === 'GD' && $targetGD) $avg_sla = $targetGD->{$targetCol};
+                
+                if ($avg_sla !== null) {
+                    $avg_sla = (float) $avg_sla;
+                }
+
                 if ($b_tipe_data->count() > 0) {
                     $sum_durasi = $b_tipe_data->sum('total_lama_padam_menit');
                     $sum_kali = $b_tipe_data->sum('kali_padam');
                     $avg_rct = $sum_kali > 0 ? $sum_durasi / $sum_kali : 0;
-                    $targetCol = 'target_' . $bulanMap[$b];
-                    $avg_sla = null;
-                    if ($tipe === 'GI' && $targetGI) $avg_sla = $targetGI->{$targetCol};
-                    if ($tipe === 'JTM' && $targetJTM) $avg_sla = $targetJTM->{$targetCol};
-                    if ($tipe === 'GD' && $targetGD) $avg_sla = $targetGD->{$targetCol};
                     
-                    if ($avg_sla !== null) {
-                        $avg_sla = (float) $avg_sla;
-                    }
-
                     $trend_bulanan[$tipe][] = [
                         'bulan' => $b,
                         'rata_rct' => round($avg_rct, 2),
                         'sla' => $avg_sla !== null ? round($avg_sla, 2) : null,
                         'persen' => $avg_sla !== null ? round($calcPersen($avg_rct, $avg_sla) * 100, 2) : null
+                    ];
+                } else {
+                    $trend_bulanan[$tipe][] = [
+                        'bulan' => $b,
+                        'rata_rct' => null,
+                        'sla' => $avg_sla !== null ? round($avg_sla, 2) : null,
+                        'persen' => null
                     ];
                 }
             }

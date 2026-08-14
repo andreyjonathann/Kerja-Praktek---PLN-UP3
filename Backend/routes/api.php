@@ -167,6 +167,20 @@ Route::middleware('api')->group(function () {
         Route::put('/niaga/penghapusan/detail/{id}', [\App\Http\Controllers\Api\NiagaPrrController::class, 'updatePenghapusanDetail']);
         Route::delete('/niaga/penghapusan/detail/{id}', [\App\Http\Controllers\Api\NiagaPrrController::class, 'destroyPenghapusanDetail']);
 
+        // Keuangan Module
+        Route::get('/keuangan/summary', [\App\Http\Controllers\Api\Keuangan\KeuanganDashboardController::class, 'getSummary']);
+        Route::get('/keuangan/contract/{pengadaanId}', [\App\Http\Controllers\Api\Keuangan\RealisasiPembayaranController::class, 'index']);
+        Route::post('/keuangan/payment', [\App\Http\Controllers\Api\Keuangan\RealisasiPembayaranController::class, 'storePayment']);
+        Route::put('/keuangan/payment/{id}', [\App\Http\Controllers\Api\Keuangan\RealisasiPembayaranController::class, 'updatePayment']);
+        Route::delete('/keuangan/payment/{id}', [\App\Http\Controllers\Api\Keuangan\RealisasiPembayaranController::class, 'destroyPayment']);
+        Route::post('/keuangan/document', [\App\Http\Controllers\Api\Keuangan\RealisasiPembayaranController::class, 'uploadDocument']);
+        Route::delete('/keuangan/document/{id}', [\App\Http\Controllers\Api\Keuangan\RealisasiPembayaranController::class, 'destroyDocument']);
+
+        // Pagu Anggaran SKKI / SKKO — input hanya oleh pic_keuangan
+        Route::get('/keuangan/pagu',       [\App\Http\Controllers\Api\Keuangan\PaguAnggaranController::class, 'index']);
+        Route::post('/keuangan/pagu',      [\App\Http\Controllers\Api\Keuangan\PaguAnggaranController::class, 'store']);
+        Route::delete('/keuangan/pagu/{id}', [\App\Http\Controllers\Api\Keuangan\PaguAnggaranController::class, 'destroy']);
+
         // Pagu Anggaran SKKO / SKKI (Read-only for others)
         Route::get('/pagu-anggaran', [\App\Http\Controllers\Api\PaguAnggaranController::class, 'index']);
 

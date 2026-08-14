@@ -5,8 +5,9 @@ import { X, Download, FileSpreadsheet } from 'lucide-react';
 import { getDashboardData } from '@/services/dashboardDataService';
 import { getNiagaData } from '@/services/niagaDataService';
 import { exportToExcel } from '@/utils/excelExport';
+import { toPng } from 'html-to-image';
 
-export default function ExportModal({ kpiType }) {
+export default function ExportModal({ kpiType, chartRef }) {
   const [open, setOpen] = useState(false);
   const [startYear, setStartYear] = useState(2024);
   const [endYear, setEndYear] = useState(new Date().getFullYear());
@@ -33,7 +34,21 @@ export default function ExportModal({ kpiType }) {
         }
       }
       
-      exportToExcel(kpiType, startYear, endYear, dataMap);
+      // Capture chart if available
+      let imgDataUrl = null;
+      if (chartRef && chartRef.current) {
+        try {
+          imgDataUrl = await toPng(chartRef.current, {
+            quality: 1,
+            pixelRatio: 2,
+            backgroundColor: '#ffffff',
+          });
+        } catch (chartErr) {
+          console.warn('[ExportModal] Gagal capture chart:', chartErr);
+        }
+      }
+
+      await exportToExcel(kpiType, startYear, endYear, dataMap, imgDataUrl);
       setOpen(false);
     } catch (err) {
       console.error(err);

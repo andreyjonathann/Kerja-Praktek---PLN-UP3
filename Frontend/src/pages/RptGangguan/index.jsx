@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  ComposedChart, Line, XAxis, YAxis, CartesianGrid,
+  ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer
 } from 'recharts'
 import { Activity, Clock, FileSpreadsheet, Plus, AlertCircle, TrendingUp, TrendingDown, Target, Users, CheckCircle, XCircle } from 'lucide-react'
@@ -17,7 +17,7 @@ import { MONTHS_ID } from '@/utils/formatters'
 import { CHART_COLORS, YEARS } from '@/utils/constants'
 import api from '@/services/api'
 import { useAuth } from '@/context/AuthContext'
-import * as XLSX from 'xlsx'
+import { exportWithChart } from '@/utils/exportWithChart'
 import RptDetailModal from '@/components/ui/RptDetailModal'
 
 export default function RptGangguanPage() {
@@ -29,6 +29,7 @@ export default function RptGangguanPage() {
   const [error, setError] = useState(null)
   const [selectedRow, setSelectedRow] = useState(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const chartRef = useRef(null)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -53,29 +54,31 @@ export default function RptGangguanPage() {
     fetchData()
   }, [fetchData])
 
-  const exportExcel = () => {
+  const exportExcel = async () => {
     if (!data?.trend_bulanan) return;
     
-    const wsData = [
-      ['Data RPT Gangguan PLN UP3', filters.up3 || 'UP3 Kebon Jeruk', 'Tahun', filters.year],
-      [],
-      ['Bulan', 'Total Gangguan', 'Rata-rata RPT (mnt)', 'Target (mnt)', 'Status']
-    ];
+    const exportData = tableDataBulan.map(row => ({
+      Bulan: row.bulan,
+      'Total Gangguan': row.total_gangguan ?? '—',
+      'Rata-rata RPT (mnt)': row.rpt_realisasi ?? '—',
+      'Target (mnt)': row.target_menit ?? '—',
+      Status: row.status || '-'
+    }));
 
-    tableDataBulan.forEach(row => {
-      wsData.push([
-        row.bulan,
-        row.total_gangguan ?? '—',
-        row.rpt_realisasi ?? '—',
-        row.target_menit ?? '—',
-        row.status
-      ]);
+    await exportWithChart({
+      data: exportData,
+      filename: `Rekap_RPT_Gangguan_${filters.year}`,
+      columns: [
+        { header: 'Bulan', key: 'Bulan' },
+        { header: 'Total Gangguan', key: 'Total Gangguan' },
+        { header: 'Rata-rata RPT (mnt)', key: 'Rata-rata RPT (mnt)' },
+        { header: 'Target (mnt)', key: 'Target (mnt)' },
+        { header: 'Status', key: 'Status' }
+      ],
+      sheetName: 'RPT Gangguan',
+      chartRef,
+      title: `Data RPT Gangguan PLN UP3 ${filters.up3 || 'UP3 Kebon Jeruk'} Tahun ${filters.year}`
     });
-
-    const ws = XLSX.utils.aoa_to_sheet(wsData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "RPT Gangguan");
-    XLSX.writeFile(wb, `Rekap_RPT_Gangguan_${filters.year}.xlsx`);
   }
 
   if (loading && !data) {
@@ -102,26 +105,31 @@ export default function RptGangguanPage() {
   const isAman = summary.status === 'AMAN';
 
   const chartData = trend_bulanan.map(t => {
-    const isAmanChart = t.rpt_realisasi <= t.target;
+    const hasReal = t.rpt_realisasi !== null;
+    const isAmanChart = hasReal ? (t.rpt_realisasi <= t.target) : false;
     return {
       name: MONTHS_ID[t.bulan],
       'Realisasi (Menit)': t.rpt_realisasi,
       'Target': t.target,
-      'Status': isAmanChart ? 'AMAN' : 'MELEWATI TARGET'
+      'Status': hasReal ? (isAmanChart ? 'AMAN' : 'MELEWATI TARGET') : '-'
     };
   });
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
-      const data = payload[0].payload;
+      const pData = payload[0].payload;
+      const realVal = pData['Realisasi (Menit)'];
+      const targetVal = pData['Target'];
       return (
         <div className="bg-white p-3 rounded-lg shadow-lg border border-slate-100 text-sm">
           <p className="font-bold text-slate-800 mb-2">{label}</p>
-          <p className="text-slate-600 mb-1">Target Maksimal: <span className="font-semibold text-rose-500">{data['Target']} menit</span></p>
-          <p className="text-slate-600 mb-1">Realisasi RPT: <span className="font-bold text-blue-600">{data['Realisasi (Menit)']} menit</span></p>
-          <p className="text-xs text-slate-500 mt-2 border-t pt-2">
-            Status: <span className={`font-bold ${data.Status === 'AMAN' ? 'text-emerald-600' : 'text-rose-600'}`}>{data.Status}</span>
-          </p>
+          <p className="text-slate-600 mb-1">Target Maksimal: <span className="font-semibold text-rose-500">{targetVal != null ? targetVal + ' menit' : '—'}</span></p>
+          <p className="text-slate-600 mb-1">Realisasi RPT: <span className="font-bold text-blue-600">{realVal != null ? realVal + ' menit' : '—'}</span></p>
+          {realVal != null && (
+            <p className="text-xs text-slate-500 mt-2 border-t pt-2">
+              Status: <span className={`font-bold ${pData.Status === 'AMAN' ? 'text-emerald-600' : 'text-rose-600'}`}>{pData.Status}</span>
+            </p>
+          )}
         </div>
       );
     }
@@ -257,7 +265,7 @@ export default function RptGangguanPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
         <ChartWrapper title="Trend RPT Bulanan" subtitle="Realisasi vs Target">
-            <div className="h-[350px] mt-4">
+            <div ref={chartRef} className="h-[350px] mt-4">
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -265,8 +273,8 @@ export default function RptGangguanPage() {
                   <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} dx={-10} domain={[0, 'auto']} />
                   <Tooltip content={<CustomTooltip />} cursor={{fill: '#f8fafc'}} />
                   <Legend wrapperStyle={{ paddingTop: '20px' }} />
-                  <Line type="monotone" dataKey="Realisasi (Menit)" stroke="#00A2B9" strokeWidth={3} dot={{r: 4, strokeWidth: 2}} activeDot={{r: 6}} />
-                  <Line type="step" dataKey="Target" stroke="#ef4444" strokeWidth={2} strokeDasharray="5 5" dot={false} activeDot={false} />
+                  <Bar dataKey="Realisasi (Menit)" fill="#00A2B9" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="Target" fill="#ef4444" radius={[4, 4, 0, 0]} />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>

@@ -1,5 +1,5 @@
 import notify from '@/utils/notify';
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ComposedChart,
@@ -16,7 +16,8 @@ import {
 } from 'recharts'
 import api from '@/services/api'
 import { useFilter } from '@/context/FilterContext'
-import * as XLSX from 'xlsx'
+import ExcelJS from 'exceljs';
+import { toPng } from 'html-to-image';
 import { Activity, Plus, Download, Target, TrendingDown, TrendingUp, FileSpreadsheet, CheckCircle, XCircle } from 'lucide-react'
 import KpiCard from '@/components/ui/KpiCard'
 import DataTable from '@/components/ui/DataTable'
@@ -67,6 +68,7 @@ const renderCustomBarLabel = ({ x, y, width, value }) => {
 export default function RatingNegatifPage() {
   const navigate = useNavigate()
   const { filters } = useFilter()
+  const chartRef = useRef(null)
   const [data, setData] = useState(null)
   const [rekapData, setRekapData] = useState([])
   const [loading, setLoading] = useState(true)
@@ -125,38 +127,176 @@ export default function RatingNegatifPage() {
     return rows;
   }, [rekapData, data]);
 
-  const exportToExcel = () => {
+  const exportToExcel = async () => {
     if (rekapData.length === 0) return;
     
     const year = filters.year || new Date().getFullYear();
-    const wsData = [];
-    
-    // Header
-    const up3Names = rekapData.map(r => r.up3);
-    wsData.push(['REKAPITULASI RATING NEGATIF PLN MOBILE', '', '', ...up3Names.map(() => '')]);
-    wsData.push([`TAHUN ${year}`, '', '', ...up3Names.map(() => '')]);
-    wsData.push([]);
-    wsData.push(['BULAN', 'TARGET (Kali)', 'REALISASI (Kali)', ...up3Names]);
-    
-    // Data
-    pivotedData.forEach(row => {
-        const rowData = [row.bulan];
-        const monthNum = MONTHS_FULL.indexOf(row.bulan) + 1;
-        const detail = data?.monthly?.find(m => m.bulan === monthNum);
-        
-        rowData.push(detail && detail.target !== null ? detail.target : '-');
-        rowData.push(detail && detail.jml_rating_negatif !== null ? detail.jml_rating_negatif : '-');
+    const workbook = new ExcelJS.Workbook();
+    const ws = workbook.addWorksheet("Rating Negatif");
 
-        up3Names.forEach(up3 => {
-            rowData.push(row[up3] !== null ? `${Number(row[up3]).toLocaleString('id-ID', {minimumFractionDigits: 2, maximumFractionDigits: 2})}%` : '-');
-        });
-        wsData.push(rowData);
+    // Ensure grid lines are visible
+    ws.views = [{ showGridLines: true }];
+
+    const up3Names = rekapData.map(r => r.up3);
+
+    // Title rows
+    const lastColLetter = String.fromCharCode(64 + up3Names.length + 3);
+    ws.mergeCells(`A1:${lastColLetter}1`);
+    const titleCell = ws.getCell('A1');
+    titleCell.value = 'REKAPITULASI RATING NEGATIF PLN MOBILE';
+    titleCell.font = { name: 'Arial', size: 14, bold: true, color: { argb: 'FF1E3A8A' } };
+    titleCell.alignment = { vertical: 'middle', horizontal: 'left' };
+    ws.getRow(1).height = 35;
+
+    ws.mergeCells(`A2:${lastColLetter}2`);
+    const subtitleCell = ws.getCell('A2');
+    subtitleCell.value = `TAHUN ${year}`;
+    subtitleCell.font = { name: 'Arial', size: 11, bold: true, color: { argb: 'FF1E3A8A' } };
+    subtitleCell.alignment = { vertical: 'middle', horizontal: 'left' };
+    ws.getRow(2).height = 20;
+
+    // Headers
+    const headers = ['BULAN', 'TARGET (Kali)', 'REALISASI (Kali)', ...up3Names];
+    const headerRow = ws.getRow(4);
+    headerRow.height = 28;
+    headers.forEach((h, idx) => {
+      const cell = headerRow.getCell(idx + 1);
+      cell.value = h;
+      cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF00A2B9' } // PLN Teal
+      };
+      cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+      cell.border = {
+        top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+        left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+        bottom: { style: 'medium', color: { argb: 'FF94A3B8' } },
+        right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+      };
     });
-    
-    const ws = XLSX.utils.aoa_to_sheet(wsData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Rating Negatif");
-    XLSX.writeFile(wb, `Rekap_Rating_Negatif_${year}.xlsx`);
+    headerRow.commit();
+
+    // Data rows
+    let currentRow = 5;
+    pivotedData.forEach((row, rIdx) => {
+      const dataRow = ws.getRow(currentRow);
+      dataRow.height = 20;
+
+      const isEven = rIdx % 2 === 0;
+      const bgColor = isEven ? 'FFFFFFFF' : 'FFF8FAFC';
+
+      const monthNum = MONTHS_FULL.indexOf(row.bulan) + 1;
+      const detail = data?.monthly?.find(m => m.bulan === monthNum);
+
+      // Month
+      const cellBulan = dataRow.getCell(1);
+      cellBulan.value = row.bulan;
+      cellBulan.alignment = { vertical: 'middle', horizontal: 'left' };
+
+      // Target
+      const cellTarget = dataRow.getCell(2);
+      const tgtVal = detail && detail.target !== null ? Number(detail.target) : null;
+      cellTarget.value = tgtVal !== null ? tgtVal : '—';
+      if (tgtVal !== null) cellTarget.numFmt = '#,##0';
+      cellTarget.alignment = { vertical: 'middle', horizontal: 'right' };
+
+      // Realisasi
+      const cellReal = dataRow.getCell(3);
+      const realVal = detail && detail.jml_rating_negatif !== null ? Number(detail.jml_rating_negatif) : null;
+      cellReal.value = realVal !== null ? realVal : '—';
+      if (realVal !== null) cellReal.numFmt = '#,##0';
+      cellReal.alignment = { vertical: 'middle', horizontal: 'right' };
+
+      // UP3 values (percentage)
+      up3Names.forEach((up3, idx) => {
+        const cellUp3 = dataRow.getCell(idx + 4);
+        const up3Val = row[up3] !== null ? Number(row[up3]) / 100 : null; // Convert to decimal for percentage formatting
+        cellUp3.value = up3Val !== null ? up3Val : '—';
+        if (up3Val !== null) cellUp3.numFmt = '0.00%';
+        cellUp3.alignment = { vertical: 'middle', horizontal: 'right' };
+      });
+
+      // Style fonts, backgrounds and borders
+      for (let cIdx = 1; cIdx <= up3Names.length + 3; cIdx++) {
+        const cell = dataRow.getCell(cIdx);
+        cell.font = { name: 'Arial', size: 10, color: { argb: 'FF334155' } };
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: bgColor }
+        };
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+          left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+          bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+          right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+        };
+      }
+
+      dataRow.commit();
+      currentRow++;
+    });
+
+    // Auto-fit columns
+    headers.forEach((h, idx) => {
+      let maxLen = h.length;
+      pivotedData.forEach(row => {
+        let val = '';
+        if (idx === 0) val = row.bulan;
+        else if (idx === 1) {
+          const monthNum = MONTHS_FULL.indexOf(row.bulan) + 1;
+          const detail = data?.monthly?.find(m => m.bulan === monthNum);
+          val = String(detail?.target ?? '');
+        } else if (idx === 2) {
+          const monthNum = MONTHS_FULL.indexOf(row.bulan) + 1;
+          const detail = data?.monthly?.find(m => m.bulan === monthNum);
+          val = String(detail?.jml_rating_negatif ?? '');
+        } else {
+          val = String(row[up3Names[idx - 3]] ?? '');
+        }
+        if (val.length > maxLen) maxLen = val.length;
+      });
+      ws.getColumn(idx + 1).width = Math.min(maxLen + 6, 35);
+    });
+
+    // Capture and embed chart
+    if (chartRef && chartRef.current) {
+      try {
+        const imgDataUrl = await toPng(chartRef.current, {
+          quality: 1,
+          pixelRatio: 2,
+          backgroundColor: '#ffffff',
+        });
+
+        // Add sheet for Grafik
+        const wsChart = workbook.addWorksheet('Grafik');
+
+        // Add image to workbook
+        const imageId = workbook.addImage({
+          base64: imgDataUrl,
+          extension: 'png',
+        });
+
+        // Position the chart image
+        wsChart.addImage(imageId, {
+          tl: { col: 1, row: 1 },
+          ext: { width: 900, height: 450 }
+        });
+        
+      } catch (err) {
+        console.warn('[RatingNegatif] Gagal capture atau sematkan grafik:', err);
+      }
+    }
+
+    // Save workbook
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `Rekap_Rating_Negatif_${year}.xlsx`;
+    link.click();
   }
 
   if (loading && !data) {
@@ -358,7 +498,7 @@ export default function RatingNegatifPage() {
       </div>
 
       {/* Charts Grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+      <div ref={chartRef} className="grid grid-cols-1 xl:grid-cols-2 gap-8">
         {/* Bulanan */}
         <ChartWrapper 
           title="Rating Negatif Bulanan" 

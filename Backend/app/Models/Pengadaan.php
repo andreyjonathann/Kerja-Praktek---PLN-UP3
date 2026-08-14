@@ -63,4 +63,14 @@ class Pengadaan extends Model
     {
         return $this->belongsTo(User::class, 'created_by');
     }
+
+    public function realisasiPembayarans()
+    {
+        return $this->hasMany(RealisasiPembayaran::class, 'pengadaan_id');
+    }
+
+    public function dokumenPendukungs()
+    {
+        return $this->hasMany(DokumenPendukung::class, 'pengadaan_id');
+    }
 }

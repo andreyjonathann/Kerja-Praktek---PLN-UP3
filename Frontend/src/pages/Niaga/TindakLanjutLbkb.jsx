@@ -1,17 +1,18 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import {
   Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, ComposedChart
 } from 'recharts'
-import { Activity, TrendingUp, Plus } from 'lucide-react'
+import { Activity, TrendingUp, Plus, FileSpreadsheet } from 'lucide-react'
 import KpiCard from '@/components/ui/KpiCard'
 import ChartWrapper from '@/components/ui/ChartWrapper'
 import DataTable from '@/components/ui/DataTable'
 import { useFilter } from '@/context/FilterContext'
 import { getNiagaData } from '@/services/niagaDataService'
 import { formatNumber } from '@/utils/formatters'
+import { exportWithChart } from '@/utils/exportWithChart'
 
 const TOOLTIP = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
@@ -40,6 +41,7 @@ export default function TindakLanjutLbkbPage() {
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const chartRef = useRef(null)
 
   const fetchData = useCallback(async (bg = false) => {
     if (!bg) setLoading(true)
@@ -111,6 +113,30 @@ export default function TindakLanjutLbkbPage() {
     }
   ]
 
+  const handleExportExcel = async () => {
+    const exportData = data.map(row => ({
+      Bulan: row.label,
+      'Target Bulanan': row.lbkb_target != null ? row.lbkb_target : '-',
+      'Realisasi Bulanan': row.lbkb_real != null ? row.lbkb_real : '-',
+      'Target Kumulatif': row.c_lbkb_target != null ? row.c_lbkb_target : '-',
+      'Realisasi Kumulatif': row.c_lbkb_real != null ? row.c_lbkb_real : '-',
+    }))
+    await exportWithChart({
+      data: exportData,
+      filename: `Tindak_Lanjut_LBKB_${filters.year}`,
+      columns: [
+        { header: 'Bulan', key: 'Bulan' },
+        { header: 'Target Bulanan (Laporan)', key: 'Target Bulanan' },
+        { header: 'Realisasi Bulanan (Laporan)', key: 'Realisasi Bulanan' },
+        { header: 'Target Kumulatif (Laporan)', key: 'Target Kumulatif' },
+        { header: 'Realisasi Kumulatif (Laporan)', key: 'Realisasi Kumulatif' },
+      ],
+      sheetName: 'LBKB',
+      chartRef,
+      title: `Data Tindak Lanjut LBKB Tahun ${filters.year}`,
+    })
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }} className="animate-fade-in">
 
@@ -171,6 +197,19 @@ export default function TindakLanjutLbkbPage() {
         </div>
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
+          <button
+            onClick={handleExportExcel}
+            style={{
+              padding: '6px 16px', borderRadius: 9, fontSize: '0.85rem', fontWeight: 700,
+              transition: 'all 0.2s', border: '1.5px solid #10B981', cursor: 'pointer',
+              background: 'transparent', color: '#10B981',
+              display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0,
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#10B981'; e.currentTarget.style.color = '#FFFFFF' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#10B981' }}
+          >
+            <FileSpreadsheet size={16} /> Export Excel
+          </button>
           {user?.role === 'pic_niaga' && (
             <div style={{
               display: 'inline-flex',
@@ -221,17 +260,19 @@ export default function TindakLanjutLbkbPage() {
           loading={loading} error={error} empty={data.length === 0}
           height={280} onRetry={fetchData}
         >
-          <ResponsiveContainer width="100%" height={280}>
-            <ComposedChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-              <XAxis dataKey="label" tick={{ fontSize: 12.5, fontWeight: 650 }} />
-              <YAxis tick={{ fontSize: 12.5, fontWeight: 650 }} />
-              <Tooltip content={<TOOLTIP />} />
-              <Legend wrapperStyle={{ fontSize: 13, fontWeight: 600 }} />
-              <Bar dataKey={chartKey} name="Realisasi" fill="#06B6D4" radius={[4, 4, 0, 0]} />
-              <Line dataKey={tgtKey} name="Target" stroke="#EF4444" strokeWidth={2.5} strokeDasharray="5 5" dot={{ r: 4, fill: '#EF4444' }} />
-            </ComposedChart>
-          </ResponsiveContainer>
+          <div ref={chartRef}>
+            <ResponsiveContainer width="100%" height={280}>
+              <ComposedChart data={data}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="label" tick={{ fontSize: 12.5, fontWeight: 650 }} />
+                <YAxis tick={{ fontSize: 12.5, fontWeight: 650 }} />
+                <Tooltip content={<TOOLTIP />} />
+                <Legend wrapperStyle={{ fontSize: 13, fontWeight: 600 }} />
+                <Bar dataKey={chartKey} name="Realisasi" fill="#06B6D4" radius={[4, 4, 0, 0]} />
+                <Line dataKey={tgtKey} name="Target" stroke="#EF4444" strokeWidth={2.5} strokeDasharray="5 5" dot={{ r: 4, fill: '#EF4444' }} />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
         </ChartWrapper>
       </div>
 

@@ -237,7 +237,84 @@ function buildTECard(susutDash, gantiMeterDash, p2tlDash) {
   };
 }
 
-// ─── Module: Aset & Keuangan (placeholder) ────────────────────────────────────
+// ─── Module: Pengadaan & Keuangan ────────────────────────────────────
+
+function buildPengadaanCard(keuanganData) {
+  if (!keuanganData) {
+    return {
+      id: 'aset',
+      label: 'Pengadaan',
+      icon: 'Package',
+      color: 'purple',
+      path: '/pengadaan/kontrak',
+      mainAch: null,
+      metrics: [],
+      noData: true
+    };
+  }
+
+  const skkiContracts = keuanganData.skki_contracts || [];
+  const skkoContracts = keuanganData.skko_contracts || [];
+  const allContracts = [...skkiContracts, ...skkoContracts];
+
+  const totalContractsCount = allContracts.length;
+  const totalValue = allContracts.reduce((sum, c) => sum + (parseFloat(c.rp_kontrak) || 0), 0);
+  const totalTerbayar = allContracts.reduce((sum, c) => sum + (parseFloat(c.total_terbayar) || 0), 0);
+  const mainAch = totalValue > 0 ? (totalTerbayar / totalValue) * 100 : null;
+
+  const formatRp = v => v == null || v === 0 ? '—' : v >= 1e9 ? `Rp ${(v/1e9).toFixed(2)}M` : `Rp ${(v/1e6).toFixed(1)}Jt`;
+
+  return {
+    id: 'aset',
+    label: 'Pengadaan',
+    icon: 'Package',
+    color: 'purple',
+    path: '/pengadaan/kontrak',
+    mainAch,
+    metrics: [
+      { label: 'Jumlah Kontrak', real: `${totalContractsCount} paket`, target: '—', ach: null },
+      { label: 'Nilai Kontrak', real: formatRp(totalValue), target: '—', ach: null },
+      { label: 'Sisa Kontrak', real: formatRp(totalValue - totalTerbayar), target: '—', ach: null }
+    ],
+  };
+}
+
+function buildKeuanganCard(keuanganData) {
+  if (!keuanganData || !keuanganData.summary) {
+    return {
+      id: 'keuangan',
+      label: 'Keuangan',
+      icon: 'DollarSign',
+      color: 'teal',
+      path: '/keuangan',
+      mainAch: null,
+      metrics: [],
+      noData: true
+    };
+  }
+
+  const skki = keuanganData.summary.skki || {};
+  const skko = keuanganData.summary.skko || {};
+
+  const totalPagu = (skki.pagu || 0) + (skko.pagu || 0);
+  const totalRealisasi = (skki.realisasi || 0) + (skko.realisasi || 0);
+  const mainAch = totalPagu > 0 ? (totalRealisasi / totalPagu) * 100 : null;
+
+  const formatRp = v => v == null || v === 0 ? '—' : v >= 1e9 ? `Rp ${(v/1e9).toFixed(2)}M` : `Rp ${(v/1e6).toFixed(1)}Jt`;
+
+  return {
+    id: 'keuangan',
+    label: 'Keuangan',
+    icon: 'DollarSign',
+    color: 'teal',
+    path: '/keuangan',
+    mainAch,
+    metrics: [
+      { label: 'Pagu SKKI/O', real: formatRp(totalPagu), target: '—', ach: null },
+      { label: 'Realisasi Bayar', real: formatRp(totalRealisasi), target: formatRp(totalPagu), ach: mainAch },
+    ].filter(Boolean),
+  };
+}
 
 function buildPlaceholderCard(id, label, icon, color, path) {
   return { id, label, icon, color, path, mainAch: null, metrics: [], noData: true };
@@ -259,12 +336,14 @@ export async function getHomeDashboardSummary(year = 2026, month = new Date().ge
     susutResult,
     gantiMeterResult,
     p2tlResult,
+    keuanganResult,
   ] = await Promise.allSettled([
     getDashboardData(year),
     getNiagaData(year),
     api.get(`/v1/susut-distribusi/dashboard?tahun=${year}&bulan=${month}`),
     api.get(`/v1/ganti-meter/dashboard?tahun=${year}&bulan=${month}`),
     api.get(`/v1/p2tl/dashboard?tahun=${year}&bulan=${month}`),
+    api.get('/v1/keuangan/summary', { params: { year } }),
   ]);
 
   const dashData       = dashResult.status      === 'fulfilled' ? dashResult.value        : null;
@@ -272,6 +351,7 @@ export async function getHomeDashboardSummary(year = 2026, month = new Date().ge
   const susutDash      = susutResult.status     === 'fulfilled' ? susutResult.value.data?.data ?? susutResult.value.data  : null;
   const gantiMeterDash = gantiMeterResult.status === 'fulfilled' ? gantiMeterResult.value.data?.data ?? gantiMeterResult.value.data : null;
   const p2tlDash       = p2tlResult.status      === 'fulfilled' ? p2tlResult.value.data?.data ?? p2tlResult.value.data   : null;
+  const keuanganData   = keuanganResult.status  === 'fulfilled' ? keuanganResult.value.data      : null;
 
   // NKO score from dashboard
   const kpis   = dashData?.overview?.kpis || {};
@@ -292,8 +372,8 @@ export async function getHomeDashboardSummary(year = 2026, month = new Date().ge
 
   const niagaCard       = buildNiagaCard(niagaRows);
   const teCard          = buildTECard(susutDash, gantiMeterDash, p2tlDash);
-  const asetCard        = buildPlaceholderCard('aset',     'Aset',     'Package',   'purple', '/kelola-target?bidang=aset');
-  const keuanganCard    = buildPlaceholderCard('keuangan', 'Keuangan', 'DollarSign','teal',   '/kelola-target?bidang=keuangan');
+  const asetCard        = buildPengadaanCard(keuanganData);
+  const keuanganCard    = buildKeuanganCard(keuanganData);
 
   const bidangCards = [jaringanCard, pemasaranCard, niagaCard, teCard, asetCard, keuanganCard];
 
@@ -341,6 +421,18 @@ export async function getHomeDashboardSummary(year = 2026, month = new Date().ge
       id: `te_${i}`, label: m.label, bidang: 'Transaksi Energi',
       real: m.real, target: m.target, ach: m.ach, unit: m.unit || '',
       isInverse: m.isInverse, path: '/susut',
+    })),
+    // Pengadaan
+    ...(asetCard.metrics || []).map((m, i) => ({
+      id: `pengadaan_${i}`, label: m.label, bidang: 'Pengadaan',
+      real: m.real, target: m.target, ach: m.ach, unit: m.unit || '',
+      path: '/pengadaan/kontrak',
+    })),
+    // Keuangan
+    ...(keuanganCard.metrics || []).map((m, i) => ({
+      id: `keuangan_${i}`, label: m.label, bidang: 'Keuangan',
+      real: m.real, target: m.target, ach: m.ach, unit: m.unit || '',
+      path: '/keuangan',
     })),
   ].filter(Boolean);
 

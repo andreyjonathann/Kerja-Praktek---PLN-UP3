@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import {
   Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
@@ -40,6 +40,7 @@ export default function PelangganPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const { filters }          = useFilter()
+  const chartRef = useRef(null)
   const [tab, setTab]        = useState('monthly')
   const [data, setData]      = useState([])
   const [programs, setPrograms] = useState([])
@@ -200,12 +201,12 @@ export default function PelangganPage() {
               </button>
             </div>
           )}
-          <ExportModal kpiType="Pelanggan" />
+          <ExportModal kpiType="Pelanggan" chartRef={chartRef} />
         </div>
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div ref={chartRef} className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <ChartWrapper
           title={tab === 'monthly' ? 'Pelanggan Baru Bulanan' : 'Pelanggan Baru Kumulatif'}
           subtitle={`Target vs Realisasi · ${filters.year}`}

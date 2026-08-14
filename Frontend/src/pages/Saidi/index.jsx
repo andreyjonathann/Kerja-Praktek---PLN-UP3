@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import {
@@ -110,6 +110,7 @@ export default function SaidiPage() {
   const [hasTarget, setHasTarget] = useState(true)
   const [loading, setLoading] = useState(true)
   const [error, setError]  = useState(null)
+  const chartRef = useRef(null)
 
   const fetchData = useCallback(async (isBackground = false) => {
     if (!isBackground) setLoading(true)
@@ -273,12 +274,12 @@ export default function SaidiPage() {
               </button>
             </div>
           )}
-          <ExportModal kpiType="SAIDI" />
+          <ExportModal kpiType="SAIDI" chartRef={chartRef} />
         </div>
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div ref={chartRef} className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Chart utama */}
         <ChartWrapper
           title={tab === 'monthly' ? 'SAIDI Bulanan' : 'SAIDI Kumulatif'}

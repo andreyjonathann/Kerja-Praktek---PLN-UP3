@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ComposedChart,
@@ -15,7 +15,8 @@ import {
 import api from '@/services/api'
 import { useFilter } from '@/context/FilterContext'
 import { useAuth } from '@/context/AuthContext'
-import * as XLSX from 'xlsx'
+import ExcelJS from 'exceljs'
+import { toPng } from 'html-to-image'
 import { Activity, Plus, FileSpreadsheet, Target, TrendingDown, TrendingUp, AlertTriangle, CheckCircle, XCircle } from 'lucide-react'
 import KpiCard from '@/components/ui/KpiCard'
 import TargetWarning from '@/components/ui/TargetWarning'
@@ -70,6 +71,7 @@ export default function GangguanTmPage() {
   const { filters } = useFilter()
   const { isAdmin } = useAuth()
   const navigate = useNavigate()
+  const chartRef = useRef(null)
   
   const [activeTab, setActiveTab] = useState('semua')
   const [chartView, setChartView] = useState('monthly')
@@ -172,38 +174,91 @@ export default function GangguanTmPage() {
     return { ytd, target, sisa, persen, has_target };
   }
 
-  const exportToExcel = () => {
+  const exportToExcel = async () => {
     if (!dataRekap) return;
     const year = filters.year || new Date().getFullYear();
-    const wb = XLSX.utils.book_new();
+    const workbook = new ExcelJS.Workbook();
 
     ['lebih_5_mnt', 'kurang_5_mnt'].forEach((tipe, i) => {
       const tipeData = dataRekap[tipe];
       if (!tipeData) return;
       
       const chartData = processChartData(tipeData);
-      const wsData = [];
       const title = TABS[i+1].label;
       
-      wsData.push([`REKAPITULASI GANGGUAN TM ${title}`]);
-      wsData.push([`TAHUN ${year}`]);
-      wsData.push([]);
-      wsData.push(['Bulan', 'Target Bulanan', 'Realisasi Bulanan']);
+      const ws = workbook.addWorksheet(title.replace(/[><\/]/g, '').trim());
       
+      // Title rows
+      ws.mergeCells('A1:C1');
+      ws.getCell('A1').value = `REKAPITULASI GANGGUAN TM ${title.toUpperCase()}`;
+      ws.getCell('A1').font = { bold: true, size: 12 };
+
+      ws.mergeCells('A2:C2');
+      ws.getCell('A2').value = `TAHUN ${year}`;
+      ws.getCell('A2').font = { bold: true };
+
+      // Headers
+      const headers = ['Bulan', 'Target Bulanan', 'Realisasi Bulanan'];
+      const headerRow = ws.getRow(4);
+      headers.forEach((h, idx) => {
+        headerRow.getCell(idx + 1).value = h;
+      });
+      headerRow.font = { bold: true };
+      headerRow.commit();
+
+      // Data
+      let currentRow = 5;
       chartData.forEach(row => {
-        const rowData = [
-          MONTHS_FULL[row.bulan - 1],
-          row.targetBulanan !== null ? row.targetBulanan : '-',
-          row.realisasi !== null ? row.realisasi : '-'
-        ];
-        wsData.push(rowData);
+        const dataRow = ws.getRow(currentRow);
+        dataRow.getCell(1).value = MONTHS_FULL[row.bulan - 1];
+        dataRow.getCell(2).value = row.targetBulanan !== null ? Number(row.targetBulanan) : '—';
+        dataRow.getCell(3).value = row.realisasi !== null ? Number(row.realisasi) : '—';
+        dataRow.commit();
+        currentRow++;
       });
 
-      const ws = XLSX.utils.aoa_to_sheet(wsData);
-      XLSX.utils.book_append_sheet(wb, ws, title.replace(/[><\/]/g, '').trim()); // sanitize sheet name
+      // Auto-fit columns
+      ws.getColumn(1).width = 15;
+      ws.getColumn(2).width = 15;
+      ws.getColumn(3).width = 20;
     });
 
-    XLSX.writeFile(wb, `Rekap_Gangguan_TM_${year}.xlsx`);
+    // Capture and embed chart
+    if (chartRef && chartRef.current) {
+      try {
+        const imgDataUrl = await toPng(chartRef.current, {
+          quality: 1,
+          pixelRatio: 2,
+          backgroundColor: '#ffffff',
+        });
+
+        // Add sheet for Grafik
+        const wsChart = workbook.addWorksheet('Grafik');
+
+        // Add image to workbook
+        const imageId = workbook.addImage({
+          base64: imgDataUrl,
+          extension: 'png',
+        });
+
+        // Position the chart image
+        wsChart.addImage(imageId, {
+          tl: { col: 1, row: 1 },
+          ext: { width: 900, height: 450 }
+        });
+        
+      } catch (err) {
+        console.warn('[GangguanTm] Gagal capture atau sematkan grafik:', err);
+      }
+    }
+
+    // Save workbook
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `Rekap_Gangguan_TM_${year}.xlsx`;
+    link.click();
   }
 
   if (loading && !dataRekap) {
@@ -232,6 +287,7 @@ export default function GangguanTmPage() {
   const renderChart = (tipe, title) => {
     const cData = processChartData(dataRekap[tipe]);
     return (
+      <div ref={chartRef}>
       <ChartWrapper
         key={tipe}
         title={title}
@@ -285,6 +341,7 @@ export default function GangguanTmPage() {
           </ComposedChart>
         </ResponsiveContainer>
       </ChartWrapper>
+      </div>
     );
   }
 
@@ -583,7 +640,7 @@ export default function GangguanTmPage() {
 
       {/* Charts & Tables */}
       {activeTab === 'semua' ? (
-        <div className="mt-4 flex flex-col gap-6">
+        <div ref={chartRef} className="mt-4 flex flex-col gap-6">
           <ChartWrapper
             title="Total Gangguan TM (Lebih & Kurang dari 5 Menit)"
             subtitle="Grafik gabungan bulanan tahun 2026"

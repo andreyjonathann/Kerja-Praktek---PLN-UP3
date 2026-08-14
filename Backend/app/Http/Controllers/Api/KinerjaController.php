@@ -151,6 +151,9 @@ class KinerjaController extends Controller
             // Trigger Notification for each updated KPI
             $humanBidang = $humanBidangMap[strtolower($bidang)] ?? $bidang;
             foreach ($newData as $indikator => $val) {
+                if (is_array($val)) {
+                    continue;
+                }
                 app(\App\Services\NotificationService::class)->notifyAdminRealisasiBaru(
                     $humanBidang, 
                     str_replace('_', ' ', strtoupper($indikator)), 

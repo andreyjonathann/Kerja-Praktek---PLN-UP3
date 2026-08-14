@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+  Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, ComposedChart, Area
 } from 'recharts'
-import { Clock, TrendingUp, Target, Activity, Plus } from 'lucide-react'
+import { Clock, TrendingUp, Target, Activity, Plus, FileSpreadsheet } from 'lucide-react'
 import ChartWrapper from '@/components/ui/ChartWrapper'
 import KpiCard from '@/components/ui/KpiCard'
 import DataTable from '@/components/ui/DataTable'
@@ -16,6 +16,7 @@ import { useAuth } from '@/context/AuthContext'
 import { MONTHS_ID } from '@/utils/formatters'
 import api from '@/services/api'
 import MttrDetailModal from '@/components/ui/MttrDetailModal'
+import { exportWithChart } from '@/utils/exportWithChart'
 
 export default function MttrPage() {
   const navigate = useNavigate()
@@ -31,6 +32,7 @@ export default function MttrPage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedMonthData, setSelectedMonthData] = useState(null)
+  const chartRef = useRef(null)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -136,6 +138,28 @@ export default function MttrPage() {
     setIsModalOpen(true)
   }
 
+  const handleExportExcel = async () => {
+    const exportData = (data?.per_bulan || []).map(row => ({
+      Bulan: MONTHS_ID[row.bulan] || row.bulan,
+      'Realisasi MTTR (%)': row.realisasi != null ? row.realisasi : '-',
+      'Target Minimum (%)': row.target != null ? row.target : '-',
+      Status: row.status || '-',
+    }))
+    await exportWithChart({
+      data: exportData,
+      filename: `MTTR_Siaga1_${filters.year}`,
+      columns: [
+        { header: 'Bulan', key: 'Bulan' },
+        { header: 'Realisasi MTTR (%)', key: 'Realisasi MTTR (%)' },
+        { header: 'Target Minimum (%)', key: 'Target Minimum (%)' },
+        { header: 'Status', key: 'Status' },
+      ],
+      sheetName: 'MTTR Siaga 1',
+      chartRef,
+      title: `Data MTTR Siaga 1 Tahun ${filters.year}`,
+    })
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--page-gap, 20px)' }} className="animate-fade-in">
       
@@ -206,6 +230,17 @@ export default function MttrPage() {
             colorRgb="0, 162, 185"
           />
         )}
+        <button
+          onClick={handleExportExcel}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            padding: '6px 16px', borderRadius: 9, fontSize: '0.85rem', fontWeight: 700,
+            background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.2)',
+            color: '#10B981', cursor: 'pointer', transition: 'all 0.2s'
+          }}
+        >
+          <FileSpreadsheet size={16} /> Export Excel
+        </button>
       </div>
 
       <ChartWrapper 
@@ -214,18 +249,19 @@ export default function MttrPage() {
         loading={loading}
         error={error}
       >
-        <ResponsiveContainer width="100%" height={300}>
-          <ComposedChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
-            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--text-muted)' }} dy={10} />
-            <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--text-muted)' }} dx={-10} domain={[0, 100]} />
-            <Tooltip content={<CustomTooltip />} />
-            <Legend wrapperStyle={{ paddingTop: '20px' }} iconType="circle" />
-            <Area type="monotone" dataKey="Target (%)" stroke="none" fill="rgba(244, 63, 94, 0.1)" activeDot={false} />
-            <Line type="step" dataKey="Target (%)" stroke="#F43F5E" strokeWidth={2} strokeDasharray="5 5" dot={false} />
-            <Line type="monotone" dataKey="Realisasi (%)" stroke="#10B981" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
-          </ComposedChart>
-        </ResponsiveContainer>
+        <div ref={chartRef}>
+          <ResponsiveContainer width="100%" height={300}>
+            <ComposedChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--text-muted)' }} dy={10} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--text-muted)' }} dx={-10} domain={[0, 100]} />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend wrapperStyle={{ paddingTop: '20px' }} iconType="circle" />
+              <Bar name="Realisasi (%)" dataKey="Realisasi (%)" fill="#10B981" radius={[4, 4, 0, 0]} />
+              <Bar name="Target (%)" dataKey="Target (%)" fill="#F43F5E" radius={[4, 4, 0, 0]} />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
       </ChartWrapper>
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mt-6">

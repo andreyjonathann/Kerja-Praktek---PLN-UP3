@@ -49,7 +49,6 @@ export const TARIFF_SEGMENTS = [
 
 export const NAV_ITEMS = [
   { type: 'item', key: 'home', label: 'HOME', icon: 'Home', path: '/' },
-  { type: 'item', key: 'unit-up3', label: 'UNIT UP3', icon: 'Building2', path: '/unit-up3', k3: true },
   {
     type: 'group',
     group: 'NKO',
@@ -64,7 +63,7 @@ export const NAV_ITEMS = [
           { key: 'kt-jaringan', label: 'JARINGAN', path: '/kelola-target?bidang=jaringan' },
           { key: 'kt-pemasaran', label: 'PEMASARAN', path: '/kelola-target?bidang=pemasaran' },
           { key: 'kt-transaksi-energi', label: 'TRANSAKSI ENERGI', path: '/kelola-target?bidang=transaksi-energi' },
-          { key: 'kt-aset', label: 'ASET', path: '/kelola-target?bidang=aset' },
+          { key: 'kt-pengadaan', label: 'PENGADAAN', path: '/kelola-target?bidang=aset' },
           { key: 'kt-niaga', label: 'NIAGA', path: '/kelola-target?bidang=niaga' },
           { key: 'kt-keuangan', label: 'KEUANGAN', path: '/kelola-target?bidang=keuangan' },
           { key: 'k3-nko', label: 'K3', path: '/k3/nko' },
@@ -120,7 +119,6 @@ export const NAV_ITEMS = [
         group: 'PENGADAAN',
         items: [
           { key: 'pengadaan-kontrak', label: 'PENGADAAN (KONTRAK)', path: '/pengadaan/kontrak', icon: 'FileText' },
-          { key: 'pengadaan-pagu', label: 'PAGU ANGGARAN', path: '/pengadaan/kelola-pagu', icon: 'Wallet' },
         ],
       },
       {
@@ -136,7 +134,7 @@ export const NAV_ITEMS = [
         type: 'subgroup',
         group: 'KEUANGAN',
         items: [
-          { key: 'input-kpi-keuangan', label: 'INPUT KPI', path: '/input' },
+          { key: 'keuangan-skko-skki', label: 'SKKO & SKKI', path: '/keuangan', icon: 'Wallet' },
         ],
       },
       {

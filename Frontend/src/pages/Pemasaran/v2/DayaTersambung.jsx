@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import {
   Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
@@ -40,6 +40,7 @@ export default function DayaTersambungV2Page() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const { filters }          = useFilter()
+  const chartRef = useRef(null)
   const [tab, setTab]        = useState('monthly')
   const [data, setData]      = useState([])
   const [loading, setLoading]= useState(true)
@@ -194,12 +195,12 @@ export default function DayaTersambungV2Page() {
               </button>
             </div>
           )}
-          <ExportModal kpiType="Daya Tersambung" />
+          <ExportModal kpiType="Daya Tersambung" chartRef={chartRef} />
         </div>
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div ref={chartRef} className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <ChartWrapper
           title={tab === 'monthly' ? 'Daya Tersambung Bulanan' : 'Daya Tersambung Kumulatif'}
           subtitle={`Target vs Realisasi kVA · ${filters.year}`}

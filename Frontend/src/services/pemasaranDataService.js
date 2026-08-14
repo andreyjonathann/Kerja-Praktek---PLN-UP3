@@ -83,12 +83,20 @@ export async function getMonthlyTarget(year, month) {
   const mobTr = dbTargets.find(t => t.indikator === 'PLN Mobile Transaksi');
   const mobNi = dbTargets.find(t => t.indikator === 'PLN Mobile Nilai');
 
-  if (pen) dbPenjualanTgt = parseFloat(pen.target);
-  if (pel) dbPelangganTgt = parseFloat(pel.target);
-  if (day) dbDayaTgt = parseFloat(day.target);
-  if (penBp) dbPendapatanTgt = parseFloat(penBp.target);
-  if (mobTr) dbMobileTrxTgt = parseFloat(mobTr.target);
-  if (mobNi) dbMobileNilaiTgt = parseFloat(mobNi.target);
+  const parseTargetVal = (t, defaultVal) => {
+    if (t && t.target !== null && t.target !== undefined && t.target !== '') {
+      const parsed = parseFloat(t.target);
+      return isNaN(parsed) ? defaultVal : parsed;
+    }
+    return defaultVal;
+  };
+
+  dbPenjualanTgt = parseTargetVal(pen, 59.0);
+  dbPelangganTgt = parseTargetVal(pel, 10158.0);
+  dbDayaTgt = parseTargetVal(day, 43.73);
+  dbPendapatanTgt = parseTargetVal(penBp, 24.5);
+  dbMobileTrxTgt = parseTargetVal(mobTr, 1704000);
+  dbMobileNilaiTgt = parseTargetVal(mobNi, 105);
 
   // Convert targets to form units
   // Penjualan: GWh -> kWh (1 GWh = 1,000,000 kWh)

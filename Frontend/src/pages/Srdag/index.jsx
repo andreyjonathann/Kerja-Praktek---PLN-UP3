@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, ComposedChart, Area
 } from 'recharts'
-import { Clock, TrendingUp, Target, Activity, Plus, CheckCircle, XCircle } from 'lucide-react'
+import { Clock, TrendingUp, Target, Activity, Plus, CheckCircle, XCircle, FileSpreadsheet } from 'lucide-react'
 import ChartWrapper from '@/components/ui/ChartWrapper'
 import KpiCard from '@/components/ui/KpiCard'
 import DataTable from '@/components/ui/DataTable'
@@ -16,6 +16,7 @@ import { useFilter } from '@/context/FilterContext'
 import { useAuth } from '@/context/AuthContext'
 import { MONTHS_ID } from '@/utils/formatters'
 import api from '@/services/api'
+import { exportWithChart } from '@/utils/exportWithChart'
 
 export default function SrdagPage() {
   const navigate = useNavigate()
@@ -32,6 +33,7 @@ export default function SrdagPage() {
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedMonthData, setSelectedMonthData] = useState(null)
+  const chartRef = useRef(null)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -156,6 +158,30 @@ export default function SrdagPage() {
     }
   ];
 
+  const handleExportExcel = async () => {
+    const exportData = chartData.map(row => ({
+      Bulan: row.name,
+      'Realisasi (%)': row['Realisasi (%)'] != null ? row['Realisasi (%)'].toFixed(2) : '-',
+      'Target (%)': row['Target (%)'] != null ? row['Target (%)'].toFixed(2) : '-',
+      'Jumlah Berhasil': row['Jumlah Berhasil'],
+      'Total Gangguan': row['Jumlah Total'],
+    }))
+    await exportWithChart({
+      data: exportData,
+      filename: `SRDAG_${filters.year}`,
+      columns: [
+        { header: 'Bulan', key: 'Bulan' },
+        { header: 'Realisasi (%)', key: 'Realisasi (%)' },
+        { header: 'Target (%)', key: 'Target (%)' },
+        { header: 'Jumlah Berhasil', key: 'Jumlah Berhasil' },
+        { header: 'Total Gangguan', key: 'Total Gangguan' },
+      ],
+      sheetName: 'SRDAG',
+      chartRef,
+      title: `Data SRDAG Tahun ${filters.year}`,
+    })
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--page-gap, 20px)' }} className="animate-fade-in">
       
@@ -225,6 +251,17 @@ export default function SrdagPage() {
             colorRgb="0, 162, 185"
           />
         )}
+        <button
+          onClick={handleExportExcel}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            padding: '6px 16px', borderRadius: 9, fontSize: '0.85rem', fontWeight: 700,
+            background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.2)',
+            color: '#10B981', cursor: 'pointer', transition: 'all 0.2s'
+          }}
+        >
+          <FileSpreadsheet size={16} /> Export Excel
+        </button>
       </div>
 
       <ChartWrapper 
@@ -233,7 +270,7 @@ export default function SrdagPage() {
         loading={loading}
         error={error}
       >
-        <div className="h-[350px] mt-4">
+        <div ref={chartRef} className="h-[350px] mt-4">
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />

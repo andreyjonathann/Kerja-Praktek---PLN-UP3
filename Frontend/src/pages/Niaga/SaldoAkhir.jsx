@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import {
@@ -40,6 +40,7 @@ export default function SaldoAkhirPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const { filters } = useFilter()
+  const chartRef = useRef(null)
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -185,7 +186,7 @@ export default function SaldoAkhirPage() {
         margin: '12px 0 16px',
       }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
-          <ExportModal kpiType="Saldo Akhir" />
+          <ExportModal kpiType="Saldo Akhir" chartRef={chartRef} />
           {(user?.role === 'pic_niaga' || user?.role === 'admin' || user?.role === 'superadmin' || !user?.role) && (
             <div style={{
               display: 'inline-flex',
@@ -229,7 +230,7 @@ export default function SaldoAkhirPage() {
       </div>
 
       {/* ── Charts ─────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 gap-5">
+      <div ref={chartRef} className="grid grid-cols-1 gap-5">
         <ChartWrapper
           title="Grafik Saldo Akhir"
           subtitle={`Rata-rata Saldo vs Target (Rp) · ${filters.year}`}

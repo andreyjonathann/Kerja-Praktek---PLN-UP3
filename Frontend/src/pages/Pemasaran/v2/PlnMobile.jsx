@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import {
   Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
@@ -52,6 +52,7 @@ export default function PlnMobilePage() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const { filters }          = useFilter()
+  const chartRef = useRef(null)
   const [tab, setTab]        = useState('monthly')
   const [data, setData]      = useState([])
   const [loading, setLoading]= useState(true)
@@ -232,12 +233,12 @@ export default function PlnMobilePage() {
               </button>
             </div>
           )}
-          <ExportModal kpiType="PLN Mobile" />
+          <ExportModal kpiType="PLN Mobile" chartRef={chartRef} />
         </div>
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div ref={chartRef} className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <ChartWrapper
           title={tab === 'monthly' ? 'Jumlah Transaksi Bulanan' : 'Jumlah Transaksi Kumulatif'}
           subtitle={`Target vs Realisasi transaksi · ${filters.year}`}

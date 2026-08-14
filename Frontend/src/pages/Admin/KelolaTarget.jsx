@@ -146,7 +146,7 @@ export default function KelolaTargetPage() {
             </div>
             <div>
               <h1 className="text-base font-bold text-slate-800 leading-tight">
-                Kelola Target {activeBidang && `— Bidang ${activeBidang}`}
+                Kelola Target {activeBidang && `— Bidang ${activeBidang === 'ASET' ? 'PENGADAAN' : activeBidang}`}
               </h1>
               <p className="text-xs text-slate-500 mt-0.5 font-medium">Manajemen target tahunan untuk seluruh bidang</p>
             </div>
@@ -193,14 +193,14 @@ export default function KelolaTargetPage() {
                 <div className="px-6 pt-5 pb-5 border-b border-[#e5e7eb] flex items-start justify-between bg-slate-50/50">
                   <div>
                     <h2 className="text-[18px] font-bold text-slate-800 uppercase tracking-wide">
-                      Daftar Target — Bidang {bidang}
+                      Daftar Target — Bidang {bidang === 'ASET' ? 'PENGADAAN' : bidang}
                     </h2>
                     <p className="text-xs text-slate-400 mt-2 font-medium" style={{ marginBottom: '20px' }}>
                       Klik pada indikator atau tombol aksi untuk mengubah target bulanan
                     </p>
                   </div>
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-xs shadow-sm mt-0.5" style={{ backgroundColor: getBidangColor(bidang) }}>
-                    {bidang.substring(0, 2)}
+                    {bidang === 'ASET' ? 'PE' : bidang.substring(0, 2)}
                   </div>
                 </div>
 

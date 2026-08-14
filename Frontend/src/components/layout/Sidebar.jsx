@@ -76,7 +76,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
       
       if (item.group === 'NKO') {
          // Hide NKO for roles that only have their own specific page / module
-         const noNkoRoles = ['pic_jaringan', 'pic_pengadaan', 'pic_transaksi_energi', 'pic_k3', 'admin_k3'];
+         const noNkoRoles = ['pic_jaringan', 'pic_pengadaan', 'pic_transaksi_energi', 'pic_k3', 'admin_k3', 'pic_keuangan', 'pic_niaga', 'pic_aset'];
          if (user && noNkoRoles.includes(user.role)) return [];
          const filteredItems = item.items.filter(i => i.group !== 'KELOLA TARGET');
          return [{ ...item, items: filteredItems }];

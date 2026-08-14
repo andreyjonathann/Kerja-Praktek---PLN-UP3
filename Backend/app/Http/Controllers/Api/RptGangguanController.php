@@ -172,13 +172,13 @@ class RptGangguanController extends Controller
         $trendBulanan = [];
         for ($m = 1; $m <= 12; $m++) {
             $monthData = $allData->where('bulan', $m);
+            $valMonth = $targetMaster ? $targetMaster->{'target_'.$bulanMap[$m]} : null;
+            $tgtMonth = $valMonth !== null ? (float) $valMonth : null;
+
             if ($monthData->count() > 0) {
                 $jmlGangguan = $monthData->sum('jumlah_gangguan');
                 $totDurasi = $monthData->sum('total_durasi_menit');
                 $rptMonth = $totDurasi / $jmlGangguan;
-                
-                $valMonth = $targetMaster ? $targetMaster->{'target_'.$bulanMap[$m]} : null;
-                $tgtMonth = $valMonth !== null ? (float) $valMonth : null;
 
                 $persenBulanIni = null;
                 if ($tgtMonth !== null && $tgtMonth > 0) {
@@ -195,6 +195,16 @@ class RptGangguanController extends Controller
                     'total_durasi' => round($totDurasi, 2),
                     'target' => $tgtMonth,
                     'persen_pencapaian' => $persenBulanIni
+                ];
+            } else {
+                $trendBulanan[] = [
+                    'id' => null,
+                    'bulan' => $m,
+                    'rpt_realisasi' => null,
+                    'jumlah_gangguan' => null,
+                    'total_durasi' => null,
+                    'target' => $tgtMonth,
+                    'persen_pencapaian' => null
                 ];
             }
         }
