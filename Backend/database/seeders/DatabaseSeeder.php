@@ -118,6 +118,7 @@ class DatabaseSeeder extends Seeder
             );
         }
 
+        $this->call(K3MasterDataSeeder::class);
         $this->call(TargetTahunanSeeder::class);
         $this->call(TargetTahunanRatingNegatifSeeder::class);
         $this->call(NkoParameterSeeder::class);
