@@ -153,12 +153,17 @@ export default function AssessmentInputPage() {
       }))
       
       setSuccess(true)
-      notify.success(`Berhasil menyimpan penilaian ${activeCategory?.code || ''}.`)
+      notify.success(`Berhasil menyimpan penilaian ${selectedCriteria?.code || activeCategory?.code || ''}.`)
       window.scrollTo({ top: 0, behavior: 'smooth' })
       
+      // Kembali ke Langkah 2: Pilih Kriteria
+      setSelectedCriteria(null)
+      setFormDetail({ level: null, catatan: '', pic: '' })
+      setStep(2)
+
       setTimeout(() => {
-        navigate(`/k3/assessment/${activeCategory?.code.toLowerCase() || 'lmc'}`)
-      }, 2000)
+        setSuccess(false)
+      }, 3000)
       
     } catch(err) {
       console.error(err)
@@ -196,7 +201,7 @@ export default function AssessmentInputPage() {
         {/* SUCCESS */}
         {success && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 16px', borderRadius: 10, background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#16a34a', fontWeight: 600, fontSize: '0.86rem' }}>
-            <CheckCircle size={16} /> Data Assessment Berhasil Disimpan! Mengalihkan...
+            <CheckCircle size={16} /> Data Penilaian Kriteria Berhasil Disimpan!
           </div>
         )}
 

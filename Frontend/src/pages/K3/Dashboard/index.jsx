@@ -479,18 +479,18 @@ export default function K3DashboardPage() {
         />
         <KpiCard
           title="Temuan Open"
-          value={MOCK_TEMUAN_OPEN}
-          unit="(Modul belum aktif)"
+          value={String(dashboardData?.temuan_open ?? 0)}
+          unit="temuan"
           icon={AlertTriangle}
-          color="gray"
+          color="amber"
           isInverse
         />
         <KpiCard
           title="Kegiatan Bulan Ini"
-          value={MOCK_KEGIATAN_BULAN}
-          unit="(Modul belum aktif)"
+          value={String(dashboardData?.kegiatan_bulan_ini ?? 0)}
+          unit="kegiatan"
           icon={CalendarDays}
-          color="gray"
+          color="indigo"
         />
       </div>
 

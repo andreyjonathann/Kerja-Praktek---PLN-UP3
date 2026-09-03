@@ -8,6 +8,8 @@ use App\Models\K3Category;
 use App\Models\K3Criterion;
 use App\Models\K3Target;
 use App\Models\K3Assessment;
+use App\Models\K3Finding;
+use App\Models\K3Activity;
 
 class K3Controller extends Controller
 {
@@ -393,7 +395,6 @@ class K3Controller extends Controller
         $categories = K3Category::with(['criteria'])->orderBy('sort_order')->get();
 
         $assessments = K3Assessment::where('period', $period)
-            ->whereIn('status', ['submitted', 'approved'])
             ->get()
             ->keyBy('criteria_id');
 
@@ -441,6 +442,12 @@ class K3Controller extends Controller
             ->whereIn('status', ['draft', 'submitted', 'revisi'])
             ->count();
 
+        $temuanOpen = K3Finding::where('status', '!=', 'closed')->count();
+
+        $kegiatanBulanIni = K3Activity::whereYear('tanggal', $tahun)
+            ->whereMonth('tanggal', date('n'))
+            ->count();
+
         return response()->json([
             'data' => [
                 'period'             => $period,
@@ -448,6 +455,8 @@ class K3Controller extends Controller
                 'semester'           => $semester,
                 'overall_score'      => $overallScore,
                 'active_assessments' => $activeAssessments,
+                'temuan_open'        => $temuanOpen,
+                'kegiatan_bulan_ini' => $kegiatanBulanIni,
                 'categories'         => $summary,
             ]
         ]);
@@ -471,7 +480,6 @@ class K3Controller extends Controller
         ];
 
         $assessments = K3Assessment::whereIn('period', $periods)
-            ->whereIn('status', ['submitted', 'approved'])
             ->get()
             ->groupBy('period');
 
