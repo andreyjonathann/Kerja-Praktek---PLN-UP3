@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react'
 import Sidebar from './Sidebar'
 import Header  from './Header'
+import BidangSubNav from './BidangSubNav'
 
 export default function Layout({ children }) {
   const [mobileOpen, setMobileOpen]   = useState(false)
@@ -80,6 +81,7 @@ export default function Layout({ children }) {
         />
 
         <main className="page-content animate-fade-in">
+          <BidangSubNav />
           {children}
         </main>
       </div>

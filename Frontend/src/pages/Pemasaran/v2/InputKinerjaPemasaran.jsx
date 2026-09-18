@@ -226,8 +226,20 @@ export default function InputKinerjaPermasaranPage() {
     try {
       const parseRawNumber = (val) => {
         if (val == null || val === '') return 0;
-        const cleaned = val.toString().replace(/\./g, '').replace(/,/g, '.');
-        return parseFloat(cleaned) || 0;
+        if (typeof val === 'number') return val;
+        let str = val.toString().trim();
+        if (str.includes(',')) {
+          str = str.replace(/\./g, '').replace(',', '.');
+          return parseFloat(str) || 0;
+        }
+        if (str.includes('.')) {
+          const parts = str.split('.');
+          if (parts.length === 2 && parts[1].length <= 3 && parseInt(parts[0], 10) < 1000) {
+            return parseFloat(str) || 0;
+          }
+          str = str.replace(/\./g, '');
+        }
+        return parseFloat(str) || 0;
       }
 
       const payload = {
@@ -321,21 +333,26 @@ export default function InputKinerjaPermasaranPage() {
   // Helper to format display values
   const formatInputSeparator = (val) => {
     if (val == null || val === '') return '';
+    if (typeof val === 'number') {
+      return val.toLocaleString('id-ID', { maximumFractionDigits: 3 });
+    }
     let str = val.toString();
-    str = str.replace(/\./g, '');
-    let clean = str.replace(/[^0-9,]/g, '');
-    const commaIndex = clean.indexOf(',');
-    if (commaIndex !== -1) {
-      const beforeComma = clean.substring(0, commaIndex).replace(/,/g, '');
-      const afterComma = clean.substring(commaIndex + 1).replace(/,/g, '');
-      clean = beforeComma + ',' + afterComma;
+    if (str.includes(',')) {
+      const parts = str.split(',');
+      const before = parts[0].replace(/\./g, '');
+      const formattedBefore = before ? parseInt(before, 10).toLocaleString('id-ID') : '';
+      return parts.length > 1 ? formattedBefore + ',' + parts[1] : formattedBefore;
     }
-    const parts = clean.split(',');
-    let before = parts[0];
-    if (before !== '') {
-      before = parseInt(before, 10).toLocaleString('id-ID');
+    if (str.includes('.')) {
+      const parts = str.split('.');
+      if (parts.length === 2 && parts[1].length <= 3 && parseInt(parts[0], 10) < 1000) {
+        const formattedBefore = parseInt(parts[0], 10).toLocaleString('id-ID');
+        return formattedBefore + ',' + parts[1];
+      }
     }
-    return parts.length > 1 ? before + ',' + parts[1] : before;
+    let clean = str.replace(/\./g, '');
+    let num = parseInt(clean, 10);
+    return isNaN(num) ? clean : num.toLocaleString('id-ID');
   }
 
   // ── Shared: flat input rows ──

@@ -163,7 +163,7 @@ export default function RptDetailModal({
           </div>
         </div>
 
-        {user?.role !== 'viewer' && rowData.id && (
+        {(user?.role === 'pic_jaringan' || user?.role === 'admin') && rowData.id && (
           <div style={{ display: 'flex', gap: 12 }}>
             <button onClick={handleEdit} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '11px 0', borderRadius: 10, border: '1.5px solid #2563eb', background: 'transparent', color: '#2563eb', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
               <Edit2 size={16} /> Edit Data

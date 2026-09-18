@@ -121,14 +121,20 @@ class KinerjaController extends Controller
             $kinerja->refresh();
             NkoCalculationService::calculateJaringan($kinerja);
             
-            // Trigger Notification
-            app(\App\Services\NotificationService::class)->notifyAdminRealisasiBaru(
-                'Jaringan', 
-                'SAIDI & SAIFI', 
-                $bulan, 
-                $tahun, 
-                'Diperbarui'
-            );
+            // Trigger Notification only if actual non-zero data was provided
+            $hasData = false;
+            foreach ($data as $k => $v) {
+                if ($v > 0) { $hasData = true; break; }
+            }
+            if ($hasData) {
+                app(\App\Services\NotificationService::class)->notifyAdminRealisasiBaru(
+                    'Jaringan', 
+                    'SAIDI & SAIFI', 
+                    $bulan, 
+                    $tahun, 
+                    'Diperbarui'
+                );
+            }
         } else {
             // Generic JSON - merge new data with existing to avoid overwriting other KPIs
             $existing = $kinerja->data_realisasi ?? [];
@@ -148,10 +154,25 @@ class KinerjaController extends Controller
             ];
             NkoCalculationService::calculateGeneric($kinerja, $humanBidangMap[strtolower($bidang)]);
             
-            // Trigger Notification for each updated KPI
+            // Trigger Notification for updated KPIs (only if non-empty and non-zero)
             $humanBidang = $humanBidangMap[strtolower($bidang)] ?? $bidang;
+            $notifiedSummary = false;
             foreach ($newData as $indikator => $val) {
-                if (is_array($val)) {
+                if (is_array($val) || $val === null || $val === '' || $val == 0) {
+                    continue;
+                }
+                // Avoid flooding with individual tarif sub-keys, notify main indicators or meaningful fields
+                if (str_contains($indikator, '_kwh_') || str_contains($indikator, 'pelanggan_') || str_contains($indikator, 'daya_va_')) {
+                    if (!$notifiedSummary) {
+                        app(\App\Services\NotificationService::class)->notifyAdminRealisasiBaru(
+                            $humanBidang, 
+                            'Kinerja ' . $humanBidang, 
+                            $bulan, 
+                            $tahun, 
+                            'Tersimpan'
+                        );
+                        $notifiedSummary = true;
+                    }
                     continue;
                 }
                 app(\App\Services\NotificationService::class)->notifyAdminRealisasiBaru(

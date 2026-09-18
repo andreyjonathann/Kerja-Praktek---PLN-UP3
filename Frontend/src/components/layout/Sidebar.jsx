@@ -39,7 +39,34 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
       itemParams.forEach((v, k) => { if (locParams.get(k) !== v) matches = false })
       return matches
     }
-    return location.pathname === itemPath || (itemPath !== '/' && location.pathname.startsWith(itemPath + '/'))
+
+    if (location.pathname === itemPath) return true;
+
+    if (user?.role === 'manager') {
+      if (itemPath === '/saidi' && (location.pathname.startsWith('/saidi') || location.pathname.startsWith('/saifi') || location.pathname.startsWith('/ens') || location.pathname.startsWith('/jaringan/'))) {
+        return true;
+      }
+      if (itemPath === '/pemasaran/penjualan' && location.pathname.startsWith('/pemasaran')) {
+        return true;
+      }
+      if (itemPath === '/susut' && (location.pathname.startsWith('/susut') || location.pathname.startsWith('/p2tl') || location.pathname.startsWith('/ganti-meter'))) {
+        return true;
+      }
+      if (itemPath === '/pengadaan/kontrak' && location.pathname.startsWith('/pengadaan')) {
+        return true;
+      }
+      if (itemPath === '/niaga/pelunasan' && location.pathname.startsWith('/niaga')) {
+        return true;
+      }
+      if (itemPath === '/keuangan' && location.pathname.startsWith('/keuangan')) {
+        return true;
+      }
+      if (itemPath === '/k3/dashboard' && location.pathname.startsWith('/k3')) {
+        return true;
+      }
+    }
+
+    return itemPath !== '/' && location.pathname.startsWith(itemPath + '/');
   }
 
   const isAnyChildActive = (items) => {
@@ -52,8 +79,23 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
   }
 
   const getFilteredNavItems = () => {
-    // Full admin → everything
-    if (isAdmin) return NAV_ITEMS
+    const isPerencanaan = user?.role === 'perencanaan';
+    const isManager     = user?.role === 'manager';
+
+    if (isAdmin) return NAV_ITEMS;
+
+    if (isManager) {
+      return [
+        { type: 'item', key: 'home', label: 'HOME', icon: 'Home', path: '/' },
+        { type: 'item', key: 'bidang-jaringan', label: 'JARINGAN', icon: 'Zap', path: '/saidi' },
+        { type: 'item', key: 'bidang-pemasaran', label: 'PEMASARAN', icon: 'ShoppingCart', path: '/pemasaran/penjualan' },
+        { type: 'item', key: 'bidang-te', label: 'TRANSAKSI ENERGI', icon: 'Activity', path: '/susut' },
+        { type: 'item', key: 'bidang-pengadaan', label: 'PENGADAAN', icon: 'FileText', path: '/pengadaan/kontrak' },
+        { type: 'item', key: 'bidang-niaga', label: 'NIAGA', icon: 'Briefcase', path: '/niaga/pelunasan' },
+        { type: 'item', key: 'bidang-keuangan', label: 'KEUANGAN', icon: 'Wallet', path: '/keuangan' },
+        { type: 'item', key: 'bidang-k3', label: 'K3', icon: 'ShieldCheck', path: '/k3/dashboard' },
+      ];
+    }
     
     const roleMap = {
       'pic_jaringan': 'JARINGAN',
@@ -64,19 +106,17 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
       'pic_keuangan': 'KEUANGAN',
       'pic_aset': 'ASET',
       'pic_k3': 'K3',
-      'admin_k3': 'K3'
     };
     
-    const isPerencanaan = user?.role === 'perencanaan';
     const userGroup = user ? roleMap[user.role] : null;
     
     return NAV_ITEMS.flatMap(item => {
       if (item.key === 'home') return [item];
-      if (item.k3 && user?.role !== 'admin_k3' && user?.role !== 'pic_k3') return []; // Hide K3 groups for non-K3 PIC roles
+      if (item.k3 && user?.role !== 'pic_k3') return []; // Hide K3 groups for non-K3 PIC roles
       
       if (item.group === 'NKO') {
          // Hide NKO for roles that only have their own specific page / module
-         const noNkoRoles = ['pic_jaringan', 'pic_pengadaan', 'pic_transaksi_energi', 'pic_k3', 'admin_k3', 'pic_keuangan', 'pic_niaga', 'pic_aset'];
+         const noNkoRoles = ['pic_jaringan', 'pic_pemasaran', 'pic_pengadaan', 'pic_transaksi_energi', 'pic_k3', 'pic_keuangan', 'pic_niaga', 'pic_aset'];
          if (user && noNkoRoles.includes(user.role)) return [];
          const filteredItems = item.items.filter(i => i.group !== 'KELOLA TARGET');
          return [{ ...item, items: filteredItems }];

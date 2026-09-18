@@ -69,7 +69,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 export default function GangguanTmPage() {
   const { filters } = useFilter()
-  const { isAdmin } = useAuth()
+  const { user, isAdmin } = useAuth()
   const navigate = useNavigate()
   const chartRef = useRef(null)
   
@@ -488,68 +488,70 @@ export default function GangguanTmPage() {
 
         {/* Action Buttons */}
         <div className="flex items-center gap-3">
-          <div style={{
-            display: 'inline-flex',
-            background: 'rgba(0, 162, 185, 0.05)',
-            padding: 4,
-            borderRadius: 12,
-            border: '1px solid rgba(0, 162, 185, 0.15)',
-            gap: 8,
-            cursor: 'default'
-          }}>
-            <button
-              onClick={() => navigate('/jaringan/gangguan-tm/input-kurang-5-menit')}
-              style={{
-                padding: '6px 12px',
-                borderRadius: 9,
-                fontSize: '0.85rem',
-                fontWeight: 700,
-                transition: 'all 0.2s ease',
-                border: 'none',
-                cursor: 'pointer',
-                background: 'var(--bg-card)',
-                color: '#00A2B9',
-                boxShadow: '0 2px 8px rgba(0, 162, 185, 0.15)',
-                display: 'flex', alignItems: 'center', gap: '6px'
-              }}
-              onMouseEnter={e => {
-                  e.currentTarget.style.background = '#00A2B9';
-                  e.currentTarget.style.color = '#FFFFFF';
-              }}
-              onMouseLeave={e => {
-                  e.currentTarget.style.background = 'var(--bg-card)';
-                  e.currentTarget.style.color = '#00A2B9';
-              }}
-            >
-              <Plus size={16} /> Input &lt; 5 Menit
-            </button>
-            <button
-              onClick={() => navigate('/jaringan/gangguan-tm/input-lebih-5-menit')}
-              style={{
-                padding: '6px 12px',
-                borderRadius: 9,
-                fontSize: '0.85rem',
-                fontWeight: 700,
-                transition: 'all 0.2s ease',
-                border: 'none',
-                cursor: 'pointer',
-                background: 'var(--bg-card)',
-                color: '#00A2B9',
-                boxShadow: '0 2px 8px rgba(0, 162, 185, 0.15)',
-                display: 'flex', alignItems: 'center', gap: '6px'
-              }}
-              onMouseEnter={e => {
-                  e.currentTarget.style.background = '#00A2B9';
-                  e.currentTarget.style.color = '#FFFFFF';
-              }}
-              onMouseLeave={e => {
-                  e.currentTarget.style.background = 'var(--bg-card)';
-                  e.currentTarget.style.color = '#00A2B9';
-              }}
-            >
-              <Plus size={16} /> Input &gt; 5 Menit
-            </button>
-          </div>
+          {(user?.role === 'pic_jaringan' || user?.role === 'admin') && (
+            <div style={{
+              display: 'inline-flex',
+              background: 'rgba(0, 162, 185, 0.05)',
+              padding: 4,
+              borderRadius: 12,
+              border: '1px solid rgba(0, 162, 185, 0.15)',
+              gap: 8,
+              cursor: 'default'
+            }}>
+              <button
+                onClick={() => navigate('/jaringan/gangguan-tm/input-kurang-5-menit')}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: 9,
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  transition: 'all 0.2s ease',
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: 'var(--bg-card)',
+                  color: '#00A2B9',
+                  boxShadow: '0 2px 8px rgba(0, 162, 185, 0.15)',
+                  display: 'flex', alignItems: 'center', gap: '6px'
+                }}
+                onMouseEnter={e => {
+                    e.currentTarget.style.background = '#00A2B9';
+                    e.currentTarget.style.color = '#FFFFFF';
+                }}
+                onMouseLeave={e => {
+                    e.currentTarget.style.background = 'var(--bg-card)';
+                    e.currentTarget.style.color = '#00A2B9';
+                }}
+              >
+                <Plus size={16} /> Input &lt; 5 Menit
+              </button>
+              <button
+                onClick={() => navigate('/jaringan/gangguan-tm/input-lebih-5-menit')}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: 9,
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  transition: 'all 0.2s ease',
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: 'var(--bg-card)',
+                  color: '#00A2B9',
+                  boxShadow: '0 2px 8px rgba(0, 162, 185, 0.15)',
+                  display: 'flex', alignItems: 'center', gap: '6px'
+                }}
+                onMouseEnter={e => {
+                    e.currentTarget.style.background = '#00A2B9';
+                    e.currentTarget.style.color = '#FFFFFF';
+                }}
+                onMouseLeave={e => {
+                    e.currentTarget.style.background = 'var(--bg-card)';
+                    e.currentTarget.style.color = '#00A2B9';
+                }}
+              >
+                <Plus size={16} /> Input &gt; 5 Menit
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

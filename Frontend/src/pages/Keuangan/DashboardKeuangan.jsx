@@ -135,6 +135,57 @@ export default function DashboardKeuangan() {
         </div>
       </div>
 
+      {/* Scorecard Saldo SKKI & SKKO */}
+      <div className="card p-5">
+        <h3 className="section-title mb-3" style={{ fontSize: '1.05rem', fontWeight: 800 }}>
+          SCORECARD KEUANGAN — SALDO ANGGARAN SKKI &amp; SKKO {filters.year}
+        </h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr style={{ background: 'var(--bg-table-head, #f8fafc)', borderBottom: '2px solid var(--border)' }}>
+                <th className="p-3 text-left font-bold text-slate-600">JENIS ANGGARAN</th>
+                <th className="p-3 text-right font-bold text-slate-600">PAGU ANGGARAN</th>
+                <th className="p-3 text-right font-bold text-slate-600">TERKONTRAK</th>
+                <th className="p-3 text-right font-bold text-slate-600">REALISASI BAYAR</th>
+                <th className="p-3 text-right font-bold text-slate-600">SISA SALDO</th>
+                <th className="p-3 text-center font-bold text-slate-600">% SERAPAN (REALISASI)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="border-b border-slate-100 hover:bg-slate-50/50">
+                <td className="p-3 font-bold text-sky-600">SKKI (Investasi)</td>
+                <td className="p-3 text-right font-semibold">Rp {formatNumber(skki.pagu || 0)}</td>
+                <td className="p-3 text-right font-semibold">Rp {formatNumber(skki.terkontrak || 0)}</td>
+                <td className="p-3 text-right font-semibold text-emerald-600">Rp {formatNumber(skki.realisasi || 0)}</td>
+                <td className="p-3 text-right font-bold text-amber-600">Rp {formatNumber(skki.sisa_pagu || 0)}</td>
+                <td className="p-3 text-center font-bold text-emerald-600">{pctRealisasiSkki}%</td>
+              </tr>
+              <tr className="border-b border-slate-100 hover:bg-slate-50/50">
+                <td className="p-3 font-bold text-purple-600">SKKO (Operasi)</td>
+                <td className="p-3 text-right font-semibold">Rp {formatNumber(skko.pagu || 0)}</td>
+                <td className="p-3 text-right font-semibold">Rp {formatNumber(skko.terkontrak || 0)}</td>
+                <td className="p-3 text-right font-semibold text-emerald-600">Rp {formatNumber(skko.realisasi || 0)}</td>
+                <td className="p-3 text-right font-bold text-amber-600">Rp {formatNumber(skko.sisa_pagu || 0)}</td>
+                <td className="p-3 text-center font-bold text-emerald-600">{pctRealisasiSkko}%</td>
+              </tr>
+              <tr className="bg-slate-50 font-bold" style={{ borderTop: '2px solid var(--border)' }}>
+                <td className="p-3 text-slate-800">TOTAL GABUNGAN</td>
+                <td className="p-3 text-right text-slate-900">Rp {formatNumber((skki.pagu || 0) + (skko.pagu || 0))}</td>
+                <td className="p-3 text-right text-slate-900">Rp {formatNumber((skki.terkontrak || 0) + (skko.terkontrak || 0))}</td>
+                <td className="p-3 text-right text-emerald-700">Rp {formatNumber((skki.realisasi || 0) + (skko.realisasi || 0))}</td>
+                <td className="p-3 text-right text-amber-700">Rp {formatNumber((skki.sisa_pagu || 0) + (skko.sisa_pagu || 0))}</td>
+                <td className="p-3 text-center text-emerald-700">
+                  {((skki.pagu || 0) + (skko.pagu || 0)) > 0
+                    ? ((((skki.realisasi || 0) + (skko.realisasi || 0)) / ((skki.pagu || 0) + (skko.pagu || 0))) * 100).toFixed(1)
+                    : 0}%
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       {/* KPI Cards */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(220px, 1fr))', gap:16 }}>
         <KpiCard title={`Pagu ${activeTab.toUpperCase()}`} value={`Rp ${formatNumber(current.pagu)}`} icon={Wallet} color="teal" loading={loading} />

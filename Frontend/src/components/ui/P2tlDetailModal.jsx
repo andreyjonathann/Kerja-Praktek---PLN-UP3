@@ -20,7 +20,7 @@ export default function P2tlDetailModal({
 
   if (!open || !rowData) return null
 
-  const isViewer = user?.role === 'viewer'
+  const isViewer = user?.role === 'viewer' || user?.role === 'manager' || user?.role === 'perencanaan'
   const hasData = rowData.id != null
 
   const bulanNum  = rowData.bulan_angka ?? 0

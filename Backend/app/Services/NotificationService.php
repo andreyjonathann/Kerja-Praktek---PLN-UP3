@@ -12,36 +12,43 @@ class NotificationService
      */
     public function notifyTargetUpdated($bidang, $indikator, $targetLama, $targetBaru, $tahun)
     {
+        $bidangKey = strtoupper(trim(str_replace(['_', '-'], ' ', $bidang)));
+
         $roleMap = [
             'JARINGAN' => 'pic_jaringan',
             'PEMASARAN' => 'pic_pemasaran',
             'TRANSAKSI ENERGI' => 'pic_transaksi_energi',
             'ASET' => 'pic_pengadaan',
+            'PENGADAAN' => 'pic_pengadaan',
             'NIAGA' => 'pic_niaga',
             'KEUANGAN' => 'pic_keuangan',
             'K3' => 'pic_k3',
         ];
 
-        $role = $roleMap[strtoupper($bidang)] ?? null;
-        if (!$role) return;
-
-        $users = User::where('role', $role)->get();
+        $picRole = $roleMap[$bidangKey] ?? null;
+        
+        // Notify the relevant PIC, Manager, and Perencanaan
+        $rolesToNotify = array_values(array_filter(array_unique([$picRole, 'manager', 'perencanaan'])));
+        
+        $users = User::whereIn('role', $rolesToNotify)->get();
         if ($users->isEmpty()) return;
 
         $targetLamaStr = $targetLama === null ? 'belum diisi' : $targetLama;
         $tipe = $targetLama === null ? 'TARGET_BARU' : 'TARGET_DIUBAH';
         
         $pesan = $targetLama === null 
-            ? "Target {$indikator} tahun {$tahun} telah ditetapkan oleh Admin: {$targetBaru}. Silakan pantau realisasi Anda."
-            : "Target {$indikator} tahun {$tahun} telah diperbarui dari {$targetLamaStr} menjadi {$targetBaru} oleh Admin.";
+            ? "Target {$indikator} ({$bidangKey}) tahun {$tahun} telah ditetapkan oleh Admin: {$targetBaru}. Silakan pantau realisasi Anda."
+            : "Target {$indikator} ({$bidangKey}) tahun {$tahun} telah diperbarui dari {$targetLamaStr} menjadi {$targetBaru} oleh Admin.";
 
         $urlMap = [
             'JARINGAN' => '/saidi', 
             'PEMASARAN' => '/pemasaran/penjualan',
-            'TRANSAKSI ENERGI' => '/input',
-            'ASET' => '/input',
+            'TRANSAKSI ENERGI' => '/susut',
+            'ASET' => '/pengadaan/kontrak',
+            'PENGADAAN' => '/pengadaan/kontrak',
             'NIAGA' => '/niaga/pelunasan',
-            'KEUANGAN' => '/input',
+            'KEUANGAN' => '/keuangan',
+            'K3' => '/k3/dashboard',
         ];
 
         foreach ($users as $user) {
@@ -50,7 +57,7 @@ class NotificationService
                 'judul' => 'Perubahan Target KPI',
                 'pesan' => $pesan,
                 'tipe' => $tipe,
-                'url_tujuan' => $urlMap[strtoupper($bidang)] ?? '/',
+                'url_tujuan' => $urlMap[$bidangKey] ?? '/',
             ]);
         }
     }

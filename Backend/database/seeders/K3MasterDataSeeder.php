@@ -258,21 +258,23 @@ class K3MasterDataSeeder extends Seeder
             $criteria = $catData['criteria'];
             unset($catData['criteria']);
 
-            $category = K3Category::create($catData);
+            $category = K3Category::updateOrCreate(['code' => $catData['code']], $catData);
 
             foreach ($criteria as $critData) {
                 $levels = $critData['levels'];
                 unset($critData['levels']);
                 $critData['category_id'] = $category->id;
 
-                $criterion = K3Criterion::create($critData);
+                $criterion = K3Criterion::updateOrCreate(
+                    ['category_id' => $category->id, 'code' => $critData['code']],
+                    $critData
+                );
 
                 foreach ($levels as [$level, $description]) {
-                    K3CriterionLevel::create([
-                        'criteria_id' => $criterion->id,
-                        'level'       => $level,
-                        'description' => $description,
-                    ]);
+                    K3CriterionLevel::updateOrCreate(
+                        ['criteria_id' => $criterion->id, 'level' => $level],
+                        ['description' => $description]
+                    );
                 }
             }
         }

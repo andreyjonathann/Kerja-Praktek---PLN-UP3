@@ -161,7 +161,7 @@ function InputProtectedRoute({ children }) {
     return <Navigate to="/login" replace />
   }
 
-  if (user.role === 'perencanaan') {
+  if (user.role === 'perencanaan' || user.role === 'manager') {
     return <Navigate to="/" replace />
   }
 
@@ -546,14 +546,14 @@ export default function App() {
 
               {/* Phase 2 Placeholders */}
               <Route path="/nko" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <NkoPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
               <Route path="/trend-nko" element={
-                <ProtectedRoute>
+                <InputProtectedRoute>
                   <TrendNkoPage />
-                </ProtectedRoute>
+                </InputProtectedRoute>
               } />
 
               <Route path="/ens" element={

@@ -57,7 +57,9 @@ export default function InputPaguPage() {
       await storePagu({ ...form, tahun: filters.year, nominal: nominalNum })
       showToast(`Pagu ${form.skko_skki} Rp ${formatNumber(nominalNum)} berhasil disimpan!`)
       setForm(EMPTY)
-      await fetchPagu()
+      setTimeout(() => {
+        navigate('/keuangan')
+      }, 1200)
     } catch (e) {
       showToast(e?.response?.data?.message || 'Gagal menyimpan pagu', 'error')
     } finally {

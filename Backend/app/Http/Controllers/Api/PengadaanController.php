@@ -112,11 +112,11 @@ class PengadaanController extends Controller
         $rpEfisiensi = $totalRab - $totalRpKontrak;
         $pctEfisiensi = $totalRab > 0 ? ($rpEfisiensi / $totalRab) * 100 : 0;
 
-        // Calculate Pagu and Terpakai for B1, B2, B3, A0
-        $paguB1 = \App\Models\PaguAnggaran::where('tahun', $year)->where('skko_skki', 'SKKI')->where('klasifikasi', 'B1')->sum('nominal');
-        $paguB2 = \App\Models\PaguAnggaran::where('tahun', $year)->where('skko_skki', 'SKKI')->where('klasifikasi', 'B2')->sum('nominal');
-        $paguB3 = \App\Models\PaguAnggaran::where('tahun', $year)->where('skko_skki', 'SKKI')->where('klasifikasi', 'B3')->sum('nominal');
-        $paguA0 = \App\Models\PaguAnggaran::where('tahun', $year)->where('skko_skki', 'SKKO')->where('klasifikasi', 'A0')->sum('nominal');
+        // Calculate Pagu and Terpakai for B1, B2, B3, A0 (Net Pagu = awal + penambahan - pengurangan)
+        $paguB1 = \App\Models\PaguAnggaran::where('tahun', $year)->where('skko_skki', 'SKKI')->where('klasifikasi', 'B1')->sum(\Illuminate\Support\Facades\DB::raw("CASE WHEN jenis_transaksi = 'pengurangan' THEN -nominal ELSE nominal END"));
+        $paguB2 = \App\Models\PaguAnggaran::where('tahun', $year)->where('skko_skki', 'SKKI')->where('klasifikasi', 'B2')->sum(\Illuminate\Support\Facades\DB::raw("CASE WHEN jenis_transaksi = 'pengurangan' THEN -nominal ELSE nominal END"));
+        $paguB3 = \App\Models\PaguAnggaran::where('tahun', $year)->where('skko_skki', 'SKKI')->where('klasifikasi', 'B3')->sum(\Illuminate\Support\Facades\DB::raw("CASE WHEN jenis_transaksi = 'pengurangan' THEN -nominal ELSE nominal END"));
+        $paguA0 = \App\Models\PaguAnggaran::where('tahun', $year)->where('skko_skki', 'SKKO')->where('klasifikasi', 'A0')->sum(\Illuminate\Support\Facades\DB::raw("CASE WHEN jenis_transaksi = 'pengurangan' THEN -nominal ELSE nominal END"));
 
         $rabB1 = $allRecords->where('skko_skki', 'SKKI')->where('klasifikasi', 'B1')->sum('rab');
         $rabB2 = $allRecords->where('skko_skki', 'SKKI')->where('klasifikasi', 'B2')->sum('rab');

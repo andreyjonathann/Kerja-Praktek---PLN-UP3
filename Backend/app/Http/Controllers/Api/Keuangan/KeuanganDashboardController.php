@@ -15,26 +15,32 @@ class KeuanganDashboardController extends Controller
     {
         $year = intval($request->query('year', date('Y')));
 
-        // 1. Get Pagu Anggaran
+        // 1. Get Pagu Anggaran (Net Pagu = awal + penambahan - pengurangan)
         $paguSkki = DB::table('pagu_anggarans')
             ->where('tahun', $year)
             ->where('skko_skki', 'SKKI')
-            ->sum('nominal');
+            ->sum(DB::raw("CASE WHEN jenis_transaksi = 'pengurangan' THEN -nominal ELSE nominal END"));
 
         $paguSkko = DB::table('pagu_anggarans')
             ->where('tahun', $year)
             ->where('skko_skki', 'SKKO')
-            ->sum('nominal');
+            ->sum(DB::raw("CASE WHEN jenis_transaksi = 'pengurangan' THEN -nominal ELSE nominal END"));
 
         // 2. Get Contracted totals (Terkontrak) from pengadaans table
         $terkontrakSkki = DB::table('pengadaans')
-            ->whereYear('tgl_awal', $year)
+            ->where(function($q) use ($year) {
+                $q->whereYear('tgl_awal', $year)
+                  ->orWhereNull('tgl_awal');
+            })
             ->where('skko_skki', 'SKKI')
             ->where('status', '!=', 'Batal')
             ->sum('rp_kontrak');
 
         $terkontrakSkko = DB::table('pengadaans')
-            ->whereYear('tgl_awal', $year)
+            ->where(function($q) use ($year) {
+                $q->whereYear('tgl_awal', $year)
+                  ->orWhereNull('tgl_awal');
+            })
             ->where('skko_skki', 'SKKO')
             ->where('status', '!=', 'Batal')
             ->sum('rp_kontrak');
@@ -113,7 +119,10 @@ class KeuanganDashboardController extends Controller
                 DB::raw('COALESCE(SUM(realisasi_pembayarans.nilai_realisasi), 0) as total_terbayar')
             )
             ->where('pengadaans.skko_skki', 'SKKI')
-            ->whereYear('pengadaans.tgl_awal', $year)
+            ->where(function($q) use ($year) {
+                $q->whereYear('pengadaans.tgl_awal', $year)
+                  ->orWhereNull('pengadaans.tgl_awal');
+            })
             ->groupBy('pengadaans.id', 'pengadaans.no_kontrak', 'pengadaans.pt_pelaksana', 'pengadaans.uraian_pekerjaan', 'pengadaans.tgl_awal', 'pengadaans.tgl_akhir', 'pengadaans.rp_kontrak', 'pengadaans.status')
             ->orderBy('pengadaans.id', 'desc')
             ->get();
@@ -132,7 +141,10 @@ class KeuanganDashboardController extends Controller
                 DB::raw('COALESCE(SUM(realisasi_pembayarans.nilai_realisasi), 0) as total_terbayar')
             )
             ->where('pengadaans.skko_skki', 'SKKO')
-            ->whereYear('pengadaans.tgl_awal', $year)
+            ->where(function($q) use ($year) {
+                $q->whereYear('pengadaans.tgl_awal', $year)
+                  ->orWhereNull('pengadaans.tgl_awal');
+            })
             ->groupBy('pengadaans.id', 'pengadaans.no_kontrak', 'pengadaans.pt_pelaksana', 'pengadaans.uraian_pekerjaan', 'pengadaans.tgl_awal', 'pengadaans.tgl_akhir', 'pengadaans.rp_kontrak', 'pengadaans.status')
             ->orderBy('pengadaans.id', 'desc')
             ->get();

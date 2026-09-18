@@ -27,6 +27,9 @@ const MONTH_WEIGHTS = [0.077,0.074,0.082,0.080,0.083,0.081,0.086,0.088,0.085,0.0
 let targetCache = {}
 
 const distributeTarget = (total, hardcodedMap, hardcodedSum, keys) => {
+  if (total === null || total === undefined) {
+    return Object.fromEntries(keys.map(k => [k, null]));
+  }
   const rounded = {};
   let sum = 0;
   keys.forEach(k => {
@@ -65,16 +68,9 @@ export async function getMonthlyTarget(year, month) {
       dbTargets = targetsRes.data || [];
       targetCache[year] = dbTargets;
     } catch (e) {
-      console.warn("Failed to fetch targets from backend, using default mapping", e);
+      console.warn("Failed to fetch targets from backend", e);
     }
   }
-
-  let dbPenjualanTgt = 59.0;
-  let dbPelangganTgt = 10158.0;
-  let dbDayaTgt = 43.73;
-  let dbPendapatanTgt = 24.5;
-  let dbMobileTrxTgt = 1704000;
-  let dbMobileNilaiTgt = 105;
 
   const pen = dbTargets.find(t => t.indikator === 'Penjualan');
   const pel = dbTargets.find(t => t.indikator === 'Jumlah Pelanggan');
@@ -83,31 +79,28 @@ export async function getMonthlyTarget(year, month) {
   const mobTr = dbTargets.find(t => t.indikator === 'PLN Mobile Transaksi');
   const mobNi = dbTargets.find(t => t.indikator === 'PLN Mobile Nilai');
 
-  const parseTargetVal = (t, defaultVal) => {
+  const parseTargetVal = (t) => {
     if (t && t.target !== null && t.target !== undefined && t.target !== '') {
       const parsed = parseFloat(t.target);
-      return isNaN(parsed) ? defaultVal : parsed;
+      return isNaN(parsed) ? null : parsed;
     }
-    return defaultVal;
+    return null;
   };
 
-  dbPenjualanTgt = parseTargetVal(pen, 59.0);
-  dbPelangganTgt = parseTargetVal(pel, 10158.0);
-  dbDayaTgt = parseTargetVal(day, 43.73);
-  dbPendapatanTgt = parseTargetVal(penBp, 24.5);
-  dbMobileTrxTgt = parseTargetVal(mobTr, 1704000);
-  dbMobileNilaiTgt = parseTargetVal(mobNi, 105);
+  const dbPenjualanTgt = parseTargetVal(pen);
+  const dbPelangganTgt = parseTargetVal(pel);
+  const dbDayaTgt = parseTargetVal(day);
+  const dbPendapatanTgt = parseTargetVal(penBp);
+  const dbMobileTrxTgt = parseTargetVal(mobTr);
+  const dbMobileNilaiTgt = parseTargetVal(mobNi);
 
   // Convert targets to form units
-  // Penjualan: GWh -> kWh (1 GWh = 1,000,000 kWh)
-  const annualPenjualanKwh = dbPenjualanTgt * 1000000;
+  const annualPenjualanKwh = dbPenjualanTgt !== null ? dbPenjualanTgt * 1000000 : null;
   const annualPelanggan = dbPelangganTgt;
-  // Daya: MVA -> VA (1 MVA = 1,000,000 VA)
-  const annualDayaVa = dbDayaTgt * 1000000;
-  // Pendapatan: Rp Miliar -> Juta Rp (1 Miliar = 1,000 Juta)
-  const annualPendapatanJuta = dbPendapatanTgt * 1000;
+  const annualDayaVa = dbDayaTgt !== null ? dbDayaTgt * 1000000 : null;
+  const annualPendapatanJuta = dbPendapatanTgt !== null ? dbPendapatanTgt * 1000 : null;
   const annualMobileTrx = dbMobileTrxTgt;
-  const annualMobileNilaiJuta = dbMobileNilaiTgt * 1000;
+  const annualMobileNilaiJuta = dbMobileNilaiTgt !== null ? dbMobileNilaiTgt * 1000 : null;
 
   const hardcodedPenjualanSum = TARIF_KEYS.reduce((s, k) => s + ANNUAL_TARGET_2026.penjualan_kwh[k], 0);
   const hardcodedPelangganSum = TARIF_KEYS.reduce((s, k) => s + ANNUAL_TARGET_2026.jumlah_pelanggan[k], 0);
@@ -120,9 +113,9 @@ export async function getMonthlyTarget(year, month) {
   let monthlyPenj;
   if (pen && pen[monthKey] !== null && pen[monthKey] !== undefined && pen[monthKey] !== '') {
     const val = parseFloat(pen[monthKey]);
-    monthlyPenj = val < 100000 ? val * 1000000 : val; // GWh -> kWh (scale only if it looks like GWh, e.g. < 100000)
+    monthlyPenj = val < 100000 ? val * 1000000 : val;
   } else {
-    monthlyPenj = annualPenjualanKwh * w;
+    monthlyPenj = annualPenjualanKwh !== null ? annualPenjualanKwh * w : null;
   }
 
   // Pelanggan
@@ -130,25 +123,25 @@ export async function getMonthlyTarget(year, month) {
   if (pel && pel[monthKey] !== null && pel[monthKey] !== undefined && pel[monthKey] !== '') {
     monthlyPelg = parseFloat(pel[monthKey]);
   } else {
-    monthlyPelg = annualPelanggan * w;
+    monthlyPelg = annualPelanggan !== null ? annualPelanggan * w : null;
   }
 
   // Daya
   let monthlyDaya;
   if (day && day[monthKey] !== null && day[monthKey] !== undefined && day[monthKey] !== '') {
     const val = parseFloat(day[monthKey]);
-    monthlyDaya = val < 100000 ? val * 1000000 : val; // MVA -> VA (scale only if < 100000)
+    monthlyDaya = val < 100000 ? val * 1000000 : val;
   } else {
-    monthlyDaya = annualDayaVa * w;
+    monthlyDaya = annualDayaVa !== null ? annualDayaVa * w : null;
   }
 
   // Pendapatan
   let monthlyPend;
   if (penBp && penBp[monthKey] !== null && penBp[monthKey] !== undefined && penBp[monthKey] !== '') {
     const val = parseFloat(penBp[monthKey]);
-    monthlyPend = val < 100000 ? val * 1000 : val; // Rp Miliar -> Juta Rp (scale only if < 100000)
+    monthlyPend = val < 100000 ? val * 1000 : val;
   } else {
-    monthlyPend = annualPendapatanJuta * w;
+    monthlyPend = annualPendapatanJuta !== null ? annualPendapatanJuta * w : null;
   }
 
   // Mobile Transaksi
@@ -156,16 +149,16 @@ export async function getMonthlyTarget(year, month) {
   if (mobTr && mobTr[monthKey] !== null && mobTr[monthKey] !== undefined && mobTr[monthKey] !== '') {
     monthlyMobileTrx = parseFloat(mobTr[monthKey]);
   } else {
-    monthlyMobileTrx = annualMobileTrx * w;
+    monthlyMobileTrx = annualMobileTrx !== null ? annualMobileTrx * w : null;
   }
 
   // Mobile Nilai
   let monthlyMobileNilai;
   if (mobNi && mobNi[monthKey] !== null && mobNi[monthKey] !== undefined && mobNi[monthKey] !== '') {
     const val = parseFloat(mobNi[monthKey]);
-    monthlyMobileNilai = val < 100000 ? val * 1000 : val; // Rp Miliar -> Juta Rp (scale only if < 100000)
+    monthlyMobileNilai = val < 100000 ? val * 1000 : val;
   } else {
-    monthlyMobileNilai = annualMobileNilaiJuta * w;
+    monthlyMobileNilai = annualMobileNilaiJuta !== null ? annualMobileNilaiJuta * w : null;
   }
 
   return {
@@ -176,11 +169,11 @@ export async function getMonthlyTarget(year, month) {
     // Daya tersambung (VA) per tarif
     daya_va: distributeTarget(monthlyDaya, ANNUAL_TARGET_2026.daya_va, hardcodedDayaSum, TARIF_KEYS),
     // Pendapatan BP
-    pendapatan_rp: Math.round(monthlyPend),
+    pendapatan_rp: monthlyPend !== null ? Math.round(monthlyPend) : null,
     // PLN Mobile
     pln_mobile_pengguna_target: Math.round(ANNUAL_TARGET_2026.pln_mobile.pengguna_target * w * yearScale),
-    pln_mobile_transaksi_target: Math.round(monthlyMobileTrx),
-    pln_mobile_nilai_target: Math.round(monthlyMobileNilai),
+    pln_mobile_transaksi_target: monthlyMobileTrx !== null ? Math.round(monthlyMobileTrx) : null,
+    pln_mobile_nilai_target: monthlyMobileNilai !== null ? Math.round(monthlyMobileNilai) : null,
   };
 }
 

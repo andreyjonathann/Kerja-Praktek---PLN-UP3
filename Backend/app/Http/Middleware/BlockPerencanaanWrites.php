@@ -17,7 +17,7 @@ class BlockPerencanaanWrites
     {
         $user = $request->user();
         
-        if ($user && strtolower($user->role) === 'perencanaan') {
+        if ($user && in_array(strtolower($user->role), ['perencanaan', 'manager'])) {
             $method = strtoupper($request->method());
             $path = $request->path();
             
@@ -25,7 +25,7 @@ class BlockPerencanaanWrites
             if (in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'])) {
                 if (!str_contains($path, 'logout')) {
                     return response()->json([
-                        'message' => 'Akses ditolak. Role Perencanaan tidak diizinkan mengubah data.'
+                        'message' => 'Akses ditolak. Role ini hanya diizinkan melihat data (mode view).'
                     ], 403);
                 }
             }

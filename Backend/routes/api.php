@@ -15,6 +15,10 @@ Route::get('/user', function (Request $request) {
 use App\Http\Controllers\Api\AuthController;
 
 Route::post('/auth/login', [AuthController::class, 'login']);
+Route::post('/auth/send-otp', [AuthController::class, 'sendOtp']);
+Route::post('/auth/register', [AuthController::class, 'register']);
+Route::post('/auth/forgot-password', [AuthController::class, 'resetPassword']);
+Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']);
 
 use App\Http\Controllers\NotificationController;
 

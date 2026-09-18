@@ -20,7 +20,7 @@ export default function GantiMeterDetailModal({
   const [deletingId, setDeletingId] = useState(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState(null)
 
-  const isViewer = user?.role === 'viewer'
+  const isViewer = user?.role === 'viewer' || user?.role === 'manager' || user?.role === 'perencanaan'
   const bulanNum  = rowData?.bulan_angka ?? 0
   const bulanName = MONTHS_ID[bulanNum] || rowData?.bulan || ''
   const tahun     = year ?? new Date().getFullYear()

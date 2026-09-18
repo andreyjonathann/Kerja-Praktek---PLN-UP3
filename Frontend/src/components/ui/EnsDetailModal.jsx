@@ -118,7 +118,7 @@ export default function EnsDetailModal({
     }
   };
 
-  const canEdit = user?.role !== 'viewer' && rowData.id && modalType === 'bulanan';
+  const canEdit = (user?.role === 'pic_jaringan' || user?.role === 'admin') && rowData.id && modalType === 'bulanan';
 
   return createPortal(
     <div

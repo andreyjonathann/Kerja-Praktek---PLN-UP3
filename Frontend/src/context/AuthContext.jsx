@@ -5,7 +5,7 @@ const AuthContext = createContext(null)
 
 export const ROLES = {
   ADMIN: 'admin',
-  ADMIN_K3: 'admin_k3',
+  MANAGER: 'manager',
   PIC_PENGADAAN: 'pic_pengadaan',
   PIC_ASET: 'pic_aset',
   PIC_JARINGAN: 'pic_jaringan',
@@ -26,7 +26,7 @@ const FALLBACK_USERS = [
   { id: 7, name: 'PIC Keuangan', username: 'pic_keuangan', email: 'keuangan@pln.co.id', role: 'pic_keuangan', up3: 'UP3 Kebon Jeruk', is_active: true },
   { id: 8, name: 'PIC K3', username: 'pic_k3', email: 'k3@pln.co.id', role: 'pic_k3', up3: 'UP3 Kebon Jeruk', is_active: true },
   { id: 9, name: 'PIC Aset', username: 'pic_aset', email: 'aset@pln.co.id', role: 'pic_aset', up3: 'UP3 Kebon Jeruk', is_active: true },
-  { id: 10, name: 'Admin K3', username: 'admin_k3', email: 'admin_k3@pln.co.id', role: 'admin_k3', up3: 'UP3 Kebon Jeruk', is_active: true },
+  { id: 10, name: 'Manager UP3', username: 'manager', email: 'manager@pln.co.id', role: 'manager', up3: 'UP3 Kebon Jeruk', is_active: true },
 ]
 
 export function AuthProvider({ children }) {
@@ -71,6 +71,45 @@ export function AuthProvider({ children }) {
     }
   }
 
+  const sendOtp = async (email, action) => {
+    try {
+      const res = await api.post('/auth/send-otp', { email, action })
+      return { 
+        success: true, 
+        message: res.data?.message || 'Kode OTP berhasil dikirim ke email Anda.'
+      }
+    } catch (err) {
+      const message = err.response?.data?.message || Object.values(err.response?.data?.errors || {})?.[0]?.[0] || 'Gagal mengirim kode OTP. Silakan coba lagi.'
+      return { success: false, message }
+    }
+  }
+
+  const registerUser = async (data) => {
+    try {
+      const res = await api.post('/auth/register', data)
+      const { token, user: userData, message } = res.data
+      if (token && userData) {
+        localStorage.setItem('sigap_token', token)
+        localStorage.setItem('sigap_user', JSON.stringify(userData))
+        setUser(userData)
+      }
+      return { success: true, message: message || 'Pendaftaran akun berhasil.' }
+    } catch (err) {
+      const message = err.response?.data?.message || Object.values(err.response?.data?.errors || {})?.[0]?.[0] || 'Pendaftaran gagal. Silakan periksa data Anda.'
+      return { success: false, message }
+    }
+  }
+
+  const resetPassword = async (data) => {
+    try {
+      const res = await api.post('/auth/forgot-password', data)
+      return { success: true, message: res.data?.message || 'Kata sandi berhasil diperbarui.' }
+    } catch (err) {
+      const message = err.response?.data?.message || Object.values(err.response?.data?.errors || {})?.[0]?.[0] || 'Gagal memperbarui kata sandi. Pastikan email terdaftar.'
+      return { success: false, message }
+    }
+  }
+
   const logout = () => {
     localStorage.removeItem('sigap_token')
     localStorage.removeItem('sigap_user')
@@ -86,12 +125,13 @@ export function AuthProvider({ children }) {
   }
 
   const isAdmin   = user?.role === ROLES.ADMIN
-  const isAdminK3 = user?.role === ROLES.PIC_K3 || user?.role === ROLES.ADMIN_K3 || user?.role === ROLES.ADMIN
+  const isManager = user?.role === ROLES.MANAGER
+  const isAdminK3 = user?.role === ROLES.PIC_K3 || user?.role === ROLES.ADMIN
   const isPic     = user?.role?.startsWith('pic_')
   const isViewer  = !!user
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, switchRole, isAdmin, isAdminK3, isPic, isViewer }}>
+    <AuthContext.Provider value={{ user, loading, login, sendOtp, registerUser, resetPassword, logout, switchRole, isAdmin, isManager, isAdminK3, isPic, isViewer }}>
       {children}
     </AuthContext.Provider>
   )

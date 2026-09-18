@@ -281,6 +281,15 @@ class TargetTahunanController extends Controller
             app(\App\Services\TargetGantiMeterService::class)->recalculateTarget($tahun);
         }
 
+        // Trigger notification for target update
+        app(\App\Services\NotificationService::class)->notifyTargetUpdated(
+            $bidangStr,
+            $indikatorStr,
+            'Bulanan',
+            'Rincian Bulanan',
+            $tahun
+        );
+
         return response()->json(['message' => 'Target Bulanan berhasil disimpan', 'data' => $target]);
     }
 }

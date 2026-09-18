@@ -34,9 +34,13 @@ class PaguAnggaranController extends Controller
             ->orderBy('pagu_anggarans.created_at')
             ->get();
 
-        // Build totals
-        $totalSkki = $rows->where('skko_skki', 'SKKI')->sum('nominal');
-        $totalSkko = $rows->where('skko_skki', 'SKKO')->sum('nominal');
+        // Build totals (Net Pagu = awal + penambahan - pengurangan)
+        $totalSkki = $rows->where('skko_skki', 'SKKI')->reduce(function ($acc, $r) {
+            return $acc + ($r->jenis_transaksi === 'pengurangan' ? -$r->nominal : $r->nominal);
+        }, 0);
+        $totalSkko = $rows->where('skko_skki', 'SKKO')->reduce(function ($acc, $r) {
+            return $acc + ($r->jenis_transaksi === 'pengurangan' ? -$r->nominal : $r->nominal);
+        }, 0);
 
         return response()->json([
             'rows'        => $rows,

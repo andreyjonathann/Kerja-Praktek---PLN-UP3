@@ -84,20 +84,21 @@ class DatabaseSeeder extends Seeder
             ],
             // Branch Early: K3
             [
-                'name' => 'Admin K3',
-                'username' => 'admin_k3',
-                'email' => 'admin_k3@pln.co.id',
-                'password' => Hash::make('password'),
-                'role' => 'admin_k3',
-                'up3' => 'UP3 Kebon Jeruk',
-                'is_active' => true,
-            ],
-            [
                 'name' => 'PIC K3',
                 'username' => 'pic_k3',
                 'email' => 'k3@pln.co.id',
                 'password' => Hash::make('password'),
                 'role' => 'pic_k3',
+                'up3' => 'UP3 Kebon Jeruk',
+                'is_active' => true,
+            ],
+            // Manager: View Only Mode untuk semua bidang & kinerja
+            [
+                'name' => 'Manager UP3',
+                'username' => 'manager',
+                'email' => 'manager@pln.co.id',
+                'password' => Hash::make('password'),
+                'role' => 'manager',
                 'up3' => 'UP3 Kebon Jeruk',
                 'is_active' => true,
             ]

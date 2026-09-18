@@ -28,7 +28,7 @@ export default function P2tlPage() {
   const [tab, setTab] = useState('monthly');
   const chartRef = useRef(null);
 
-  const isViewer = user?.role === 'viewer';
+  const isViewer = user?.role === 'viewer' || user?.role === 'manager' || user?.role === 'perencanaan';
 
   const fetchData = useCallback(async () => {
     setLoading(true);

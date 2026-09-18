@@ -15,9 +15,9 @@ export async function getNiagaData(year = 2026) {
   const currentYear = parseInt(year) || new Date().getFullYear();
 
   // 1. Fetch annual targets from DB
-  let targetPelunasan = 40000000000; // Rp (40 Miliar)
-  let targetPenghapusan = 30.0; // Rp Miliar
-  let targetSaldoAkhir = 571575272; // Rp (Absolute)
+  let targetPelunasan = null;
+  let targetPenghapusan = null;
+  let targetSaldoAkhir = null;
 
   let pel = null;
   let pen = null;
@@ -44,7 +44,7 @@ export async function getNiagaData(year = 2026) {
       targetSaldoAkhir = val < 1000 ? val * 1000000000 : val;
     }
   } catch (e) {
-    console.warn("Failed to fetch Niaga targets, using defaults", e);
+    console.warn("Failed to fetch Niaga targets", e);
   }
 
   // Fetch Penghapusan PRR detail totals from v1/niaga/penghapusan
@@ -182,14 +182,14 @@ export async function getNiagaData(year = 2026) {
       const val = parseFloat(pel[monthKey]);
       tgtPelunasan = val < 1000 ? val * 1000000000 : val;
     } else {
-      tgtPelunasan = targetPelunasan * w;
+      tgtPelunasan = targetPelunasan != null ? targetPelunasan * w : null;
     }
 
     let tgtPenghapusan;
     if (pen && pen[monthKey] !== null && pen[monthKey] !== undefined && pen[monthKey] !== '') {
       tgtPenghapusan = parseFloat(pen[monthKey]);
     } else {
-      tgtPenghapusan = targetPenghapusan * w;
+      tgtPenghapusan = targetPenghapusan != null ? targetPenghapusan * w : null;
     }
 
     let tgtSaldoAkhir;
