@@ -80,6 +80,22 @@ export default function KontrakPage() {
 
   useEffect(() => { fetchData() }, [fetchData])
 
+  // Auto-refresh saldo saat PIC Keuangan input/hapus pagu (event untuk tab yg sama)
+  useEffect(() => {
+    const handlePaguUpdated = () => fetchData()
+    window.addEventListener('sigap:pagu-updated', handlePaguUpdated)
+    return () => window.removeEventListener('sigap:pagu-updated', handlePaguUpdated)
+  }, [fetchData])
+
+  // Saat halaman mount, cek flag sessionStorage (untuk kasus navigasi dari halaman Keuangan)
+  useEffect(() => {
+    if (sessionStorage.getItem('sigap:pagu-updated')) {
+      sessionStorage.removeItem('sigap:pagu-updated')
+      fetchData()
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const handleReset = () => {
     setDireksi(''); setNoPr(''); setPtPelaksana(''); setNoKontrak('')
   }

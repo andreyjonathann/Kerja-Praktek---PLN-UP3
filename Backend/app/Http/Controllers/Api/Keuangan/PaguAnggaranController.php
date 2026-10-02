@@ -70,6 +70,14 @@ class PaguAnggaranController extends Controller
             'keterangan'      => 'nullable|string|max:255',
         ]);
 
+        // Business rule: SKKO hanya untuk A0, SKKI hanya untuk B1/B2/B3
+        if ($validated['skko_skki'] === 'SKKO' && $validated['klasifikasi'] !== 'A0') {
+            return response()->json(['message' => 'SKKO hanya dapat menggunakan klasifikasi A0.'], 422);
+        }
+        if ($validated['skko_skki'] === 'SKKI' && $validated['klasifikasi'] === 'A0') {
+            return response()->json(['message' => 'SKKI tidak dapat menggunakan klasifikasi A0 (hanya SKKO).'], 422);
+        }
+
         $id = DB::table('pagu_anggarans')->insertGetId([
             'tahun'           => $validated['tahun'],
             'skko_skki'       => $validated['skko_skki'],

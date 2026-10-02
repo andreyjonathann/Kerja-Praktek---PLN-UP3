@@ -4,8 +4,12 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { X, Download, FileSpreadsheet } from 'lucide-react';
 import { getDashboardData } from '@/services/dashboardDataService';
 import { getNiagaData } from '@/services/niagaDataService';
+import { getPemasaranData } from '@/services/pemasaranDataService';
 import { exportToExcel } from '@/utils/excelExport';
 import { toPng } from 'html-to-image';
+
+// KPI types yang datanya berasal dari pemasaranDataService
+const PEMASARAN_KPI_TYPES = ['penjualan', 'pelanggan', 'daya_tersambung', 'daya', 'pendapatan_bp', 'pendapatan', 'pln_mobile'];
 
 export default function ExportModal({ kpiType, chartRef }) {
   const [open, setOpen] = useState(false);
@@ -22,12 +26,17 @@ export default function ExportModal({ kpiType, chartRef }) {
     setLoading(true);
     try {
       const dataMap = {};
-      const isNiaga = ['pelunasan prr', 'penghapusan prr', 'saldo akhir'].includes(kpiType.toLowerCase());
+      const kpiNorm = kpiType.toLowerCase().replace(/ /g, '_');
+      const isNiaga = ['pelunasan_prr', 'penghapusan_prr', 'saldo_akhir'].includes(kpiNorm);
+      const isPemasaran = PEMASARAN_KPI_TYPES.includes(kpiNorm);
       
       for (let y = startYear; y <= endYear; y++) {
         if (isNiaga) {
           const res = await getNiagaData(y);
           dataMap[y] = res || [];
+        } else if (isPemasaran) {
+          const res = await getPemasaranData(y);
+          dataMap[y] = res.monthly || [];
         } else {
           const res = await getDashboardData(y);
           dataMap[y] = res[kpiType.toLowerCase()] || [];

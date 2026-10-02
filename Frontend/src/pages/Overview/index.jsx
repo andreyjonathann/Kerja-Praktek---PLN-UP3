@@ -229,19 +229,19 @@ function AttentionRow({ item, onClick }) {
 }
 
 // ── Scoreboard Row ────────────────────────────────────────────────────────────
-function ScoreboardRow({ metric, isLast, onClick }) {
+function ScoreboardRow({ metric, isLast, onClick, clickable = true }) {
   const ac = achColors(metric.ach)
   return (
     <div
-      onClick={onClick}
+      onClick={clickable ? onClick : undefined}
       style={{
         padding: '10px 20px',
         borderBottom: isLast ? 'none' : '1px solid rgba(255,255,255,0.04)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-        transition: 'background 0.15s', cursor: 'pointer',
+        transition: 'background 0.15s', cursor: clickable ? 'pointer' : 'default',
       }}
-      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.025)'}
-      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+      onMouseEnter={clickable ? (e => e.currentTarget.style.background = 'rgba(255,255,255,0.025)') : undefined}
+      onMouseLeave={clickable ? (e => e.currentTarget.style.background = 'transparent') : undefined}
     >
       <div style={{ minWidth: 0, flex: 1 }}>
         <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -393,7 +393,7 @@ export default function OverviewPage() {
           icon={Award}
           color="blue"
           loading={loading}
-          onClick={() => navigate('/nko')}
+          onClick={isAdmin ? () => navigate('/nko') : undefined}
         />
         <KpiCard
           title="SAIDI YTD"
@@ -503,14 +503,22 @@ export default function OverviewPage() {
                 </div>
               ))
             ) : allMetrics.length > 0 ? (
-              allMetrics.map((metric, idx) => (
-                <ScoreboardRow
-                  key={metric.id}
-                  metric={metric}
-                  isLast={idx === allMetrics.length - 1}
-                  onClick={() => metric.path && navigate(metric.path)}
-                />
-              ))
+              allMetrics.map((metric, idx) => {
+                const isNko = metric.path === '/nko'
+                const canClick = !isNko || isAdmin
+                return (
+                  <ScoreboardRow
+                    key={metric.id}
+                    metric={metric}
+                    isLast={idx === allMetrics.length - 1}
+                    clickable={canClick}
+                    onClick={() => {
+                      if (!metric.path || !canClick) return
+                      navigate(metric.path)
+                    }}
+                  />
+                )
+              })
             ) : (
               // Fallback: show NKO matrix if bidangSummary not loaded yet
               (data?.nkoMatrix || []).map((kpi, idx) => {

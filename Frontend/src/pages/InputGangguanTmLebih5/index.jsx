@@ -54,7 +54,7 @@ export default function InputGangguanTmLebih5Page() {
         const rekap = res.data;
         if (rekap && rekap['lebih_5_mnt']) {
           const dataBulan = rekap['lebih_5_mnt'].monthly[parseInt(selectedMonth)];
-          setExistingData({ lebih: dataBulan !== null && dataBulan !== undefined });
+          setExistingData({ lebih: dataBulan?.realisasi !== null && dataBulan?.realisasi !== undefined });
         } else {
           setExistingData({ lebih: false });
         }

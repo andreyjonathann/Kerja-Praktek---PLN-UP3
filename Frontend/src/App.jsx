@@ -168,6 +168,35 @@ function InputProtectedRoute({ children }) {
   return <Layout>{children}</Layout>
 }
 
+// Admin-only Protected Route Wrapper: Redirect non-admin users to home
+function AdminProtectedRoute({ children }) {
+  const { user, loading } = useAuth()
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center dark:bg-slate-900 bg-slate-50">
+        <div className="flex flex-col items-center gap-3">
+          <svg className="animate-spin h-8 w-8 text-pln-blue-mid" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+          </svg>
+          <span className="text-xs text-slate-500 font-semibold animate-pulse">Menghubungkan ke SIGAP...</span>
+        </div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />
+  }
+
+  if (user.role !== 'admin') {
+    return <Navigate to="/" replace />
+  }
+
+  return <Layout>{children}</Layout>
+}
+
 // Pengadaan Write Protected Route Wrapper: Redirect anyone except pic_pengadaan back to /pengadaan/kontrak
 function PengadaanProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -202,27 +231,6 @@ function RoleBasedHome() {
   const { user, loading } = useAuth()
   if (loading) return null
 
-  if (user?.role === 'pic_pengadaan') {
-    return <Navigate to="/pengadaan/kontrak" replace />
-  }
-  if (user?.role === 'pic_pemasaran') {
-    return <Navigate to="/pemasaran" replace />
-  }
-  if (user?.role === 'pic_transaksi_energi') {
-    return <Navigate to="/susut" replace />
-  }
-  if (user?.role === 'pic_niaga') {
-    return <Navigate to="/niaga/pelunasan" replace />
-  }
-  if (user?.role === 'pic_jaringan') {
-    return <Navigate to="/saidi" replace />
-  }
-  if (user?.role === 'pic_k3') {
-    return <Navigate to="/k3/dashboard" replace />
-  }
-  if (user?.role === 'pic_keuangan') {
-    return <Navigate to="/keuangan" replace />
-  }
   return (
     <ProtectedRoute>
       <OverviewPage />
@@ -546,14 +554,14 @@ export default function App() {
 
               {/* Phase 2 Placeholders */}
               <Route path="/nko" element={
-                <InputProtectedRoute>
+                <AdminProtectedRoute>
                   <NkoPage />
-                </InputProtectedRoute>
+                </AdminProtectedRoute>
               } />
               <Route path="/trend-nko" element={
-                <InputProtectedRoute>
+                <AdminProtectedRoute>
                   <TrendNkoPage />
-                </InputProtectedRoute>
+                </AdminProtectedRoute>
               } />
 
               <Route path="/ens" element={

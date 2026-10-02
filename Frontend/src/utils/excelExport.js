@@ -42,22 +42,24 @@ const kpiConfig = {
     detailKeys: ['pelanggan_s', 'pelanggan_r', 'pelanggan_b', 'pelanggan_i', 'pelanggan_p', 'pelanggan_t', 'pelanggan_l', 'pelanggan_c', 'pelanggan_total']
   },
   daya_tersambung: {
-    unit: 'VA',
+    unit: 'kVA',
     monthlyTargetKey: 'daya_target',
     monthlyRealKey: 'daya_total',
     cumTargetKey: 'c_daya_target',
     cumRealKey: 'c_daya_total',
-    detailHeaders: ["Bulan", "S - Sosial", "R - Rumah Tangga", "B - Bisnis", "I - Industri", "P - Pemerintah", "T - Traksi", "L - Layanan Khusus", "C - Curah", "Total Realisasi"],
-    detailKeys: ['daya_s', 'daya_r', 'daya_b', 'daya_i', 'daya_p', 'daya_t', 'daya_l', 'daya_c', 'daya_total']
+    detailHeaders: ["Bulan", "S - Sosial", "R - Rumah Tangga", "B - Bisnis", "I - Industri", "P - Pemerintah", "T - Traksi", "L - Layanan Khusus", "C - Curah", "Total Realisasi (kVA)"],
+    detailKeys: ['daya_s', 'daya_r', 'daya_b', 'daya_i', 'daya_p', 'daya_t', 'daya_l', 'daya_c', 'daya_total'],
+    format: "#,##0"
   },
   daya: {
-    unit: 'VA',
+    unit: 'kVA',
     monthlyTargetKey: 'daya_target',
     monthlyRealKey: 'daya_total',
     cumTargetKey: 'c_daya_target',
     cumRealKey: 'c_daya_total',
-    detailHeaders: ["Bulan", "S - Sosial", "R - Rumah Tangga", "B - Bisnis", "I - Industri", "P - Pemerintah", "T - Traksi", "L - Layanan Khusus", "C - Curah", "Total Realisasi"],
-    detailKeys: ['daya_s', 'daya_r', 'daya_b', 'daya_i', 'daya_p', 'daya_t', 'daya_l', 'daya_c', 'daya_total']
+    detailHeaders: ["Bulan", "S - Sosial", "R - Rumah Tangga", "B - Bisnis", "I - Industri", "P - Pemerintah", "T - Traksi", "L - Layanan Khusus", "C - Curah", "Total Realisasi (kVA)"],
+    detailKeys: ['daya_s', 'daya_r', 'daya_b', 'daya_i', 'daya_p', 'daya_t', 'daya_l', 'daya_c', 'daya_total'],
+    format: "#,##0"
   },
   pendapatan_bp: {
     unit: 'Juta Rp',

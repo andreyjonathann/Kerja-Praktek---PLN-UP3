@@ -6,7 +6,9 @@ import { useAuth } from '@/context/AuthContext'
 import { getPaguList, storePagu, deletePagu } from '@/services/keuanganService'
 import { formatNumber } from '@/utils/formatters'
 
-const KLASIFIKASI = ['A0', 'B1', 'B2', 'B3']
+// SKKO hanya bisa A0, SKKI hanya bisa B1/B2/B3
+const KLASIFIKASI_SKKI = ['B1', 'B2', 'B3']
+const KLASIFIKASI_SKKO = ['A0']
 const JENIS_TRANSAKSI = [
   { value: 'awal',        label: 'Pagu Awal' },
   { value: 'penambahan',  label: 'Penambahan (Revisi Naik)' },
@@ -19,13 +21,16 @@ export default function InputPaguPage() {
   const { user } = useAuth()
   const isPicKeuangan = user?.role === 'pic_keuangan' || user?.role === 'admin'
 
-  const EMPTY = { skko_skki: 'SKKI', klasifikasi: 'A0', jenis_transaksi: 'awal', nominal: '', keterangan: '' }
+  const EMPTY = { skko_skki: 'SKKI', klasifikasi: 'B1', jenis_transaksi: 'awal', nominal: '', keterangan: '' }
 
   const [paguData, setPaguData] = useState(null)
   const [loading, setLoading]   = useState(true)
   const [form, setForm]         = useState(EMPTY)
   const [saving, setSaving]     = useState(false)
   const [toast, setToast]       = useState(null)
+
+  // Pilihan klasifikasi yang valid sesuai jenis anggaran
+  const availableKlasifikasi = form.skko_skki === 'SKKO' ? KLASIFIKASI_SKKO : KLASIFIKASI_SKKI
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type })
@@ -56,6 +61,9 @@ export default function InputPaguPage() {
     try {
       await storePagu({ ...form, tahun: filters.year, nominal: nominalNum })
       showToast(`Pagu ${form.skko_skki} Rp ${formatNumber(nominalNum)} berhasil disimpan!`)
+      // Broadcast event (untuk tab yang sama) + sessionStorage flag (untuk navigasi antar halaman)
+      window.dispatchEvent(new CustomEvent('sigap:pagu-updated', { detail: { tahun: filters.year } }))
+      sessionStorage.setItem('sigap:pagu-updated', '1')
       setForm(EMPTY)
       setTimeout(() => {
         navigate('/keuangan')
@@ -72,6 +80,9 @@ export default function InputPaguPage() {
     try {
       await deletePagu(id)
       showToast('Pagu berhasil dihapus')
+      // Broadcast event (untuk tab yang sama) + sessionStorage flag (untuk navigasi antar halaman)
+      window.dispatchEvent(new CustomEvent('sigap:pagu-updated', { detail: { tahun: filters.year } }))
+      sessionStorage.setItem('sigap:pagu-updated', '1')
       await fetchPagu()
     } catch (e) {
       showToast('Gagal menghapus pagu', 'error')
@@ -164,7 +175,12 @@ export default function InputPaguPage() {
                 <label style={labelStyle}>Jenis Anggaran</label>
                 <div style={{ display: 'flex', gap: 8 }}>
                   {['SKKI', 'SKKO'].map(j => (
-                    <button key={j} onClick={() => setForm(p => ({ ...p, skko_skki: j }))}
+                    <button key={j} onClick={() => setForm(p => ({
+                      ...p,
+                      skko_skki: j,
+                      // Auto-reset klasifikasi ke default yang valid
+                      klasifikasi: j === 'SKKO' ? 'A0' : 'B1',
+                    }))}
                       style={{
                         flex: 1, padding: '9px 0', borderRadius: 10, fontWeight: 800, fontSize: '0.9rem',
                         cursor: 'pointer', transition: 'background 0.15s, color 0.15s',
@@ -181,13 +197,19 @@ export default function InputPaguPage() {
                     >{j}</button>
                   ))}
                 </div>
+                {/* Info rule */}
+                <div style={{ marginTop: 5, fontSize: '0.72rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                  {form.skko_skki === 'SKKO'
+                    ? '⚠ SKKO hanya untuk klasifikasi A0'
+                    : 'ℹ SKKI untuk klasifikasi B1, B2, atau B3'}
+                </div>
               </div>
 
               {/* Klasifikasi */}
               <div>
                 <label style={labelStyle}>Klasifikasi</label>
                 <div style={{ display: 'flex', gap: 6 }}>
-                  {KLASIFIKASI.map(k => (
+                  {availableKlasifikasi.map(k => (
                     <button key={k} onClick={() => setForm(p => ({ ...p, klasifikasi: k }))}
                       style={{
                         flex: 1, padding: '9px 0', borderRadius: 8, fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer',
